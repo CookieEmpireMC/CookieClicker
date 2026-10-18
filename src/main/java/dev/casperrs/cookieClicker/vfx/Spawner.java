@@ -50,7 +50,12 @@ final class Spawner {
         return entity;
     }
 
+    /**
+     * True for entities spawned by {@link #spawn} (they always carry both the tag and the PDC key). The scoreboard
+     * tag is checked first because it's a cheap set lookup; only plugin entities pay for the PDC read.
+     */
     boolean isOurs(Entity entity) {
-        return entity.getPersistentDataContainer().has(key, PersistentDataType.BYTE);
+        return entity.getScoreboardTags().contains(SCOREBOARD_TAG)
+                && entity.getPersistentDataContainer().has(key, PersistentDataType.BYTE);
     }
 }
