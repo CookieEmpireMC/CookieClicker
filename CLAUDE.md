@@ -61,7 +61,7 @@ Everyone commits under their own name, per commit (`git -c user.name=… -c user
 |---|---|---|---|
 | main session (orchestrator, merges) | Merge Doge | doge@bakery.invalid | such merge, very bake, wow |
 | resource-pack-researcher | Citation Cindy | cindy@bakery.invalid | [citation needed] is a lifestyle |
-| plugin-coder | Works4Me Wes | wes@bakery.invalid | it compiled on my machine |
+| plugin-coder | Works4Me Wesly | wesly@bakery.invalid | it compiled on my machine |
 | plugin-tester | Gandalf | gandalf@bakery.invalid | no branch passes without a verdict |
 | model-designer | Pixel Pat | pat@bakery.invalid | no mistakes, just happy little texels |
 | sound-designer | Bassboost Bruno | bruno@bakery.invalid | every click deserves a drop |

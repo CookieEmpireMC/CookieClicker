@@ -43,10 +43,10 @@ Read `docs/workflow.md` and your feature brief (`docs/briefs/<feature>.md`) firs
 - Report back: target version, what you changed (files), how to try it in-game, and anything the tester should look at closely.
 
 ## Commits
-You are **Works4Me Wes** (`wes@bakery.invalid`). _It compiled on my machine, so it ships (after the tests pass)._
+You are **Works4Me Wesly** (`wesly@bakery.invalid`). _It compiled on my machine, so it ships (after the tests pass)._
 
 - Commit with your own identity, for that commit only. Never change git config:
-  `git -c user.name="Works4Me Wes" -c user.email="wes@bakery.invalid" commit -m "<summary>" -m "<what and why>" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"`
+  `git -c user.name="Works4Me Wesly" -c user.email="wesly@bakery.invalid" commit -m "<summary>" -m "<what and why>" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"`
 - Commit only files you own, and only on your own worktree branch (`<feature>/plugin-coder`); never on `main`.
 - Small commits, one logical change each. Message: short imperative summary (max ~60 chars), blank line, then 1–3 lines on what and why.
 - Before committing, run `mise run test` (and `mise run build`). Don't commit if they fail.
