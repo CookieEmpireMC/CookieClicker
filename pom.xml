@@ -14,6 +14,9 @@
     <properties>
         <java.version>25</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- JDBC drivers: Paper downloads these via plugin.yml `libraries:`; keep both lists in sync -->
+        <h2.version>2.5.252</h2.version>
+        <mariadb.version>3.5.10</mariadb.version>
     </properties>
 
     <build>
@@ -24,8 +27,10 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.13.0</version>
                 <configuration>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
+                    <release>${java.version}</release>
+                    <compilerArgs>
+                        <arg>-Xlint:deprecation</arg>
+                    </compilerArgs>
                 </configuration>
             </plugin>
             <plugin>
@@ -78,6 +83,19 @@
             <groupId>io.papermc.paper</groupId>
             <artifactId>paper-api</artifactId>
             <version>26.3.build.205-stable</version>
+            <scope>provided</scope>
+        </dependency>
+        <!-- provided: loaded at runtime by Paper from plugin.yml `libraries:` (not shaded) -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>${h2.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mariadb.jdbc</groupId>
+            <artifactId>mariadb-java-client</artifactId>
+            <version>${mariadb.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

@@ -1,0 +1,51 @@
+# Cookie Empire (CookieClicker) - main config.
+# Balance (costs, CPS, click power, crits) lives in buildings.yml / upgrades.yml, sounds in sounds.yml,
+# all text in messages.yml. Apply changes with /bakery reload (except database.*: restart the server).
+
+database:
+  # h2 (embedded file, no setup) or mariadb
+  type: h2
+  # Prefix for every table (letters, digits, _)
+  table-prefix: cc_
+  # Save every online player's cookies this often (they are also saved on quit and on shutdown)
+  autosave-seconds: 300
+  # On shutdown, wait at most this long for pending saves to finish
+  shutdown-save-timeout-seconds: 10
+  h2:
+    # Relative to plugins/CookieClicker/ (H2 adds .mv.db)
+    file: data/cookies
+  mariadb:
+    host: localhost
+    port: 3306
+    database: cookieclicker
+    username: cookieclicker
+    password: ""
+    # Extra JDBC URL parameters, e.g. "sslMode=trust"
+    parameters: ""
+
+hud:
+  # Action bar with cookies and cookies per second (text in messages.yml: hud.*)
+  enabled: true
+  # Re-send the action bar every N seconds (production always ticks once per second)
+  refresh-seconds: 1
+
+station:
+  # /bakery station set: put the station in the centre of the block you stand on
+  snap-to-block: true
+  # Round your facing to this many degrees (0 = exact)
+  snap-yaw-degrees: 90
+  # Refuse to place a station closer than this (blocks) to another one
+  min-distance: 8
+  # /bakery station remove: removes the nearest station within this radius (blocks)
+  remove-radius: 8
+
+# Our resource pack (3D cookie, icons, HUD glyph, sounds). Sent on join; vanilla fallbacks are used
+# when a player declines it. Get url + sha1 from `mise run pack` and wherever you host the zip.
+resource-pack:
+  enabled: true
+  url: ""
+  sha1: ""
+  # true = players who decline are kicked by the client prompt
+  required: false
+  # messages.yml path of the prompt text shown with the pack request
+  prompt: resource-pack.prompt
