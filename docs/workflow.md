@@ -148,7 +148,7 @@ Every agent has `memory: project` in its frontmatter: a persistent folder `.clau
 
 **Keep it lean:** `MEMORY.md` is an index under 200 lines; update or delete entries that turn out wrong or stale; check a remembered fact against the current code or docs before relying on it for something risky.
 
-**Lifecycle:** memory changes are committed on your own branch like any other file, reviewed with it, and reach `main` through the feature PR. The designers' `design/*style-guide.md` and `design/*lessons.md` stay the human-readable design record; memory is your private working cache.
+**Lifecycle:** project memory always lands in the **main checkout** (`$CLAUDE_PROJECT_DIR/.claude/agent-memory/<agent_type>/`), even when you run in a worktree (verified 2026-10-18), so it's shared right away with your next run and isn't on your branch. Don't try to commit it yourself. Rick commits memory changes on the feature branch, credited to you (`--author="<your name> <your email>"`), together with your branch merge; they reach `main` through the feature PR. The designers' `design/*style-guide.md` and `design/*lessons.md` stay the human-readable design record; memory is your private working cache.
 
 ---
 

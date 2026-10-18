@@ -22,7 +22,7 @@ Not player-facing. As the user, when a feature is done I get a PR opened by the 
 **Added scope (user request, 2026-10-18): agent memory**
 - [ ] Every agent file has `memory: project`; `.claude/ownership.json` gives each agent only its own `.claude/agent-memory/<agent_type>/**`.
 - [ ] `docs/workflow.md` "Agent memory" section: what to store, what not, keep `MEMORY.md` under 200 lines, memory travels through branches.
-- [ ] Verify where project memory lands for an agent in a worktree (the docs don't say); record the result.
+- [x] Verify where project memory lands for an agent in a worktree: **in the main checkout** (`$CLAUDE_PROJECT_DIR/.claude/agent-memory/<agent_type>/`), not the worktree (Gandalf, 2026-10-18). Rick commits it on the feature branch credited to the agent.
 
 ## Out of scope
 - Approving or merging PRs as the bot (never).
