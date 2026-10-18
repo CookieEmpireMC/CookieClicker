@@ -41,6 +41,16 @@ Last checked: 2026-10-18
 | `mise run review` | renders sound previews, then builds `design/review/index.html` (git-ignored, local only): every texture pixelated, every `.ogg` with a player and measurements, every effect preview, grouped per feature brief, with spec notes and a placeholder/final label (`tools/review.py`). An asset counts as final when its spec says `Status: final` |
 | `mise run team` | commits per team member (`git shortlog -sn --all`) |
 | `mise run pack` | zips `resourcepack/` reproducibly to `target/cookieclicker-pack.zip` and prints its SHA-1 (`tools/pack.py`) |
+| `mise run ownership-check <branch> [--base <feature-branch>] [--human-approved]` | checks every non-merge commit in `<base>..<branch>` (base defaults to the current branch) by its **author email** against `.claude/ownership.json`; lists files that merge commits changed relative to every parent (conflict resolutions); fails with commit, author, file and owner per violation; unknown authors fail (`tools/ownership/check.py`, see below) |
+| `mise run tools-test` | runs the Python tool tests: `python -m unittest discover -s tools -p 'test_*.py'` (test folders need an `__init__.py`); passes when there are no tests yet |
+
+### Ownership enforcement
+
+Who may edit which file is defined once, in `.claude/ownership.json` (human-controlled; format and glob rules in the docstring of `.claude/hooks/ownership_lib.py`). Two layers use it:
+
+- **PreToolUse hook** (`.claude/hooks/ownership.py`, early warning): denies `Edit`/`Write`/`NotebookEdit` calls on files the agent doesn't own, with a reason that names the owner. Paths in `.claude/worktrees/<name>/` count as the same repo-relative path; paths outside the repository are always allowed. It loads the map and matcher only from `$CLAUDE_PROJECT_DIR` (the main checkout), so an agent's worktree copy can't loosen its rules. **Files written through Bash are not covered by the hook**, only by the merge check.
+- **`mise run ownership-check`** (the real guarantee, run by the orchestrator before every merge): judges each commit by its author. Human-controlled files are a violation for agents; for the orchestrator, or with `--human-approved` when the user explicitly approved the change, they're listed for "Needs human review" instead. The map and matcher come from `$CLAUDE_PROJECT_DIR`, else the main checkout, else the current checkout (the output says which).
+- **Authorship is self-declared** (`git -c user.email=…`), so both layers guard against mistakes, not against tampering.
 
 
 ---

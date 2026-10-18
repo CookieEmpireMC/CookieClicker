@@ -1,0 +1,130 @@
+{
+  "_comment": [
+    "Who may edit what. Human-controlled: only the user changes this file (the orchestrator only when the user asks).",
+    "Read by .claude/hooks/ownership.py (PreToolUse, Edit|Write|NotebookEdit) and tools/ownership/check.py (mise run ownership-check).",
+    "Format: orchestrator = main session (no agent_type); agents = keyed by agent_type; each has the git name/email it commits with and 'paths'.",
+    "Globs on repo-relative paths: ** = any depth (also none), * = within one segment, leading ! excludes a path an earlier glob allowed (last match wins).",
+    "human_controlled wins over every list: agents are denied, the orchestrator gets 'ask'. A path may have several owners. Full rules: docstring of .claude/hooks/ownership_lib.py."
+  ],
+  "orchestrator": {
+    "name": "Rickroll Rick",
+    "email": "rick@bakery.invalid",
+    "paths": [
+      "CLAUDE.md",
+      "docs/briefs/**",
+      ".github/**"
+    ]
+  },
+  "agents": {
+    "resource-pack-researcher": {
+      "name": "Citation Cindy",
+      "email": "cindy@bakery.invalid",
+      "paths": [
+        "docs/research/**"
+      ]
+    },
+    "plugin-coder": {
+      "name": "Works4Me Wesly",
+      "email": "wesly@bakery.invalid",
+      "paths": [
+        "src/main/**",
+        "!src/main/java/**/vfx/**",
+        "!src/main/resources/sounds.yml",
+        "!src/main/resources/effects.yml",
+        "!src/main/resources/buildings.yml",
+        "!src/main/resources/upgrades.yml",
+        "pom.xml",
+        "tools/**",
+        "!tools/balance/**",
+        "!tools/**/test_*.py",
+        "mise.toml",
+        ".gitignore",
+        ".gitattributes",
+        ".mailmap",
+        "design/requirements.txt",
+        "docs/paper-*.md",
+        "docs/toolchain.md",
+        "docs/minimessage.md",
+        "docs/integrations.md"
+      ]
+    },
+    "plugin-tester": {
+      "name": "Gandalf",
+      "email": "gandalf@bakery.invalid",
+      "paths": [
+        "src/test/**",
+        "tools/**/test_*.py",
+        "docs/reviews/**",
+        "docs/architecture.md"
+      ]
+    },
+    "model-designer": {
+      "name": "Pixel Pat",
+      "email": "pat@bakery.invalid",
+      "paths": [
+        "resourcepack/**",
+        "!resourcepack/assets/*/sounds/**",
+        "!resourcepack/assets/*/sounds.json",
+        "!resourcepack/assets/*/lang/**",
+        "!resourcepack/assets/minecraft/particles/**",
+        "!resourcepack/assets/minecraft/textures/particle/**",
+        "itemsadder/**",
+        "modelengine/**",
+        "design/scripts/**",
+        "design/*.md",
+        "!design/sound-*",
+        "!design/vfx-*",
+        "!design/sounds.md",
+        "!design/effects.md",
+        "!design/CREDITS.md"
+      ]
+    },
+    "sound-designer": {
+      "name": "Bassboost Bruno",
+      "email": "bruno@bakery.invalid",
+      "paths": [
+        "resourcepack/assets/*/sounds/**",
+        "resourcepack/assets/*/sounds.json",
+        "resourcepack/assets/*/lang/**",
+        "src/main/resources/sounds.yml",
+        "design/sound-*",
+        "design/sound-*/**",
+        "design/sounds.md",
+        "design/CREDITS.md"
+      ]
+    },
+    "vfx-designer": {
+      "name": "Flare Larry",
+      "email": "larry@bakery.invalid",
+      "paths": [
+        "src/main/java/**/vfx/**",
+        "src/test/java/**/vfx/**",
+        "src/main/resources/effects.yml",
+        "resourcepack/assets/minecraft/particles/**",
+        "resourcepack/assets/minecraft/textures/particle/**",
+        "design/vfx-*",
+        "design/vfx-*/**",
+        "design/effects.md"
+      ]
+    },
+    "balance-designer": {
+      "name": "Stonks Stan",
+      "email": "stan@bakery.invalid",
+      "paths": [
+        "src/main/resources/buildings.yml",
+        "src/main/resources/upgrades.yml",
+        "tools/balance/**",
+        "!tools/**/test_*.py",
+        "docs/balance/**"
+      ]
+    }
+  },
+  "human_controlled": [
+    ".claude/agents/**",
+    ".claude/skills/**",
+    "docs/workflow.md",
+    ".claude/ownership.*",
+    ".claude/hooks/**",
+    ".claude/settings.json"
+  ]
+}

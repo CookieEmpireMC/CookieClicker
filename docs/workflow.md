@@ -70,18 +70,22 @@ The brief's **Status** line tracks the feature: `planned` (drafted, waiting for 
 | sound-designer | same as model-designer, for sound events | coder, other designers |
 | vfx-designer | same, for effect IDs; and any item model its effects use is in the contract | coder, other designers |
 | balance-designer | the brief lists a balance impact (new buildings/upgrades/prices/rewards) | coder, other designers |
-| plugin-coder | brief exists; research note on the feature branch if needed; **every Java API from another owner it calls is already merged into the feature branch** (e.g. the `Effects` service in the `vfx` package) and every feature in "Depends on" is merged into `main` | designers' assets and final balance numbers (code against contract IDs and `docs/balance/model.md`; vanilla fallbacks cover missing assets) |
+| plugin-coder | brief exists; research note on the feature branch if needed; every feature in "Depends on" is merged into `main`; and any **new** Java API from another owner it calls is already merged into the feature branch (see below) | designers' assets and final balance numbers (code against contract IDs and `docs/balance/model.md`; vanilla fallbacks cover missing assets) |
 | plugin-tester (branch) | that branch's owner reported `DONE` and has stopped | other branches |
 | plugin-tester (integration) | all agent branches of the feature are merged into the feature branch | — |
 
-**Java code dependencies are the one hard wait.** Assets can arrive later because of IDs and fallbacks, but code can't compile against an API that isn't on the branch. So the vfx engine's `Effects` service must be merged into the feature branch before the coder's worktree is created. Because worktrees branch from the orchestrator's `HEAD`, launch the coder **after** that merge.
+**Java code dependencies are the one hard wait.** Assets can arrive later because of IDs and fallbacks, but code can't compile against an API that isn't on the branch.
+- **Once `Effects.play(id)` is on `main`** (the normal case): the coder starts **in parallel** with the designers. It calls `Effects.play("<new_id>", …)` and plays sound events by the names in the brief's contract, while the vfx-designer and sound-designer add the matching presets and sounds. Unknown IDs are logged and skipped at runtime, so the code works before the assets land.
+- **Only while the `Effects` service doesn't exist on `main` yet** (the first effects feature), or when the coder needs a *new* API method from another owner: merge that branch into the feature branch first, then launch the coder (worktrees branch from the orchestrator's `HEAD`).
 
 ### If a gate isn't met
 Stop and report `STATUS: BLOCKED` with exactly what you're waiting for. Don't invent IDs, stub another owner's code, or edit files you don't own to get unblocked.
 
 ### Merging agent branches (orchestrator)
-Merge each `READY` branch into the feature branch as Rickroll Rick, one at a time:
-`git -c user.name="Rickroll Rick" -c user.email="rick@bakery.invalid" merge --no-ff <name>/<agent>`
+For each `READY` branch, one at a time:
+1. `mise run ownership-check <name>/<agent>`. A violation goes back to the agent (fix on its branch, re-review); don't merge around it. Add `--human-approved` only when the user explicitly approved changes to human-controlled files on that branch; they're then listed for "Needs human review" instead of failing.
+2. Merge as Rickroll Rick: `git -c user.name="Rickroll Rick" -c user.email="rick@bakery.invalid" merge --no-ff <name>/<agent>`
+3. Run the checks (below), then clean up: `git worktree remove <path>` (unlock first if needed), `git branch -d <name>/<agent>`, `git worktree prune`.
 
 Order, so assets and config land before the code that uses them:
 1. research notes (committed directly on the feature branch as they land)
@@ -94,7 +98,7 @@ After every merge, run `mise run check`, `mise run validate-assets`, `mise run s
 
 **Conflicts:** resolve only when every conflicting file has a clear owner and the right result is obvious (e.g. two appended sections). Otherwise abort the merge and ask the owning agent to rebase its change on the current feature branch, or ask the user.
 
-**Cleanup:** after an agent branch is merged, remove its worktree and branch (`git worktree remove <path>`, then `git branch -d <name>/<agent>`; `git worktree unlock` first if it's still locked).
+**Leftovers:** at the end of a feature, `git branch --list '<name>/*'` and `git worktree list` must show nothing of this feature; list anything left in the final summary and the PR.
 
 ### Fix loop
 `NOT READY` goes back to the branch owner, in the same worktree and branch, with the tester's findings. When the owner reports `DONE` again, the tester re-reviews only what changed. Max 3 rounds; after that the orchestrator asks the user.
@@ -107,7 +111,25 @@ After every merge, run `mise run check`, `mise run validate-assets`, `mise run s
    - **Ready** PR only when every check passes and the integration verdict is `READY`.
    - Otherwise add `--draft` and list the open issues in the body.
 4. If `.github/workflows/` has a CI workflow: `gh pr checks --watch`. If CI fails, fix it through the owning agent, merge into the feature branch, push again (the PR updates), and re-check.
-5. Give the user the PR URL and a 3-line summary. **The user reviews and merges the PR.** The orchestrator never merges it.
+5. Give the user the PR URL, a 3-line summary, and any leftover `<name>/*` branches or worktrees. **The user reviews and merges the PR.** The orchestrator never merges it.
+
+---
+
+## Ownership enforcement
+
+`.claude/ownership.json` maps every agent (`agent_type`) to its git identity and the path globs it may change (`**` any depth, `*` one segment, `!` excludes). Two layers use it:
+
+| Layer | What | Covers | Guarantee |
+|---|---|---|---|
+| PreToolUse hook (`.claude/hooks/ownership.py`) | denies an `Edit`/`Write`/`NotebookEdit` outside the agent's globs, naming the owner | edits made with those tools, at write time | early warning only: **files written via Bash aren't covered** |
+| `mise run ownership-check <branch>` | checks every non-merge commit on the branch against its **author's** globs | everything committed, however it was written | the real gate: Rick runs it before every merge |
+
+- The hook reads the map and matcher only from the main checkout (`$CLAUDE_PROJECT_DIR`), so an agent can't loosen its rules from its worktree. Worktree paths are converted to repo-relative paths; paths outside the repo are allowed.
+- Unknown agent types are denied inside the repo; read-only agents (`Explore`, `Plan`) never trigger it.
+- **Human-controlled files** (`.claude/agents/`, `.claude/skills/`, `docs/workflow.md`, `.claude/ownership.*`, `.claude/hooks/`, `.claude/settings.json`): no agent may edit them. Rick gets an `ask` prompt and edits them only when the user explicitly asks; every change goes under "Needs human review" in the PR. Rick may otherwise edit only `CLAUDE.md`, `docs/briefs/` and `.github/`.
+- Authorship is self-declared (`git -c user.name/email`), so the merge check guards against mistakes, not tampering. Merge commits are skipped for the author check; files changed while resolving conflicts are listed and go into the PR.
+- Symlinks: the hook resolves paths with `realpath`, so a symlink inside the repo that points outside it counts as outside the repo and is allowed. Accepted, for the same reason: the hook catches mistakes, not deliberate workarounds; the merge check still sees what gets committed.
+- **Rick never `cd`s into a worktree.** Changing directory into an agent's worktree moves the whole session there (isolation then blocks edits to the main checkout, and new agent worktrees would branch from the wrong `HEAD`). For anything inside an agent worktree he uses `git -C <path> …` and `mise -C <path> run …` (or `--cd`), and stays in the main checkout on the feature branch.
 
 ---
 
