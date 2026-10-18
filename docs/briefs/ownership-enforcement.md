@@ -1,6 +1,6 @@
 # ownership-enforcement
 
-**Status:** in progress  <!-- planned | in progress | review | done -->
+**Status:** done  <!-- planned | in progress | review | done -->
 **Created:** 2026-10-18 · **Approved:** 2026-10-18 · **Depends on:** none
 
 ## Goal
@@ -97,9 +97,27 @@ none (`main` pushed by the user before the PR step).
 ## Status
 | Agent | Status | Branch | Verdict | Notes |
 |---|---|---|---|---|
-| plugin-coder | DONE (follow-up: `.gitattributes` glob) | `ownership-enforcement/plugin-coder` | | 4 commits; hook ~20 ms; hand tests pass |
-| plugin-tester | waiting | | | after coder DONE |
-| orchestrator | in progress | `feature/ownership-enforcement` | | brief committed |
+| plugin-coder | merged | `ownership-enforcement/plugin-coder` (deleted) | READY | 5 commits; ownership-check OK with `--human-approved` (bootstrap) |
+| plugin-tester | done | (reviewed branch) | READY | 62 tests; branch review + integration review |
+| orchestrator | done | `feature/ownership-enforcement` | | docs, CI step, follow-ups, smoke test, PR |
+
+## Results
+- **Clean-tree checks** (no untracked files): `check` BUILD SUCCESS (0 Java tests), `validate-assets` 0 files / 0 problems, `sound-check` 0 sounds, `balance-check` no config yet (pass), `tools-test` 62 tests OK.
+- **`ownership-check HEAD --base main --human-approved`:** OK, 11 commits checked, 1 merge skipped, no conflict-resolution files.
+- **Live smoke test** (throwaway worktrees, no commits):
+
+| Agent | Allowed | Forbidden → owner named |
+|---|---|---|
+| resource-pack-researcher | ✅ `docs/research/` | ⛔ `src/main/resources/` → plugin-coder |
+| model-designer | ✅ `resourcepack/…/models/` | ⛔ `tools/` → plugin-coder |
+| sound-designer | ✅ `design/sound-scripts/` | ⛔ `design/scripts/` → model-designer |
+| vfx-designer | ✅ `…/vfx/` | ⛔ plugin package root → plugin-coder |
+| balance-designer | ✅ `docs/balance/` | ⛔ `docs/briefs/` → orchestrator |
+| plugin-coder | ✅ `tools/` | ⛔ `.claude/agents/` → human-controlled |
+| plugin-tester | ✅ `src/test/java/` | ⛔ `src/main/java/` → plugin-coder |
+| orchestrator | — | ⛔ `tools/` → plugin-coder |
+
+- **Leftovers:** none (`git branch --list 'ownership-enforcement/*'` and `git worktree list` show only the feature branch).
 
 ## Merge order
 1. Orchestrator's docs/CI commits (directly on the feature branch)
