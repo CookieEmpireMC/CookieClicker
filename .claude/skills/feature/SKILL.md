@@ -50,6 +50,9 @@ For every report:
   - Note any files `ownership-check` lists as changed during conflict resolution; they go into the PR.
   - Agent memory: isolated agents (coder, designers) commit their own `.claude/agent-memory/<agent_type>/` on their branch, so it arrives with the merge. Agents without their own worktree (researcher, tester working from the main checkout) write it to the main checkout: commit those files on the feature branch credited to the agent (`--author="<name> <email>"`) when it finishes.
 
+## 4b. Cleanup pass (behaviour-preserving)
+When all agent branches with code are merged, launch the code owner(s) once more (plugin-coder; vfx-designer if its package changed) on a fresh branch `<name>/<agent>-cleanup` for a **simplify/efficiency pass**: reuse, simplification and the performance findings from Gandalf's reviews. Hard rules in the prompt: behaviour stays identical; no contract, config, message, command or public API changes; no test edits; every existing test, check and `balance-check` stays green. Gandalf reviews it like any branch (he checks behaviour is unchanged and the tests are untouched); merge it only if READY. Skip this step if there are no performance findings and nothing worth simplifying, and say so in the summary.
+
 ## 5. Integration review
 When every agent branch is merged, launch `plugin-tester` for an integration review on the feature branch. Commit its review (`docs/reviews/<date>-<name>.md`) credited to it (`--author="Gandalf <gandalf@bakery.invalid>"`). Fix anything it finds through the owners, as above.
 

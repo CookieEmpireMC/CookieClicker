@@ -56,7 +56,8 @@ The brief's **Status** line tracks the feature: `planned` (drafted, waiting for 
                     model-designer · sound-designer · vfx-designer · balance-designer · plugin-coder
 4. Review         plugin-tester per agent branch → READY / NOT READY (+ fix loop with the owner)
 5. Merge          READY agent branch → feature branch (merge --no-ff), one at a time, checks after each
-6. Integration    plugin-tester reviews the whole feature on the feature branch
+5b. Cleanup      code owner does a behaviour-preserving simplify/efficiency pass (incl. Gandalf's PERF findings), reviewed like any branch; skipped if nothing to do
+6. Integration    plugin-tester reviews the whole feature on the feature branch (incl. performance checks)
 7. Pull request   push feature/<name>, open the PR (ready or draft), wait for CI                         (review)
 8. Done           all green + READY → status done, PR marked ready; the user merges it; Rick cleans up   (done)
 ```
