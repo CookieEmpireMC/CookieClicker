@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.casperrs.cookieClicker.format.NumberFormatter.Settings;
 import java.util.List;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 class NumberFormatterTest {
@@ -131,8 +130,7 @@ class NumberFormatterTest {
         assertRoundTenths(21);
     }
 
-    /** BUG (reported to plugin-coder): from 10^22 up, 1e23 shows as "99.9 sextillion". Enable once fixed. */
-    @Disabled("BUG: NumberFormatter truncation off by one step from 1e22 (Math.pow(10, 3*group) inexact)")
+    /** Regression: from 10^22 up, 1e23 used to show as "99.9 sextillion" (inexact Math.pow); fixed with BigDecimal. */
     @Test
     void roundTenthsStayRoundAcrossAllMagnitudes() {
         assertRoundTenths(99);
