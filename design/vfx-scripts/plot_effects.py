@@ -16,7 +16,9 @@ from matplotlib import cm  # noqa: E402
 
 POINTS = Path("target/vfx-points")
 OUT = Path("design/vfx-previews")
-MARKERS = ["o", "*", "^", "s", "D", "P"]
+MARKERS = ["o", "*", "^", "s", "D", "P", "X", "v"]
+ENTITY_SUFFIXES = (" text", " crumbs", " scale")
+GHOST_SUFFIXES = ("~flight",) + ENTITY_SUFFIXES
 
 
 def load(path: Path):
@@ -33,7 +35,10 @@ def load(path: Path):
 def plot(path: Path) -> Path:
     layers = load(path)
     max_tick = max((max(l["t"]) for l in layers.values() if l["t"]), default=0)
-    total = sum(len(l["t"]) for l in layers.values())
+    # only real particle spawns count; "~flight" rows are an approximate flight path, and text/crumbs/scale rows
+    # are display-entity positions per tick
+    total = sum(len(l["t"]) for n, l in layers.items() if not n.endswith(GHOST_SUFFIXES))
+    entities = sorted({n for n in layers if n.endswith(ENTITY_SUFFIXES)})
     norm = matplotlib.colors.Normalize(vmin=0, vmax=max(max_tick, 1))
     cmap = cm.viridis
 
@@ -45,11 +50,14 @@ def plot(path: Path) -> Path:
     for i, (name, l) in enumerate(sorted(layers.items())):
         marker = MARKERS[i % len(MARKERS)]
         colors = cmap(norm(l["t"]))
-        label = f"{name} ({len(l['t'])} pts)"
+        ghost = name.endswith("~flight")
+        size, alpha = (7, 0.35) if ghost else (24, 0.95)
+        label = f"{name} ({len(l['t'])} {'samples' if name.endswith(GHOST_SUFFIXES) else 'particles'})"
         # Minecraft y is up: plot it on matplotlib's z axis in 3D
-        ax3d.scatter(l["x"], l["z"], l["y"], c=colors, marker=marker, s=22, depthshade=False, label=label)
-        ax_top.scatter(l["x"], l["z"], c=colors, marker=marker, s=26, label=label)
-        ax_side.scatter(l["x"], l["y"], c=colors, marker=marker, s=26, label=label)
+        ax3d.scatter(l["x"], l["z"], l["y"], c=colors, marker=marker, s=size, alpha=alpha, depthshade=False,
+                     label=label)
+        ax_top.scatter(l["x"], l["z"], c=colors, marker=marker, s=size, alpha=alpha, label=label)
+        ax_side.scatter(l["x"], l["y"], c=colors, marker=marker, s=size, alpha=alpha, label=label)
 
     # one block for scale
     for ax in (ax_top, ax_side):
@@ -64,7 +72,7 @@ def plot(path: Path) -> Path:
     lim = 1.6
     ax3d.set_xlim(-lim, lim)
     ax3d.set_ylim(-lim, lim)
-    ax3d.set_zlim(0, 2 * lim)
+    ax3d.set_zlim(-lim / 2, 2 * lim)
     ax3d.set_title("3D")
     ax_top.set_title("top (x / z)")
     ax_top.set_xlabel("x")
@@ -76,7 +84,8 @@ def plot(path: Path) -> Path:
 
     sm = cm.ScalarMappable(norm=norm, cmap=cmap)
     fig.colorbar(sm, ax=[ax3d, ax_top, ax_side], shrink=0.8, label="tick")
-    fig.suptitle(f"{path.stem}: {total} particles over {max_tick + 1} tick(s)")
+    extra = f" + display entities ({', '.join(entities)})" if entities else ""
+    fig.suptitle(f"{path.stem}: {total} particles over {max_tick + 1} tick(s){extra}")
     OUT.mkdir(parents=True, exist_ok=True)
     out = OUT / f"{path.stem}.png"
     fig.savefig(out, dpi=110)
