@@ -19,32 +19,11 @@ The orchestrator is the only one who writes feature briefs, merges branches into
 
 ## The feature brief: the contract everyone builds against
 
-Before launching agents for a feature, the orchestrator writes `docs/briefs/<feature>.md` and commits it to `main`:
+Every feature starts with a brief: `docs/briefs/<feature>.md`, copied from `docs/briefs/TEMPLATE.md` (goal, player story, acceptance criteria, out of scope, assets needed, balance impact, research needed, open questions, contract, tasks, status, merge order, human review). The easiest way is the **`/feature <name> <description>`** skill: it drafts the brief, waits for the user's approval, commits it to `main`, and then runs the phases below.
 
-```markdown
-# <feature>
-Goal: …
-Depends on: <other features whose code/API must already be on main>, or none
-Needs research: yes (docs/research/<topic>.md) / no
+The brief's **Status** line tracks the feature: `planned` (drafted, waiting for approval) → `in progress` (agents running) → `review` (all branches READY, waiting for merge approval) → `done` (merged and integration-reviewed). The **Status** table inside tracks each agent.
 
-## Contract (fixed names; change only via the orchestrator)
-| Kind | ID | Owner | Notes |
-|---|---|---|---|
-| item model | cookieclicker:big_cookie | model-designer | ItemDisplay, ~1 block |
-| sound event | cookie_click | sound-designer | key cookieclicker:ui.cookie_click, fallback minecraft:block.wood.hit |
-| effect | cookie_click | vfx-designer | placeholders: amount |
-| message key | cookie.click-hud | plugin-coder | in messages.yml |
-
-## Tasks
-| Agent | Task | Branch |
-|---|---|---|
-
-## Status
-| Agent | Status | Branch | Verdict |
-|---|---|---|---|
-```
-
-- **Contract first.** Everyone uses exactly these IDs. That's what lets designers and the coder work in parallel: the coder references `cookie_click` before the sound exists, and the sound-designer delivers exactly that name.
+- **Contract first.** Everyone uses exactly the IDs in the brief's Contract section. That's what lets designers and the coder work in parallel: the coder references `cookie_click` before the sound exists, and the sound-designer delivers exactly that name.
 - Agents **never edit the brief**. If an ID is wrong or missing, propose the change under `CONTRACT CHANGES` in your report; the orchestrator updates the brief.
 - Only the orchestrator updates the **Status** table, based on reports.
 
@@ -53,14 +32,14 @@ Needs research: yes (docs/research/<topic>.md) / no
 ## Phases of a feature
 
 ```
-1. Brief          orchestrator writes docs/briefs/<f>.md (user approves)
+1. Brief          /feature drafts docs/briefs/<f>.md; user approves  (status: planned)
 2. Research       researcher → docs/research/<topic>.md        gate: note on main (if needed)
-3. Build          in parallel, each in its own worktree:       gate: all DONE
+3. Build          in parallel, each in its own worktree:       gate: all DONE   (status: in progress)
                     model-designer · sound-designer · vfx-designer
                     balance-designer · plugin-coder
-4. Review         plugin-tester per branch → READY / NOT READY (+ fix loop with the owner)
+4. Review         plugin-tester per branch → READY / NOT READY (+ fix loop)   (status: review)
 5. Merge          orchestrator merges READY branches one at a time, in order, after the user approves
-6. Integration    plugin-tester reviews main for the whole feature
+6. Integration    plugin-tester reviews main for the whole feature        (status: done)
 ```
 
 ### Start conditions (gates)

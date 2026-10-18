@@ -8,7 +8,7 @@ The target version is whatever `paper-api` version `pom.xml` declares: either **
 | File | Covers | Read when |
 |---|---|---|
 | `workflow.md` | who runs when: feature briefs, start gates, merge order, fix loop, report format | always, before launching or acting as any agent |
-| `briefs/<feature>.md` | feature brief: goal, contract (fixed IDs), tasks, status (written by the orchestrator) | before working on that feature |
+| `briefs/<feature>.md` | feature brief from `briefs/TEMPLATE.md`: goal, player story, acceptance criteria, contract (fixed IDs), tasks, status (planned / in progress / review / done); start one with `/feature <name> <description>` | before working on that feature |
 | `paper-121x-reference.md` | Java 21, Adventure 4, item model changes across 1.21.x, rules, supporting both versions in one jar | `pom.xml` has `1.21.x-R0.1-SNAPSHOT` |
 | `paper-26x-reference.md` | Java 25, new version strings, unobfuscated server, Adventure 5, world keys, API changes 26.1–26.3, rules | `pom.xml` has `26.x.build.…` |
 | `toolchain.md` | mise: pinned Java/Maven/Python per target, build/test/asset tasks, worktree trust | before any build or test |
@@ -71,7 +71,7 @@ The orchestrator commits as Such Merge Doge (`git -c user.name="Such Merge Doge"
 
 Flow (details and start gates in `docs/workflow.md`): orchestrator writes the feature brief → researcher (in the background) → model-designer + sound-designer + vfx-designer + balance-designer + coder in parallel, each in its own worktree → tester per branch → orchestrator merges in order → tester integration review.
 
-**The main session is the orchestrator:** it writes `docs/briefs/<feature>.md` before launching agents, launches each agent only when its gate in `docs/workflow.md` is met, commits research notes, merges `READY` branches one at a time after the user approves (assets → vfx → coder), runs `mise run check`, `validate-assets` and `sound-check` on `main` after each merge, updates the brief's status table, and routes every `REQUESTS` / `CONTRACT CHANGES` item from agent reports to the right owner.
+**The main session is the orchestrator** (run a feature with `/feature`, see `.claude/skills/feature/SKILL.md`): it writes `docs/briefs/<feature>.md` and gets the user's approval before launching agents, launches each agent only when its gate in `docs/workflow.md` is met, commits research notes, merges `READY` branches one at a time after the user approves (assets → vfx → coder), runs `mise run check`, `validate-assets` and `sound-check` on `main` after each merge, updates the brief's status table, and routes every `REQUESTS` / `CONTRACT CHANGES` item from agent reports to the right owner.
 
 ### Asset ownership
 - **model-designer:** models, item model definitions, textures, fonts/glyphs, `pack.mcmeta`, `itemsadder/`, `modelengine/`
