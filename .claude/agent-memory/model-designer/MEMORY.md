@@ -1,0 +1,2 @@
+- [Sandbox Bash limits](sandbox_bash.md) — no shell vars/loops in Bash; use literal paths, Edit/Write, scratch Python scripts
+- [Pack facts 26.3](project_pack_facts.md) — pack format 97.1, cookie model setup, asset tooling and spec locations

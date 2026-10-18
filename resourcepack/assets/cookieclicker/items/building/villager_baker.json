@@ -1,0 +1,6 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "cookieclicker:item/building/villager_baker"
+  }
+}
