@@ -13,7 +13,7 @@ Reviewer: Gandalf. Target: not a plugin feature (Python tooling; `pom.xml` unaff
 - Secrets: token only returned to caller; `redact()` scrubs JWT and token from remote messages; http accepted only for loopback hosts (`127.0.0.1.evil.com`, `example.com`, `api.github.com` over http, ftp all refused before any request).
 
 ## Tests
-`tools/github_app/test_github_app.py`: 63 new tests; full `tools-test` 112 run, OK, 1 expected failure (the bug below). `mise run test`, `check`, `validate-assets`, `sound-check`, `balance-check` pass (no Java/assets/balance content yet). `ownership-check`: OK (3 commits).
+`tools/github_app/test_github_app.py`: 50 new test methods; full `tools-test` 112 run, OK, 1 expected failure (the bug below). `mise run test`, `check`, `validate-assets`, `sound-check`, `balance-check` pass (no Java/assets/balance content yet). `ownership-check`: OK (3 commits).
 
 ## Findings
 1. LOW (plugin-coder) `tools/github_app/app.py` `REPO_PATTERN`: `[A-Za-z0-9_.-]+` accepts `..`, so `--repo ../..` builds `/repos/../../pulls` (sent after the token is minted). Only the user/Rick supplies `--repo`, and the token goes to the configured host anyway, so not blocking. Fix: reject segments that are `.` or `..` (or consist only of dots). Test `test_dot_segments_in_repo_rejected` is `expectedFailure`; remove the decorator when fixed.
