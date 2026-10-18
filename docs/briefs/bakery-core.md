@@ -70,12 +70,14 @@ For the researcher (Citation Cindy), one note per topic in `docs/research/`, eac
 | font glyph | font `cookieclicker:hud`, char `` (cookie) | model-designer | action bar |
 | sound event | `cookie_click`, `cookie_crit`, `purchase`, `cant_afford` | sound-designer | keys `cookieclicker:ui.<event>`; vanilla fallbacks in `sounds.yml` |
 | effect | `cookie_click` (crumbs + "+N"), `cookie_crit` (golden sparkles + big number), `purchase` | vfx-designer | placeholder `amount`; per-player |
-| vfx API | `Effects.play(id, loc, viewer, placeholders)`, `Effects.pop(display, viewer)` | vfx-designer | squash/pop on an existing display |
+| vfx API | `Effects.play(id, loc, viewer, placeholders)`, `Effects.pop(display, viewer)` | vfx-designer | pop = scale-only read-modify-write on an existing display (≈2+2+3 ticks, interpolation delay 0), never overwrites the caller's spin/bob rotation; all effect entities per-player, non-persistent, tagged, capped |
 | building | `villager_baker`, `wheat_farm` | balance-designer | `buildings.yml` |
 | balance keys | `click.base-power`, `click.crit-chance`, `click.crit-multiplier` | balance-designer | `upgrades.yml` / model.md |
 | command | `/bakery station set\|remove`, `/bakery reload` | plugin-coder | permission `cookieempire.admin` |
-| config | `config.yml`: `database.*`, `resource-pack.url/sha1/required/prompt`, `hud.*`, `station.*`; `stations.yml` | plugin-coder | |
-| messages | `messages.yml` (HUD, panel rows, number suffixes, commands) | plugin-coder | MiniMessage |
+| config | `config.yml`: `database.*`, `resource-pack.enabled/url/sha1/required/prompt`, `hud.*`, `station.view-distance`, `station.refresh-ticks`, `station.cookie.*` (scale, bob, spin, hitbox), `station.panel.*` (layout, colours, hitboxes), `station.panel.icons.<building>.fallback-material`; `stations.yml` | plugin-coder | fallback materials live here, not in Stan's numbers-only `buildings.yml` |
+| messages | `messages.yml`: `hud.with-pack` / `hud.no-pack`, `panel.header`, `panel.row.affordable` / `panel.row.unaffordable`, `buildings.<id>.name`, number suffixes, commands | plugin-coder | MiniMessage |
+| pack files | `items/building/villager_baker.json`, `items/building/wheat_farm.json` (+ models/textures), `font/hud.json`, `textures/font/hud_cookie.png`; 3D `models/item/cookie.json` replaces the flat one; only `cookieclicker` namespace | model-designer | no panel background asset needed (research: world-panel) |
+| research | `docs/research/{display-cookie,per-player-visibility,world-panel,hud-glyph,resource-pack}.md` | resource-pack-researcher | merged; key rules in each Hand-off |
 
 ## Tasks
 | Agent | Task | Needs (gate) | Branch |
