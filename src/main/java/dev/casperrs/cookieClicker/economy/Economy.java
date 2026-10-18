@@ -68,6 +68,25 @@ public final class Economy {
         return SafeMath.sanitize(owned * b.baseCps() * mult);
     }
 
+    /**
+     * What one more of {@code buildingId} would add to {@link #totalCps}:
+     * {@code base_cps × Π(bought building-multiplier for b) × Π(bought global-multiplier)}. For the shop panel.
+     */
+    public double nextBuildingCps(CookiePouch pouch, String buildingId) {
+        BuildingDef b = config.buildings().get(buildingId);
+        if (b == null) {
+            return 0;
+        }
+        double mult = 1;
+        for (String uid : pouch.upgradesView()) {
+            UpgradeDef u = config.upgrades().get(uid);
+            if (u != null && u.type() == EffectType.BUILDING_MULTIPLIER && buildingId.equals(u.building())) {
+                mult *= u.value();
+            }
+        }
+        return SafeMath.sanitize(b.baseCps() * mult * product(pouch, EffectType.GLOBAL_MULTIPLIER));
+    }
+
     /** {@code Σ building_cps × Π(bought global-multiplier)}. */
     public double totalCps(CookiePouch pouch) {
         double total = 0;
