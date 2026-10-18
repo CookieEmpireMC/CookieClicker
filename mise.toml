@@ -96,3 +96,11 @@ run = "python tools/review.py"
 [tasks.team]
 description = "Show commits per team member (agent identities)"
 run = "git shortlog -sn --all"
+
+[tasks.ownership-check]
+description = "Check every commit on <branch> against .claude/ownership.json: mise run ownership-check <branch> [--base <feature-branch>]"
+run = "python tools/ownership/check.py"
+
+[tasks.tools-test]
+description = "Run the Python tool tests (tools/**/test_*.py); passes when there are none yet"
+run = "python -m unittest discover -s tools -p 'test_*.py' || { rc=$?; [ $rc -eq 5 ] && echo 'No tool tests found' && exit 0; exit $rc; }"
