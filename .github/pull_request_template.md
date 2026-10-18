@@ -1,3 +1,4 @@
+<!-- Opened by cookie-bakery[bot] via `mise run pr-open`; the user reviews, approves and merges. -->
 ## Summary
 <!-- What the feature does, in player terms. -->
 

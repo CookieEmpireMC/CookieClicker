@@ -107,7 +107,8 @@ After every merge, run `mise run check`, `mise run validate-assets`, `mise run s
 1. `gh auth status`: if not logged in, tell the user to run `gh auth login` and stop.
 2. Push only the feature branch: `git push -u origin feature/<name>`. Never push `main`, never force-push.
 3. Fill in `.github/pull_request_template.md` (summary, brief + acceptance criteria, team contributions from `git log main..HEAD --format="%an: %s"`, checks, tester verdict, needs human review, how to test in-game, follow-ups) into a body file, then:
-   `gh pr create --base main --head feature/<name> --title "<title>" --body-file <file>`
+   `mise run pr-open --head feature/<name> --base main --title "<title>" --body-file <file>`
+   This opens the PR as the `cookie-bakery[bot]` GitHub App (token from `mise run pr-token`; config in `~/.config/cookieclicker/github-app.env`), so the user can approve it: `main`'s ruleset needs 1 approval and authors can't approve their own PRs. Rick runs it under the user's allow rule `Bash(mise run pr-open:*)`. If it fails or is denied, stop and give the user the exact `! mise run pr-open …` command; never fall back to `gh pr create` with the user's account.
    - **Ready** PR only when every check passes and the integration verdict is `READY`.
    - Otherwise add `--draft` and list the open issues in the body.
 4. If `.github/workflows/` has a CI workflow: `gh pr checks --watch`. If CI fails, fix it through the owning agent, merge into the feature branch, push again (the PR updates), and re-check.
