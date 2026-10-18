@@ -37,6 +37,11 @@ public final class YamlFiles {
         if (!file.isFile() && plugin.getResource(name) != null) {
             plugin.saveResource(name, false);
         }
+        return load(file, name);
+    }
+
+    /** Loads {@code file} (reported as {@code name}); empty when it doesn't exist. */
+    public static Optional<YamlConfiguration> load(File file, String name) throws BadYamlException {
         if (!file.isFile()) {
             return Optional.empty();
         }
