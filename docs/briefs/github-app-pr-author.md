@@ -1,6 +1,6 @@
 # github-app-pr-author
 
-**Status:** in progress  <!-- planned | in progress | review | done -->
+**Status:** done  <!-- planned | in progress | review | done -->
 **Created:** 2026-10-18 · **Depends on:** ownership-enforcement (merged, PR #2)
 
 ## Goal
@@ -66,9 +66,15 @@ none. Facts for the coder (checked 2026-10-18):
 ## Status
 | Agent | Status | Branch | Verdict | Notes |
 |---|---|---|---|---|
-| plugin-coder | in progress | `github-app-pr-author/plugin-coder` | | launched |
-| plugin-tester | planned | | | |
-| orchestrator | in progress | `feature/github-app-pr-author` | | brief approved; pr-open allow rule added by the user |
+| plugin-coder | merged | `github-app-pr-author/plugin-coder` (deleted) | READY | 4 commits incl. fix round 1 (dot segments, trailing newline) |
+| plugin-tester | done | (reviewed branch) | READY | 51 tests (113 tool tests total); branch review, re-review, integration review; first memory note |
+| orchestrator | done | `feature/github-app-pr-author` | | docs, agent memory scope, merge, PR via `pr-open` |
+
+## Results
+- **Clean-tree checks:** `check` BUILD SUCCESS (0 Java tests), `validate-assets` 0 files, `sound-check` 0 sounds, `balance-check` no config (pass), `tools-test` 113 tests OK.
+- **`ownership-check HEAD --base main --human-approved`:** 15 commits, 1 merge skipped; one expected flag: the user's own commit `9545bb7` (allow rule in `.claude/settings.json`, author not in the ownership map).
+- **Agent memory:** lands in the main checkout (`$CLAUDE_PROJECT_DIR/.claude/agent-memory/<agent_type>/`), committed by Rick credited to the agent.
+- **Leftovers:** none for this feature (`cookie-art/model-designer` worktree is unrelated and kept on purpose).
 
 ## Merge order
 1. Orchestrator's docs commits
