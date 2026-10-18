@@ -162,9 +162,12 @@ public final class Effects {
      * effect (leftovers from a crash). {@link #load()} already calls this; chunks loaded later are swept by the
      * engine's listener.
      *
-     * @return how many entities were removed
+     * @return how many entities were removed (0 when called off the main thread, which is logged once and skipped)
      */
     public int sweepLeftovers() {
+        if (!onMainThread("sweepLeftovers()")) {
+            return 0;
+        }
         int removed = 0;
         for (World world : plugin.getServer().getWorlds()) {
             for (Entity entity : world.getEntities()) {
@@ -302,8 +305,7 @@ public final class Effects {
     // ---- internals --------------------------------------------------------------------------------------------
 
     private boolean ready(String what) {
-        if (!Bukkit.isPrimaryThread()) {
-            warnOnce("async", "Effects." + what + " was called off the main thread; skipped (effects are main-thread only)");
+        if (!onMainThread(what)) {
             return false;
         }
         if (!loaded) {
@@ -311,6 +313,14 @@ public final class Effects {
             return false;
         }
         return true;
+    }
+
+    private boolean onMainThread(String what) {
+        if (Bukkit.isPrimaryThread()) {
+            return true;
+        }
+        warnOnce("async", "Effects." + what + " was called off the main thread; skipped (effects are main-thread only)");
+        return false;
     }
 
     private static TagResolver resolver(Map<String, String> placeholders) {
