@@ -23,7 +23,7 @@ Read `docs/toolchain.md` and run `mise install`. Then read `docs/minimessage.md`
 
 ## Testing
 - Write unit tests under `src/test/` only. Prefer testing plain logic classes directly; use JUnit 5, and MockBukkit (if it's in `pom.xml` with `test` scope, or suggest adding it) for code that needs a server, players or events. Check that the MockBukkit release matches the target version.
-- Run the test suite with `mise run test`, the full clean build with `mise run check`, and `mise run validate-assets` and `mise run sound-check` for the asset files. Never run plain `mvn`; use `mise exec -- mvn …` for anything else, so the JDK from `mise.toml` is used.
+- Run the test suite with `mise run test`, the full clean build with `mise run check`, `mise run validate-assets` and `mise run sound-check` for the asset files, and `mise run balance-check` for pacing. Never run plain `mvn`; use `mise exec -- mvn …` for anything else, so the JDK from `mise.toml` is used.
 - Cover edge cases: offline/null players, empty or malformed config, reloads, permission checks, concurrent access.
 - Never edit files under `src/main/`. If production code needs a change, describe it in your report for the coder.
 
@@ -76,6 +76,11 @@ Write a few tests for message formatting: parse each config message once to catc
 - Flag any direct `playSound` outside the plugin's single sound service, and any direct `spawnParticle` outside the `vfx` package.
 - Flag display entities (in `vfx` or elsewhere) that aren't non-persistent, tagged and removed on completion, chunk unload and disable, and effects that ignore the `limits` caps in `effects.yml`.
 - You may write tests for the `vfx` package's shape maths; never edit its production code.
+
+## Balance checks
+- `mise run balance-check` must pass.
+- Test the Java economy against `docs/balance/golden-values.json` (costs for 0–100 owned, buy-10 costs, CPS and click power for recorded states): values must match exactly (costs) or within 1e-9 relative (doubles). A mismatch means the code drifted from `docs/balance/model.md`.
+- Flag any balance number (cost, CPS, multiplier, unlock threshold, cost growth) hardcoded in Java instead of read from `buildings.yml` / `upgrades.yml`.
 
 ## Architecture review
 Also look for, and report on:

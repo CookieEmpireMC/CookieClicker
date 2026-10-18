@@ -78,6 +78,16 @@ done
 description = "Zip resourcepack/ to target/cookieclicker-pack.zip and print its SHA-1"
 run = "python tools/pack.py"
 
+[tasks.balance]
+description = "Simulate pacing for all profiles; write docs/balance/report-<date>.md, plots and golden values"
+depends = ["assets-deps"]
+run = "python tools/balance/main.py report"
+
+[tasks.balance-check]
+description = "Simulate pacing and fail if any target in docs/balance/targets.md is violated"
+depends = ["assets-deps"]
+run = "python tools/balance/main.py check"
+
 [tasks.team]
 description = "Show commits per team member (agent identities)"
 run = "git shortlog -sn --all"

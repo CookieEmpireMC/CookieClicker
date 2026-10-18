@@ -36,6 +36,9 @@ Last checked: 2026-10-18
 | `mise run sound-check` | measures every `.ogg` (duration, channels, rate, peak, LUFS/RMS); fails on stereo outside `stereo/`, peaks above -1 dBFS, leading silence, an abrupt (unfaded) ending or a wrong format; loudness off-target is a warning (`tools/sound_check.py`) |
 | `mise run vfx-previews` | runs the `*PreviewExport` JUnit tests (real shape code → `target/vfx-points/*.csv`), then `design/vfx-scripts/*.py` plots them to `design/vfx-previews/` |
 | `mise run validate-assets` | checks every JSON/YAML/`.mcmeta`/`.bbmodel` parses; item definitions, models, textures and `sounds.json` entries resolve; `sounds.yml` keys exist, have a `minecraft:` fallback, volume ≤ 1.0 and a valid `source`; subtitle keys exist in `lang/en_us.json`; `effects.yml` presets have layers (`tools/validate_assets.py`) |
+| `mise run balance` | simulates idle/casual/active play against `buildings.yml` + `upgrades.yml`; writes `docs/balance/report-<date>.md`, plots and `golden-values.json` (`tools/balance/`) |
+| `mise run balance-check` | same simulation, writes nothing, fails if a target in `docs/balance/targets.md` is violated; passes when no balance config exists yet |
+| `mise run team` | commits per team member (`git shortlog -sn --all`) |
 | `mise run pack` | zips `resourcepack/` reproducibly to `target/cookieclicker-pack.zip` and prints its SHA-1 (`tools/pack.py`) |
 
 

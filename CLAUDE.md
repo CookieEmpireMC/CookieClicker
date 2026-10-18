@@ -17,6 +17,9 @@ The target version is whatever `paper-api` version `pom.xml` declares: either **
 | `architecture.md` | package structure & conventions (maintained by plugin-tester) | always, if it exists |
 | `research/*.md` | resource pack research notes (written by resource-pack-researcher) | before building a researched feature |
 | `reviews/*.md` | test & review reports (written by plugin-tester) | after a review |
+| `balance/model.md` | the economy formula contract (costs, CPS, clicks, unlocks) | before any economy code |
+| `balance/targets.md` | the user's pacing targets (editable YAML block) | before tuning; when `balance-check` fails |
+| `balance/report-*.md`, `balance/golden-values.json` | simulator reports; exact expected values for the Java economy | after tuning; when testing economy code |
 
 ## Design specs (in `design/`)
 
@@ -35,6 +38,7 @@ The target version is whatever `paper-api` version `pom.xml` declares: either **
 |---|---|---|
 | `src/main/resources/sounds.yml` | game event → sound key, vanilla fallback, volume, pitch range, source | sound-designer |
 | `src/main/resources/effects.yml` | effect presets (layers) and performance `limits` | vfx-designer |
+| `src/main/resources/buildings.yml`, `upgrades.yml` | all balance values (format in `docs/balance/model.md`) | balance-designer |
 
 ## Agents (in `dot-claude`)
 
@@ -44,6 +48,7 @@ The target version is whatever `paper-api` version `pom.xml` declares: either **
 | `model-designer` | creates assets: models, item model definitions, .bbmodel, ItemsAdder YAML, placeholder textures, fonts/glyphs, pack.mcmeta | `resourcepack/` (see ownership), `itemsadder/`, `modelengine/`, `design/` (its files) |
 | `sound-designer` | creates original .ogg sounds (synthesized or processed CC0), sounds.json, subtitles, sounds.yml | `resourcepack/assets/<ns>/{sounds,sounds.json,lang}`, `src/main/resources/sounds.yml`, `design/sound-*`, `design/sounds.md`, `design/CREDITS.md` |
 | `vfx-designer` | builds the effects engine (particles, display-entity effects) and its presets | `src/main/java/…/vfx/` + its tests, `src/main/resources/effects.yml`, particle files in the pack, `design/vfx-*`, `design/effects.md` |
+| `balance-designer` | economy numbers, formula contract, pacing simulator and reports | `buildings.yml`, `upgrades.yml`, `tools/balance/`, `docs/balance/` |
 | `plugin-coder` | implements features | `src/main/` except designer-owned files, `pom.xml`, `plugin.yml`, other config |
 | `plugin-tester` | writes/runs tests, reviews architecture, gives a merge verdict | `src/test/`, `docs/reviews/`, `docs/architecture.md` |
 
@@ -64,7 +69,7 @@ Everyone commits under their own name, per commit (`git -c user.name=… -c user
 
 The orchestrator commits as Such Merge Doge (`git -c user.name="Such Merge Doge" -c user.email="doge@bakery.invalid" …`), including research notes and integration reviews on behalf of agents without a shell or branch (credited with `--author`). Merges to `main` happen only after the user approves them.
 
-Flow (details and start gates in `docs/workflow.md`): orchestrator writes the feature brief → researcher (in the background) → model-designer + sound-designer + vfx-designer + coder in parallel, each in its own worktree → tester per branch → orchestrator merges in order → tester integration review.
+Flow (details and start gates in `docs/workflow.md`): orchestrator writes the feature brief → researcher (in the background) → model-designer + sound-designer + vfx-designer + balance-designer + coder in parallel, each in its own worktree → tester per branch → orchestrator merges in order → tester integration review.
 
 **The main session is the orchestrator:** it writes `docs/briefs/<feature>.md` before launching agents, launches each agent only when its gate in `docs/workflow.md` is met, commits research notes, merges `READY` branches one at a time after the user approves (assets → vfx → coder), runs `mise run check`, `validate-assets` and `sound-check` on `main` after each merge, updates the brief's status table, and routes every `REQUESTS` / `CONTRACT CHANGES` item from agent reports to the right owner.
 
@@ -72,6 +77,7 @@ Flow (details and start gates in `docs/workflow.md`): orchestrator writes the fe
 - **model-designer:** models, item model definitions, textures, fonts/glyphs, `pack.mcmeta`, `itemsadder/`, `modelengine/`
 - **sound-designer:** `.ogg` files, `sounds.json`, subtitle lang files, `sounds.yml`
 - **vfx-designer:** the `vfx` package and its tests, `effects.yml`, particle definitions and textures
+- **balance-designer:** `buildings.yml`, `upgrades.yml` (later golden cookie/prestige values), `tools/balance/`, `docs/balance/`
 - **plugin-coder:** everything else in `src/main/` (incl. wiring the `Effects` service and the single sound service that reads `sounds.yml`), `pom.xml`, `plugin.yml`, other config
 - Nobody edits another owner's files; ask the owner instead.
 
@@ -80,7 +86,8 @@ Every agent that writes code or assets runs in its own worktree (`isolation: "wo
 ## Ground rules
 
 - Detect the target version from `pom.xml` first, and follow only that version's reference.
-- Java, Maven and Python are pinned in `mise.toml` (Java 21 for 1.21.x, Java 25 for 26.x). Build with `mise run build`, test with `mise run test`, full check with `mise run check`, check assets with `mise run validate-assets` and `mise run sound-check`, zip the pack with `mise run pack`. Never run plain `mvn`; use `mise exec -- mvn …`.
+- Java, Maven and Python are pinned in `mise.toml` (Java 21 for 1.21.x, Java 25 for 26.x). Build with `mise run build`, test with `mise run test`, full check with `mise run check`, check assets with `mise run validate-assets` and `mise run sound-check`, check pacing with `mise run balance-check`, zip the pack with `mise run pack`. Never run plain `mvn`; use `mise exec -- mvn …`.
 - Never shade Paper, Adventure/MiniMessage, ItemsAdder or ModelEngine; they use `provided` scope.
 - Never hardcode sounds or particles in code: sounds go through `sounds.yml` events, effects through `Effects.play(id)`.
+- Never set balance values in code: costs, CPS, multipliers and unlocks come only from `buildings.yml` / `upgrades.yml`, with the maths from `docs/balance/model.md`.
 - If a feature needs something the target version or an integration doesn't support, stop and report it instead of working around it.
