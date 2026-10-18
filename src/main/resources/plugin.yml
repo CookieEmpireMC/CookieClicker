@@ -1,0 +1,6 @@
+name: CookieClicker
+version: '${version}'
+
+main: dev.casperrs.cookieClicker.CookieClicker
+api-version: '26.3'
+load: POSTWORLD
