@@ -1,0 +1,29 @@
+{
+  "ui.cookie_click": {
+    "subtitle": "subtitles.cookieclicker.cookie_click",
+    "sounds": [
+      "cookieclicker:ui/cookie_click_1",
+      "cookieclicker:ui/cookie_click_2",
+      "cookieclicker:ui/cookie_click_3",
+      "cookieclicker:ui/cookie_click_4"
+    ]
+  },
+  "ui.cookie_crit": {
+    "subtitle": "subtitles.cookieclicker.cookie_crit",
+    "sounds": [
+      "cookieclicker:ui/cookie_crit"
+    ]
+  },
+  "ui.purchase": {
+    "subtitle": "subtitles.cookieclicker.purchase",
+    "sounds": [
+      "cookieclicker:ui/purchase"
+    ]
+  },
+  "ui.cant_afford": {
+    "subtitle": "subtitles.cookieclicker.cant_afford",
+    "sounds": [
+      "cookieclicker:ui/cant_afford"
+    ]
+  }
+}
