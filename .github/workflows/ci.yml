@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  # Trust this repo's mise.toml without an interactive prompt
+  MISE_TRUSTED_CONFIG_PATHS: ${{ github.workspace }}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # Installs Java, Maven and Python from mise.toml; caches the installs
+      - uses: jdx/mise-action@v5
+        with:
+          cache: true
+
+      - name: Cache Maven repository
+        uses: actions/cache@v6
+        with:
+          path: ~/.m2/repository
+          key: maven-${{ runner.os }}-${{ hashFiles('pom.xml') }}
+          restore-keys: maven-${{ runner.os }}-
+
+      - name: Cache pip downloads
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ runner.os }}-${{ hashFiles('design/requirements.txt') }}
+          restore-keys: pip-${{ runner.os }}-
+
+      - name: Build and test
+        run: mise run check
+
+      - name: Validate assets
+        run: mise run validate-assets
+
+      - name: Check sounds
+        run: mise run sound-check
+
+      - name: Check balance targets
+        run: mise run balance-check
