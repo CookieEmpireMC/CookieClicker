@@ -5,7 +5,7 @@ argument-hint: <feature-name> <description of what you want>
 disable-model-invocation: true
 ---
 
-You are the orchestrator (git identity: **Such Merge Doge**, `doge@bakery.invalid`) running the feature workflow from `docs/workflow.md`.
+You are the orchestrator (git identity: **Merge Doge**, `doge@bakery.invalid`) running the feature workflow from `docs/workflow.md`.
 
 Feature name: `$0`
 Full request: $ARGUMENTS
@@ -18,12 +18,12 @@ Full request: $ARGUMENTS
 
 ## 2. After approval
 1. Commit the brief on `main`:
-   `git -c user.name="Such Merge Doge" -c user.email="doge@bakery.invalid" commit -m "Add <name> feature brief" -m "<one line>" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"`
+   `git -c user.name="Merge Doge" -c user.email="doge@bakery.invalid" commit -m "Add <name> feature brief" -m "<one line>" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"`
 2. Set **Status: in progress** in the brief (and commit it the same way whenever the status table changes meaningfully).
 
 ## 3. Launch agents by their gates
 Follow the start conditions in `docs/workflow.md`. Launch everything that can run in parallel in a single message, in the background.
-- **Research first** if "Research needed" isn't "none": launch `resource-pack-researcher` (no worktree) with the brief path and the questions. When its note lands, commit it credited to Citation Needed Cindy (`--author="Citation Needed Cindy <cindy@bakery.invalid>"`, committer Such Merge Doge) and fold its proposed contract IDs into the brief (commit).
+- **Research first** if "Research needed" isn't "none": launch `resource-pack-researcher` (no worktree) with the brief path and the questions. When its note lands, commit it credited to Citation Cindy (`--author="Citation Cindy <cindy@bakery.invalid>"`, committer Merge Doge) and fold its proposed contract IDs into the brief (commit).
 - **Then, in parallel**, each with `isolation: "worktree"`, for every agent whose task row isn't empty and whose gate is met: `model-designer`, `sound-designer`, `vfx-designer`, `balance-designer`, `plugin-coder`. If the coder needs another owner's Java API that isn't on `main` yet (e.g. the vfx `Effects` service), hold the coder until that branch is merged.
 - Every agent prompt contains: the feature name, the brief path, its task row and the contract rows it owns, the gate it was launched on, and these instructions: "Start by renaming your worktree branch: `git branch -m <feature>/<agent>`. Follow your agent file (including its Commits section) and docs/workflow.md. End with the report format from docs/workflow.md."
 
@@ -32,7 +32,7 @@ For every report:
 - Update the brief's **Status** table (agent, status, branch, notes).
 - `BLOCKED`: note what it's waiting for and re-launch the agent when that gate is met.
 - `REQUESTS` / `CONTRACT CHANGES`: route each to its owner. Change the contract only if it doesn't break someone else's finished work; otherwise ask the user.
-- `DONE`: launch `plugin-tester` for that branch, telling it the worktree path and branch from the agent's result (it works there, commits its tests to that branch as You-Shall-Not-Pass Gandalf). Set the agent's row to "review".
+- `DONE`: launch `plugin-tester` for that branch, telling it the worktree path and branch from the agent's result (it works there, commits its tests to that branch as Gandalf). Set the agent's row to "review".
 - Tester `NOT READY`: send the findings back to the branch owner (continue the same agent, or re-launch in the same worktree). At most 3 rounds, then ask the user.
 
 When every branch is `READY`, set **Status: review** in the brief.
@@ -47,6 +47,6 @@ Give the user a summary:
 Then **ask for approval to merge**. Never merge without it.
 
 ## 6. After merge approval
-Merge one branch at a time, in order, as Such Merge Doge:
-`git -c user.name="Such Merge Doge" -c user.email="doge@bakery.invalid" merge --no-ff <branch> -m "Merge <branch>" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"`
+Merge one branch at a time, in order, as Merge Doge:
+`git -c user.name="Merge Doge" -c user.email="doge@bakery.invalid" merge --no-ff <branch> -m "Merge <branch>" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"`
 After each merge run `mise run check`, `mise run validate-assets`, `mise run sound-check` and `mise run balance-check`; stop and report if one fails. Then launch `plugin-tester` for an integration review on `main`. When it's `READY`, set **Status: done** in the brief, commit, and report the final summary. Never push.

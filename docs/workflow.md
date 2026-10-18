@@ -61,7 +61,7 @@ The brief's **Status** line tracks the feature: `planned` (drafted, waiting for 
 Stop and report `STATUS: BLOCKED` with exactly what you're waiting for. Don't invent IDs, stub another owner's code, or edit files you don't own to get unblocked.
 
 ### Merge order (orchestrator)
-The orchestrator proposes the merge order with the tester's verdicts and merges only after the user approves, as Such Merge Doge (`git -c user.name="Such Merge Doge" -c user.email="doge@bakery.invalid" merge --no-ff <branch>`). Within a feature, merge in this order so `main` always validates:
+The orchestrator proposes the merge order with the tester's verdicts and merges only after the user approves, as Merge Doge (`git -c user.name="Merge Doge" -c user.email="doge@bakery.invalid" merge --no-ff <branch>`). Within a feature, merge in this order so `main` always validates:
 1. research notes (docs only, committed as they land)
 2. model-designer, then sound-designer (assets + `sounds.yml`)
 3. vfx-designer (engine + `effects.yml`)

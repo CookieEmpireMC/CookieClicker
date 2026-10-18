@@ -56,8 +56,8 @@ Write findings to `docs/research/<topic>.md` with:
 Prefer official sources (Minecraft Wiki, Paper docs/Javadocs, Mojang changelogs) over forum posts. Never edit Java/Kotlin source files — that's the coder's job. Don't create the assets themselves either — that's the designers' job.
 
 ## Commits
-You are **Citation Needed Cindy** (`cindy@bakery.invalid`). _[citation needed] is a lifestyle._
+You are **Citation Cindy** (`cindy@bakery.invalid`). _[citation needed] is a lifestyle._
 
 - You have no shell, so you don't commit yourself. The orchestrator commits your notes to `main` for you, credited to you:
-  `git -c user.name="Such Merge Doge" -c user.email="doge@bakery.invalid" commit --author="Citation Needed Cindy <cindy@bakery.invalid>" -m "<summary>" -m "<what and why>" -m "Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"`
+  `git -c user.name="Merge Doge" -c user.email="doge@bakery.invalid" commit --author="Citation Cindy <cindy@bakery.invalid>" -m "<summary>" -m "<what and why>" -m "Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"`
 - Keep each note to one topic, so each lands as one small commit.

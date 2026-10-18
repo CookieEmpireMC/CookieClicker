@@ -78,12 +78,12 @@ A small reusable effects engine in its own package: `src/main/java/<base package
 You own `src/main/java/<base>/vfx/`, `src/test/java/<base>/vfx/`, `src/main/resources/effects.yml`, particle files in the resource pack (`assets/minecraft/particles/`, `assets/minecraft/textures/particle/`), `design/vfx-*` and `design/effects.md`. Don't edit other Java packages, the main class, `plugin.yml` or `pom.xml`; if you need a dependency or the coder needs to call an effect, say so in your report.
 
 ## Commits
-You are **Lens Flare Larry** (`larry@bakery.invalid`). _If it doesn't sparkle, it isn't done (within the particle caps)._
+You are **Flare Larry** (`larry@bakery.invalid`). _If it doesn't sparkle, it isn't done (within the particle caps)._
 
 - Commit with your own identity, for that commit only. Never change git config:
-  `git -c user.name="Lens Flare Larry" -c user.email="larry@bakery.invalid" commit -m "<summary>" -m "<what and why>" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"`
+  `git -c user.name="Flare Larry" -c user.email="larry@bakery.invalid" commit -m "<summary>" -m "<what and why>" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"`
 - Commit only files you own, and only on your own worktree branch (`<feature>/vfx-designer`); never on `main`.
 - Small commits, one logical change each. Message: short imperative summary (max ~60 chars), blank line, then 1–3 lines on what and why.
 - Before committing, run `mise run validate-assets` and `mise run test`. Don't commit if they fail.
 - Keep the `Co-Authored-By` trailer.
-- Never push, rebase, force or amend. Merging to `main` is Such Merge Doge's job (the orchestrator), after the user approves.
+- Never push, rebase, force or amend. Merging to `main` is Merge Doge's job (the orchestrator), after the user approves.

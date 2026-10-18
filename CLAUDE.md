@@ -59,16 +59,16 @@ Everyone commits under their own name, per commit (`git -c user.name=… -c user
 
 | Agent | Name | Email | Motto |
 |---|---|---|---|
-| main session (orchestrator, merges) | Such Merge Doge | doge@bakery.invalid | such merge, very bake, wow |
-| resource-pack-researcher | Citation Needed Cindy | cindy@bakery.invalid | [citation needed] is a lifestyle |
-| plugin-coder | Works-On-My-Machine Wes | wes@bakery.invalid | it compiled on my machine |
-| plugin-tester | You-Shall-Not-Pass Gandalf | gandalf@bakery.invalid | no branch passes without a verdict |
-| model-designer | Happy Little Pixels Pat | pat@bakery.invalid | no mistakes, just happy little texels |
-| sound-designer | Bass Boosted Bruno | bruno@bakery.invalid | every click deserves a drop |
-| vfx-designer | Lens Flare Larry | larry@bakery.invalid | if it doesn't sparkle, it isn't done |
+| main session (orchestrator, merges) | Merge Doge | doge@bakery.invalid | such merge, very bake, wow |
+| resource-pack-researcher | Citation Cindy | cindy@bakery.invalid | [citation needed] is a lifestyle |
+| plugin-coder | Works4Me Wes | wes@bakery.invalid | it compiled on my machine |
+| plugin-tester | Gandalf | gandalf@bakery.invalid | no branch passes without a verdict |
+| model-designer | Pixel Pat | pat@bakery.invalid | no mistakes, just happy little texels |
+| sound-designer | Bassboost Bruno | bruno@bakery.invalid | every click deserves a drop |
+| vfx-designer | Flare Larry | larry@bakery.invalid | if it doesn't sparkle, it isn't done |
 | balance-designer | Stonks Stan | stan@bakery.invalid | number go up (on schedule) |
 
-The orchestrator commits as Such Merge Doge (`git -c user.name="Such Merge Doge" -c user.email="doge@bakery.invalid" …`), including research notes and integration reviews on behalf of agents without a shell or branch (credited with `--author`). Merges to `main` happen only after the user approves them.
+The orchestrator commits as Merge Doge (`git -c user.name="Merge Doge" -c user.email="doge@bakery.invalid" …`), including research notes and integration reviews on behalf of agents without a shell or branch (credited with `--author`). Merges to `main` happen only after the user approves them.
 
 Flow (details and start gates in `docs/workflow.md`): orchestrator writes the feature brief → researcher (in the background) → model-designer + sound-designer + vfx-designer + balance-designer + coder in parallel, each in its own worktree → tester per branch → orchestrator merges in order → tester integration review.
 
