@@ -405,12 +405,21 @@ class PullRequestTests(Base):
                 self.assertEqual(code, 1)
                 self.assertEqual(self.fake.requests, [])
 
-    @unittest.expectedFailure
     def test_dot_segments_in_repo_rejected(self):
-        # KNOWN BUG (see review): REPO_PATTERN accepts '..' as owner or name
-        code, out, err = self.run_pr("--repo", "../evil")
-        self.assertEqual(code, 1)
-        self.assertEqual(self.fake.requests, [])
+        for repo in ("../evil", "../..", "a/..", "./b", "a/b\n"):
+            with self.subTest(repo=repo):
+                code, out, err = self.run_pr("--repo", repo)
+                self.assertEqual(code, 1)
+                self.assertEqual(self.fake.requests, [])
+
+    def test_validate_repo_edges(self):
+        for bad in ("a/b\n", "a/.", "../x", "", None):
+            with self.subTest(repo=bad):
+                with self.assertRaises(app.ConfigError):
+                    app.validate_repo(bad)
+        for good in ("a/.b", "a/b.c", "Self-Learned/Cookie-Clicker", "..a/b..", "a_b/c-d"):
+            with self.subTest(repo=good):
+                self.assertEqual(app.validate_repo(good), good)
 
     def test_empty_title_rejected_before_network(self):
         out, err = io.StringIO(), io.StringIO()

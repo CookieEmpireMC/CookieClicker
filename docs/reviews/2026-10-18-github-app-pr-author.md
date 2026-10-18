@@ -26,3 +26,6 @@ Clean split: `app.py` (logic), `cli.py`, two thin entry points; the `sys.path` b
 
 ## Memory check
 Memory file written to `/home/casper-rs/Documents/GitHub/CookieClicker/.claude/agent-memory/plugin-tester/testing-github-app-tools.md`: this is in the main checkout, NOT inside the worktree, so it can't be committed on this branch.
+
+## Re-review (fix round 1, commit 1a3174e)
+`validate_repo` now uses `fullmatch` and rejects `.`/`..` segments; runs before any token is minted. Finding 1 resolved. Tests: `expectedFailure` removed; added `../evil`, `../..`, `a/..`, `./b`, `a/b\n` rejected (no request made) and `a/.b`, `..a/b..` still accepted. `tools-test` fully green, `ownership-check` OK. VERDICT: READY
