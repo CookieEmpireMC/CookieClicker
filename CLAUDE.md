@@ -47,9 +47,26 @@ The target version is whatever `paper-api` version `pom.xml` declares: either **
 | `plugin-coder` | implements features | `src/main/` except designer-owned files, `pom.xml`, `plugin.yml`, other config |
 | `plugin-tester` | writes/runs tests, reviews architecture, gives a merge verdict | `src/test/`, `docs/reviews/`, `docs/architecture.md` |
 
+### The team (git identities)
+
+Everyone commits under their own name, per commit (`git -c user.name=… -c user.email=… commit`), never by changing git config. Each agent file's "Commits" section has its exact command and rules; `mise run team` shows commits per member.
+
+| Agent | Name | Email | Motto |
+|---|---|---|---|
+| main session (orchestrator, merges) | Such Merge Doge | doge@bakery.invalid | such merge, very bake, wow |
+| resource-pack-researcher | Citation Needed Cindy | cindy@bakery.invalid | [citation needed] is a lifestyle |
+| plugin-coder | Works-On-My-Machine Wes | wes@bakery.invalid | it compiled on my machine |
+| plugin-tester | You-Shall-Not-Pass Gandalf | gandalf@bakery.invalid | no branch passes without a verdict |
+| model-designer | Happy Little Pixels Pat | pat@bakery.invalid | no mistakes, just happy little texels |
+| sound-designer | Bass Boosted Bruno | bruno@bakery.invalid | every click deserves a drop |
+| vfx-designer | Lens Flare Larry | larry@bakery.invalid | if it doesn't sparkle, it isn't done |
+| balance-designer | Stonks Stan | stan@bakery.invalid | number go up (on schedule) |
+
+The orchestrator commits as Such Merge Doge (`git -c user.name="Such Merge Doge" -c user.email="doge@bakery.invalid" …`), including research notes and integration reviews on behalf of agents without a shell or branch (credited with `--author`). Merges to `main` happen only after the user approves them.
+
 Flow (details and start gates in `docs/workflow.md`): orchestrator writes the feature brief → researcher (in the background) → model-designer + sound-designer + vfx-designer + coder in parallel, each in its own worktree → tester per branch → orchestrator merges in order → tester integration review.
 
-**The main session is the orchestrator:** it writes `docs/briefs/<feature>.md` before launching agents, launches each agent only when its gate in `docs/workflow.md` is met, commits research notes, merges `READY` branches one at a time (assets → vfx → coder), runs `mise run check`, `validate-assets` and `sound-check` on `main` after each merge, updates the brief's status table, and routes every `REQUESTS` / `CONTRACT CHANGES` item from agent reports to the right owner.
+**The main session is the orchestrator:** it writes `docs/briefs/<feature>.md` before launching agents, launches each agent only when its gate in `docs/workflow.md` is met, commits research notes, merges `READY` branches one at a time after the user approves (assets → vfx → coder), runs `mise run check`, `validate-assets` and `sound-check` on `main` after each merge, updates the brief's status table, and routes every `REQUESTS` / `CONTRACT CHANGES` item from agent reports to the right owner.
 
 ### Asset ownership
 - **model-designer:** models, item model definitions, textures, fonts/glyphs, `pack.mcmeta`, `itemsadder/`, `modelengine/`

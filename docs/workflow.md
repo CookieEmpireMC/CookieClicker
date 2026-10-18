@@ -13,7 +13,7 @@ Reference for all agents and the orchestrator. Agents can't see or wait for each
 | model-designer, sound-designer, vfx-designer, plugin-coder | agents | their own worktree, branch `<feature>/<agent>` |
 | plugin-tester | agent | the worktree of the branch it reviews (only after that branch's owner has stopped), or `main` for an integration review |
 
-The orchestrator is the only one who writes feature briefs, merges branches into `main`, and decides between conflicting requests. Nothing is pushed.
+The orchestrator is the only one who writes feature briefs, merges branches into `main` (only after the user approves), and decides between conflicting requests. Nothing is pushed. Everyone commits under their own git identity; see "The team" in `CLAUDE.md` and the Commits section of each agent file.
 
 ---
 
@@ -82,7 +82,7 @@ Needs research: yes (docs/research/<topic>.md) / no
 Stop and report `STATUS: BLOCKED` with exactly what you're waiting for. Don't invent IDs, stub another owner's code, or edit files you don't own to get unblocked.
 
 ### Merge order (orchestrator)
-Within a feature, merge in this order so `main` always validates:
+The orchestrator proposes the merge order with the tester's verdicts and merges only after the user approves, as Such Merge Doge (`git -c user.name="Such Merge Doge" -c user.email="doge@bakery.invalid" merge --no-ff <branch>`). Within a feature, merge in this order so `main` always validates:
 1. research notes (docs only, committed as they land)
 2. model-designer, then sound-designer (assets + `sounds.yml`)
 3. vfx-designer (engine + `effects.yml`)
@@ -100,7 +100,7 @@ After every merge, run `mise run check`, `mise run validate-assets` and `mise ru
 
 - **Read first:** `docs/workflow.md` (this file) and the feature brief you were given (`docs/briefs/<feature>.md`).
 - **Own files only.** See "Asset ownership" in `CLAUDE.md`. Need something from another owner? Put it under `REQUESTS` in your report.
-- **Git:** commit your work on your own branch with a clear message. Never commit to `main`, merge, rebase or push. The researcher doesn't commit at all.
+- **Git:** follow the Commits section of your agent file: your own identity per commit, only your own files, only on your branch, small commits, checks first. Never commit to `main`, merge, rebase, amend, force or push. The researcher has no shell; the orchestrator commits its notes credited to it.
 - **Don't wait in a loop.** If you're blocked, report and stop. The orchestrator re-launches you when the gate is met.
 
 ### Report format (end every run with this)

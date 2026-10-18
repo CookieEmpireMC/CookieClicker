@@ -77,3 +77,7 @@ done
 [tasks.pack]
 description = "Zip resourcepack/ to target/cookieclicker-pack.zip and print its SHA-1"
 run = "python tools/pack.py"
+
+[tasks.team]
+description = "Show commits per team member (agent identities)"
+run = "git shortlog -sn --all"
