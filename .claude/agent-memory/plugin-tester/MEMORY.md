@@ -1,0 +1,1 @@
+- [Testing GitHub App tools](testing-github-app-tools.md) — offline test recipe for tools/github_app (fake server, throwaway key, config gotcha)
