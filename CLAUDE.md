@@ -30,6 +30,7 @@ The target version is whatever `paper-api` version `pom.xml` declares: either **
 | `design/effects.md` | every effect ID → look → when to use → cost → placeholders (vfx-designer) | before code plays an effect |
 | `design/CREDITS.md` | source, author and licence of every external (CC0) asset | when adding or auditing third-party assets |
 | `design/*style-guide.md`, `design/*lessons.md` | each designer's style rules and learning log | the designers read these before every job |
+| `design/review/index.html` | local review page for the user (`mise run review`, git-ignored); a spec line `Status: final` marks an asset as final, otherwise it shows as placeholder | when the user reviews assets |
 | `design/scripts/`, `design/sound-scripts/`, `design/vfx-scripts/` | asset generators (`mise run assets` / `sounds` / `vfx-previews`) | when regenerating assets |
 
 ## Plugin config owned by designers

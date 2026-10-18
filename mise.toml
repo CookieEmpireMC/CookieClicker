@@ -88,6 +88,11 @@ description = "Simulate pacing and fail if any target in docs/balance/targets.md
 depends = ["assets-deps"]
 run = "python tools/balance/main.py check"
 
+[tasks.review]
+description = "Build design/review/index.html (local asset review page: textures, sounds, effects)"
+depends = ["sound-previews"]
+run = "python tools/review.py"
+
 [tasks.team]
 description = "Show commits per team member (agent identities)"
 run = "git shortlog -sn --all"

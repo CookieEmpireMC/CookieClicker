@@ -38,6 +38,7 @@ Last checked: 2026-10-18
 | `mise run validate-assets` | checks every JSON/YAML/`.mcmeta`/`.bbmodel` parses; item definitions, models, textures and `sounds.json` entries resolve; `sounds.yml` keys exist, have a `minecraft:` fallback, volume ≤ 1.0 and a valid `source`; subtitle keys exist in `lang/en_us.json`; `effects.yml` presets have layers (`tools/validate_assets.py`) |
 | `mise run balance` | simulates idle/casual/active play against `buildings.yml` + `upgrades.yml`; writes `docs/balance/report-<date>.md`, plots and `golden-values.json` (`tools/balance/`) |
 | `mise run balance-check` | same simulation, writes nothing, fails if a target in `docs/balance/targets.md` is violated; passes when no balance config exists yet |
+| `mise run review` | renders sound previews, then builds `design/review/index.html` (git-ignored, local only): every texture pixelated, every `.ogg` with a player and measurements, every effect preview, grouped per feature brief, with spec notes and a placeholder/final label (`tools/review.py`). An asset counts as final when its spec says `Status: final` |
 | `mise run team` | commits per team member (`git shortlog -sn --all`) |
 | `mise run pack` | zips `resourcepack/` reproducibly to `target/cookieclicker-pack.zip` and prints its SHA-1 (`tools/pack.py`) |
 

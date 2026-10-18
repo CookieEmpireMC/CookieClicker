@@ -126,3 +126,6 @@ __pycache__/
 # Generated previews (re-create with mise run sound-previews / vfx-previews)
 design/sound-previews/
 design/vfx-previews/
+
+# Local asset review page (mise run review); never published
+design/review/
