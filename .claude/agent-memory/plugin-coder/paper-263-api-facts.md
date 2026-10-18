@@ -21,3 +21,6 @@ Verified 2026-10-18 against paper-api 26.3.build.205-stable (compiled, -Xlint:de
 - Tests are tester-owned and pin message keys (`hud.action-bar`, `hud.action-bar-no-pack` in MessagesTest); MessagesTest scans Java for literal `"panel.…"` etc. paths, so never build message paths by string concatenation.
 - Run a `@Disabled` test without editing it: `mise exec -- mvn -B -q test -Dtest=X '-Djunit.jupiter.conditions.deactivate=org.junit.*DisabledCondition'`.
 - Scratch smoke test: `mise exec -- java -cp target/classes:~/.m2/.../h2-2.5.252.jar Smoke.java` (single-file source launch) works for pure classes.
+- Cleanup pass (2026-10-18): scratch Java against main classes in the same package fails as a single-file source launch (split-package IllegalAccessError); `javac -d out` then `java @argfile <class>` works. Build the argfile (`-cp target/classes:<mvn dependency:build-classpath output>`) with python; the guard refuses `$(...)`.
+- MiniMessage 5.2.0: placeholders are NOT resolved inside click/insert args, but are inside `hover:show_text`; gradient/rainbow/lang reshape inserted text (HudTemplate falls back to parsing for those).
+- Tests pin behaviour hard: e.g. PluginSettingsResourcePackTest expects the empty pack url to be exactly 1 reported problem; check the tests before promising a "log at info" change.

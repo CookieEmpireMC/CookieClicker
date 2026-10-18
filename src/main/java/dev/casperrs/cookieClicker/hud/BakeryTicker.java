@@ -7,12 +7,13 @@ import org.bukkit.entity.Player;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 /**
  * Runs once per second (every 20 ticks) on the main thread: applies one second of production
  * ({@code pouch += total_cps}) to every loaded, online player, then refreshes the HUD every
- * {@code hud.refresh-seconds}.
+ * {@code hud.refresh-seconds}, then runs the after-production hook (the station panels) for each online player.
  */
 public final class BakeryTicker implements Runnable {
 
@@ -20,6 +21,7 @@ public final class BakeryTicker implements Runnable {
     private final Economy economy;
     private final Hud hud;
     private final Function<UUID, Player> onlinePlayer;
+    private BiConsumer<Player, CookiePouch> afterProduce = (player, pouch) -> { };
     private int hudEverySeconds = 1;
     private long seconds;
 
@@ -35,6 +37,11 @@ public final class BakeryTicker implements Runnable {
         this.hudEverySeconds = Math.max(1, hudEverySeconds);
     }
 
+    /** Runs every second right after production (and the HUD) for each online player, e.g. to light up panel rows. */
+    public void setAfterProduce(BiConsumer<Player, CookiePouch> afterProduce) {
+        this.afterProduce = afterProduce;
+    }
+
     @Override
     public void run() {
         seconds++;
@@ -46,11 +53,12 @@ public final class BakeryTicker implements Runnable {
             }
             // sessions exist only between join and quit, so every loaded player is online
             economy.produce(pouch, 1);
-            if (refreshHud) {
-                Player player = onlinePlayer.apply(id);
-                if (player != null) {
+            Player player = onlinePlayer.apply(id);
+            if (player != null) {
+                if (refreshHud) {
                     hud.refresh(player, pouch);
                 }
+                afterProduce.accept(player, pouch);
             }
         }
     }

@@ -46,6 +46,8 @@ final class StationView {
     final @Nullable BlockDisplay pedestal;
     final TextDisplay header;
     final List<Row> rows;
+    /** Every entity of this view, built once (the set never changes; a broken view is respawned whole). */
+    private final List<Entity> entities;
     boolean withPack;
     /** Server tick of the last spin/bob segment sent for this cookie. */
     long lastSegmentTick = Long.MIN_VALUE;
@@ -61,9 +63,6 @@ final class StationView {
         this.header = header;
         this.rows = List.copyOf(rows);
         this.withPack = withPack;
-    }
-
-    List<Entity> entities() {
         List<Entity> all = new ArrayList<>();
         all.add(cookie);
         all.add(cookieHitbox);
@@ -71,12 +70,17 @@ final class StationView {
             all.add(pedestal);
         }
         all.add(header);
-        for (Row r : rows) {
+        for (Row r : this.rows) {
             all.add(r.icon);
             all.add(r.text);
             all.add(r.hitbox);
         }
-        return all;
+        this.entities = List.copyOf(all);
+    }
+
+    /** Immutable; same order as before: cookie, hitbox, pedestal, header, then icon/text/hitbox per row. */
+    List<Entity> entities() {
+        return entities;
     }
 
     /** False once any entity is gone (chunk unload, another plugin, /kill): the whole view is then respawned. */

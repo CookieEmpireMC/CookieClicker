@@ -80,7 +80,8 @@ public record PluginSettings(DatabaseSettings database, int autosaveSeconds, int
         if (enabled && !url.isEmpty()) {
             try {
                 java.net.URI uri = new java.net.URI(url);
-                if (uri.getScheme() == null || !uri.getScheme().startsWith("http")) {
+                String scheme = uri.getScheme();
+                if (!"http".equals(scheme) && !"https".equals(scheme)) {
                     problems.accept("config.yml: resource-pack.url must be an http(s) URL; the pack is not sent");
                     url = "";
                 }

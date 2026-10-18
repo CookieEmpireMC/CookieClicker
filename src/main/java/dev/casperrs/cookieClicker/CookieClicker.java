@@ -33,6 +33,7 @@ import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.logging.Level;
 import java.util.random.RandomGenerator;
 
 /**
@@ -123,6 +124,7 @@ public final class CookieClicker extends JavaPlugin {
 
         views = new StationViews(this, () -> settings.visuals(), stations, sessions, economy, messages,
                 resourcePacks::hasPack);
+        ticker.setAfterProduce(views::refreshPanels); // rows light up the second they become affordable
         views.sweep(true); // crash leftovers of every tagged entity, before the vfx engine starts
 
         effects = new Effects(this, Messages.miniMessage());
@@ -159,11 +161,20 @@ public final class CookieClicker extends JavaPlugin {
         if (autosaveTask != null) {
             autosaveTask.cancel();
         }
+        // a throw here must never skip the session flush below
         if (views != null) {
-            views.shutdown(); // every player's UI, independent of session events
+            try {
+                views.shutdown(); // every player's UI, independent of session events
+            } catch (RuntimeException e) {
+                getLogger().log(Level.SEVERE, "Could not remove the station views on disable", e);
+            }
         }
         if (effects != null) {
-            effects.shutdown();
+            try {
+                effects.shutdown();
+            } catch (RuntimeException e) {
+                getLogger().log(Level.SEVERE, "Could not shut down the effects on disable", e);
+            }
         }
         if (stations != null) {
             stations.clear(); // tells pass-2 listeners to despawn everything; stations.yml is untouched

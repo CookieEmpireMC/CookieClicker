@@ -3,7 +3,6 @@ package dev.casperrs.cookieClicker.station;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -13,39 +12,15 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import org.bukkit.plugin.java.JavaPlugin;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class StationFileTest {
 
-    /**
-     * Minimal plugin. {@code JavaPlugin} can't be constructed without a server, so the instance is allocated
-     * without running any constructor and only the one field {@code StationFile} reads is set (test-only).
-     */
-    static final class TestPlugin extends JavaPlugin {
-        static TestPlugin create(File dataFolder) throws Exception {
-            var unsafeField = Class.forName("sun.misc.Unsafe").getDeclaredField("theUnsafe");
-            unsafeField.setAccessible(true);
-            sun.misc.Unsafe unsafe = (sun.misc.Unsafe) unsafeField.get(null);
-            TestPlugin plugin = (TestPlugin) unsafe.allocateInstance(TestPlugin.class);
-            var field = JavaPlugin.class.getDeclaredField("dataFolder");
-            field.setAccessible(true);
-            field.set(plugin, dataFolder);
-            return plugin;
-        }
-
-        @Override
-        public Logger getLogger() {
-            Logger l = Logger.getAnonymousLogger();
-            l.setLevel(Level.OFF);
-            return l;
-        }
-
-        @Override
-        public java.io.InputStream getResource(String filename) {
-            return null; // no jar defaults
-        }
+    private static StationFile file(Path dir, java.util.concurrent.Executor io) {
+        Logger quiet = Logger.getAnonymousLogger();
+        quiet.setLevel(Level.OFF);
+        return new StationFile(dir, quiet, io, () -> { });
     }
 
     private static final Station A = new Station("station-1", "minecraft:overworld", 1.5, 64, 2.5, 90f);
@@ -53,7 +28,7 @@ class StationFileTest {
 
     @Test
     void loadDuringPendingWriteReturnsTheNewestStationsNotTheOldFile(@TempDir Path dir) throws Exception {
-        StationFile file = new StationFile(TestPlugin.create(dir.toFile()), blockedExecutor(dir));
+        StationFile file = file(dir, blockedExecutor(dir));
         CountDownLatch release = BLOCK;
         file.saveAsync(List.of(A));
         // the write is queued behind the blocker: stations.yml does not exist yet
@@ -71,7 +46,7 @@ class StationFileTest {
     void queueingAfterShutdownDoesNotLeaveLoadStuckOnMemory(@TempDir Path dir) throws Exception {
         ExecutorService stopped = Executors.newSingleThreadExecutor();
         stopped.shutdown();
-        StationFile file = new StationFile(TestPlugin.create(dir.toFile()), stopped);
+        StationFile file = file(dir, stopped);
         file.saveAsync(List.of(A)); // rejected: logged, counter restored
         assertEquals(List.of(), file.load(), "no file was written and nothing is pending");
     }
@@ -79,7 +54,7 @@ class StationFileTest {
     @Test
     void roundTripsThroughTheFile(@TempDir Path dir) throws Exception {
         ExecutorService io = Executors.newSingleThreadExecutor();
-        StationFile file = new StationFile(TestPlugin.create(dir.toFile()), io);
+        StationFile file = file(dir, io);
         file.saveAsync(List.of(A, B));
         io.shutdown();
         assertTrue(io.awaitTermination(5, TimeUnit.SECONDS));

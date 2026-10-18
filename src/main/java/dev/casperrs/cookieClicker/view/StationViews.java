@@ -203,6 +203,11 @@ public final class StationViews implements Listener, StationListener, SessionLis
         return views == null ? null : views.get(stationId);
     }
 
+    /** The current visual settings (reload swaps them). */
+    StationVisualSettings settings() {
+        return settings.get();
+    }
+
     /** Live view entities (for the tester / debug log). */
     public int trackedEntities() {
         return byEntity.size();
@@ -212,7 +217,6 @@ public final class StationViews implements Listener, StationListener, SessionLis
 
     private void refresh() {
         StationVisualSettings s = settings.get();
-        double maxSq = s.viewDistance() * s.viewDistance();
         // owners who went offline without a quit event reaching us
         for (UUID owner : List.copyOf(byOwner.keySet())) {
             if (Bukkit.getPlayer(owner) == null) {
@@ -220,43 +224,52 @@ public final class StationViews implements Listener, StationListener, SessionLis
             }
         }
         for (Player player : Bukkit.getOnlinePlayers()) {
-            CookiePouch pouch = sessions.get(player.getUniqueId()).orElse(null);
-            if (pouch == null) {
-                removeOwner(player.getUniqueId()); // not loaded (yet, or load failed): no UI to click
-                continue;
-            }
-            Location at = player.getLocation();
-            String world = player.getWorld().getKey().asString();
-            for (Station station : stations.all()) {
-                StationView view = view(player.getUniqueId(), station.id());
-                boolean inRange = station.distanceSquared(world, at.getX(), at.getY(), at.getZ()) <= maxSq
-                        && chunksLoaded(player.getWorld(), station, s);
-                if (!inRange) {
-                    if (view != null) {
-                        remove(view);
-                    }
-                    continue;
-                }
-                if (view != null && !view.healthy()) {
-                    remove(view);
-                    view = null;
-                }
-                if (view == null) {
-                    view = spawn(player, station, s, pouch);
-                    if (view == null) {
-                        continue;
-                    }
-                } else {
-                    heal(player, view);
-                }
-                updatePack(player, view);
-                updateRows(view, pouch);
-            }
+            refresh(player, s);
         }
     }
 
-    /** Refresh one player's panels now (after a click or purchase). */
-    void refreshPanels(Player player, CookiePouch pouch) {
+    /** One player's proximity lifecycle: spawn, heal, update or remove their view at every station. */
+    private void refresh(Player player, StationVisualSettings s) {
+        CookiePouch pouch = sessions.get(player.getUniqueId()).orElse(null);
+        if (pouch == null) {
+            removeOwner(player.getUniqueId()); // not loaded (yet, or load failed): no UI to click
+            return;
+        }
+        double maxSq = s.viewDistance() * s.viewDistance();
+        Location at = player.getLocation();
+        String world = player.getWorld().getKey().asString();
+        for (Station station : stations.all()) {
+            StationView view = view(player.getUniqueId(), station.id());
+            boolean inRange = station.distanceSquared(world, at.getX(), at.getY(), at.getZ()) <= maxSq
+                    && chunksLoaded(player.getWorld(), station, s);
+            if (!inRange) {
+                if (view != null) {
+                    remove(view);
+                }
+                continue;
+            }
+            if (view != null && !view.healthy()) {
+                remove(view);
+                view = null;
+            }
+            if (view == null) {
+                view = spawn(player, station, s, pouch);
+                if (view == null) {
+                    continue;
+                }
+            } else {
+                heal(player, view);
+            }
+            updatePack(player, view);
+            updateRows(view, pouch);
+        }
+    }
+
+    /**
+     * Refresh one player's panel rows now (after a click or purchase, and from the 1 Hz ticker right after
+     * production). Rows whose {@link RowState} didn't change send nothing.
+     */
+    public void refreshPanels(Player player, CookiePouch pouch) {
         Map<String, StationView> views = byOwner.get(player.getUniqueId());
         if (views != null) {
             views.values().forEach(v -> updateRows(v, pouch));
@@ -265,13 +278,13 @@ public final class StationViews implements Listener, StationListener, SessionLis
 
     private boolean chunksLoaded(World world, Station station, StationVisualSettings s) {
         StationFrame frame = StationFrame.of(station);
-        for (Offset o : List.of(Offset.ZERO, s.cookie().offset(), s.panel().offset())) {
-            double[] p = frame.point(o);
-            if (!world.isChunkLoaded((int) Math.floor(p[0]) >> 4, (int) Math.floor(p[2]) >> 4)) {
-                return false;
-            }
-        }
-        return true;
+        return chunkLoaded(world, frame, Offset.ZERO) && chunkLoaded(world, frame, s.cookie().offset())
+                && chunkLoaded(world, frame, s.panel().offset());
+    }
+
+    private static boolean chunkLoaded(World world, StationFrame frame, Offset o) {
+        double[] p = frame.point(o);
+        return world.isChunkLoaded((int) Math.floor(p[0]) >> 4, (int) Math.floor(p[2]) >> 4);
     }
 
     /** Cheap self-heal: the owner should always see their own view. */
@@ -299,7 +312,7 @@ public final class StationViews implements Listener, StationListener, SessionLis
                 d.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.NONE);
                 d.setBillboard(Display.Billboard.FIXED);
                 d.setViewRange(c.viewRange());
-                d.setBrightness(new Display.Brightness(15, 15));
+                d.setBrightness(new Display.Brightness(c.brightness(), c.brightness()));
                 long now = Bukkit.getCurrentTick();
                 d.setTransformation(new Transformation(new Vector3f(0, (float) motion.bob(now), 0),
                         new Quaternionf().rotationY((float) motion.angle(now)),
@@ -393,11 +406,11 @@ public final class StationViews implements Listener, StationListener, SessionLis
     private void styleText(TextDisplay t, StationVisualSettings.Panel p, float scale, int argb) {
         t.setBillboard(Display.Billboard.FIXED);
         t.setLineWidth(p.lineWidth());
-        t.setSeeThrough(false);
-        t.setShadowed(true);
-        t.setDefaultBackground(false);
+        t.setSeeThrough(p.textSeeThrough());
+        t.setShadowed(p.textShadowed());
+        t.setDefaultBackground(p.textDefaultBackground());
         t.setBackgroundColor(Color.fromARGB(argb));
-        t.setBrightness(new Display.Brightness(15, 15));
+        t.setBrightness(new Display.Brightness(p.textBrightness(), p.textBrightness()));
         t.setViewRange(p.viewRange());
         t.setTransformation(new Transformation(new Vector3f(), new Quaternionf(),
                 new Vector3f(scale, scale, scale), new Quaternionf()));
@@ -591,6 +604,15 @@ public final class StationViews implements Listener, StationListener, SessionLis
         removeStation(station.id());
     }
 
+    /** Spawn the bakery as soon as the session loads instead of on the next refresh. */
+    @Override
+    public void onLoaded(UUID player, CookiePouch pouch) {
+        Player online = Bukkit.getPlayer(player);
+        if (online != null) {
+            refresh(online, settings.get());
+        }
+    }
+
     @Override
     public void onUnloaded(UUID player) {
         removeOwner(player);
@@ -631,7 +653,9 @@ public final class StationViews implements Listener, StationListener, SessionLis
     @EventHandler(priority = EventPriority.MONITOR)
     public void onEntitiesLoad(EntitiesLoadEvent event) {
         for (Entity e : event.getEntities()) {
-            if (e.getPersistentDataContainer().has(entityKey, PersistentDataType.BYTE) && !byEntity.containsKey(e.getUniqueId())) {
+            // the tag check is cheap and filters out almost every entity before the PDC is touched
+            if (e.getScoreboardTags().contains(TAG) && e.getPersistentDataContainer().has(entityKey, PersistentDataType.BYTE)
+                    && !byEntity.containsKey(e.getUniqueId())) {
                 e.remove();
             }
         }

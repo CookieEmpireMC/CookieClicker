@@ -16,7 +16,7 @@ Maintained by the plugin-tester. Last updated: 2026-10-18 (bakery-core pass 2).
 | `sound` | `SoundService` (the only place that plays sounds), `SoundConfigParser` | main |
 | `view` | Per-player station visuals: `StationViews` (proximity lifecycle task every `station.refresh-ticks`, spin/bob motion task every `segment-ticks`, sweeps, all cleanup paths), `ClickRouter` (the only click entry: owner, distance, per-tick dedupe), `StationInteractions` (click/buy -> economy, Effects, sounds, HUD, panel), pure helpers `StationFrame`, `CookieMotion`, `RowState`, `ClickTarget`; `StationView` = one owner's entities at one station (10 per station for 2 buildings: cookie, hitbox, pedestal, header, 3 per row) | main |
 | `vfx` | `Effects` engine (the only place that spawns particles/effect displays), shape maths in `vfx.shape` | main |
-| `hud` | `BakeryTicker` (1 Hz production), `Hud` (action bar) | main |
+| `hud` | `BakeryTicker` (1 Hz production, then HUD and the panel refresh hook), `Hud` (action bar), `HudTemplate` (template parsed once; marker swap, used only when provably equal to a real parse) | main |
 | `pack` | `ResourcePackSender` (stacked pack, stable UUID, `replace(false)`), `ResourcePackTracker` (status of **our** pack UUID only) | main |
 | `text` | `Messages` (MiniMessage from `messages.yml`, placeholders unparsed) | main |
 | `config`, `command` | `PluginSettings`, `StationVisualSettings` (layout/looks only, no balance), `YamlFiles`; Brigadier `/bakery` | main |

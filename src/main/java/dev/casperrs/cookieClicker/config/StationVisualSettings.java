@@ -25,9 +25,12 @@ public record StationVisualSettings(double viewDistance, int refreshTicks, doubl
     /**
      * @param spinSecondsPerRevolution one full turn takes this long (0 = no spin)
      * @param segmentTicks             length of one interpolated motion segment
+     * @param brightness               block and sky light of the cookie display (0-15)
+     * @param clickEffectOffset        the click effect is pulled this far out of the cookie toward the player
      */
     public record Cookie(Offset offset, float scale, double bobAmplitude, int bobPeriodTicks,
-                         double spinSecondsPerRevolution, int segmentTicks, double hitboxMargin, float viewRange) {
+                         double spinSecondsPerRevolution, int segmentTicks, double hitboxMargin, float viewRange,
+                         int brightness, double clickEffectOffset) {
 
         /** Radians the cookie turns per segment (0 when the spin is off). */
         public double spinStepRadians() {
@@ -50,12 +53,15 @@ public record StationVisualSettings(double viewDistance, int refreshTicks, doubl
      * @param hitboxOffset  bottom centre of the row's Interaction relative to the row anchor
      * @param colors        background colours as {@code #AARRGGBB}: header, affordable, unaffordable, locked
      * @param iconFallbacks building id -> vanilla material name shown to players without the pack
+     * @param textBrightness block and sky light of the header and row texts (0-15)
      */
     public record Panel(Offset offset, float textYawOffset, float iconYawOffset, float headerScale, float textScale,
                         int lineWidth, double firstRowDrop, double rowPitch, Offset textOffset, Offset iconOffset,
                         float iconScale, Offset hitboxOffset, float hitboxWidth, float hitboxHeight,
                         Map<String, Integer> colors, int iconBrightAffordable, int iconBrightUnaffordable,
-                        float viewRange, Map<String, String> iconFallbacks, String defaultFallback) {
+                        float viewRange, Map<String, String> iconFallbacks, String defaultFallback,
+                        int textBrightness, boolean textShadowed, boolean textSeeThrough,
+                        boolean textDefaultBackground) {
 
         public int color(String state) {
             return colors.getOrDefault(state, 0x40000000);
@@ -76,7 +82,9 @@ public record StationVisualSettings(double viewDistance, int refreshTicks, doubl
                 Math.max(0, c.getDouble("station.cookie.spin-seconds-per-revolution", 6)),
                 (int) Math.clamp(r.positive("station.cookie.segment-ticks", 10), 2, 40),
                 Math.max(0, c.getDouble("station.cookie.hitbox-margin", 0.1)),
-                (float) r.positive("station.cookie.view-range", 0.5));
+                (float) r.positive("station.cookie.view-range", 0.5),
+                Math.clamp(c.getInt("station.cookie.brightness", 15), 0, 15),
+                Math.max(0, c.getDouble("station.cookie.click-effect-offset", 0.1)));
         if (cookie.spinStepRadians() > Math.toRadians(120)) {
             problems.accept("config.yml: station.cookie spins more than 120 degrees per segment (the client would "
                     + "turn it the wrong way); raise spin-seconds-per-revolution or lower segment-ticks");
@@ -92,6 +100,7 @@ public record StationVisualSettings(double viewDistance, int refreshTicks, doubl
             colors.put(state, r.argb("station.panel.colors." + state, switch (state) {
                 case "header" -> 0xC0301A0C;
                 case "affordable" -> 0xB03A2A10;
+                case "locked" -> 0x90181818;
                 default -> 0xB0202020;
             }));
         }
@@ -125,7 +134,11 @@ public record StationVisualSettings(double viewDistance, int refreshTicks, doubl
                 Math.clamp(c.getInt("station.panel.icon-brightness.unaffordable", 5), 0, 15),
                 (float) r.positive("station.panel.view-range", 0.5),
                 Map.copyOf(fallbacks),
-                c.getString("station.panel.default-fallback-material", "COOKIE"));
+                c.getString("station.panel.default-fallback-material", "COOKIE"),
+                Math.clamp(c.getInt("station.panel.text-brightness", 15), 0, 15),
+                c.getBoolean("station.panel.text-shadow", true),
+                c.getBoolean("station.panel.text-see-through", false),
+                c.getBoolean("station.panel.text-default-background", false));
 
         return new StationVisualSettings(
                 r.positive("station.view-distance", 24),
