@@ -1,6 +1,6 @@
 # bakery-core
 
-**Status:** in progress  <!-- planned | in progress | review | done -->
+**Status:** done  <!-- planned | in progress | review | done -->
 **Created:** 2026-10-18 · **Approved:** 2026-10-18 20:40 · **Depends on:** none (first gameplay feature)
 
 ## Goal
@@ -98,14 +98,19 @@ For the researcher (Citation Cindy), one note per topic in `docs/research/`, eac
 ## Status
 | Agent | Status | Branch | Verdict | Started | Done | Notes |
 |---|---|---|---|---|---|---|
-| resource-pack-researcher | in progress | feature branch (docs) | | 20:40 | | 5 notes |
-| plugin-tester | in progress | `cookie-art/model-designer` | | 20:40 | | review existing cookie art |
-| balance-designer | in progress | `bakery-core/balance-designer` | | 20:40 | | |
-| sound-designer | in progress | `bakery-core/sound-designer` | | 20:40 | | |
-| plugin-coder (pass 1) | in progress | `bakery-core/plugin-coder` | | 20:40 | | |
-| model-designer | waiting | | | | | gate: research notes + cookie art merged |
-| vfx-designer | waiting | | | | | gate: research notes |
-| plugin-coder (pass 2) | waiting | | | | | gate: research + vfx + pass 1 merged |
+| resource-pack-researcher | merged | feature branch (docs) | — | 20:40 | 20:53 | 5 notes, memory |
+| plugin-tester | done | (all branches) | READY ×9 | 20:40 | 22:00 | 9 reviews incl. integration; 238 Java + 133 tool tests |
+| balance-designer | merged | `bakery-core/balance-designer` | READY | 20:40 | 20:47 | crit contract, 6/6 targets |
+| sound-designer | merged | `bakery-core/sound-designer` | READY | 20:40 | 20:47 | 7 sounds, 4 events |
+| plugin-coder (pass 1) | merged | `bakery-core/plugin-coder` | READY | 20:40 | 20:55 | +follow-ups |
+| model-designer | merged | `cookie-art` + `bakery-core/model-designer` | READY | 20:53 | 21:08 | 3D cookie, icons, glyph |
+| vfx-designer | merged | `bakery-core/vfx-designer` (+cleanup) | READY | 20:53 | 21:15 | Effects engine |
+| plugin-coder (pass 2) | merged | `bakery-core/plugin-coder-2` (+cleanup) | READY | 21:18 | 21:35 | views, clicks, pack |
+
+## Results
+- Clean tree: `check` 238 tests / 0 failed / 0 skipped; `validate-assets` 12 files 0 problems; `sound-check` 7/7; `balance-check` 6/6; `tools-test` 133 OK; `ownership-check HEAD --base main --human-approved` OK (94 commits).
+- Pack: 23 files, SHA-1 `05775b91a110f20915cccb876aa97a6b5087059d`.
+- Follow-ups: empty-URL info log (code + test together), stations.yml dirty-flag after a failed write, ItemsAdder 4.0.18 coexistence to verify in game.
 
 ## Merge order
 1. research notes (as they land) · `cookie-art/model-designer`
