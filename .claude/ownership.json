@@ -39,6 +39,7 @@
         "!tools/**/test_*.py",
         "mise.toml",
         ".gitignore",
+        ".gitattributes",
         ".mailmap",
         "design/requirements.txt",
         "docs/paper-*.md",
