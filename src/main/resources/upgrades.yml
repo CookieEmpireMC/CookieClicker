@@ -1,0 +1,6 @@
+# Click values and upgrades (format: docs/balance/model.md). IDs only; display names live in messages.yml.
+click:
+  base-power: 1              # cookies per click before upgrades
+  crit-chance: 0.05          # 5 % of clicks are crispy crits
+  crit-multiplier: 10        # a crit multiplies the whole click value
+upgrades: {}                 # none in the bakery-core slice
