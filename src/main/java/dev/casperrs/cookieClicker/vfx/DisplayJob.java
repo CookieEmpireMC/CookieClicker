@@ -63,10 +63,6 @@ abstract class DisplayJob extends Job {
         registry.register(this, entity);
     }
 
-    protected final List<Display> entities() {
-        return entities;
-    }
-
     @Override
     protected final boolean tick(int age) {
         int t = age - delay;

@@ -86,6 +86,11 @@ final class DisplayRegistry {
         }
     }
 
+    /** True when no display effect entity is tracked. */
+    boolean isEmpty() {
+        return byEntity.isEmpty();
+    }
+
     boolean tracks(UUID entity) {
         return byEntity.containsKey(entity);
     }
@@ -106,9 +111,5 @@ final class DisplayRegistry {
 
     int globalEntities() {
         return globalEntities;
-    }
-
-    int viewerEntities(UUID viewer) {
-        return viewerEntities.getOrDefault(viewer, 0);
     }
 }

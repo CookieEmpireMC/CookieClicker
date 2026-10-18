@@ -19,5 +19,8 @@ First built in feature bakery-core (2026-10-18, branch bakery-core/vfx-designer)
   to never show the missing-model texture. In-game verification of ITEM particles with item_model still pending.
 - Plain maths in `vfx/shape/`, config parsing in `vfx/config/` (tested offline); preview export
   `EffectsPreviewExport` + `design/vfx-scripts/plot_effects.py`.
+- Invariant (cleanup pass 2026-10-18): `Spawner.isOurs` checks the `cookieclicker` scoreboard tag before the
+  `cookieclicker:vfx` PDC key (PERF), so every effect entity must keep getting **both**. `play`, `pop` and
+  `sweepLeftovers` are main-thread guarded via `onMainThread` (log once, skip); `load`/`shutdown` are not (lifecycle).
 
 Related: [[reference-paper263-vfx-api]]
