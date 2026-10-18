@@ -14,7 +14,7 @@ All profiles buy with the same "optimal-ish" strategy: among unlocked buildings 
 |---|---|
 | `first-purchase` | seconds until the first building is bought |
 | `all-buildings` | seconds until at least one of every building is owned |
-| `longest-dead-zone` | longest stretch (s) where **nothing** unlocked is affordable, after the first purchase |
+| `longest-dead-zone` | longest stretch (s) where **nothing** unlocked is affordable, after the first purchase; optional `window-minutes: N` only counts the first N minutes (a zone crossing the edge is cut off there) |
 | `time-to` | seconds until `count` of `building` are owned (needs `building`, `count`) |
 | `upgrade` | seconds until upgrade `upgrade` is bought (needs `upgrade`) |
 
@@ -27,19 +27,24 @@ profiles:
   casual: { clicks-per-second: 3 }
   active: { clicks-per-second: 8 }
 targets:
-  - id: first-building-fast
-    description: First building within 30 s
+  - id: first-villager-baker
+    description: First Villager Baker within ~20 s of clicking
     profiles: [casual, active]
-    metric: first-purchase
-    max-seconds: 30
-  - id: all-tiers-in-2h
-    description: Every building tier owned within ~2 hours of active play
-    profiles: [active]
-    metric: all-buildings
-    max-seconds: 7200
-  - id: no-dead-zones
-    description: Never more than ~3 minutes with nothing affordable
+    metric: time-to
+    building: villager_baker
+    count: 1
+    max-seconds: 20
+  - id: first-wheat-farm
+    description: First Wheat Farm within ~3 minutes
+    profiles: [casual, active]
+    metric: time-to
+    building: wheat_farm
+    count: 1
+    max-seconds: 180
+  - id: no-dead-zones-early
+    description: Never more than 60 s with nothing affordable in the first 15 minutes
     profiles: [casual, active]
     metric: longest-dead-zone
-    max-seconds: 180
+    window-minutes: 15
+    max-seconds: 60
 ```

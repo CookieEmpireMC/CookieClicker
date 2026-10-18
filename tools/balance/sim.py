@@ -1,7 +1,7 @@
 """Second-by-second pacing simulation of one player profile with the optimal-ish buy strategy."""
 from dataclasses import dataclass, field
 
-from model import (Economy, State, building_cost, building_unlocked, click_power, total_cps,
+from model import (Economy, State, building_cost, building_unlocked, expected_click, total_cps,
                    upgrade_unlocked)
 
 
@@ -25,7 +25,7 @@ class Purchase:
 class Result:
     profile: Profile
     purchases: list[Purchase] = field(default_factory=list)
-    timeline: list[tuple[int, float, float, float]] = field(default_factory=list)  # t, cps, click, pouch
+    timeline: list[tuple[int, float, float, float]] = field(default_factory=list)  # t, cps, expected click, pouch
     dead_zones: list[tuple[int, int]] = field(default_factory=list)                # (start, length)
     final: State | None = None
 
@@ -37,7 +37,8 @@ def clicks_now(profile: Profile, state: State) -> float:
 
 
 def income(eco: Economy, state: State, clicks: float) -> float:
-    return total_cps(eco, state) + clicks * click_power(eco, state)
+    """Cookies per second: production plus clicks at the expected (crit-averaged) click value."""
+    return total_cps(eco, state) + clicks * expected_click(eco, state)
 
 
 def candidates(eco: Economy, state: State) -> list[tuple[str, str, float]]:
@@ -101,7 +102,7 @@ def simulate(eco: Economy, profile: Profile, horizon_seconds: int, sample_every:
                 result.dead_zones.append((dead_start, t - dead_start))
                 dead_start = None
         if t % sample_every == 0 or t == 1:
-            result.timeline.append((t, total_cps(eco, state), click_power(eco, state), state.pouch))
+            result.timeline.append((t, total_cps(eco, state), expected_click(eco, state), state.pouch))
     if dead_start is not None:
         result.dead_zones.append((dead_start, horizon_seconds + 1 - dead_start))
     result.final = state
