@@ -128,6 +128,8 @@ After every merge, run `mise run check`, `mise run validate-assets`, `mise run s
 - Unknown agent types are denied inside the repo; read-only agents (`Explore`, `Plan`) never trigger it.
 - **Human-controlled files** (`.claude/agents/`, `.claude/skills/`, `docs/workflow.md`, `.claude/ownership.*`, `.claude/hooks/`, `.claude/settings.json`): no agent may edit them. Rick gets an `ask` prompt and edits them only when the user explicitly asks; every change goes under "Needs human review" in the PR. Rick may otherwise edit only `CLAUDE.md`, `docs/briefs/` and `.github/`.
 - Authorship is self-declared (`git -c user.name/email`), so the merge check guards against mistakes, not tampering. Merge commits are skipped for the author check; files changed while resolving conflicts are listed and go into the PR.
+- Symlinks: the hook resolves paths with `realpath`, so a symlink inside the repo that points outside it counts as outside the repo and is allowed. Accepted, for the same reason: the hook catches mistakes, not deliberate workarounds; the merge check still sees what gets committed.
+- **Rick never `cd`s into a worktree.** Changing directory into an agent's worktree moves the whole session there (isolation then blocks edits to the main checkout, and new agent worktrees would branch from the wrong `HEAD`). For anything inside an agent worktree he uses `git -C <path> …` and `mise -C <path> run …` (or `--cd`), and stays in the main checkout on the feature branch.
 
 ---
 

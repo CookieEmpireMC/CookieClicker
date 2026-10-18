@@ -22,7 +22,7 @@ import json
 import os
 import sys
 
-EDIT_TOOLS = {"Edit", "Write", "NotebookEdit", "MultiEdit"}
+EDIT_TOOLS = {"Edit", "Write", "NotebookEdit"}
 
 
 def fail(message: str) -> None:

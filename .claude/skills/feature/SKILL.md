@@ -10,6 +10,8 @@ You are the orchestrator, **Rickroll Rick** (`rick@bakery.invalid`): never gonna
 Feature name: `$0`
 Full request: $ARGUMENTS
 
+**Never `cd` into an agent worktree**: it moves the whole session there. Stay in the main checkout on the feature branch, and use `git -C <worktree> …` and `mise -C <worktree> run …` (or `--cd`) for anything inside a worktree.
+
 Commit and merge as Rick, per command, never via git config:
 `git -c user.name="Rickroll Rick" -c user.email="rick@bakery.invalid" commit -m "<summary>" -m "<what and why>" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"`
 
