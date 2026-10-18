@@ -24,7 +24,7 @@ Also switched `StationFileTest` to the new seam (Unsafe/JavaPlugin hack removed)
 L1 adds `refreshPanels` once per second per online player with a session: per station view, per row, one `RowState.of` (a few pow/compare operations) and an equality check. `RowState` is all static between real changes (`needed` is the static unlock threshold), so an unchanged row sends no packets; only affordability flips or purchases re-render. About 10 rows x views per player per second: negligible. HudTemplate removes a MiniMessage parse per player per HUD refresh (now a tree swap). No PERF-HIGH. Spark: profile `/spark profiler start --timeout 60` while idling next to a station with several players; the plugin should stay well under 1% of tick, with `refreshPanels` and `Hud.render` barely visible.
 
 ## Results
-- `mise run test`: 233 tests, 0 failures (was 226 before my additions: +7 HudTemplate tests, StationFileTest unchanged in count). `check` BUILD SUCCESS, `validate-assets` 0 problems, `sound-check` 7/7, `balance-check` 6/6, `tools-test` 133 OK, ownership-check OK.
+- `mise run test`: 233 tests, 0 failures (includes 5 new HudTemplate tests; StationFileTest unchanged in count). `check` BUILD SUCCESS, `validate-assets` 0 problems, `sound-check` 7/7, `balance-check` 6/6, `tools-test` 133 OK, ownership-check OK.
 
 ## Follow-ups (not blocking)
 - L6 info-log for an empty pack URL: `PluginSettingsResourcePackTest.emptyUrlOrHashIsNotSentAndSaysSo` pins exactly 1 problem; leave as is, change test and code together in a later feature.
