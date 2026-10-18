@@ -1,0 +1,15 @@
+[tools]
+java = "temurin-25"
+maven = "3.9"
+
+[tasks.build]
+description = "Compile, test and package the plugin jar"
+run = "mvn -B package"
+
+[tasks.test]
+description = "Run unit tests"
+run = "mvn -B test"
+
+[tasks.check]
+description = "Full clean build, as the tester runs it"
+run = "mvn -B clean verify"

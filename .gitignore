@@ -2,6 +2,9 @@
 .claude
 .claude/worktrees/
 
+# Common working directory
+run/
+
 # Environment Variables
 appsettings.*.json
 .env
@@ -116,6 +119,3 @@ buildNumber.properties
 .mvn/timing.properties
 .mvn/wrapper/maven-wrapper.jar
 .flattened-pom.xml
-
-# Common working directory
-run/
