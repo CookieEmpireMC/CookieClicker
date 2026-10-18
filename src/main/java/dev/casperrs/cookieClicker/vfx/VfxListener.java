@@ -24,6 +24,9 @@ public final class VfxListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onEntitiesUnload(EntitiesUnloadEvent event) {
+        if (registry.isEmpty()) {
+            return; // no effect running: nothing in this chunk can be ours
+        }
         for (Entity entity : event.getEntities()) {
             DisplayJob job = registry.job(entity.getUniqueId());
             if (job != null) {
