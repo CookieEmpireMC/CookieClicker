@@ -92,6 +92,7 @@ public record StationVisualSettings(double viewDistance, int refreshTicks, doubl
             colors.put(state, r.argb("station.panel.colors." + state, switch (state) {
                 case "header" -> 0xC0301A0C;
                 case "affordable" -> 0xB03A2A10;
+                case "locked" -> 0x90181818;
                 default -> 0xB0202020;
             }));
         }
