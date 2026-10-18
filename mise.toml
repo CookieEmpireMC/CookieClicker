@@ -1,6 +1,11 @@
 [tools]
 java = "temurin-25"
 maven = "3.9"
+python = "3.12"
+
+[env]
+# Project-local venv for the asset scripts; mise creates and activates it automatically
+_.python.venv = { path = ".venv", create = true }
 
 [tasks.build]
 description = "Compile, test and package the plugin jar"
@@ -13,3 +18,62 @@ run = "mvn -B test"
 [tasks.check]
 description = "Full clean build, as the tester runs it"
 run = "mvn -B clean verify"
+
+[tasks.assets-deps]
+description = "Install the Python packages for the asset scripts into .venv"
+sources = ["design/requirements.txt"]
+outputs = [".venv/.assets-deps"]
+run = "pip install -q --disable-pip-version-check -r design/requirements.txt && touch .venv/.assets-deps"
+
+[tasks.assets]
+description = "Run every asset generator script in design/scripts/"
+depends = ["assets-deps"]
+run = """
+for script in design/scripts/*.py; do
+  [ -e "$script" ] || { echo "No scripts in design/scripts/"; break; }
+  echo "Running $script"
+  python "$script" || exit 1
+done
+"""
+
+[tasks.validate-assets]
+description = "Check asset JSON/YAML, model/texture/sound references, sounds.yml and effects.yml"
+depends = ["assets-deps"]
+run = "python tools/validate_assets.py"
+
+[tasks.sounds]
+description = "Regenerate every sound from design/sound-scripts/"
+depends = ["assets-deps"]
+run = """
+for script in design/sound-scripts/*.py; do
+  [ -e "$script" ] || { echo "No scripts in design/sound-scripts/"; break; }
+  echo "Running $script"
+  python "$script" || exit 1
+done
+"""
+
+[tasks.sound-previews]
+description = "Render waveform + spectrogram PNGs for every .ogg to design/sound-previews/"
+depends = ["assets-deps"]
+run = "python design/sound-tools/render_previews.py"
+
+[tasks.sound-check]
+description = "Measure every .ogg; fail on stereo positional sounds, clipping, leading silence, abrupt endings or bad format"
+depends = ["assets-deps"]
+run = "python tools/sound_check.py"
+
+[tasks.vfx-previews]
+description = "Export effect point data from the Java shape code, then plot it to design/vfx-previews/"
+depends = ["assets-deps"]
+run = """
+mvn -B test -Dtest='*PreviewExport' -Dsurefire.failIfNoSpecifiedTests=false || exit 1
+for script in design/vfx-scripts/*.py; do
+  [ -e "$script" ] || { echo "No scripts in design/vfx-scripts/"; break; }
+  echo "Running $script"
+  python "$script" || exit 1
+done
+"""
+
+[tasks.pack]
+description = "Zip resourcepack/ to target/cookieclicker-pack.zip and print its SHA-1"
+run = "python tools/pack.py"

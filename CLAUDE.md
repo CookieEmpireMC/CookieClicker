@@ -7,29 +7,63 @@ The target version is whatever `paper-api` version `pom.xml` declares: either **
 
 | File | Covers | Read when |
 |---|---|---|
+| `workflow.md` | who runs when: feature briefs, start gates, merge order, fix loop, report format | always, before launching or acting as any agent |
+| `briefs/<feature>.md` | feature brief: goal, contract (fixed IDs), tasks, status (written by the orchestrator) | before working on that feature |
 | `paper-121x-reference.md` | Java 21, Adventure 4, item model changes across 1.21.x, rules, supporting both versions in one jar | `pom.xml` has `1.21.x-R0.1-SNAPSHOT` |
 | `paper-26x-reference.md` | Java 25, new version strings, unobfuscated server, Adventure 5, world keys, API changes 26.1–26.3, rules | `pom.xml` has `26.x.build.…` |
-| `toolchain.md` | mise: pinned Java/Maven per target, build/test tasks, worktree trust | before any build or test |
+| `toolchain.md` | mise: pinned Java/Maven/Python per target, build/test/asset tasks, worktree trust | before any build or test |
 | `minimessage.md` | All player-facing text: MiniMessage, placeholders, security, fonts/glyphs, Adventure 5 removals | any feature that shows text |
 | `integrations.md` | ItemsAdder & ModelEngine: compatibility, Maven, hooks, load events, resource packs | the project uses either plugin |
 | `architecture.md` | package structure & conventions (maintained by plugin-tester) | always, if it exists |
 | `research/*.md` | resource pack research notes (written by resource-pack-researcher) | before building a researched feature |
 | `reviews/*.md` | test & review reports (written by plugin-tester) | after a review |
 
+## Design specs (in `design/`)
+
+| Path | Covers | Read when |
+|---|---|---|
+| `design/<asset>.md` | per-asset spec & hand-off: IDs, model/animation names, glyphs, what's placeholder (model-designer) | before code uses a model, texture, animation or glyph |
+| `design/sounds.md` | every sound event → key → files → feel → licence, plus what needs a human listen (sound-designer) | before code plays a sound |
+| `design/effects.md` | every effect ID → look → when to use → cost → placeholders (vfx-designer) | before code plays an effect |
+| `design/CREDITS.md` | source, author and licence of every external (CC0) asset | when adding or auditing third-party assets |
+| `design/*style-guide.md`, `design/*lessons.md` | each designer's style rules and learning log | the designers read these before every job |
+| `design/scripts/`, `design/sound-scripts/`, `design/vfx-scripts/` | asset generators (`mise run assets` / `sounds` / `vfx-previews`) | when regenerating assets |
+
+## Plugin config owned by designers
+
+| File | Covers | Owner |
+|---|---|---|
+| `src/main/resources/sounds.yml` | game event → sound key, vanilla fallback, volume, pitch range, source | sound-designer |
+| `src/main/resources/effects.yml` | effect presets (layers) and performance `limits` | vfx-designer |
+
 ## Agents (in `dot-claude`)
 
 | Agent | Role | Writes to |
 |---|---|---|
 | `resource-pack-researcher` | researches resource pack techniques for the target version | `docs/research/` only |
-| `plugin-coder` | implements features | `src/main/`, `pom.xml`, config |
+| `model-designer` | creates assets: models, item model definitions, .bbmodel, ItemsAdder YAML, placeholder textures, fonts/glyphs, pack.mcmeta | `resourcepack/` (see ownership), `itemsadder/`, `modelengine/`, `design/` (its files) |
+| `sound-designer` | creates original .ogg sounds (synthesized or processed CC0), sounds.json, subtitles, sounds.yml | `resourcepack/assets/<ns>/{sounds,sounds.json,lang}`, `src/main/resources/sounds.yml`, `design/sound-*`, `design/sounds.md`, `design/CREDITS.md` |
+| `vfx-designer` | builds the effects engine (particles, display-entity effects) and its presets | `src/main/java/…/vfx/` + its tests, `src/main/resources/effects.yml`, particle files in the pack, `design/vfx-*`, `design/effects.md` |
+| `plugin-coder` | implements features | `src/main/` except designer-owned files, `pom.xml`, `plugin.yml`, other config |
 | `plugin-tester` | writes/runs tests, reviews architecture, gives a merge verdict | `src/test/`, `docs/reviews/`, `docs/architecture.md` |
 
-Typical flow: researcher (in the background) → coder → tester → back to the coder if the tester reports issues.
-Run parallel features in separate worktrees (`claude -w <feature>`) and merge them one at a time.
+Flow (details and start gates in `docs/workflow.md`): orchestrator writes the feature brief → researcher (in the background) → model-designer + sound-designer + vfx-designer + coder in parallel, each in its own worktree → tester per branch → orchestrator merges in order → tester integration review.
+
+**The main session is the orchestrator:** it writes `docs/briefs/<feature>.md` before launching agents, launches each agent only when its gate in `docs/workflow.md` is met, commits research notes, merges `READY` branches one at a time (assets → vfx → coder), runs `mise run check`, `validate-assets` and `sound-check` on `main` after each merge, updates the brief's status table, and routes every `REQUESTS` / `CONTRACT CHANGES` item from agent reports to the right owner.
+
+### Asset ownership
+- **model-designer:** models, item model definitions, textures, fonts/glyphs, `pack.mcmeta`, `itemsadder/`, `modelengine/`
+- **sound-designer:** `.ogg` files, `sounds.json`, subtitle lang files, `sounds.yml`
+- **vfx-designer:** the `vfx` package and its tests, `effects.yml`, particle definitions and textures
+- **plugin-coder:** everything else in `src/main/` (incl. wiring the `Effects` service and the single sound service that reads `sounds.yml`), `pom.xml`, `plugin.yml`, other config
+- Nobody edits another owner's files; ask the owner instead.
+
+Every agent that writes code or assets runs in its own worktree (`isolation: "worktree"` when launched by the orchestrator, or `claude -w <feature>` by hand), on branch `<feature>/<agent>`. Branches are merged into `main` one at a time.
 
 ## Ground rules
 
 - Detect the target version from `pom.xml` first, and follow only that version's reference.
-- Java and Maven are pinned in `mise.toml` (Java 21 for 1.21.x, Java 25 for 26.x). Build with `mise run build`, test with `mise run test`, full check with `mise run check`. Never run plain `mvn`; use `mise exec -- mvn …`.
+- Java, Maven and Python are pinned in `mise.toml` (Java 21 for 1.21.x, Java 25 for 26.x). Build with `mise run build`, test with `mise run test`, full check with `mise run check`, check assets with `mise run validate-assets` and `mise run sound-check`, zip the pack with `mise run pack`. Never run plain `mvn`; use `mise exec -- mvn …`.
 - Never shade Paper, Adventure/MiniMessage, ItemsAdder or ModelEngine; they use `provided` scope.
+- Never hardcode sounds or particles in code: sounds go through `sounds.yml` events, effects through `Effects.play(id)`.
 - If a feature needs something the target version or an integration doesn't support, stop and report it instead of working around it.

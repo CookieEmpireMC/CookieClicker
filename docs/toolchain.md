@@ -24,6 +24,21 @@ Last checked: 2026-10-18
 | `1.21.x-R0.1-SNAPSHOT` | `temurin-21` | 21 |
 | `26.x.build.…` | `temurin-25` | 25 |
 
+### Python for asset scripts
+
+`mise.toml` also pins `python = "3.12"` for the designers' asset scripts. mise creates and activates a project-local venv (`.venv/`, git-ignored) via `[env] _.python.venv`, so `python`/`pip` inside `mise run` / `mise exec` always use it — no sudo, no system packages. Packages (Pillow, PyYAML, numpy, scipy, soundfile, pyloudnorm, matplotlib) are pinned in `design/requirements.txt` and installed by the `assets-deps` task, which only re-runs when that file changes. `soundfile`'s wheels bundle libsndfile with Ogg Vorbis, so no ffmpeg is needed. Each worktree gets its own `.venv` on first use.
+
+| Task | Does |
+|---|---|
+| `mise run assets` | runs every `design/scripts/*.py` (models/textures/glyphs) |
+| `mise run sounds` | runs every `design/sound-scripts/*.py` (regenerates all `.ogg` files) |
+| `mise run sound-previews` | renders a waveform + spectrogram PNG per `.ogg` to `design/sound-previews/` (`design/sound-tools/render_previews.py`) |
+| `mise run sound-check` | measures every `.ogg` (duration, channels, rate, peak, LUFS/RMS); fails on stereo outside `stereo/`, peaks above -1 dBFS, leading silence, an abrupt (unfaded) ending or a wrong format; loudness off-target is a warning (`tools/sound_check.py`) |
+| `mise run vfx-previews` | runs the `*PreviewExport` JUnit tests (real shape code → `target/vfx-points/*.csv`), then `design/vfx-scripts/*.py` plots them to `design/vfx-previews/` |
+| `mise run validate-assets` | checks every JSON/YAML/`.mcmeta`/`.bbmodel` parses; item definitions, models, textures and `sounds.json` entries resolve; `sounds.yml` keys exist, have a `minecraft:` fallback, volume ≤ 1.0 and a valid `source`; subtitle keys exist in `lang/en_us.json`; `effects.yml` presets have layers (`tools/validate_assets.py`) |
+| `mise run pack` | zips `resourcepack/` reproducibly to `target/cookieclicker-pack.zip` and prints its SHA-1 (`tools/pack.py`) |
+
+
 ---
 
 ## Templates

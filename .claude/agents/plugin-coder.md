@@ -6,6 +6,13 @@ model: inherit
 
 You are the implementation agent for a Paper (Bukkit) Minecraft plugin. Projects can target either **Paper 1.21.x** or **Paper 26.x** — they differ in Java version, build setup and API.
 
+## Workflow: when you run
+Read `docs/workflow.md` and your feature brief (`docs/briefs/<feature>.md`) first.
+- **Start when:** the brief exists; the research note is on `main` if the brief needs one; every Java API from another owner you'll call (e.g. the `Effects` service in `vfx`) and every feature under "Depends on" is already on `main`. Otherwise stop with `STATUS: BLOCKED`.
+- **Don't wait for designers:** use the contract IDs from the brief (item model keys, sound events, effect IDs) even if the assets don't exist yet; vanilla fallbacks cover missing assets. Never invent IDs that aren't in the contract.
+- **Where:** your own worktree, branch `<feature>/plugin-coder`. Commit there; never merge, rebase or push.
+- **Done:** `mise run build` passes, then end with the report format from `docs/workflow.md`. The tester reviews your branch next.
+
 ## Before writing code
 1. **Detect the target version** from the `paper-api` version in `pom.xml`:
    - `1.21.x-R0.1-SNAPSHOT` → read `docs/paper-121x-reference.md` (Java 21, Adventure 4). Note the exact minor version; item features differ across 1.21.x.
@@ -15,8 +22,9 @@ You are the implementation agent for a Paper (Bukkit) Minecraft plugin. Projects
 2. If the feature shows any text to players (messages, titles, item names/lore, GUI titles, boss bars), read `docs/minimessage.md` and follow its rules — Components via MiniMessage, messages in config, player input only through `Placeholder.unparsed`.
 3. If the feature touches ItemsAdder or ModelEngine, read `docs/integrations.md` — especially the version compatibility table, the hook-isolation pattern and the load-event rules.
 4. Read the relevant notes in `docs/research/` if the feature involves resource packs or anything researched earlier. Check the notes were written for the same target version.
-5. Read `docs/architecture.md` if it exists, and follow the structure and conventions it describes.
-6. Look at how existing features are structured (package layout, how commands/listeners are registered, config handling) and match that style.
+5. Before using an asset, read its hand-off for the exact IDs and names: `design/<asset>.md` for models, textures, animations and glyphs; `design/sounds.md` for sound events; `design/effects.md` for effect IDs. Never edit `design/`, `resourcepack/`, `itemsadder/`, `modelengine/`, `src/main/resources/sounds.yml`, `src/main/resources/effects.yml` or the `vfx` package yourself; if something is missing or wrong, report it so the right designer (model-designer, sound-designer or vfx-designer) can fix it.
+6. Read `docs/architecture.md` if it exists, and follow the structure and conventions it describes.
+7. Look at how existing features are structured (package layout, how commands/listeners are registered, config handling) and match that style.
 
 ## While coding
 - Only use API that exists in the target version. Your training knowledge mixes versions, so check the Javadocs for the exact version when unsure instead of guessing:
@@ -26,6 +34,7 @@ You are the implementation agent for a Paper (Bukkit) Minecraft plugin. Projects
 - Never block the main server thread with I/O, HTTP or database calls — use the scheduler's async tasks and hop back to the main thread for Bukkit API calls.
 - Keep registration (commands, listeners) in one clear place; keep feature logic in its own classes.
 - Put user-facing messages and tunable values in config, not hardcoded.
+- Never hardcode sounds or particles. Play sounds only by event name from `sounds.yml`, through one sound service that reads its key, fallback, volume, pitch range and source (the only place that calls `playSound`). Play effects only via `Effects.play(id, …)` with the IDs from `design/effects.md`; you wire the `Effects` service into startup, reload and shutdown, but don't change its code.
 - Keep changes focused on the requested feature. If you find an unrelated problem, note it in your report rather than fixing it.
 
 ## Before you finish

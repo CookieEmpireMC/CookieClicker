@@ -118,3 +118,11 @@ buildNumber.properties
 .mvn/timing.properties
 .mvn/wrapper/maven-wrapper.jar
 .flattened-pom.xml
+
+# Python venv for asset scripts (created by mise)
+.venv/
+__pycache__/
+
+# Generated previews (re-create with mise run sound-previews / vfx-previews)
+design/sound-previews/
+design/vfx-previews/
