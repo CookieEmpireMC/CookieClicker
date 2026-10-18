@@ -62,6 +62,9 @@ For the researcher (Citation Cindy), one note per topic in `docs/research/`, eac
 2. **Pack hosting for the in-game test:** a GitHub release asset (or any https URL); URL + SHA-1 go in `config.yml`. Only needed for the in-game test, not blocking.
 3. **Names:** game "Cookie Empire", command `/bakery`, permission `cookieempire.admin`; plugin `CookieClicker`, namespace `cookieclicker`.
 
+## Server facts (from the user)
+- **ItemsAdder 4.0.18** on the game server (reported 2026-10-18). Our pack is sent alongside ItemsAdder's (stacked packs, `replace(false)`, own namespace); verify both load in the in-game test. Follow-up for plugin-coder: record the version in `docs/integrations.md` (closes its TODO).
+
 ## Contract (fixed names; change only via the orchestrator)
 | Kind | ID | Owner | Notes |
 |---|---|---|---|
