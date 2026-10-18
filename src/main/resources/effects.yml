@@ -1,0 +1,124 @@
+# Cookie Empire visual effects: effect ID -> layers. Retune here, no code changes needed; /bakery reload applies it.
+# Owned by the vfx-designer. Code plays effects only by ID: effects.play("<id>", location, viewer, placeholders).
+# Full reference with examples: design/effects.md (keep both in sync with the loader, EffectsConfigParser).
+#
+# Bad values are logged at load and fall back to the default; an unknown type/particle/shape/item skips that layer;
+# an effect with no valid layer is skipped. Effects missing from this file are taken from the plugin's built-in copy.
+# Units: distances in blocks, angles in degrees, times in ticks (20 ticks = 1 s), colours "#rrggbb" ("#aarrggbb"
+# where transparency makes sense).
+#
+# limits:
+#   max-particles-per-effect         (200)  particles one play may spawn; heavier effects are thinned at load
+#   max-display-entities-per-player  (8)    effect display entities alive per viewer; the oldest is removed early
+#   max-display-entities-global      (150)  effect display entities alive on the server; new ones are dropped
+#
+# Every layer: { type: <type>, ... } plus
+#   delay-ticks  (0)          start this many ticks after play
+#   origin       ([0, 0, 0])  offset from the play location, [x, y, z]
+#
+# type: particle  -- personal particles (only the viewer sees them; everyone nearby when viewer is null)
+#   particle     (required)   26.3 particle key: dust, item, end_rod, firework, wax_on, electric_spark, ...
+#   data, depending on the particle:
+#     dust                    color ("#ffffff"), size (1.0, 0.01-4)
+#     dust_color_transition   color, to-color (= color), size
+#     item                    item ("cookie", a vanilla item), item-model (optional, e.g. cookieclicker:cookie;
+#                             only used for viewers with our resource pack, others see the vanilla item)
+#     block, falling_dust, dust_pillar, block_crumble, block_marker:  block (required, e.g. oak_planks)
+#     entity_effect, flash, tinted_leaves:  color
+#     effect, instant_effect  color, power (1.0)
+#     dragon_breath, sculk_charge, shriek:  value
+#   shape        (point)      point | burst | sphere | ring | arc | line | helix | fountain | sparkles
+#   points       (8)          points per tick (ring, sphere) or in total (burst, arc, line, helix per strand,
+#                             fountain); sparkles: number of sparks; point: unused (see count)
+#   radius       (0.5)        size of the shape; ring/sphere grow from radius-start (= radius) to radius
+#   radius-start (= radius)   ring/sphere start radius (ease-out growth over duration-ticks)
+#   duration-ticks (1)        ticks the shape is drawn over: ring/sphere redraw every tick (cost x ticks);
+#                             burst/arc/line/helix/fountain spread their points over the ticks; point repeats;
+#                             sparkles: life of one spark
+#   height       (1.0)        helix height / sparkle rise
+#   turns        (1.0)        helix revolutions;  strands (1): helix strands
+#   angle        (180)        arc length;  start-angle (0): first angle of ring/arc/helix (0 = +x)
+#   spread       (30)         fountain cone half-angle around straight up
+#   up-bias      (0)          burst: 0 = full sphere, 1 = everything straight up
+#   to           ([0, 1, 0])  line end, relative to the origin
+#   plane        (horizontal) ring/arc: horizontal | vertical | facing (stands up and turns toward the viewer)
+#   stagger-ticks (0)         sparkles: start times spread over this many ticks
+#   emit-every   (1)          sparkles: emit each spark every n ticks (2 = half the particles)
+#   direction    (outward for burst/fountain, else none)
+#                none: particle placed on the point, then count / offset / speed are vanilla randomness
+#                outward: launched along the shape normal at speed (blocks/tick); up: launched straight up
+#   speed        (0)          launch speed (outward/up) or vanilla random speed (none)
+#   offset       (0)          vanilla random spread around each point (direction none only)
+#   count        (1)          particles per point (direction none only)
+#   cost = points over all ticks x count; checked against max-particles-per-effect at load.
+#
+# type: floating-text  -- one TextDisplay (only the viewer sees it) that pops in, rises and fades
+#   text         (required)   MiniMessage; placeholders from code, e.g. <amount> (inserted as plain text)
+#   rise         (0.8)        blocks risen over its life
+#   duration-ticks (20)       life until removed (at least start-tick + pop-in-ticks + 1 + fade-ticks)
+#   scale        (1.0)        text size (1.0 = about 0.2 block per line)
+#   pop-in-ticks (3)          grow from pop-in-scale (0.5) through overshoot (1.15) to scale; 0 = no pop-in
+#   fade-ticks   (6)          shrink to nothing at the end, text opacity steps down meanwhile
+#   start-tick   (1)          first animation tick (the client needs the spawn state first)
+#   spread       (0.2)        rapid repeats fan out on a disc this wide, so numbers don't stack
+#   shadow (true), see-through (false), background ("#00000000" = none), billboard (center), view-range (0.5)
+#   cost: 1 display entity for duration-ticks
+#
+# type: item-crumbs  -- small ItemDisplays that fly out in a cone, tumble and shrink away
+#   item ("cookie"), item-model (optional, as for particles), count (4, max 16), scale (0.2), distance (0.7),
+#   spread (60, cone half-angle), lift (0.2), drop (0.5), spin (150, max 200), duration-ticks (14),
+#   start-tick (1), view-range (0.5)
+#   cost: count display entities for duration-ticks
+#
+# type: scale-pop  -- squash/stretch of the display passed to effects.pop(display, viewer); play() ignores it
+#   steps        list of { scale: [x, y, z] or a number, ticks: n }, multipliers of the display's rest scale;
+#                a final { scale: 1, ticks: 3 } is added if the last step isn't 1. Only the scale is changed.
+
+limits:
+  max-particles-per-effect: 200
+  max-display-entities-per-player: 8
+  max-display-entities-global: 150
+
+# Click on the giant cookie: a few cookie crumbs pop off the hit point and fall, and "+<amount>" floats up.
+# Spammable, so tiny: 8 particles + 1 text.
+cookie_click:
+  layers:
+    - { type: particle, particle: item, item: cookie, item-model: "cookieclicker:cookie", shape: burst,
+        points: 8, radius: 0.12, up-bias: 0.35, speed: 0.13 }
+    - { type: floating-text, text: "<#f5c542>+<amount>", origin: [0, 0.35, 0], rise: 0.8, duration-ticks: 20,
+        scale: 1.0, spread: 0.25 }
+
+# Crispy crit: golden flash shell, white firework sparks, extra crumbs, rising golden sparkles and a big number.
+cookie_crit:
+  layers:
+    - { type: particle, particle: dust_color_transition, color: "#fff2a8", to-color: "#f5a623", size: 1.4,
+        shape: sphere, points: 16, radius-start: 0.25, radius: 0.75, duration-ticks: 3 }
+    - { type: particle, particle: firework, shape: burst, points: 14, radius: 0.2, speed: 0.22 }
+    - { type: particle, particle: item, item: cookie, item-model: "cookieclicker:cookie", shape: burst,
+        points: 12, radius: 0.15, up-bias: 0.4, speed: 0.18 }
+    - { type: particle, particle: dust, color: "#f5c542", size: 0.8, shape: sparkles, points: 6, radius: 0.6,
+        height: 1.1, duration-ticks: 8, stagger-ticks: 4, delay-ticks: 2 }
+    - { type: item-crumbs, item: cookie, item-model: "cookieclicker:cookie", count: 3, scale: 0.22,
+        distance: 0.8, spread: 70, duration-ticks: 14 }
+    - { type: floating-text, text: "<b><gradient:#fff2a8:#f5a623>+<amount></gradient></b>",
+        origin: [0, 0.45, 0], rise: 1.0, duration-ticks: 30, scale: 1.8, overshoot: 1.3, pop-in-ticks: 4,
+        fade-ticks: 8, spread: 0.1 }
+
+# Bought a building: a golden ring that opens up around the clicked row, facing the buyer, plus a few
+# rising sparkles and a small burst of sparks.
+purchase:
+  layers:
+    - { type: particle, particle: dust, color: "#f5c542", size: 1.0, shape: ring, plane: facing,
+        points: 16, radius-start: 0.25, radius: 0.55, duration-ticks: 3 }
+    - { type: particle, particle: dust_color_transition, color: "#fff2a8", to-color: "#f5c542", size: 0.7,
+        shape: sparkles, points: 6, radius: 0.45, height: 0.9, duration-ticks: 8, stagger-ticks: 3,
+        emit-every: 2, delay-ticks: 1 }
+    - { type: particle, particle: firework, shape: burst, points: 8, radius: 0.1, speed: 0.12, delay-ticks: 1 }
+
+# Squash/pop of the clicked cookie display: effects.pop(display, viewer). Scale only; the caller's spin and bob
+# (translation and rotation) are kept. Squash 2 ticks, stretch 2 ticks, settle 3 ticks.
+pop:
+  layers:
+    - { type: scale-pop, steps: [ { scale: [1.25, 0.75, 1.25], ticks: 2 },
+                                  { scale: [0.92, 1.10, 0.92], ticks: 2 },
+                                  { scale: 1, ticks: 3 } ] }
