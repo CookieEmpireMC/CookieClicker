@@ -59,7 +59,7 @@ Everyone commits under their own name, per commit (`git -c user.name=… -c user
 
 | Agent | Name | Email | Motto |
 |---|---|---|---|
-| main session (orchestrator, merges) | Merge Doge | doge@bakery.invalid | such merge, very bake, wow |
+| main session (orchestrator, merges into feature branches) | Rickroll Rick | rick@bakery.invalid | never gonna push to main, never gonna merge your PR |
 | resource-pack-researcher | Citation Cindy | cindy@bakery.invalid | [citation needed] is a lifestyle |
 | plugin-coder | Works4Me Wesly | wesly@bakery.invalid | it compiled on my machine |
 | plugin-tester | Gandalf | gandalf@bakery.invalid | no branch passes without a verdict |
@@ -68,11 +68,7 @@ Everyone commits under their own name, per commit (`git -c user.name=… -c user
 | vfx-designer | Flare Larry | larry@bakery.invalid | if it doesn't sparkle, it isn't done |
 | balance-designer | Stonks Stan | stan@bakery.invalid | number go up (on schedule) |
 
-The orchestrator commits as Merge Doge (`git -c user.name="Merge Doge" -c user.email="doge@bakery.invalid" …`), including research notes and integration reviews on behalf of agents without a shell or branch (credited with `--author`). Merges to `main` happen only after the user approves them.
-
-Flow (details and start gates in `docs/workflow.md`): orchestrator writes the feature brief → researcher (in the background) → model-designer + sound-designer + vfx-designer + balance-designer + coder in parallel, each in its own worktree → tester per branch → orchestrator merges in order → tester integration review.
-
-**The main session is the orchestrator** (run a feature with `/feature`, see `.claude/skills/feature/SKILL.md`): it writes `docs/briefs/<feature>.md` and gets the user's approval before launching agents, launches each agent only when its gate in `docs/workflow.md` is met, commits research notes, merges `READY` branches one at a time after the user approves (assets → vfx → coder), runs `mise run check`, `validate-assets` and `sound-check` on `main` after each merge, updates the brief's status table, and routes every `REQUESTS` / `CONTRACT CHANGES` item from agent reports to the right owner.
+The orchestrator commits as Rickroll Rick (`git -c user.name="Rickroll Rick" -c user.email="rick@bakery.invalid" …`), including research notes and integration reviews on behalf of agents without a shell or branch (credited with `--author`). Rick merges agent branches into the feature branch and opens the pull request; **only the user merges into `main`**.
 
 ### Asset ownership
 - **model-designer:** models, item model definitions, textures, fonts/glyphs, `pack.mcmeta`, `itemsadder/`, `modelengine/`
@@ -82,7 +78,18 @@ Flow (details and start gates in `docs/workflow.md`): orchestrator writes the fe
 - **plugin-coder:** everything else in `src/main/` (incl. wiring the `Effects` service and the single sound service that reads `sounds.yml`), `pom.xml`, `plugin.yml`, other config
 - Nobody edits another owner's files; ask the owner instead.
 
-Every agent that writes code or assets runs in its own worktree (`isolation: "worktree"` when launched by the orchestrator, or `claude -w <feature>` by hand), on branch `<feature>/<agent>`. Branches are merged into `main` one at a time.
+Every agent that writes code or assets runs in its own worktree (`isolation: worktree` in its frontmatter), branched from the feature branch, on branch `<name>/<agent>`. Agent branches are merged into the feature branch one at a time; the feature reaches `main` only through a pull request the user merges.
+
+## Feature workflow (branches + pull requests)
+
+Run a feature with **`/feature <name> <description>`** (`.claude/skills/feature/SKILL.md`); details and start gates are in `docs/workflow.md`.
+
+1. **Branch:** Rickroll Rick (the main session) runs `git switch main && git pull && git switch -c feature/<name>` and stays on it.
+2. **Brief:** drafts `docs/briefs/<name>.md` from the template, waits for the user's approval, commits it on the feature branch.
+3. **Agents:** researcher first if needed; then model-designer, sound-designer, vfx-designer, balance-designer and coder in parallel, each in its own worktree **branched from the feature branch** (`.claude/settings.json`: `"worktree": { "baseRef": "head" }`), on branch `<name>/<agent>`, committing with its own identity. Agents never push, merge or touch `main`.
+4. **Review + merge:** Gandalf reviews each agent branch; Rick merges `READY` branches into the feature branch with `git merge --no-ff` (assets and config before code), runs `check`, `validate-assets`, `sound-check` and `balance-check` after each merge, sends red checks back to the owner, resolves conflicts only where the owner is clear, and cleans up merged worktrees and branches.
+5. **Pull request:** after Gandalf's integration review, Rick checks `gh auth status`, pushes `feature/<name>` (only `feature/*`, never force), and opens a PR with `gh pr create` filled from `.github/pull_request_template.md`: ready when everything is green and `READY`, otherwise draft with the open issues. He waits for CI with `gh pr checks --watch`, fixes failures through the owners, and gives the user the URL and a 3-line summary.
+6. **Merge:** the user reviews and merges the PR. Rick never merges into `main`.
 
 ## Ground rules
 

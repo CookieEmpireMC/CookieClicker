@@ -47,12 +47,12 @@ Questions for the user that block or shape the design. The brief isn't approved 
 ## Tasks
 | Agent | Task | Needs (gate) | Branch |
 |---|---|---|---|
-| resource-pack-researcher | … | — | main (docs) |
+| resource-pack-researcher | … | — | feature branch (docs) |
 | model-designer | … | contract | `<feature>/model-designer` |
 | sound-designer | … | contract | `<feature>/sound-designer` |
 | vfx-designer | … | contract | `<feature>/vfx-designer` |
 | balance-designer | … | contract | `<feature>/balance-designer` |
-| plugin-coder | … | contract, research, APIs on main | `<feature>/plugin-coder` |
+| plugin-coder | … | contract, research, APIs on the feature branch | `<feature>/plugin-coder` |
 | plugin-tester | review each branch, then integration | owner DONE | (reviewed branch) |
 
 ## Status
