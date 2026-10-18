@@ -59,7 +59,8 @@ When every agent branch is merged, launch `plugin-tester` for an integration rev
 4. `gh pr create --base main --head feature/<name> --title "<title>" --body-file <file>`, adding `--draft` unless every check passes and the integration verdict is `READY` (then list the open issues in the body).
 5. Set **Status: review** in the brief, commit and push.
 6. If `.github/workflows/` has a CI workflow: `gh pr checks --watch`. If it fails, fix via the owning agent, merge, push again, re-check. Once everything is green and `READY`: set **Status: done** in the brief, commit, push, and mark a draft ready with `gh pr ready`. Merging the PR then lands `done` on `main`.
-7. Give the user the PR URL and a 3-line summary. List any leftover `<name>/*` branches (`git branch --list '<name>/*'`) or worktrees (`git worktree list`).
+7. Open the PR in the user's browser automatically (`gh pr view --web`), without asking, as soon as the feature is fully implemented (PR ready, or draft with the open issues listed), so they can start reviewing.
+8. Give the user the PR URL and a 3-line summary. List any leftover `<name>/*` branches (`git branch --list '<name>/*'`) or worktrees (`git worktree list`).
 
 ## 7. After the user merges
 The user merges the PR; you never do. When they tell you it's merged: `git switch main && git pull`, remove leftover agent worktrees and branches, and delete the local feature branch with `git branch -d feature/<name>`.
