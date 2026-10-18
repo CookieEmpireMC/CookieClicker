@@ -83,7 +83,7 @@ Stop and report `STATUS: BLOCKED` with exactly what you're waiting for. Don't in
 
 ### Merging agent branches (orchestrator)
 For each `READY` branch, one at a time:
-1. `mise run ownership-check <name>/<agent>`. A violation goes back to the agent (fix on its branch, re-review); don't merge around it.
+1. `mise run ownership-check <name>/<agent>`. A violation goes back to the agent (fix on its branch, re-review); don't merge around it. Add `--human-approved` only when the user explicitly approved changes to human-controlled files on that branch; they're then listed for "Needs human review" instead of failing.
 2. Merge as Rickroll Rick: `git -c user.name="Rickroll Rick" -c user.email="rick@bakery.invalid" merge --no-ff <name>/<agent>`
 3. Run the checks (below), then clean up: `git worktree remove <path>` (unlock first if needed), `git branch -d <name>/<agent>`, `git worktree prune`.
 

@@ -79,7 +79,7 @@ none (`main` pushed by the user before the PR step).
 | matcher module | `.claude/hooks/ownership_lib.py` | human-controlled (Wesly creates it here) | path normalisation, glob matching, decisions |
 | hook script | `.claude/hooks/ownership.py` | human-controlled (Wesly creates it here) | PreToolUse entry point |
 | settings | `.claude/settings.json` `hooks` entry | human-controlled (Wesly adds it here) | keep `worktree.baseRef: head` |
-| check script | `tools/ownership/check.py` | plugin-coder | `check.py <branch> [--base <feature-branch>]`, imports the matcher from `$CLAUDE_PROJECT_DIR` or the repo root |
+| check script | `tools/ownership/check.py` | plugin-coder | `check.py <branch> [--base <feature-branch>] [--human-approved]`; `--human-approved` only when the user approved changes to human-controlled files (e.g. this bootstrap), which are then listed for "Needs human review" instead of failing |
 | mise task | `ownership-check` | plugin-coder | `mise run ownership-check <branch>` |
 | mise task | `tools-test` | plugin-coder | `python -m unittest discover -s tools -p 'test_*.py'` |
 | tests | `tools/ownership/test_ownership.py` | plugin-tester | |
@@ -97,7 +97,7 @@ none (`main` pushed by the user before the PR step).
 ## Status
 | Agent | Status | Branch | Verdict | Notes |
 |---|---|---|---|---|
-| plugin-coder | in progress | `ownership-enforcement/plugin-coder` | | launched |
+| plugin-coder | DONE (follow-up: `.gitattributes` glob) | `ownership-enforcement/plugin-coder` | | 4 commits; hook ~20 ms; hand tests pass |
 | plugin-tester | waiting | | | after coder DONE |
 | orchestrator | in progress | `feature/ownership-enforcement` | | brief committed |
 

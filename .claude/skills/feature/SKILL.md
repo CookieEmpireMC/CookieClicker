@@ -40,7 +40,7 @@ For every report:
 - `BLOCKED`: note the gate and re-launch when it's met. `REQUESTS` / `CONTRACT CHANGES`: route to the owner; change the contract only if it doesn't break finished work, otherwise ask the user.
 - `DONE`: launch `plugin-tester` on that branch (give it the worktree path and branch from the agent's result; it commits its tests there as Gandalf).
 - `NOT READY`: send the findings back to the owner on the same branch; max 3 rounds, then ask the user.
-- `READY`: first run `mise run ownership-check <name>/<agent>`; a violation goes back to the agent. Then merge into the feature branch, in the order from `docs/workflow.md` (assets and config before the code that uses them):
+- `READY`: first run `mise run ownership-check <name>/<agent>`; a violation goes back to the agent. Use `--human-approved` only when the user explicitly approved changes to human-controlled files on that branch. Then merge into the feature branch, in the order from `docs/workflow.md` (assets and config before the code that uses them):
   `git -c user.name="Rickroll Rick" -c user.email="rick@bakery.invalid" merge --no-ff <name>/<agent> -m "Merge <name>/<agent>" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"`
   - Conflicts: resolve only when every file's owner is clear and the result obvious; otherwise `git merge --abort` and ask the owner to rebase on the feature branch, or ask the user.
   - Then run `mise run check`, `validate-assets`, `sound-check` and `balance-check`. Red means stop: fix via the owning agent before the next merge.
