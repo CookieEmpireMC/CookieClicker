@@ -4,7 +4,8 @@
     "Read by .claude/hooks/ownership.py (PreToolUse, Edit|Write|NotebookEdit) and tools/ownership/check.py (mise run ownership-check).",
     "Format: orchestrator = main session (no agent_type); agents = keyed by agent_type; each has the git name/email it commits with and 'paths'.",
     "Globs on repo-relative paths: ** = any depth (also none), * = within one segment, leading ! excludes a path an earlier glob allowed (last match wins).",
-    "human_controlled wins over every list: agents are denied, the orchestrator gets 'ask'. A path may have several owners. Full rules: docstring of .claude/hooks/ownership_lib.py."
+    "human_controlled wins over every list: agents are denied, the orchestrator gets 'ask'. A path may have several owners. Full rules: docstring of .claude/hooks/ownership_lib.py.",
+    "Each agent also owns its own persistent memory folder .claude/agent-memory/<agent_type>/ (memory: project in its agent file)."
   ],
   "orchestrator": {
     "name": "Rickroll Rick",
@@ -20,7 +21,8 @@
       "name": "Citation Cindy",
       "email": "cindy@bakery.invalid",
       "paths": [
-        "docs/research/**"
+        "docs/research/**",
+        ".claude/agent-memory/resource-pack-researcher/**"
       ]
     },
     "plugin-coder": {
@@ -45,7 +47,8 @@
         "docs/paper-*.md",
         "docs/toolchain.md",
         "docs/minimessage.md",
-        "docs/integrations.md"
+        "docs/integrations.md",
+        ".claude/agent-memory/plugin-coder/**"
       ]
     },
     "plugin-tester": {
@@ -55,7 +58,8 @@
         "src/test/**",
         "tools/**/test_*.py",
         "docs/reviews/**",
-        "docs/architecture.md"
+        "docs/architecture.md",
+        ".claude/agent-memory/plugin-tester/**"
       ]
     },
     "model-designer": {
@@ -76,7 +80,8 @@
         "!design/vfx-*",
         "!design/sounds.md",
         "!design/effects.md",
-        "!design/CREDITS.md"
+        "!design/CREDITS.md",
+        ".claude/agent-memory/model-designer/**"
       ]
     },
     "sound-designer": {
@@ -90,7 +95,8 @@
         "design/sound-*",
         "design/sound-*/**",
         "design/sounds.md",
-        "design/CREDITS.md"
+        "design/CREDITS.md",
+        ".claude/agent-memory/sound-designer/**"
       ]
     },
     "vfx-designer": {
@@ -104,7 +110,8 @@
         "resourcepack/assets/minecraft/textures/particle/**",
         "design/vfx-*",
         "design/vfx-*/**",
-        "design/effects.md"
+        "design/effects.md",
+        ".claude/agent-memory/vfx-designer/**"
       ]
     },
     "balance-designer": {
@@ -115,7 +122,8 @@
         "src/main/resources/upgrades.yml",
         "tools/balance/**",
         "!tools/**/test_*.py",
-        "docs/balance/**"
+        "docs/balance/**",
+        ".claude/agent-memory/balance-designer/**"
       ]
     }
   },

@@ -3,6 +3,7 @@ name: plugin-coder
 description: Implements features in the Paper plugin (1.21.x or 26.x) — commands, listeners, GUIs, config, resource pack integration, ItemsAdder/ModelEngine hooks. Use for any task that writes or changes plugin code. Reads research notes from docs/research/ before implementing.
 model: inherit
 isolation: worktree
+memory: project
 ---
 
 You are the implementation agent for a Paper (Bukkit) Minecraft plugin. Projects can target either **Paper 1.21.x** or **Paper 26.x** — they differ in Java version, build setup and API.

@@ -48,6 +48,7 @@ For every report:
   - Then run `mise run check`, `validate-assets`, `sound-check` and `balance-check`. Red means stop: fix via the owning agent before the next merge.
   - Clean up: `git worktree remove <path>` (unlock first if needed), `git branch -d <name>/<agent>`, `git worktree prune`.
   - Note any files `ownership-check` lists as changed during conflict resolution; they go into the PR.
+  - Agent memory lands in the main checkout, not on the agent's branch: commit each agent's changed `.claude/agent-memory/<agent_type>/` files on the feature branch, credited to that agent (`--author="<name> <email>"`), right after merging its branch (or when it finishes, if it has no branch).
 
 ## 5. Integration review
 When every agent branch is merged, launch `plugin-tester` for an integration review on the feature branch. Commit its review (`docs/reviews/<date>-<name>.md`) credited to it (`--author="Gandalf <gandalf@bakery.invalid>"`). Fix anything it finds through the owners, as above.
@@ -56,7 +57,7 @@ When every agent branch is merged, launch `plugin-tester` for an integration rev
 1. `gh auth status`. If not logged in: tell the user to run `! gh auth login`, and stop.
 2. `git push -u origin feature/<name>`. Only `feature/*` branches; never `main`, never `--force`.
 3. Write the PR body from `.github/pull_request_template.md` into a scratchpad file. Fill every section (changes to human-controlled files and `mise.toml` always go under "Needs human review"): player-facing summary; brief link + acceptance criteria checklist; team contributions from `git log main..HEAD --format="%an: %s"` grouped per member; check results; tester verdict + review link; needs human review (paths, `mise run review`, balance before/after, new config keys); in-game test steps; follow-ups.
-4. `gh pr create --base main --head feature/<name> --title "<title>" --body-file <file>`, adding `--draft` unless every check passes and the integration verdict is `READY` (then list the open issues in the body).
+4. Open the PR **as `cookie-bakery[bot]`**, never with the user's account (they must be able to approve it under `main`'s ruleset): `mise run pr-open --head feature/<name> --base main --title "<title>" --body-file <file>`, adding `--draft` unless every check passes and the integration verdict is `READY` (then list the open issues in the body). If `pr-open` fails or is denied, stop and give the user the exact `! mise run pr-open …` command; don't fall back to `gh pr create`.
 5. Set **Status: review** in the brief, commit and push.
 6. If `.github/workflows/` has a CI workflow: `gh pr checks --watch`. If it fails, fix via the owning agent, merge, push again, re-check. Once everything is green and `READY`: set **Status: done** in the brief, commit, push, and mark a draft ready with `gh pr ready`. Merging the PR then lands `done` on `main`.
 7. Open the PR in the user's browser automatically (`gh pr view --web`), without asking, as soon as the feature is fully implemented (PR ready, or draft with the open issues listed), so they can start reviewing.
