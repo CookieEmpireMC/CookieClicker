@@ -1,0 +1,47 @@
+# Cookie Empire sounds: game event -> sound. Retune here, no code changes needed.
+# Owned by the sound-designer; the plugin plays sounds only through these event names.
+#
+# Fields per event:
+#   key        sound event from our resource pack's sounds.json (cookieclicker:...)
+#   fallback   vanilla minecraft:... sound, played when the player hasn't loaded the pack
+#   volume     0 < volume <= 1.0. Above 1.0 only widens the hearing range in Minecraft, it
+#              doesn't get louder; the .ogg files are already levelled, so keep this <= 1.0
+#   pitch-min  lowest random pitch (0.5 - 2.0); the plugin picks a random pitch per play
+#   pitch-max  highest random pitch (>= pitch-min, <= 2.0)
+#   source     sound category (lower case), i.e. which volume slider controls it:
+#              master, music, record, weather, block, hostile, neutral, player, ambient,
+#              voice, ui (ui exists on Paper 26.3, check the Javadocs for other versions)
+#
+# All sounds are mono, so they can also be played at a location in the world.
+
+cookie_click:
+  key: "cookieclicker:ui.cookie_click"      # 4 variants, picked at random by the client
+  fallback: "minecraft:block.wood.hit"
+  volume: 0.6
+  pitch-min: 0.92
+  pitch-max: 1.08
+  source: ui
+
+cookie_crit:
+  key: "cookieclicker:ui.cookie_crit"
+  fallback: "minecraft:entity.experience_orb.pickup"
+  volume: 0.8
+  pitch-min: 0.97
+  pitch-max: 1.03
+  source: ui
+
+purchase:
+  key: "cookieclicker:ui.purchase"
+  fallback: "minecraft:block.note_block.bell"
+  volume: 0.8
+  pitch-min: 0.98
+  pitch-max: 1.02
+  source: ui
+
+cant_afford:
+  key: "cookieclicker:ui.cant_afford"
+  fallback: "minecraft:block.note_block.bass"
+  volume: 0.6
+  pitch-min: 0.95
+  pitch-max: 1.0
+  source: ui
