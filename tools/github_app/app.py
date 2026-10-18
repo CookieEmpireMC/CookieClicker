@@ -382,7 +382,8 @@ def get_installation_token(config_path=None, environ=None, now=None, openssl="op
 # --- pull request -----------------------------------------------------------------------
 
 def validate_repo(repo):
-    if not REPO_PATTERN.match(repo or ""):
+    if not REPO_PATTERN.fullmatch(repo or "") or any(
+            segment in (".", "..") for segment in repo.split("/")):
         raise ConfigError(f"--repo must look like owner/name, got {repo!r}")
     return repo
 
