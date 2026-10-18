@@ -19,6 +19,7 @@ import dev.casperrs.cookieClicker.text.Messages;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.IllegalPluginAccessException;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -69,8 +70,13 @@ public final class CookieClicker extends JavaPlugin {
             return t;
         });
         Executor mainThread = task -> {
-            if (isEnabled()) {
+            if (!isEnabled()) {
+                return; // shutting down: sessions are already flushed
+            }
+            try {
                 Bukkit.getScheduler().runTask(this, task);
+            } catch (IllegalPluginAccessException e) { // disabled in the meantime
+                getLogger().fine("Dropped a storage callback during shutdown");
             }
         };
 
