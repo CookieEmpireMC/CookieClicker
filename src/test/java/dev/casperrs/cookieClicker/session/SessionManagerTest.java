@@ -336,6 +336,15 @@ class SessionManagerTest {
     }
 
     @Test
+    void joinAfterShutdownIsDroppedWithoutThrowingOrLeavingAPendingLoad() throws Exception {
+        sessions.shutdown(5);
+        sessions.join(alice); // pass-1 finding: used to throw RejectedExecutionException
+        assertEquals(0, mainQueue.size());
+        assertFalse(sessions.isLoaded(alice));
+        assertEquals(0, count("load"));
+    }
+
+    @Test
     void removedListenersStopHearingEvents() throws Exception {
         List<String> seen = new ArrayList<>();
         SessionListener l = new SessionListener() {

@@ -60,39 +60,29 @@ public final class NumberFormatter {
         if (value < MILLION) {
             return grouped((long) Math.floor(value));
         }
-        int group = (int) Math.floor(Math.log10(value) / 3);
-        double mantissa = value / Math.pow(10, 3.0 * group);
-        // log10 can be off by one ulp right at a power of 1000
-        if (mantissa >= 1000) {
-            group++;
-            mantissa /= 1000;
-        } else if (mantissa < 1) {
-            group--;
-            mantissa *= 1000;
-        }
+        // Exact decimal digits of the double (shortest repr), so the mantissa is never off by one step:
+        // dividing by Math.pow(10, 3 * group) is inexact from 10^22 up and truncation then shows 99.9 for 100
+        BigDecimal exact = BigDecimal.valueOf(value);
+        int exponent = exact.precision() - exact.scale() - 1; // value >= 1e6, so this is floor(log10(value))
+        int group = exponent / 3;
         int suffixIndex = group - 2;
         if (suffixIndex < settings.suffixes().size()) {
             return settings.largePattern()
-                    .replace("{value}", decimal(mantissa, settings.decimals()))
+                    .replace("{value}", decimal(exact.movePointLeft(3 * group), settings.decimals()))
                     .replace("{suffix}", settings.suffixes().get(suffixIndex));
         }
-        int exponent = (int) Math.floor(Math.log10(value));
-        double m = value / Math.pow(10, exponent);
-        if (m >= 10) {
-            exponent++;
-            m /= 10;
-        } else if (m < 1) {
-            exponent--;
-            m *= 10;
-        }
         return settings.scientificPattern()
-                .replace("{value}", decimal(m, settings.decimals()))
+                .replace("{value}", decimal(exact.movePointLeft(exponent), settings.decimals()))
                 .replace("{exponent}", Integer.toString(exponent));
     }
 
-    /** Truncated to {@code decimals}, trailing zeros removed, configured decimal separator. */
     private String decimal(double v, int decimals) {
-        String plain = BigDecimal.valueOf(v).setScale(decimals, RoundingMode.DOWN).stripTrailingZeros().toPlainString();
+        return decimal(BigDecimal.valueOf(v), decimals);
+    }
+
+    /** Truncated to {@code decimals}, trailing zeros removed, configured decimal separator. */
+    private String decimal(BigDecimal v, int decimals) {
+        String plain = v.setScale(decimals, RoundingMode.DOWN).stripTrailingZeros().toPlainString();
         return plain.replace(".", settings.decimalSeparator());
     }
 

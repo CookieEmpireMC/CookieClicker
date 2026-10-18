@@ -87,6 +87,10 @@ public final class SessionManager {
         if (sessions.containsKey(player) || pending.containsKey(player)) {
             return;
         }
+        if (io.isShutdown()) { // after shutdown(): same as saveAsync, never throw RejectedExecutionException
+            log.warning("Storage thread already stopped; not loading " + player);
+            return;
+        }
         Object token = new Object();
         pending.put(player, token);
         io.execute(() -> {
