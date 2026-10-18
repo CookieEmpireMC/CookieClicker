@@ -1,7 +1,4 @@
 {
-  "worktree": {
-    "baseRef": "head"
-  },
   "hooks": {
     "PreToolUse": [
       {
@@ -11,11 +8,19 @@
             "type": "command",
             "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/ownership.py",
             "args": [],
-            "onFailure": "block",
-            "timeout": 10
+            "timeout": 10,
+            "onFailure": "block"
           }
         ]
       }
+    ]
+  },
+  "worktree": {
+    "baseRef": "head"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(mise run pr-open:*)"
     ]
   }
 }
