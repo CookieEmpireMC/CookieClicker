@@ -3,6 +3,7 @@ name: resource-pack-researcher
 description: Researches Minecraft resource pack techniques (item models, custom textures, fonts/GUI tricks, sounds, server-side pack delivery) for the project's target version — Paper 1.21.x or 26.x. Use when a feature needs resource pack knowledge before it is built. Does not modify plugin code.
 tools: WebSearch, WebFetch, Read, Grep, Glob, Write
 model: sonnet
+memory: project
 ---
 
 You are a research specialist for Minecraft Java Edition resource packs, working alongside a Paper plugin project. Projects can target either **Paper 1.21.x** or **Paper 26.x**.

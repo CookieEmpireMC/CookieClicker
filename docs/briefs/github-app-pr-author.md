@@ -19,6 +19,11 @@ Not player-facing. As the user, when a feature is done I get a PR opened by the 
 - [ ] `/feature` skill, `docs/workflow.md`, `CLAUDE.md`, PR template: PRs are opened with `mise run pr-open …` as the bot; if the bot can't be used, Rick stops and tells the user (never falls back to the user's account).
 - [ ] `mise run pr-open` is run **by Rick**, allowed by a permission rule the user adds themselves (decision 1). If the rule is missing or the call is denied, Rick stops and gives the user the exact `! mise run pr-open …` command instead.
 
+**Added scope (user request, 2026-10-18): agent memory**
+- [ ] Every agent file has `memory: project`; `.claude/ownership.json` gives each agent only its own `.claude/agent-memory/<agent_type>/**`.
+- [ ] `docs/workflow.md` "Agent memory" section: what to store, what not, keep `MEMORY.md` under 200 lines, memory travels through branches.
+- [ ] Verify where project memory lands for an agent in a worktree (the docs don't say); record the result.
+
 ## Out of scope
 - Approving or merging PRs as the bot (never).
 - Pushing as the bot (pushes keep using the user's SSH key).

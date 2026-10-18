@@ -134,6 +134,24 @@ After every merge, run `mise run check`, `mise run validate-assets`, `mise run s
 
 ---
 
+## Agent memory (token cache)
+
+Every agent has `memory: project` in its frontmatter: a persistent folder `.claude/agent-memory/<agent_type>/` that only that agent may write (ownership map). The first 200 lines / 25 KB of its `MEMORY.md` load automatically at startup, so it doesn't have to rediscover the same facts every run.
+
+**Store** (one short line each in `MEMORY.md`, details in topic files it links to, with date + source):
+- facts that were expensive to find: exact API signatures/constants verified in the Javadocs for this version, pack format numbers, enum names, working command lines
+- gotchas and their fixes (tool quirks, things that failed and why)
+- where things live in this repo (paths, entry points, which file defines what)
+- decisions the user made that affect your work and aren't in a brief yet
+
+**Don't store:** secrets or tokens; anything already in `CLAUDE.md`, `docs/`, the brief or the code (link to it instead); one-off task details; guesses (only verified facts).
+
+**Keep it lean:** `MEMORY.md` is an index under 200 lines; update or delete entries that turn out wrong or stale; check a remembered fact against the current code or docs before relying on it for something risky.
+
+**Lifecycle:** memory changes are committed on your own branch like any other file, reviewed with it, and reach `main` through the feature PR. The designers' `design/*style-guide.md` and `design/*lessons.md` stay the human-readable design record; memory is your private working cache.
+
+---
+
 ## Rules for every agent
 
 - **Read first:** `docs/workflow.md` (this file) and the feature brief you were given (`docs/briefs/<name>.md`).

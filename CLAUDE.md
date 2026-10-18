@@ -80,6 +80,7 @@ The orchestrator commits as Rickroll Rick (`git -c user.name="Rickroll Rick" -c 
 - **orchestrator (Rick):** `CLAUDE.md`, `docs/briefs/`, `.github/`, merge commits
 - **Human-controlled (no agent):** `.claude/agents/`, `.claude/skills/`, `docs/workflow.md`, `.claude/ownership.*`, `.claude/hooks/`, `.claude/settings.json`. Rick edits them only when the user explicitly asks, and every change goes under "Needs human review".
 - Nobody edits another owner's files; ask the owner instead.
+- **Agent memory:** every agent has `memory: project`, a private cache in `.claude/agent-memory/<agent_type>/` (its `MEMORY.md` loads at startup) for verified facts it would otherwise rediscover each run. Only that agent may write it; what to store and what not is in `docs/workflow.md` → "Agent memory".
 - **Enforced** by `.claude/ownership.json` in two layers: a PreToolUse hook that denies `Edit`/`Write`/`NotebookEdit` outside an agent's globs (early warning; Bash-written files aren't covered), and `mise run ownership-check <branch>`, which checks every commit against its author's globs before Rick merges (the real gate; authorship is self-declared, so it catches mistakes, not tampering). Details in `docs/workflow.md`.
 
 Every agent that writes code or assets runs in its own worktree (`isolation: worktree` in its frontmatter), branched from the feature branch, on branch `<name>/<agent>`. Agent branches are merged into the feature branch one at a time; the feature reaches `main` only through a pull request the user merges.
