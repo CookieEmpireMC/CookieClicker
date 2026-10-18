@@ -64,6 +64,10 @@ station:
     hitbox-margin: 0.1
     # Render distance multiplier (1.0 = 64 blocks)
     view-range: 0.5
+    # Light level 0-15 the cookie is drawn with (15 = always fully lit)
+    brightness: 15
+    # The click effect ("+1", crumbs) starts this far (blocks) out of the cookie toward the player
+    click-effect-offset: 0.1
   pedestal:
     enabled: true
     # Any block, as block data
@@ -80,6 +84,12 @@ station:
     icon-yaw-offset: 0
     header-scale: 0.6
     text-scale: 0.5
+    # Header and row text look: light level 0-15, drop shadow, visible through blocks, and the client's
+    # default (chat-style) background instead of the colours below
+    text-brightness: 15
+    text-shadow: true
+    text-see-through: false
+    text-default-background: false
     # Text wraps after this many pixels
     line-width: 120
     # First row sits this far below the header, each further row this much lower

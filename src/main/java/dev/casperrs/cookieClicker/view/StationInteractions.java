@@ -27,8 +27,6 @@ public final class StationInteractions {
     static final String CRIT = "cookie_crit";
     static final String PURCHASE = "purchase";
     static final String CANT_AFFORD = "cant_afford";
-    /** How far the click effect is pulled out of the cookie toward the player (blocks). */
-    private static final double TOWARD_PLAYER = 0.1;
 
     private final StationViews views;
     private final SessionManager sessions;
@@ -62,7 +60,7 @@ public final class StationInteractions {
         Vector at = hit != null ? hit.clone() : new Vector(view.cookieCentre[0], view.cookieCentre[1], view.cookieCentre[2]);
         Vector toEye = player.getEyeLocation().toVector().subtract(at);
         if (toEye.lengthSquared() > 1e-6) {
-            at.add(toEye.normalize().multiply(TOWARD_PLAYER));
+            at.add(toEye.normalize().multiply(views.settings().cookie().clickEffectOffset()));
         }
         Location loc = at.toLocation(player.getWorld());
         String id = result.crit() ? CRIT : CLICK;

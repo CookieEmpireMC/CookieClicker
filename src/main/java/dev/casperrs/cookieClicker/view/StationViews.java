@@ -203,6 +203,11 @@ public final class StationViews implements Listener, StationListener, SessionLis
         return views == null ? null : views.get(stationId);
     }
 
+    /** The current visual settings (reload swaps them). */
+    StationVisualSettings settings() {
+        return settings.get();
+    }
+
     /** Live view entities (for the tester / debug log). */
     public int trackedEntities() {
         return byEntity.size();
@@ -307,7 +312,7 @@ public final class StationViews implements Listener, StationListener, SessionLis
                 d.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.NONE);
                 d.setBillboard(Display.Billboard.FIXED);
                 d.setViewRange(c.viewRange());
-                d.setBrightness(new Display.Brightness(15, 15));
+                d.setBrightness(new Display.Brightness(c.brightness(), c.brightness()));
                 long now = Bukkit.getCurrentTick();
                 d.setTransformation(new Transformation(new Vector3f(0, (float) motion.bob(now), 0),
                         new Quaternionf().rotationY((float) motion.angle(now)),
@@ -401,11 +406,11 @@ public final class StationViews implements Listener, StationListener, SessionLis
     private void styleText(TextDisplay t, StationVisualSettings.Panel p, float scale, int argb) {
         t.setBillboard(Display.Billboard.FIXED);
         t.setLineWidth(p.lineWidth());
-        t.setSeeThrough(false);
-        t.setShadowed(true);
-        t.setDefaultBackground(false);
+        t.setSeeThrough(p.textSeeThrough());
+        t.setShadowed(p.textShadowed());
+        t.setDefaultBackground(p.textDefaultBackground());
         t.setBackgroundColor(Color.fromARGB(argb));
-        t.setBrightness(new Display.Brightness(15, 15));
+        t.setBrightness(new Display.Brightness(p.textBrightness(), p.textBrightness()));
         t.setViewRange(p.viewRange());
         t.setTransformation(new Transformation(new Vector3f(), new Quaternionf(),
                 new Vector3f(scale, scale, scale), new Quaternionf()));
