@@ -278,13 +278,13 @@ public final class StationViews implements Listener, StationListener, SessionLis
 
     private boolean chunksLoaded(World world, Station station, StationVisualSettings s) {
         StationFrame frame = StationFrame.of(station);
-        for (Offset o : List.of(Offset.ZERO, s.cookie().offset(), s.panel().offset())) {
-            double[] p = frame.point(o);
-            if (!world.isChunkLoaded((int) Math.floor(p[0]) >> 4, (int) Math.floor(p[2]) >> 4)) {
-                return false;
-            }
-        }
-        return true;
+        return chunkLoaded(world, frame, Offset.ZERO) && chunkLoaded(world, frame, s.cookie().offset())
+                && chunkLoaded(world, frame, s.panel().offset());
+    }
+
+    private static boolean chunkLoaded(World world, StationFrame frame, Offset o) {
+        double[] p = frame.point(o);
+        return world.isChunkLoaded((int) Math.floor(p[0]) >> 4, (int) Math.floor(p[2]) >> 4);
     }
 
     /** Cheap self-heal: the owner should always see their own view. */
@@ -653,7 +653,9 @@ public final class StationViews implements Listener, StationListener, SessionLis
     @EventHandler(priority = EventPriority.MONITOR)
     public void onEntitiesLoad(EntitiesLoadEvent event) {
         for (Entity e : event.getEntities()) {
-            if (e.getPersistentDataContainer().has(entityKey, PersistentDataType.BYTE) && !byEntity.containsKey(e.getUniqueId())) {
+            // the tag check is cheap and filters out almost every entity before the PDC is touched
+            if (e.getScoreboardTags().contains(TAG) && e.getPersistentDataContainer().has(entityKey, PersistentDataType.BYTE)
+                    && !byEntity.containsKey(e.getUniqueId())) {
                 e.remove();
             }
         }
