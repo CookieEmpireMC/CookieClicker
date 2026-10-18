@@ -47,3 +47,6 @@ jobs:
 
       - name: Check balance targets
         run: mise run balance-check
+
+      - name: Test the Python tools
+        run: mise run tools-test
