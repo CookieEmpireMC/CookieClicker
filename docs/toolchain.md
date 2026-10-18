@@ -43,6 +43,8 @@ Last checked: 2026-10-18
 | `mise run pack` | zips `resourcepack/` reproducibly to `target/cookieclicker-pack.zip` and prints its SHA-1 (`tools/pack.py`) |
 | `mise run ownership-check <branch> [--base <feature-branch>] [--human-approved]` | checks every non-merge commit in `<base>..<branch>` (base defaults to the current branch) by its **author email** against `.claude/ownership.json`; lists files that merge commits changed relative to every parent (conflict resolutions); fails with commit, author, file and owner per violation; unknown authors fail (`tools/ownership/check.py`, see below) |
 | `mise run tools-test` | runs the Python tool tests: `python -m unittest discover -s tools -p 'test_*.py'` (test folders need an `__init__.py`); passes when there are no tests yet |
+| `mise run -q pr-token` | prints a `cookie-bakery` GitHub App installation token and nothing else on stdout, for `GH_TOKEN=$(mise run -q pr-token) gh …`; errors go to stderr with a non-zero exit (`tools/github_app/token.py`, see below) |
+| `mise run pr-open --head <branch> [--base main] --title <title> --body-file <file> [--draft] [--repo owner/name]` | opens the PR as `cookie-bakery[bot]` via the REST API and prints `url`, `number` and `author`; fails clearly if a PR for that head already exists or the App lacks permissions (`tools/github_app/open_pr.py`, see below) |
 
 ### Ownership enforcement
 
@@ -51,6 +53,21 @@ Who may edit which file is defined once, in `.claude/ownership.json` (human-cont
 - **PreToolUse hook** (`.claude/hooks/ownership.py`, early warning): denies `Edit`/`Write`/`NotebookEdit` calls on files the agent doesn't own, with a reason that names the owner. Paths in `.claude/worktrees/<name>/` count as the same repo-relative path; paths outside the repository are always allowed. It loads the map and matcher only from `$CLAUDE_PROJECT_DIR` (the main checkout), so an agent's worktree copy can't loosen its rules. **Files written through Bash are not covered by the hook**, only by the merge check.
 - **`mise run ownership-check`** (the real guarantee, run by the orchestrator before every merge): judges each commit by its author. Human-controlled files are a violation for agents; for the orchestrator, or with `--human-approved` when the user explicitly approved the change, they're listed for "Needs human review" instead. The map and matcher come from `$CLAUDE_PROJECT_DIR`, else the main checkout, else the current checkout (the output says which).
 - **Authorship is self-declared** (`git -c user.email=…`), so both layers guard against mistakes, not against tampering.
+
+### GitHub App PRs
+
+Feature PRs are opened by the `cookie-bakery[bot]` GitHub App, so the user can approve them under `main`'s ruleset (authors can't approve their own PR). `tools/github_app/` uses the standard library and the `openssl` CLI only: it signs an RS256 App JWT (iat −60 s, exp +9 min, iss = App ID) with `openssl dgst -sha256 -sign`, exchanges it at `POST /app/installations/<id>/access_tokens`, and `open_pr.py` then calls `POST /repos/{owner}/{repo}/pulls`. It doesn't use `gh pr create`, which can fail with an App token.
+
+- **Config file** (outside the repo, written by the user): `~/.config/cookieclicker/github-app.env`, one `KEY=VALUE` per line (`#` comments, `export` prefix and quotes allowed):
+  ```
+  APP_ID=5371158
+  INSTALLATION_ID=172778981
+  KEY_PATH=~/.config/cookieclicker/github-app.pem
+  ```
+  Environment variables with the same names override the file. `--config <file>` or `$GITHUB_APP_CONFIG` point at another file, and `$GITHUB_API_URL` replaces `https://api.github.com` (tests only; plain `http` only for localhost).
+- **Key permissions:** the private key must be a regular file owned by you with no group/other access (`chmod 600`); anything else is refused before the key is used. Python never reads the key; only `openssl` does.
+- **The token is never stored:** `pr-open` fetches it in memory and never prints it. `pr-token` prints it only on stdout, for a command substitution. Neither writes it to disk or logs, and error messages leave out the token, the JWT and key material.
+- **Who runs it:** Rick runs `mise run pr-open …` at the end of `/feature`, allowed by a `Bash(mise run pr-open:*)` permission rule that the user adds themselves. If the rule is missing or the call is denied, Rick stops and gives the user the exact `! mise run pr-open …` command. He never falls back to the user's account. `pr-open` runs from the repo root, so a relative `--body-file` is read from there.
 
 
 ---
