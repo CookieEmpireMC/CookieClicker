@@ -80,10 +80,6 @@ final class EffectTicker {
         warned = false;
     }
 
-    int running() {
-        return jobs.size();
-    }
-
     private void stopTask() {
         if (task != null) {
             task.cancel();

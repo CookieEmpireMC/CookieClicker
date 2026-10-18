@@ -38,8 +38,4 @@ abstract class Job {
         cancel();
         return false;
     }
-
-    final boolean cancelled() {
-        return cancelled;
-    }
 }

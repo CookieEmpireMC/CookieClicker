@@ -112,8 +112,4 @@ final class DisplayRegistry {
     int globalEntities() {
         return globalEntities;
     }
-
-    int viewerEntities(UUID viewer) {
-        return viewerEntities.getOrDefault(viewer, 0);
-    }
 }
