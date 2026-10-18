@@ -6,6 +6,7 @@ import dev.casperrs.cookieClicker.economy.Economy;
 import dev.casperrs.cookieClicker.economy.EconomyConfig;
 import dev.casperrs.cookieClicker.hud.BakeryTicker;
 import dev.casperrs.cookieClicker.hud.Hud;
+import dev.casperrs.cookieClicker.pack.ResourcePackSender;
 import dev.casperrs.cookieClicker.pack.ResourcePackTracker;
 import dev.casperrs.cookieClicker.session.SessionBukkitListener;
 import dev.casperrs.cookieClicker.session.SessionListener;
@@ -16,6 +17,10 @@ import dev.casperrs.cookieClicker.station.StationRegistry;
 import dev.casperrs.cookieClicker.storage.DriverConnectionFactory;
 import dev.casperrs.cookieClicker.storage.JdbcPlayerStore;
 import dev.casperrs.cookieClicker.text.Messages;
+import dev.casperrs.cookieClicker.vfx.Effects;
+import dev.casperrs.cookieClicker.view.ClickRouter;
+import dev.casperrs.cookieClicker.view.StationInteractions;
+import dev.casperrs.cookieClicker.view.StationViews;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -34,9 +39,7 @@ import java.util.random.RandomGenerator;
  * Cookie Empire. This class only wires services together and owns their lifecycle
  * (enable → reload → disable); feature logic lives in the sub-packages.
  *
- * <p>Pass 2 plugs in through the getters: {@link #stations()} (add a {@code StationListener} for the
- * station visuals), {@link #sessions()} (a {@link SessionListener} for per-player UI), {@link #economy()},
- * {@link #sounds()}, {@link #hud()}, {@link #messages()}, {@link #resourcePacks()} and {@link #settings()}.
+ * <p>Disable order: tasks -> station views -> effects -> stations -> sessions (flush saves, stop IO).
  */
 public final class CookieClicker extends JavaPlugin {
 
@@ -47,6 +50,9 @@ public final class CookieClicker extends JavaPlugin {
     private Economy economy;
     private SoundService sounds;
     private ResourcePackTracker resourcePacks;
+    private ResourcePackSender packSender;
+    private Effects effects;
+    private StationViews views;
     private StationRegistry stations;
     private StationFile stationFile;
     private SessionManager sessions;
@@ -86,7 +92,10 @@ public final class CookieClicker extends JavaPlugin {
         economy = new Economy(EconomyConfig.DISABLED, RandomGenerator.getDefault());
         loader.loadBalance(economy, messages, problems);
 
-        resourcePacks = new ResourcePackTracker();
+        resourcePacks = new ResourcePackTracker(ResourcePackSender.PACK_ID);
+        resourcePacks.setAcceptAnyPack(!settings.resourcePack().enabled());
+        resourcePacks.onDeclined(p -> messages.send(p, "resource-pack.declined"));
+        packSender = new ResourcePackSender(this, () -> settings.resourcePack(), messages);
         sounds = new SoundService(getLogger(), RandomGenerator.getDefault(), resourcePacks::hasPack);
         loader.loadSounds(sounds, problems);
 
@@ -112,9 +121,21 @@ public final class CookieClicker extends JavaPlugin {
         ticker = new BakeryTicker(sessions, economy, hud, Bukkit::getPlayer);
         applySettings();
 
+        views = new StationViews(this, () -> settings.visuals(), stations, sessions, economy, messages,
+                resourcePacks::hasPack);
+        views.sweep(true); // crash leftovers of every tagged entity, before the vfx engine starts
+
+        effects = new Effects(this, Messages.miniMessage());
+        effects.setPackCheck(resourcePacks::hasPack);
+        effects.load();
+
         var pm = getServer().getPluginManager();
         pm.registerEvents(resourcePacks, this);
+        pm.registerEvents(packSender, this);
         pm.registerEvents(new SessionBukkitListener(sessions), this);
+        StationInteractions interactions = new StationInteractions(views, sessions, economy, effects, sounds, hud, messages);
+        pm.registerEvents(new ClickRouter(views, interactions, () -> settings.visuals(), getLogger()), this);
+        views.start();
 
         BakeryCommand command = new BakeryCommand(stations, stationFile, () -> settings, messages, this::reload);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
@@ -138,6 +159,12 @@ public final class CookieClicker extends JavaPlugin {
         if (autosaveTask != null) {
             autosaveTask.cancel();
         }
+        if (views != null) {
+            views.shutdown(); // every player's UI, independent of session events
+        }
+        if (effects != null) {
+            effects.shutdown();
+        }
         if (stations != null) {
             stations.clear(); // tells pass-2 listeners to despawn everything; stations.yml is untouched
         }
@@ -148,7 +175,7 @@ public final class CookieClicker extends JavaPlugin {
         }
     }
 
-    /** {@code /bakery reload}: config, messages, sounds, balance and stations. The database needs a restart. */
+    /** {@code /bakery reload}: config, messages, sounds, effects, balance and stations. The database needs a restart. */
     public List<String> reload() {
         List<String> problems = BakeryConfigLoader.newProblemList();
         PluginSettings fresh = loader.loadSettings(problems);
@@ -157,13 +184,17 @@ public final class CookieClicker extends JavaPlugin {
             getLogger().warning(note);
             problems.add(note);
         }
-        settings = new PluginSettings(settings.database(), fresh.autosaveSeconds(), fresh.shutdownSaveTimeoutSeconds(),
-                fresh.hud(), fresh.station(), fresh.resourcePack());
+        PluginSettings.ResourcePack packBefore = settings.resourcePack();
+        settings = fresh.withDatabase(settings.database());
+        resourcePacks.setAcceptAnyPack(!settings.resourcePack().enabled());
         loader.loadMessages(messages, problems);
         loader.loadBalance(economy, messages, problems);
         loader.loadSounds(sounds, problems);
         loader.loadStations(stationFile, stations, problems);
+        effects.reload();
+        views.restart(); // removes every view; the next refresh respawns with the new layout and balance
         applySettings();
+        packSender.onReload(packBefore);
         return problems;
     }
 
@@ -207,5 +238,9 @@ public final class CookieClicker extends JavaPlugin {
 
     public Hud hud() {
         return hud;
+    }
+
+    public Effects effects() {
+        return effects;
     }
 }

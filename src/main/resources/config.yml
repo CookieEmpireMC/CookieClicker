@@ -39,13 +39,99 @@ station:
   # /bakery station remove: removes the nearest station within this radius (blocks)
   remove-radius: 8
 
-# Our resource pack (3D cookie, icons, HUD glyph, sounds). Sent on join; vanilla fallbacks are used
-# when a player declines it. Get url + sha1 from `mise run pack` and wherever you host the zip.
+  # --- Per-player visuals (only the owner sees their own cookie and panel) ---
+  # Positions are [right, up, forward] in blocks from the station, as seen by the admin who placed it
+  # (forward = the way you faced). Players stand on your side and look the same way.
+  # Spawn a player's bakery when they are within this many blocks of the station
+  view-distance: 24
+  # How often (ticks) to check who is near which station and to update the panel
+  refresh-ticks: 20
+  # Clicks from further away than this (blocks, eye to hitbox) are ignored
+  click-distance: 6
+  cookie:
+    # Centre of the cookie
+    offset: [0, 1.8, 2.5]
+    # Size: 1.0 = about one block wide
+    scale: 1.4
+    # Idle bob up and down (blocks) and how long one bob takes (ticks)
+    bob-amplitude: 0.1
+    bob-period-ticks: 80
+    # One full turn takes this many seconds (0 = no spin; max 120 degrees per segment)
+    spin-seconds-per-revolution: 6
+    # Spin/bob is sent as one interpolated segment this many ticks long (no teleports)
+    segment-ticks: 10
+    # Extra size of the click hitbox around the cookie (blocks)
+    hitbox-margin: 0.1
+    # Render distance multiplier (1.0 = 64 blocks)
+    view-range: 0.5
+  pedestal:
+    enabled: true
+    # Any block, as block data
+    block: "minecraft:polished_deepslate"
+    # Bottom centre of the pedestal, and its size in blocks
+    offset: [0, 0, 2.5]
+    width: 0.9
+    height: 0.95
+  panel:
+    # Bottom centre of the header text; rows go down from there
+    offset: [1.9, 2.55, 2.5]
+    # Degrees added to the text / icon facing, in case they show mirrored or edge-on in game
+    text-yaw-offset: 0
+    icon-yaw-offset: 0
+    header-scale: 0.6
+    text-scale: 0.5
+    # Text wraps after this many pixels
+    line-width: 120
+    # First row sits this far below the header, each further row this much lower
+    first-row-drop: 0.45
+    row-pitch: 0.4
+    row:
+      # Relative to the row's anchor: [right, up, forward]
+      text-offset: [0.15, 0, 0]
+      icon-offset: [-0.5, 0.13, -0.02]
+      icon-scale: 0.3
+      # Bottom centre of the row's click box; keep it clear of the cookie's box
+      hitbox-offset: [0, -0.02, 0]
+      hitbox-width: 1.3
+      hitbox-height: 0.34
+    # Text background colours, "#AARRGGBB" (alpha below 1A is invisible)
+    colors:
+      header: "#C0301A0C"
+      affordable: "#B03A2A10"
+      unaffordable: "#B0202020"
+      locked: "#90181818"
+    # Icon light level 0-15: bright when affordable, dimmed otherwise
+    icon-brightness:
+      affordable: 15
+      unaffordable: 5
+    view-range: 0.5
+    # Vanilla item shown as the row icon to players without our resource pack (with the pack they see
+    # cookieclicker:building/<id>)
+    icons:
+      villager_baker:
+        fallback-material: BREAD
+      wheat_farm:
+        fallback-material: WHEAT
+    # For buildings not listed above
+    default-fallback-material: COOKIE
+
+# Our resource pack (3D cookie, icons, HUD glyph, sounds). Sent on join next to other plugins' packs
+# (e.g. ItemsAdder's); vanilla fallbacks are used when a player declines it.
+# Get url + sha1 from `mise run pack` and wherever you host the zip. Empty url/sha1 = not sent.
 resource-pack:
+  # false = don't send it (e.g. our assets are merged into ItemsAdder's pack); then any loaded server pack
+  # counts as "has our pack"
   enabled: true
   url: ""
+  # SHA-1 of the zip, 40 hex characters
   sha1: ""
   # true = players who decline are kicked by the client prompt
   required: false
   # messages.yml path of the prompt text shown with the pack request
   prompt: resource-pack.prompt
+  # Wait this many ticks after join before sending (lets other plugins' packs go first)
+  send-delay-ticks: 20
+
+debug:
+  # Log every click event on a bakery hitbox (which events fire, who tracks the entity). For testing.
+  log-click-events: false
