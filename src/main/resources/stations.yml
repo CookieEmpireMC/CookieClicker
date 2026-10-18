@@ -1,0 +1,5 @@
+# Bakery stations. Managed in game with /bakery station set|remove; edit by hand, then /bakery reload.
+# world is the world KEY (e.g. minecraft:overworld), not its folder name.
+# stations:
+#   station-1: { world: minecraft:overworld, x: 10.5, y: 64.0, z: -3.5, yaw: 90.0 }
+stations: {}
