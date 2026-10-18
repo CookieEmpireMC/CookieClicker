@@ -21,3 +21,7 @@ First built in feature bakery-core (2026-10-18, branch bakery-core/vfx-designer)
   `EffectsPreviewExport` + `design/vfx-scripts/plot_effects.py`.
 
 Related: [[reference-paper263-vfx-api]]
+
+- Invariant (cleanup pass 2026-10-18): `Spawner.isOurs` checks the `cookieclicker` scoreboard tag before the
+  `cookieclicker:vfx` PDC key (PERF), so every effect entity must keep getting **both**. Every public `Effects` method
+  that touches the world is main-thread guarded via `onMainThread` (log once, skip).
