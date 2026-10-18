@@ -124,6 +124,7 @@ public final class CookieClicker extends JavaPlugin {
 
         views = new StationViews(this, () -> settings.visuals(), stations, sessions, economy, messages,
                 resourcePacks::hasPack);
+        ticker.setAfterProduce(views::refreshPanels); // rows light up the second they become affordable
         views.sweep(true); // crash leftovers of every tagged entity, before the vfx engine starts
 
         effects = new Effects(this, Messages.miniMessage());

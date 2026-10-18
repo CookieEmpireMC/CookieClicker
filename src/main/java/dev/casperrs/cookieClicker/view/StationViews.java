@@ -212,7 +212,6 @@ public final class StationViews implements Listener, StationListener, SessionLis
 
     private void refresh() {
         StationVisualSettings s = settings.get();
-        double maxSq = s.viewDistance() * s.viewDistance();
         // owners who went offline without a quit event reaching us
         for (UUID owner : List.copyOf(byOwner.keySet())) {
             if (Bukkit.getPlayer(owner) == null) {
@@ -220,43 +219,52 @@ public final class StationViews implements Listener, StationListener, SessionLis
             }
         }
         for (Player player : Bukkit.getOnlinePlayers()) {
-            CookiePouch pouch = sessions.get(player.getUniqueId()).orElse(null);
-            if (pouch == null) {
-                removeOwner(player.getUniqueId()); // not loaded (yet, or load failed): no UI to click
-                continue;
-            }
-            Location at = player.getLocation();
-            String world = player.getWorld().getKey().asString();
-            for (Station station : stations.all()) {
-                StationView view = view(player.getUniqueId(), station.id());
-                boolean inRange = station.distanceSquared(world, at.getX(), at.getY(), at.getZ()) <= maxSq
-                        && chunksLoaded(player.getWorld(), station, s);
-                if (!inRange) {
-                    if (view != null) {
-                        remove(view);
-                    }
-                    continue;
-                }
-                if (view != null && !view.healthy()) {
-                    remove(view);
-                    view = null;
-                }
-                if (view == null) {
-                    view = spawn(player, station, s, pouch);
-                    if (view == null) {
-                        continue;
-                    }
-                } else {
-                    heal(player, view);
-                }
-                updatePack(player, view);
-                updateRows(view, pouch);
-            }
+            refresh(player, s);
         }
     }
 
-    /** Refresh one player's panels now (after a click or purchase). */
-    void refreshPanels(Player player, CookiePouch pouch) {
+    /** One player's proximity lifecycle: spawn, heal, update or remove their view at every station. */
+    private void refresh(Player player, StationVisualSettings s) {
+        CookiePouch pouch = sessions.get(player.getUniqueId()).orElse(null);
+        if (pouch == null) {
+            removeOwner(player.getUniqueId()); // not loaded (yet, or load failed): no UI to click
+            return;
+        }
+        double maxSq = s.viewDistance() * s.viewDistance();
+        Location at = player.getLocation();
+        String world = player.getWorld().getKey().asString();
+        for (Station station : stations.all()) {
+            StationView view = view(player.getUniqueId(), station.id());
+            boolean inRange = station.distanceSquared(world, at.getX(), at.getY(), at.getZ()) <= maxSq
+                    && chunksLoaded(player.getWorld(), station, s);
+            if (!inRange) {
+                if (view != null) {
+                    remove(view);
+                }
+                continue;
+            }
+            if (view != null && !view.healthy()) {
+                remove(view);
+                view = null;
+            }
+            if (view == null) {
+                view = spawn(player, station, s, pouch);
+                if (view == null) {
+                    continue;
+                }
+            } else {
+                heal(player, view);
+            }
+            updatePack(player, view);
+            updateRows(view, pouch);
+        }
+    }
+
+    /**
+     * Refresh one player's panel rows now (after a click or purchase, and from the 1 Hz ticker right after
+     * production). Rows whose {@link RowState} didn't change send nothing.
+     */
+    public void refreshPanels(Player player, CookiePouch pouch) {
         Map<String, StationView> views = byOwner.get(player.getUniqueId());
         if (views != null) {
             views.values().forEach(v -> updateRows(v, pouch));
@@ -589,6 +597,15 @@ public final class StationViews implements Listener, StationListener, SessionLis
     @Override
     public void onStationRemoved(Station station) {
         removeStation(station.id());
+    }
+
+    /** Spawn the bakery as soon as the session loads instead of on the next refresh. */
+    @Override
+    public void onLoaded(UUID player, CookiePouch pouch) {
+        Player online = Bukkit.getPlayer(player);
+        if (online != null) {
+            refresh(online, settings.get());
+        }
     }
 
     @Override
