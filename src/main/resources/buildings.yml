@@ -1,0 +1,12 @@
+# Buildings (format: docs/balance/model.md). IDs only; display names live in messages.yml.
+# Tuned with tools/balance (mise run balance); see docs/balance/report-*.md.
+cost-growth: 1.15            # cost multiplier per building already owned
+buildings:
+  villager_baker:
+    base-cost: 50
+    base-cps: 0.5
+    unlock: { baked: 0 }
+  wheat_farm:
+    base-cost: 500
+    base-cps: 4
+    unlock: { baked: 100 }

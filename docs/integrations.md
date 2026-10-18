@@ -14,7 +14,7 @@ Last checked: 2026-10-18
 | ItemsAdder (v4) | ✅ 1.20.6 – 1.21.11 | ✅ 26.1 listed; users run it on 26.2 | ⚠️ tracked for **4.1.0** ([issue #5527](https://github.com/PluginBugs/Issues-ItemsAdder/issues/5527)); users reported errors on 4.0.18 |
 | ModelEngine 4 | ✅ (supports 1.19.4+) | ✅ up to 26.2 (official listing) | ❌ not officially supported yet |
 
-> **TODO (CookieClicker, 2026-10-18):** CookieClicker uses a **plain resource pack** (`resourcepack/`) and does **not** depend on ItemsAdder or ModelEngine, so this is not blocking. ItemsAdder is installed on the game server, though, and the newest release found (4.0.18) lists Paper support only up to 26.2. The user will run `/version ItemsAdder` on the server; record the result here, and re-check how our pack coexists with ItemsAdder's pack (multiple server packs vs. merging) before release.
+> **CookieClicker server (recorded 2026-10-18):** the game server runs **ItemsAdder 4.0.18** (reported by the user). CookieClicker uses a **plain resource pack** (`resourcepack/`) and does **not** depend on ItemsAdder or ModelEngine, so this is not blocking. Our pack is sent **alongside** ItemsAdder's (multiple server packs, no merging); that coexistence is to be verified in the bakery-core in-game test. 4.0.18 lists Paper support only up to 26.2, so watch IA for errors on 26.3.
 
 **Consequence:** 1.21.x projects can use both plugins without issues. On Paper 26.3 today, ModelEngine (and possibly ItemsAdder) may not work. Before building features on them, confirm the server's actual versions:
 - Paper version (the server reports it on startup and via `/version`)

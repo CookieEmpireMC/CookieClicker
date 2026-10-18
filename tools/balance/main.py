@@ -18,7 +18,8 @@ from pathlib import Path
 import yaml
 
 sys.path.insert(0, str(Path(__file__).parent))
-from model import ConfigError, Economy, State, bulk_cost, click_power, load, total_cps  # noqa: E402
+from model import (ConfigError, Economy, State, bulk_cost, click_power, click_value, crit_factor,  # noqa: E402
+                   expected_click, load, total_cps)
 from sim import Profile, Result, simulate  # noqa: E402
 
 TARGETS = Path("docs/balance/targets.md")
@@ -55,12 +56,20 @@ def metric(eco: Economy, result: Result, target: dict) -> float | None:
         times = [first_time(result, "building", bid) for bid in eco.buildings]
         return None if None in times else max(times)
     if kind == "longest-dead-zone":
-        return max((length for _, length in result.dead_zones), default=0)
+        return longest_dead_zone(result, target.get("window-minutes"))
     if kind == "time-to":
         return first_time(result, "building", target["building"], int(target["count"]))
     if kind == "upgrade":
         return first_time(result, "upgrade", target["upgrade"])
     raise ConfigError(f"unknown metric '{kind}' in target {target.get('id')}")
+
+
+def longest_dead_zone(result: Result, window_minutes: float | None = None) -> int:
+    """Longest dead zone; with a window, only the part of each zone inside the first N minutes counts."""
+    if window_minutes is None:
+        return max((length for _, length in result.dead_zones), default=0)
+    end = int(float(window_minutes) * 60) + 1          # seconds 1..window are inside
+    return max((min(start + length, end) - start for start, length in result.dead_zones if start < end), default=0)
 
 
 def evaluate(eco: Economy, targets: dict, results: dict[str, Result]) -> list[dict]:
@@ -90,6 +99,11 @@ def golden_values(eco: Economy, results: dict[str, Result]) -> dict:
     costs = {bid: {"single": [bulk_cost(eco, bid, n, 1) for n in range(0, 101)],
                    "buy-10-from": {str(n): bulk_cost(eco, bid, n, 10) for n in (0, 10, 50)}}
              for bid in eco.buildings}
+    sample = State(owned={}, upgrades=set())
+    click = {"base-power": eco.base_click, "crit-chance": eco.crit_chance, "crit-multiplier": eco.crit_multiplier,
+             "expected-factor": crit_factor(eco), "base-state": {
+                 "click-power": click_power(eco, sample), "normal-click": click_value(eco, sample, False),
+                 "crit-click": click_value(eco, sample, True), "expected-click": expected_click(eco, sample)}}
     states = []
     for name, result in results.items():
         # replay the purchases to get the state at a few checkpoints
@@ -104,8 +118,10 @@ def golden_values(eco: Economy, results: dict[str, Result]) -> dict:
                     snap.upgrades.add(p.id)
             states.append({"profile": name, "time": t, "owned": dict(sorted(snap.owned.items())),
                            "upgrades": sorted(snap.upgrades), "total-cps": total_cps(eco, snap),
-                           "click-power": click_power(eco, snap)})
-    return {"cost-growth": eco.cost_growth, "costs": costs, "states": states}
+                           "click-power": click_power(eco, snap),
+                           "normal-click": click_value(eco, snap, False), "crit-click": click_value(eco, snap, True),
+                           "expected-click": expected_click(eco, snap)})
+    return {"cost-growth": eco.cost_growth, "click": click, "costs": costs, "states": states}
 
 
 def plot(results: dict[str, Result], img_dir: Path, stamp: str) -> list[str]:
@@ -133,6 +149,19 @@ def plot(results: dict[str, Result], img_dir: Path, stamp: str) -> list[str]:
     ax.grid(alpha=0.3), ax.legend()
     fig.tight_layout(), fig.savefig(img_dir / f"{stamp}-gaps.png", dpi=110), plt.close(fig)
     names.append(f"{stamp}-gaps.png")
+
+    # early game: the first 15 minutes, where the onboarding targets live
+    fig, ax = plt.subplots(figsize=(9, 4.5))
+    for name, r in results.items():
+        times = [p.time for p in r.purchases if p.time <= 900]
+        gaps = [b - a for a, b in zip(times, times[1:])]
+        ax.plot([t / 60 for t in times[1:]], gaps, "o-", ms=3, lw=0.8, label=name)
+    ax.set(xlabel="minutes", ylabel="seconds since previous purchase", xlim=(0, 15),
+           title="Wait between purchases, first 15 minutes")
+    ax.axhline(60, color="grey", ls="--", lw=0.8)
+    ax.grid(alpha=0.3), ax.legend()
+    fig.tight_layout(), fig.savefig(img_dir / f"{stamp}-early.png", dpi=110), plt.close(fig)
+    names.append(f"{stamp}-early.png")
     return names
 
 
@@ -141,7 +170,9 @@ def write_report(eco: Economy, targets: dict, results: dict[str, Result], rows: 
     passed = sum(r["ok"] for r in rows)
     out = [f"# Balance report {stamp}", "",
            f"Configs: `buildings.yml`, `upgrades.yml` · horizon {targets.get('horizon-minutes')} min · "
-           f"targets: {passed}/{len(rows)} pass", "", "## Targets", "",
+           f"targets: {passed}/{len(rows)} pass", "",
+           f"Click: base power {eco.base_click:g}, crit {eco.crit_chance:.0%} × {eco.crit_multiplier:g} "
+           f"→ expected {crit_factor(eco):g} × click power", "", "## Targets", "",
            "| Target | Profile | Result | Limit | |", "|---|---|---|---|---|"]
     out += [f"| {r['id']} | {r['profile']} | {fmt_time(r['value'])} | {fmt_time(r['max'])} | "
             f"{'✅' if r['ok'] else '❌'} |" for r in rows]
@@ -154,14 +185,19 @@ def write_report(eco: Economy, targets: dict, results: dict[str, Result], rows: 
     out += ["", "## Upgrades", "", "| Upgrade | " + " | ".join(results) + " |", "|---|" + "---|" * len(results)]
     for uid in eco.upgrades:
         out.append(f"| {uid} | " + " | ".join(fmt_time(_upgrade(r, uid)) for r in results.values()) + " |")
-    out += ["", "## Per profile", "", "| Profile | Purchases | Longest dead zone | Longest gap between purchases | "
-            "Final CPS |", "|---|---|---|---|---|"]
+    out += ["", "## Per profile", "", "| Profile | Purchases | Longest dead zone (first 15 min) | Longest dead zone | "
+            "Longest gap between purchases | Final CPS |", "|---|---|---|---|---|---|"]
     for name, r in results.items():
         times = [p.time for p in r.purchases]
         gap = max((b - a for a, b in zip(times, times[1:])), default=0)
         dead = max((length for _, length in r.dead_zones), default=0)
-        out.append(f"| {name} | {len(r.purchases)} | {fmt_time(dead)} | {fmt_time(gap)} | "
+        out.append(f"| {name} | {len(r.purchases)} | {fmt_time(longest_dead_zone(r, 15))} | {fmt_time(dead)} | "
+                   f"{fmt_time(gap)} | "
                    f"{total_cps(eco, r.final):,.1f} |")
+    out += ["", "## First 15 minutes (purchases)", "", "| Profile | Purchases (time: id #owned) |", "|---|---|"]
+    for name, r in results.items():
+        early = [f"{fmt_time(p.time)}: {p.id} #{p.owned_after}" for p in r.purchases if p.time <= 900]
+        out.append(f"| {name} | " + ", ".join(early) + " |")
     out += ["", "## Plots", ""] + [f"![{n}](img/{n})" for n in images] + [""]
     path = BALANCE_DIR / f"report-{stamp}.md"
     path.write_text("\n".join(out), encoding="utf-8")

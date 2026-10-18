@@ -1,0 +1,2 @@
+- [Sound tooling facts](tooling-facts.md) — Vorbis random serial fix, compression_level works, validator/review quirks, source: ui on 26.3
+- Style guide + lessons live in design/sound-style-guide.md and design/sound-lessons.md (read those first)

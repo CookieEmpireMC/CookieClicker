@@ -83,6 +83,16 @@ Write a few tests for message formatting: parse each config message once to catc
 - Test the Java economy against `docs/balance/golden-values.json` (costs for 0–100 owned, buy-10 costs, CPS and click power for recorded states): values must match exactly (costs) or within 1e-9 relative (doubles). A mismatch means the code drifted from `docs/balance/model.md`.
 - Flag any balance number (cost, CPS, multiplier, unlock threshold, cost growth) hardcoded in Java instead of read from `buildings.yml` / `upgrades.yml`.
 
+## Performance checks
+Part of every code review (branch and integration). Look for real costs, not micro-optimisations:
+- **Hot paths:** anything per tick, per second for every online player, per click, or per entity update. Name each one and estimate its work per call (loops over players/entities/stations, map lookups, string/Component building).
+- **Main thread:** no blocking I/O (DB, files, HTTP); no work that grows with total players/stations every tick when it could be event-driven or cached.
+- **Allocations and churn:** avoidable object creation in hot paths (e.g. re-parsing MiniMessage templates or rebuilding Components every tick when values didn't change); display/text updates sent only when something changed.
+- **Entity/packet budget:** entities per player and per station, effect caps respected, nothing spawned per tick without a cap.
+- **Storage:** queries per save/load, batching, autosave cost with many players.
+- Report each finding as `PERF-HIGH | PERF-MEDIUM | PERF-LOW` with file:line and a suggested fix, and add a short "Performance" paragraph to your review (what you checked, estimated per-tick cost). Only `PERF-HIGH` (clear lag risk at normal player counts) blocks a READY verdict.
+- For the PR's in-game test guide, list what to profile with the **spark** plugin (`/spark profiler start --timeout 60` while clicking, then check the plugin's share of the tick) and what "good" looks like.
+
 ## Architecture review
 Also look for, and report on:
 - Bukkit API calls from async threads, or blocking I/O on the main thread

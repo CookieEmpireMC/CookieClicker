@@ -1,0 +1,1 @@
+- [Paper 26.3 verified API](paper-26-3-verified-api.md) — displays, visibility, click events, resource pack API, pack formats, libraries (2026-10-18)

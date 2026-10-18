@@ -42,6 +42,8 @@ class Economy:
     base_click: float
     buildings: dict[str, Building]
     upgrades: dict[str, Upgrade]
+    crit_chance: float = 0.0        # probability a click is a crit, 0..1
+    crit_multiplier: float = 1.0    # a crit multiplies the whole click value by this (>= 1)
 
 
 @dataclass
@@ -101,8 +103,15 @@ def load(config_dir: Path) -> Economy | None:
     growth = _number(b_raw.get("cost-growth", 1.15), "buildings.yml: cost-growth")
     if growth < 1:
         raise ConfigError("buildings.yml: cost-growth must be >= 1")
-    base_click = _number(((u_raw.get("click") or {}).get("base-power", 1)), "upgrades.yml: click.base-power")
-    return Economy(growth, base_click, buildings, upgrades)
+    click = u_raw.get("click") or {}
+    base_click = _number(click.get("base-power", 1), "upgrades.yml: click.base-power")
+    crit_chance = _number(click.get("crit-chance", 0), "upgrades.yml: click.crit-chance")
+    if crit_chance > 1:
+        raise ConfigError("upgrades.yml: click.crit-chance must be between 0 and 1")
+    crit_multiplier = _number(click.get("crit-multiplier", 1), "upgrades.yml: click.crit-multiplier")
+    if crit_multiplier < 1:
+        raise ConfigError("upgrades.yml: click.crit-multiplier must be >= 1")
+    return Economy(growth, base_click, buildings, upgrades, crit_chance, crit_multiplier)
 
 
 def building_cost(eco: Economy, state: State, bid: str) -> float:
@@ -128,6 +137,21 @@ def click_power(eco: Economy, state: State) -> float:
     power = base * math.prod(u.value for u in _bought(eco, state, "click-multiplier"))
     fraction = sum(u.value for u in _bought(eco, state, "click-cps-fraction"))
     return power + (fraction * total_cps(eco, state) if fraction else 0.0)
+
+
+def click_value(eco: Economy, state: State, crit: bool) -> float:
+    """Cookies from one concrete click: a crit multiplies the whole click power."""
+    return click_power(eco, state) * (eco.crit_multiplier if crit else 1.0)
+
+
+def crit_factor(eco: Economy) -> float:
+    """Expected click value / click power: 1 + p × (m − 1)."""
+    return 1.0 + eco.crit_chance * (eco.crit_multiplier - 1.0)
+
+
+def expected_click(eco: Economy, state: State) -> float:
+    """Average cookies per click including crits (what the simulator uses; deterministic)."""
+    return click_power(eco, state) * crit_factor(eco)
 
 
 def building_unlocked(eco: Economy, state: State, bid: str) -> bool:

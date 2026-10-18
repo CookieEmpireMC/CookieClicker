@@ -1,0 +1,1 @@
+- [Paper 26.3 API facts](paper-263-api-facts.md) — verified Brigadier/world key/Adventure 5 sound+pack/display/click APIs, javap path, guard quirks, test-pinned keys

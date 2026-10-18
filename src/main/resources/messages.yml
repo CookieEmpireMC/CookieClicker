@@ -1,0 +1,100 @@
+# Cookie Empire - every player-facing text, in MiniMessage (https://docs.papermc.io/adventure/minimessage/format/).
+# Test strings at https://webui.advntr.dev. <placeholders> are filled in by the plugin.
+# Apply changes with /bakery reload.
+
+# Used as <prefix> in command replies
+prefix: "<gradient:#e0a060:#a0622d><b>Cookie Empire</b></gradient> <dark_gray>»</dark_gray> "
+
+hud:
+  # Action bar.  is the cookie glyph in the cookieclicker:hud font (resource pack).
+  # <cookies> = cookies in the pouch, <cps> = cookies per second (both already formatted)
+  action-bar: "<font:cookieclicker:hud></font> <gold><b><cookies></b></gold> <gray>cookies</gray> <dark_gray>·</dark_gray> <yellow><cps></yellow> <gray>per second</gray>"
+  # Same for players without the resource pack (the glyph would show as a box)
+  action-bar-no-pack: "<gold><b><cookies></b></gold> <gray>cookies</gray> <dark_gray>·</dark_gray> <yellow><cps></yellow> <gray>per second</gray>"
+
+# How big numbers are written. Values are cut off (never rounded up).
+numbers:
+  # Decimals for big numbers: "1.2 million"
+  decimals: 1
+  # Decimals below 1,000: "0.1", "12.5"
+  small-decimals: 1
+  grouping-separator: ","
+  decimal-separator: "."
+  # {value} = the number, {suffix} = a word from the list below
+  large-format: "{value} {suffix}"
+  # Past the last suffix: {value} and {exponent}, e.g. "1.2e309"
+  scientific-format: "{value}e{exponent}"
+  infinity: "infinity"
+  # One word per power of 1,000, starting at a million (10^6, 10^9, 10^12, ...)
+  suffixes:
+    - million
+    - billion
+    - trillion
+    - quadrillion
+    - quintillion
+    - sextillion
+    - septillion
+    - octillion
+    - nonillion
+    - decillion
+    - undecillion
+    - duodecillion
+    - tredecillion
+    - quattuordecillion
+    - quindecillion
+    - sexdecillion
+    - septendecillion
+    - octodecillion
+    - novemdecillion
+    - vigintillion
+    - unvigintillion
+    - duovigintillion
+    - tresvigintillion
+    - quattuorvigintillion
+    - quinvigintillion
+    - sexvigintillion
+    - septenvigintillion
+    - octovigintillion
+    - novemvigintillion
+    - trigintillion
+    - untrigintillion
+    - duotrigintillion
+
+# Display names per building ID from buildings.yml
+buildings:
+  villager_baker:
+    name: "<#e8b46a>Villager Baker"
+  wheat_farm:
+    name: "<#d9c45a>Wheat Farm"
+
+# The floating shop panel next to the cookie. Each row is redrawn only when it changes.
+# <name> = building name as plain text (buildings.<id>.name without its colours, so the row colours apply),
+# <owned>, <cost>, <cps> (what one more adds), <needed> (baked cookies to unlock) = formatted numbers.
+# Keep every row two lines, so rows line up. Background colours: config.yml station.panel.colors.
+# (The floating "+N" click numbers are in effects.yml.)
+panel:
+  header: "<gradient:#e0a060:#a0622d><b>Bakery Shop</b></gradient>"
+  row:
+    affordable: "<white><b><name></b></white> <gray>×<owned></gray><newline><green><cost></green> <gray>· +<cps>/s</gray>"
+    unaffordable: "<gray><name></gray> <dark_gray>×<owned></dark_gray><newline><red><cost></red> <dark_gray>· +<cps>/s</dark_gray>"
+    locked: "<dark_gray>???</dark_gray><newline><dark_gray><i>bake <needed> cookies to unlock</i></dark_gray>"
+
+resource-pack:
+  prompt: "<gold>Cookie Empire</gold> <gray>uses a resource pack for the giant cookie, icons and sounds.</gray>"
+  declined: "<gray>No problem! You'll see vanilla stand-ins instead of the custom cookie.</gray>"
+
+storage:
+  load-failed: "<prefix><red>Your bakery couldn't be loaded right now, so nothing will be saved. Please rejoin in a moment.</red>"
+
+commands:
+  usage: "<prefix><gray>/bakery station set</gray> <dark_gray>|</dark_gray> <gray>/bakery station remove</gray> <dark_gray>|</dark_gray> <gray>/bakery reload</gray>"
+  players-only: "<prefix><red>Only players can do that.</red>"
+  station:
+    set: "<prefix><green>Placed bakery station <white><id></white> at <white><x> <y> <z></white> in <white><world></white>.</green>"
+    too-close: "<prefix><red>There's already a station within <distance> blocks.</red>"
+    removed: "<prefix><yellow>Removed bakery station <white><id></white>.</yellow>"
+    none-nearby: "<prefix><red>No station within <radius> blocks.</red>"
+  reload:
+    done: "<prefix><green>Reloaded config, messages, sounds, effects, balance and stations.</green>"
+    problems: "<prefix><yellow>Reloaded with <count> problem(s):</yellow>"
+    problem: "<dark_gray> - </dark_gray><gray><problem></gray>"

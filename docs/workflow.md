@@ -56,7 +56,8 @@ The brief's **Status** line tracks the feature: `planned` (drafted, waiting for 
                     model-designer · sound-designer · vfx-designer · balance-designer · plugin-coder
 4. Review         plugin-tester per agent branch → READY / NOT READY (+ fix loop with the owner)
 5. Merge          READY agent branch → feature branch (merge --no-ff), one at a time, checks after each
-6. Integration    plugin-tester reviews the whole feature on the feature branch
+5b. Cleanup      code owner does a behaviour-preserving simplify/efficiency pass (incl. Gandalf's PERF findings), reviewed like any branch; skipped if nothing to do
+6. Integration    plugin-tester reviews the whole feature on the feature branch (incl. performance checks)
 7. Pull request   push feature/<name>, open the PR (ready or draft), wait for CI                         (review)
 8. Done           all green + READY → status done, PR marked ready; the user merges it; Rick cleans up   (done)
 ```
@@ -148,7 +149,10 @@ Every agent has `memory: project` in its frontmatter: a persistent folder `.clau
 
 **Keep it lean:** `MEMORY.md` is an index under 200 lines; update or delete entries that turn out wrong or stale; check a remembered fact against the current code or docs before relying on it for something risky.
 
-**Lifecycle:** project memory always lands in the **main checkout** (`$CLAUDE_PROJECT_DIR/.claude/agent-memory/<agent_type>/`), even when you run in a worktree (verified 2026-10-18), so it's shared right away with your next run and isn't on your branch. Don't try to commit it yourself. Rick commits memory changes on the feature branch, credited to you (`--author="<your name> <your email>"`), together with your branch merge; they reach `main` through the feature PR. The designers' `design/*style-guide.md` and `design/*lessons.md` stay the human-readable design record; memory is your private working cache.
+**Lifecycle** (verified 2026-10-18): project memory lands in the checkout you run in.
+- **Isolated agents** (`isolation: worktree`: coder and designers): memory is in your worktree's `.claude/agent-memory/<agent_type>/` (writing to the main checkout is blocked by worktree isolation). **Commit it yourself on your branch** like any other file; it reaches the feature branch with your merge and loads in your next worktree.
+- **Agents without their own worktree** (researcher; tester working from the main checkout): memory lands in the main checkout. Rick commits it on the feature branch, credited to you (`--author="<your name> <your email>"`).
+Either way it reaches `main` through the feature PR. The designers' `design/*style-guide.md` and `design/*lessons.md` stay the human-readable design record; memory is your private working cache.
 
 ---
 
