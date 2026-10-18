@@ -1,0 +1,187 @@
+# Effects
+
+Status: draft (needs in-game review, see the end)
+
+Every visual effect in Cookie Empire, how `effects.yml` describes them, and how code plays them.
+Owner: vfx-designer. Engine: `src/main/java/dev/casperrs/cookieClicker/vfx/`. Config: `src/main/resources/effects.yml`
+(copied to the plugin folder on first start; `/bakery reload` re-reads it). Style rules: `design/vfx-style-guide.md`.
+Previews: `mise run vfx-previews` → `design/vfx-previews/<id>.png` (exported from the real Java shape code).
+
+## Layer format
+
+The same reference sits in a comment block at the top of `effects.yml`; the loader is `EffectsConfigParser`.
+Keep all three in sync.
+
+Units: blocks, degrees, ticks (20 ticks = 1 s). Colours `"#rrggbb"` (or `"#aarrggbb"` where transparency matters).
+Bad values are logged at load and fall back to the default; an unknown `type`/particle/shape/item skips that layer;
+an effect without valid layers is skipped. Effects missing from the server's file come from the plugin's built-in
+copy, so new effects in an update work with an old file. Nothing is ever thrown mid-game.
+
+### `limits`
+| Field | Default | Meaning |
+|---|---|---|
+| `max-particles-per-effect` | 200 | particles one play may spawn; heavier presets are thinned at load (logged) |
+| `max-display-entities-per-player` | 8 | effect display entities alive per viewer; at the cap the viewer's **oldest** display effect is removed early so the newest always shows |
+| `max-display-entities-global` | 150 | effect display entities alive server-wide; at the cap new display layers are dropped (particles still play) |
+
+### Every layer
+| Field | Default | Meaning |
+|---|---|---|
+| `type` | required | `particle`, `floating-text`, `item-crumbs`, `scale-pop` |
+| `delay-ticks` | 0 | start this many ticks after `play` |
+| `origin` | `[0, 0, 0]` | offset from the play location |
+
+### `type: particle`
+Personal particles: `viewer.spawnParticle(...)`; with `viewer == null`, `world.spawnParticle(...)` (everyone nearby).
+
+| Field | Default | Meaning |
+|---|---|---|
+| `particle` | required | 26.3 particle key (`dust`, `item`, `end_rod`, `firework`, `minecraft:wax_on`, ...) |
+| `shape` | `point` | `point`, `burst`, `sphere`, `ring`, `arc`, `line`, `helix`, `fountain`, `sparkles` |
+| `points` | 8 | per tick (ring, sphere) or in total (burst, arc, line, helix per strand, fountain); sparkles: number of sparks; unused by `point` (use `count`) |
+| `radius` | 0.5 | shape size; ring/sphere grow from `radius-start` to `radius` |
+| `radius-start` | = radius | ring/sphere start radius (ease-out over `duration-ticks`) |
+| `duration-ticks` | 1 | ring/sphere: redrawn every tick (cost × ticks); burst/arc/line/helix/fountain: points spread over the ticks; point: repeats; sparkles: life of one spark |
+| `height` | 1.0 | helix height, sparkle rise |
+| `turns`, `strands` | 1.0, 1 | helix revolutions and strands |
+| `angle`, `start-angle` | 180, 0 | arc length; first angle of ring/arc/helix (0 = +x) |
+| `spread` | 30 | fountain cone half-angle |
+| `up-bias` | 0 | burst: 0 = full sphere, 1 = straight up |
+| `to` | `[0, 1, 0]` | line end |
+| `plane` | `horizontal` | ring/arc: `horizontal`, `vertical` (x/y), `facing` (stands up and turns to face the viewer; vertical without a viewer) |
+| `stagger-ticks`, `emit-every` | 0, 1 | sparkles: start times spread over n ticks; emit each spark every n ticks |
+| `direction` | `outward` for burst/fountain, else `none` | `none`: placed on the point (then `count`/`offset`/`speed` are vanilla randomness); `outward`: launched along the shape normal at `speed`; `up`: launched straight up |
+| `speed` | 0 | launch speed in blocks/tick (outward/up) or vanilla random speed (none) |
+| `offset` | 0 | vanilla random spread per point (direction none only) |
+| `count` | 1 | particles per point (direction none only) |
+
+Particle data by particle (checked against `Particle#getDataType()` in 26.3):
+
+| Particles | Fields |
+|---|---|
+| `dust` | `color` (`#ffffff`), `size` (1.0, 0.01–4) |
+| `dust_color_transition` | `color`, `to-color` (= color), `size` |
+| `item` | `item` (`cookie`, vanilla item), `item-model` (optional, e.g. `cookieclicker:cookie`; used **only** for viewers the coder reports as having our pack, everyone else sees the vanilla item) |
+| `block`, `falling_dust`, `dust_pillar`, `block_crumble`, `block_marker` | `block` (required) |
+| `entity_effect`, `flash`, `tinted_leaves` | `color` |
+| `effect`, `instant_effect` | `color`, `power` (1.0) |
+| `dragon_breath`, `sculk_charge`, `shriek` | `value` |
+| `vibration`, `trail`, `geyser*` | not supported (layer skipped) |
+
+Cost = points over all ticks × `count` (launched particles: × 1).
+
+### `type: floating-text`
+One `TextDisplay`, visible to the viewer only, that pops in, rises with ease-out and shrinks/fades at the top.
+
+| Field | Default | Meaning |
+|---|---|---|
+| `text` | required | MiniMessage. Placeholders from code (e.g. `<amount>`) are inserted with `Placeholder.unparsed` |
+| `rise` | 0.8 | blocks risen over its life |
+| `duration-ticks` | 20 | life; at least `start-tick + pop-in-ticks + 1 + fade-ticks` (raised and logged otherwise) |
+| `scale` | 1.0 | text size (1.0 ≈ 0.2 block per line) |
+| `pop-in-ticks`, `pop-in-scale`, `overshoot` | 3, 0.5, 1.15 | spawn at `scale × pop-in-scale`, grow to `scale × overshoot`, settle; 0 ticks = no pop-in |
+| `fade-ticks` | 6 | shrink to nothing at the end; opacity steps to 170 and 90 meanwhile |
+| `start-tick` | 1 | first animation tick (the client needs the spawn state first) |
+| `spread` | 0.2 | rapid repeats fan out over a golden-angle disc of this radius |
+| `shadow`, `see-through`, `background`, `billboard`, `view-range` | true, false, `#00000000`, `center`, 0.5 | TextDisplay looks |
+
+Motion (keyframes, client-interpolated): tick `start` → 35 % of the rise at peak scale over `pop-in-ticks`;
+then → 85 % at rest scale until the fade; then → 100 % at scale 0.01 over `fade-ticks`; removed at `duration-ticks`.
+Cost: 1 display entity for its life.
+
+### `type: item-crumbs`
+Small `ItemDisplay`s (viewer only) that fly out in an upward cone, tumble and shrink away.
+Fields: `item` (`cookie`), `item-model`, `count` (4, max 16), `scale` (0.2), `distance` (0.7), `spread` (60),
+`lift` (0.2), `drop` (0.5), `spin` (150, max 200; sent in two steps under 120°), `duration-ticks` (14),
+`start-tick` (1), `view-range` (0.5). Cost: `count` display entities for their life.
+
+### `type: scale-pop`
+Only used by `effects.pop(display, viewer)`; `play` ignores it.
+`steps`: list of `{ scale: [x, y, z] or a number, ticks: n }`, multipliers of the display's rest scale. A final
+`{ scale: 1, ticks: 3 }` is added when the last step isn't 1.
+
+## Effect catalogue
+
+| ID | Looks like | When | Cost per play | Placeholders |
+|---|---|---|---|---|
+| `cookie_click` | 8 cookie crumbs (`item` particle with the cookie, our 3D model's texture with the pack) pop off the hit point in an up-biased spray and fall with gravity (~0.6 block); a cookie-gold `+<amount>` pops in above, rises 0.8 and fades within 1 s. Repeats fan out so numbers don't stack. | every normal click, viewer = the clicker | 8 particles, 1 TextDisplay for 20 ticks | `amount` |
+| `cookie_crit` | Golden flash: a light-gold → deep-gold dust shell expands 0.25 → 0.75 over 3 ticks; 14 white firework sparks burst outward (~1 block); 12 cookie crumbs spray; 6 gold sparkle trails rise 1.1 around the number; 3 mini cookies (ItemDisplay) tumble out and drop; a big bold gold-gradient `+<amount>` (×1.8, overshoot 1.3) rises 1.0 and fades over 1.5 s. | crispy crit, instead of `cookie_click` | 122 particles, 4 display entities (≤ 30 ticks) | `amount` |
+| `purchase` | A cookie-gold ring opens 0.25 → 0.55 over 3 ticks, standing up and facing the buyer; 6 light-gold sparkle trails rise 0.9; 8 small white firework sparks burst 1 tick later. | a building was bought; play at the clicked panel row, viewer = buyer | 80 particles, 0 entities | none |
+| `pop` | Squash (1.25, 0.75, 1.25) 2 ticks → stretch (0.92, 1.10, 0.92) 2 ticks → rest 3 ticks, scale only. | through `effects.pop(display, viewer)` on the clicked cookie display | 3 metadata updates on an existing display | none |
+
+Previews: `design/vfx-previews/cookie_click.png`, `cookie_crit.png`, `purchase.png`, `pop.png` (pop shows the
+outline of a 1-block disc at the interpolated scale per tick).
+
+## Java API (for the plugin-coder)
+
+Package `dev.casperrs.cookieClicker.vfx`, class `Effects`. Main thread only; everything fails soft (logged once,
+skipped).
+
+```java
+// construction (onEnable), after config is available
+Effects effects = new Effects(this);              // or new Effects(this, sharedMiniMessage)
+effects.load();                                   // writes effects.yml if missing, loads it, registers the
+                                                  // cleanup listener, sweeps leftover effect entities
+effects.setPackCheck(player -> packStatus.isLoaded(player));   // optional: who sees item-model crumbs
+
+// playing
+effects.play("cookie_click", hitLoc, player, Map.of("amount", formatted));   // formatted = "+N" number text
+effects.play("cookie_crit",  hitLoc, player, Map.of("amount", formatted));
+effects.play("purchase",     rowLoc, player);
+effects.pop(cookieDisplay, player);               // the clicked player's own cookie ItemDisplay
+
+// /bakery reload
+effects.reload();                                 // = load(): stops running effects, removes their entities
+
+// onDisable
+effects.shutdown();                               // stops all, removes all, restores popped displays, unregisters
+```
+
+Other public methods: `play(id, loc, viewer)` (no placeholders), `pop(display, viewer, presetId)`, `has(id)`,
+`effectIds()`, `sweepLeftovers()` (also run by `load()`; returns the count), `entityKey()` (the
+`cookieclicker:vfx` PDC key), `activeDisplayEntities()` (for a debug command / the tester), constant `Effects.POP`.
+
+Notes for the caller:
+- **`amount`** is inserted as unparsed text, so pass the already formatted number (e.g. `"15"` or `"1.2 million"`);
+  the `+` is in the config text. Placeholder names must be lower-case tag names (`amount`).
+- **Where to play**: for clicks, pass the point where the player hit the cookie, moved ~0.1 block toward the player
+  (e.g. the `Interaction` hit position, or the cookie centre plus 0.1 × the direction to the player's eye). Half of
+  the crumb burst goes "into" the cookie; spawning slightly in front keeps it visible. For purchases, the centre of
+  the clicked row. The crit replaces the click effect (don't play both).
+- **Viewer** is the clicking player for all three; `null` would show the effect to everyone nearby.
+- **Pop and the spin/bob controller** (contract rule): the pop only changes the scale, re-reading
+  `getTransformation()` at every step, and keeps translation and rotations. The spin controller must also keep the
+  current scale (build each segment from `display.getTransformation().getScale()`). If both run in the same tick,
+  issue the spin segment **before** calling `pop` (the last `setTransformation` in a tick wins, and the pop's short
+  duration should be the one that sticks). A pop briefly fast-forwards the running spin segment (≤ 30° with 10-tick
+  segments), hidden by the squash. A pop during a pop restarts from the same rest scale, so spam never drifts.
+- **Cleanup** is the engine's job for its own entities: removed on completion, on `EntitiesUnloadEvent`, when the
+  viewer quits, on reload and on shutdown; chunk loads and `load()` sweep anything carrying the PDC key. Effect
+  entities also carry the shared `cookieclicker` scoreboard tag, so the coder's own sweep removes them too.
+- **Pack check**: without `setPackCheck`, everyone gets the vanilla cookie item for crumbs (safe: never a missing
+  texture). Once the coder knows a player has `SUCCESSFULLY_LOADED` the pack, return true for them.
+
+## Custom-looking particles
+
+- Crumbs use `Particle.ITEM` with an `ItemStack` (`Material.COOKIE`) carrying the `item_model` data component
+  `cookieclicker:cookie`. Since the 1.21.4 item model system the client builds item particles from the item's model,
+  taking the texture from the model's `particle` texture. No vanilla particle is retextured, so nothing else on the
+  server changes. This is **unverified in game** (see review list). Fallback is automatic: viewers without the pack
+  (or until `setPackCheck` is wired) get the vanilla cookie item, whose crumbs already look right.
+- No resource-pack particle retextures are used (`assets/minecraft/particles/` untouched).
+
+## Needs in-game review (human)
+
+1. `cookie_click` crumbs with the pack: do item particles show our cookie texture (needs `"particle"` set in the 3D
+   model's textures) and look like crumbs, not purple/black squares? Without the pack: vanilla cookie crumbs.
+2. Launched particles (`count = 0` + direction × speed) on 26.3: crumbs and firework sparks should fly outward, not
+   sit still. If they don't move, report it; the fallback is `direction: none` with `offset`/`speed`.
+3. Floating text: does it pop in and rise smoothly from the first tick (interpolation needs the client to have the
+   spawn state; `start-tick: 1`)? If it jumps, try `start-tick: 2`. Readable size at the station distance?
+4. Fast clicking (10+ CPS): numbers fan out, at most 8 effect entities per player, oldest disappear early, no lag.
+5. Crit: clearly bigger than a click; the 3 mini cookies tumble and vanish; nothing lingers after 1.5 s.
+6. Purchase ring faces the buyer at the panel row and isn't hidden inside the panel.
+7. Pop: squash/stretch reads well on the 3D cookie and never stops or reverses the spin; spam-clicking doesn't
+   change the cookie's size.
+8. Two players at the same station: neither sees the other's particles, numbers or crumbs.
+9. `/bakery reload` and a restart mid-effect: no floating numbers or crumbs left behind.
