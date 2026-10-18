@@ -229,7 +229,7 @@ public final class Effects {
                             resolver = resolver(placeholders);
                         }
                         Component text = miniMessage.deserialize(t.text(), resolver);
-                        double[] j = Shapes.goldenDisc(jitter++ % JITTER_SLOTS, JITTER_SLOTS, t.spread());
+                        double[] j = Shapes.goldenDisc(Math.floorMod(jitter++, JITTER_SLOTS), JITTER_SLOTS, t.spread());
                         ticker.start(new FloatingTextJob(spawner, registry, t, text, loc, viewer, j[0], j[1]));
                     }
                     case LayerSpec.ItemCrumbs c when data instanceof ItemStack item ->
