@@ -128,7 +128,7 @@ none (decided below)
 | model-designer | merged | `starter-house/model-designer` | READY | 20:39 | 20:55 | default cottage, 170 blocks; needs an in-game look |
 | sound-designer | merged | `starter-house/sound-designer` | READY | 20:39 | 20:49 | 4 sounds + @block entry; needs a listen |
 | vfx-designer | merged | `starter-house/vfx-designer` + `-outline` | READY ×2 | 20:39 | 21:02 | 6 presets + dropBlock/loop/cancelFor; plot_outline/house_outline; needs in-game look |
-| plugin-coder (pass 1) | fix round 1 | `starter-house/plugin-coder` | NOT READY | 20:39 | 21:00 | Outline hang (max-points < 12), backup-before-paste, busy flag; +outline defaults |
+| plugin-coder (pass 1) | fix round 2 | `starter-house/plugin-coder` | NOT READY | 20:39 | 21:00 | round 1 fixes verified; reload race in HousePlacer (OperationGate) |
 | plugin-coder (pass 2) | planned | `starter-house/plugin-coder-2` | | | | |
 | plugin-tester | running | (each branch) | READY ×3 | 20:49 | | sounds, house design, vfx READY; pass 1 in review |
 
