@@ -56,3 +56,23 @@ Cookie and shop clicks inside a `build deny` plot (else `interact allow`); `/rg 
 
 ## Verdict
 **VERDICT: NOT READY**, for one blocking item (Bug 1, server hang for `plot.show.max-points < 12`). Fix list for Works4Me Wesly: Bug 1 (blocking), Bug 2 (medium, should fix in this round), Bug 3 (low). Everything else is READY; re-review after the fix only needs `git diff` of `Outline.java`, `PlotSettings.java`, `HousePlacer.java` and the un-disabled test.
+
+---
+
+# Re-review, fix round 1 (Gandalf, 2026-10-19), `git diff cf61a52..HEAD` (code commit 7e373eb)
+
+Checks: `check` (382 tests, 0 failed, 0 skipped), `validate-assets`, `sound-check`, `balance-check`, `tools-test` all green.
+
+- **Bug 1 (hang): fixed.** `Outline.points` now stops once the count no longer shrinks and the step exceeds the longest edge (bounding-box diagonal, an upper bound for every edge, polygons included); `PlotSettings` clamps `max-points` to 12..2000. `@Disabled` removed from `OutlineTest`; it now also covers 1, 4, 8, 11, 12 for a cuboid and a polygon and passes.
+- **Bug 4 (chimney reach): fixed** (`plot.chimney-reach`, clamp 1..64, default 16). New `PlotSettingsTest` (5): defaults, clamps, bad effect ids fall back to `plot_outline`/`house_outline`, and the shipped config's effect ids exist in `effects.yml`.
+- **Bug 6 (dead messages): fixed**, no `commands.station` left.
+- **Bug 3 (busy): fixed.** `guarded()` clears `busy` in `finally` unless the step handed the operation to IO (`handedOff`, set only on a successful `io.execute`); IO exceptions reply and clear via `finish`; a rejected submit clears at once. `handedOff` is main-thread only and every `guarded` entry resets it, so the shared field is safe.
+- **Bug 2 (backup before paste): fixed in order** (snapshot on main, write .nbt/.yml on IO, `apply` on main only after a successful write; failure deletes partial files and replies `house.place-failed`; area unloaded in between deletes the backup and replies `house.not-loaded`).
+
+## New finding (state machine race)
+1. **MEDIUM, `HousePlacer.reset()` (and reload):** `reset()` only sets `busy = false`; it does not invalidate the operation already running on the IO thread. After `/bakery reload` during the backup write, the late `main.execute(... apply ...)` still runs and pastes the house. It also runs `guarded`, whose `finally` clears `busy` while a newer operation started after the reload may be in flight, so two house operations can overlap. Disable is safe: the `main` executor drops callbacks once the plugin is disabled, so nothing pastes (the already written backup files stay behind, harmless but stale).
+   Fix: keep an `int generation` bumped in `reset()`; capture it in `place`/`undo`, and in every main-thread continuation (`main.execute` in place, `apply`, `restore`) compare first. On mismatch: do not touch the world and do not touch `busy` (the new epoch owns it); for `apply`, delete the written backup files on IO. The pure part is tiny but the class needs a `JavaPlugin`, so I could not add a unit test; a generation check would be testable if extracted into a small `OperationGate` class (`begin()` returns the token, `valid(token)`, `reset()`), which I can then test.
+2. LOW, not blocking: `restore` (undo) deletes the backup only after restoring; fine. Stale backups left after a disable race (above) make a later undo restore the pre-paste snapshot, which is harmless.
+
+## Verdict
+**VERDICT: NOT READY** for the reload race above (MEDIUM, but it is exactly the requirement "a reload while the IO write is in flight must not paste afterwards"). Everything else from round 0 is fixed. Re-review after the fix needs only `HousePlacer.java` (+ the new gate class and its test).
