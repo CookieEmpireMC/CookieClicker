@@ -5,6 +5,8 @@ import net.kyori.adventure.key.Key;
 import net.kyori.adventure.sound.Sound;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Player;
 import org.jspecify.annotations.Nullable;
@@ -127,13 +129,14 @@ public final class SoundService {
         Material material = block.getMaterial();
         Key cached = blockSounds.get(material);
         if (cached == null) {
-            try {
-                cached = block.getSoundGroup().getPlaceSound().key();
-                blockSounds.put(material, cached);
-            } catch (RuntimeException e) { // unregistered sound in a custom/modded group: use the fallback
+            // SOUND_EVENT is the same registry as the @Obsolete SOUNDS alias; sounds can exist without a key
+            NamespacedKey key = Registry.SOUND_EVENT.getKey(block.getSoundGroup().getPlaceSound());
+            if (key == null) {
                 warnOnce("@block:" + material, "No place sound for " + material + "; using the fallback");
                 return null;
             }
+            cached = key;
+            blockSounds.put(material, cached);
         }
         return cached;
     }
