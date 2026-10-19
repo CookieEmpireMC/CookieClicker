@@ -13,6 +13,8 @@ ROOTS = ["resourcepack", "itemsadder", "modelengine"]
 JSON_SUFFIXES = {".json", ".mcmeta", ".bbmodel"}
 YAML_SUFFIXES = {".yml", ".yaml"}
 SOUNDS_CONFIG = Path("src/main/resources/sounds.yml")
+# sounds.yml key meaning "the block's own vanilla place sound" (plugin: SoundDef.BLOCK_KEY)
+BLOCK_SOUND_KEY = "@block"
 # Sound sources: Bukkit SoundCategory and Adventure Sound.Source names, lower-case
 SOUND_SOURCES = {"master", "music", "record", "records", "weather", "block", "blocks", "hostile",
                  "neutral", "player", "players", "ambient", "voice", "ui"}
@@ -134,12 +136,21 @@ def check_sounds_config(events: set[str]) -> list[str]:
         if not isinstance(entry, dict) or not isinstance(entry.get("key"), str):
             errors.append(f"{where} needs a 'key'")
             continue
-        key = entry["key"] if ":" in entry["key"] else f"minecraft:{entry['key']}"
-        if not key.startswith("minecraft:") and key not in events:
-            errors.append(f"{where} -> '{key}' is not in any sounds.json")
         fallback = entry.get("fallback")
-        if not isinstance(fallback, str) or not fallback.startswith("minecraft:"):
-            errors.append(f"{where} needs a vanilla 'fallback' (a minecraft:… sound key)")
+        if entry["key"] == BLOCK_SOUND_KEY:
+            # special key: the block's own vanilla place sound (SoundService.playBlock); the fallback is optional
+            # and only used when a block's sound can't be resolved
+            if fallback is not None and (not isinstance(fallback, str) or not fallback.startswith("minecraft:")):
+                errors.append(f"{where} 'fallback' must be a vanilla minecraft:… sound key when set")
+        else:
+            if entry["key"].startswith("@"):
+                errors.append(f"{where} -> unknown special key '{entry['key']}' (only '{BLOCK_SOUND_KEY}' exists)")
+                continue
+            key = entry["key"] if ":" in entry["key"] else f"minecraft:{entry['key']}"
+            if not key.startswith("minecraft:") and key not in events:
+                errors.append(f"{where} -> '{key}' is not in any sounds.json")
+            if not isinstance(fallback, str) or not fallback.startswith("minecraft:"):
+                errors.append(f"{where} needs a vanilla 'fallback' (a minecraft:… sound key)")
         if str(entry.get("source", "master")).lower() not in SOUND_SOURCES:
             errors.append(f"{where} has unknown source '{entry.get('source')}'")
         volume = entry.get("volume", 1.0)

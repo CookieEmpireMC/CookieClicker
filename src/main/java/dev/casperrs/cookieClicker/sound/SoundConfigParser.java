@@ -8,6 +8,7 @@ import java.util.regex.Pattern;
 
 /**
  * Parses {@code sounds.yml}: {@code <event>: {key, fallback, volume, pitch-min, pitch-max, source}}.
+ * {@code key: "@block"} ({@link SoundDef#BLOCK_KEY}) is the special "the block's own vanilla place sound" key.
  * Bad entries are reported and skipped; the rest still load. Pure Java.
  */
 public final class SoundConfigParser {
@@ -30,11 +31,14 @@ public final class SoundConfigParser {
             }
             String key = text(spec.get("key"));
             String fallback = text(spec.get("fallback"));
-            if (key == null || !KEY.matcher(key).matches()) {
+            boolean blockSound = SoundDef.BLOCK_KEY.equals(key);
+            if (key == null || !(blockSound || KEY.matcher(key).matches())) {
                 problems.accept(where + " needs a valid 'key', got " + spec.get("key"));
                 continue;
             }
-            if (fallback == null || !KEY.matcher(fallback).matches()) {
+            if (blockSound && fallback == null) {
+                fallback = SoundDef.BLOCK_KEY; // no fallback: blocks whose sound can't be resolved stay silent
+            } else if (fallback == null || !KEY.matcher(fallback).matches()) {
                 problems.accept(where + " has no valid 'fallback'; players without the pack hear the pack key (silence)");
                 fallback = key;
             }
