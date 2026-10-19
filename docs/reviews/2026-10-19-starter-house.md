@@ -68,3 +68,15 @@ Setup: plot + house regions with `bakery-plot` / `bakery-house` flags, `/bakery 
 5. Polygon house region: no fake air outside the polygon, notch blocks untouched.
 6. Each account sees only its own cookie, pedestal and shop.
 7. New sounds to audition: `house_hammer`, `house_block_land`, `house_fanfare`, `house_chimney_crackle`, `@block` place sounds. New effects: `house_foundation_dust`, `house_block_land`, `house_sparkle`, `house_confetti`, `house_chimney_smoke`, the block drop (`house_block_drop`) and `plot_outline` / `house_outline`.
+
+## Addendum: re-review of plugin-coder-fixes (2026-10-19)
+
+Diff `8fe40e4..HEAD -- src/main` (HouseCinematics, RevealPlan, SoundService). `mise run check` green (435 tests), validate-assets green, compile with `-Dmaven.compiler.showDeprecation=true` has no warnings.
+
+1. SoundService: `Registry.SOUNDS` is `@ApiStatus.Obsolete(since 1.21.4)` "use SOUND_EVENT" in paper-api 26.3.build.205 Registry.java; `SOUND_EVENT.getKey(...)` null-checked. OK, replaces the deprecated `Sound#key()`.
+2. start(): INSIDE check now runs before the teleport, at the viewpoint when it applies, body plus cell under the feet. OK.
+3. abort(): removes the run and sets `alive=false` before any step, each step guarded; `landed()` calling `abort()` from a fall callback is safe (later callbacks return on `!alive`, the retry is guarded and the plan's hidden list excludes the landed block). OK.
+   LOW: a failing first `step()` returns `NOTHING_TO_BUILD`, which shows `house.rebuild-no-house` ("no house"); slightly misleading but the cause is logged SEVERE and the house is restored. Acceptable without a contract change; a dedicated `FAILED` value would be cleaner later.
+4. RevealPlan `Math.nextDown(bpt+1.0)` cap: 2.5 now gives 10 in 4 ticks, no burst after a wait (the 1-cap case still passes). Test tightened to `assertEquals(10, total)`.
+
+VERDICT: READY
