@@ -29,3 +29,8 @@ Repo conventions learned:
 - Agent branches get merged into the feature branch while you work: read other agents' files via `git show feature/<name>:<path>`, not their branch name (branch is deleted after merge).
 - JdbcPlayerStoreTest.freshDatabaseStartsAtVersionOne pins schema 1: bumping SCHEMA_VERSION needs the tester to update it.
 - Effects.play may keep the Location for multi-tick jobs: pass a new Location per call.
+- Review lessons (Gandalf, pass 1 round 1, 2026-10-19): any "grow until it fits" loop must terminate even when the
+  limit is below the shape's minimum (Outline: stop once the step exceeds the longest edge); write undo backups to
+  disk BEFORE changing the world; clear busy flags in try/finally (HousePlacer.guarded + handedOff pattern).
+- Gandalf disables tests that reproduce open bugs (@Disabled); run them with the DisabledCondition deactivation flag
+  (see paper-263-api-facts) to prove a fix, and tell Rick it's ready to un-disable.
