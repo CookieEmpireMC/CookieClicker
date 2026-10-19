@@ -64,7 +64,7 @@ public final class HousePlacer {
     private final Executor io;
     private final Executor main;
     private final IntSupplier maxBlocks;
-    private boolean busy;
+    private final OperationGate gate = new OperationGate();
 
     /**
      * @param main      runs a task on the server thread (dropped once the plugin is disabled)
@@ -96,11 +96,12 @@ public final class HousePlacer {
             messages.send(sender, "house.no-house-region", Placeholder.unparsed("id", plot.id()));
             return;
         }
-        if (!begin(sender)) {
+        Op op = begin(sender);
+        if (op == null) {
             return;
         }
         Path dataFolder = plugin.getDataFolder().toPath();
-        guarded(sender, () -> submit(sender, () -> {
+        guarded(op, () -> submit(op, () -> {
             String text;
             try {
                 text = readDesign(dataFolder, designName);
@@ -109,7 +110,7 @@ public final class HousePlacer {
                 text = null;
             }
             if (text == null) {
-                finish(sender, "house.design-not-found", Placeholder.unparsed("name", designName));
+                finish(op, "house.design-not-found", Placeholder.unparsed("name", designName));
                 return;
             }
             HouseDesignParser.Result parsed;
@@ -121,13 +122,13 @@ public final class HousePlacer {
                 parsed = new HouseDesignParser.Result(null, List.of("not valid YAML: " + e.getMessage()));
             }
             HouseDesignParser.Result result = parsed;
-            main.execute(() -> guarded(sender, () -> {
+            main.execute(() -> guarded(op, () -> {
                 if (result.design() == null) {
-                    finishNow(sender, "house.design-invalid", Placeholder.unparsed("name", designName),
+                    finishNow(op, "house.design-invalid", Placeholder.unparsed("name", designName),
                             Placeholder.unparsed("problem", String.join("; ", result.problems())));
                     return;
                 }
-                paste(sender, plot.id(), result.design());
+                paste(op, plot.id(), result.design());
             }));
         }));
     }
@@ -147,17 +148,17 @@ public final class HousePlacer {
      * Main thread: validate against the world and snapshot the box (structure + old block data), then write the
      * backup on IO; {@link #apply} pastes only once the backup is saved.
      */
-    private void paste(CommandSender sender, String plotId, HouseDesign design) {
+    private void paste(Op op, String plotId, HouseDesign design) {
         Plot plot = plots.get(plotId).orElse(null);
         Optional<RegionShape> house = plots.houseShape(plotId);
         World world = plot == null ? null : plots.world(plot).orElse(null);
         if (plot == null || house.isEmpty() || world == null) {
-            finishNow(sender, "house.no-house-region", Placeholder.unparsed("id", plotId));
+            finishNow(op, "house.no-house-region", Placeholder.unparsed("id", plotId));
             return;
         }
         long volume = (long) design.sizeX() * design.sizeY() * design.sizeZ();
         if (volume > maxBlocks.getAsInt()) {
-            finishNow(sender, "house.too-big", Placeholder.unparsed("name", design.name()),
+            finishNow(op, "house.too-big", Placeholder.unparsed("name", design.name()),
                     Placeholder.unparsed("count", Long.toString(volume)),
                     Placeholder.unparsed("amount", Integer.toString(maxBlocks.getAsInt())));
             return;
@@ -167,7 +168,7 @@ public final class HousePlacer {
             try {
                 palette.put(e.getKey(), Bukkit.createBlockData(e.getValue()));
             } catch (IllegalArgumentException ex) {
-                finishNow(sender, "house.design-invalid", Placeholder.unparsed("name", design.name()),
+                finishNow(op, "house.design-invalid", Placeholder.unparsed("name", design.name()),
                         Placeholder.unparsed("problem", "palette '" + e.getKey() + "': '" + e.getValue()
                                 + "' is not valid block data"));
                 return;
@@ -178,7 +179,7 @@ public final class HousePlacer {
         int[] corner = design.toWorld(regionMin, 0, 0, 0);
         int[] size = {design.sizeX(), design.sizeY(), design.sizeZ()};
         if (!loaded(world, corner, size)) {
-            finishNow(sender, "house.not-loaded", Placeholder.unparsed("id", plotId));
+            finishNow(op, "house.not-loaded", Placeholder.unparsed("id", plotId));
             return;
         }
 
@@ -202,7 +203,7 @@ public final class HousePlacer {
             structureBytes = out.toByteArray();
         } catch (IOException | RuntimeException e) {
             plugin.getLogger().log(Level.SEVERE, "Could not back up the house area of plot " + plotId, e);
-            finishNow(sender, "house.place-failed", Placeholder.unparsed("problem", String.valueOf(e.getMessage())));
+            finishNow(op, "house.place-failed", Placeholder.unparsed("problem", String.valueOf(e.getMessage())));
             return;
         }
 
@@ -215,7 +216,7 @@ public final class HousePlacer {
         Path dir = plugin.getDataFolder().toPath().resolve(BACKUP_DIR).resolve(plotId);
         Path nbtFile = dir.resolve(backup.createdAt() + ".nbt");
         Path ymlFile = dir.resolve(backup.createdAt() + ".yml");
-        submit(sender, () -> {
+        submit(op, () -> {
             try {
                 Files.createDirectories(dir);
                 Files.write(nbtFile, structureBytes);
@@ -224,26 +225,26 @@ public final class HousePlacer {
                 plugin.getLogger().log(Level.SEVERE, "Could not write the house backup of plot " + plotId
                         + "; nothing was placed", e);
                 deleteQuietly(nbtFile, ymlFile);
-                finish(sender, "house.place-failed", Placeholder.unparsed("problem",
+                finish(op, "house.place-failed", Placeholder.unparsed("problem",
                         "could not save the undo backup (" + e.getMessage() + ")"));
                 return;
             }
-            main.execute(() -> guarded(sender, () -> apply(sender, plotId, design, regionMin, changes, byString,
+            main.execute(() -> afterBackup(op, nbtFile, ymlFile, () -> apply(op, plotId, design, regionMin, changes, byString,
                     backup.cells().size(), nbtFile, ymlFile)));
         });
     }
 
     /** Main thread, after the backup is on disk: paste the changes, set sign text and the chimney point. */
-    private void apply(CommandSender sender, String plotId, HouseDesign design, int[] regionMin,
+    private void apply(Op op, String plotId, HouseDesign design, int[] regionMin,
                        List<HouseBackup.Change> changes, Map<String, BlockData> byString, int changed,
                        Path nbtFile, Path ymlFile) {
         Plot plot = plots.get(plotId).orElse(null);
         World world = plot == null ? null : plots.world(plot).orElse(null);
         if (plot == null || world == null || !loaded(world, design.toWorld(regionMin, 0, 0, 0),
                 new int[] {design.sizeX(), design.sizeY(), design.sizeZ()})) {
-            submit(sender, () -> { // nothing was placed: the backup is useless
+            submit(op, () -> { // nothing was placed: the backup is useless
                 deleteQuietly(nbtFile, ymlFile);
-                finish(sender, "house.not-loaded", Placeholder.unparsed("id", plotId));
+                finish(op, "house.not-loaded", Placeholder.unparsed("id", plotId));
             });
             return;
         }
@@ -275,7 +276,7 @@ public final class HousePlacer {
             plotFile.saveAsync(plots.all());
         }
 
-        finishNow(sender, "house.placed", Placeholder.unparsed("name", design.name()),
+        finishNow(op, "house.placed", Placeholder.unparsed("name", design.name()),
                 Placeholder.unparsed("id", plotId), Placeholder.unparsed("count", Integer.toString(changed)));
     }
 
@@ -322,19 +323,20 @@ public final class HousePlacer {
     // ---- undo -----------------------------------------------------------------------------------------------------
 
     public void undo(CommandSender sender, Plot plot) {
-        if (!begin(sender)) {
+        Op op = begin(sender);
+        if (op == null) {
             return;
         }
         String plotId = plot.id();
         Path dir = plugin.getDataFolder().toPath().resolve(BACKUP_DIR).resolve(plotId);
-        guarded(sender, () -> submit(sender, () -> {
+        guarded(op, () -> submit(op, () -> {
             Path meta;
             String text;
             byte[] nbt;
             try {
                 meta = newest(dir);
                 if (meta == null) {
-                    finish(sender, "house.nothing-to-undo", Placeholder.unparsed("id", plotId));
+                    finish(op, "house.nothing-to-undo", Placeholder.unparsed("id", plotId));
                     return;
                 }
                 text = Files.readString(meta, StandardCharsets.UTF_8);
@@ -342,27 +344,27 @@ public final class HousePlacer {
                 nbt = Files.isRegularFile(nbtFile) ? Files.readAllBytes(nbtFile) : null;
             } catch (IOException e) {
                 plugin.getLogger().log(Level.SEVERE, "Could not read the house backups of plot " + plotId, e);
-                finish(sender, "house.undo-failed", Placeholder.unparsed("problem", String.valueOf(e.getMessage())));
+                finish(op, "house.undo-failed", Placeholder.unparsed("problem", String.valueOf(e.getMessage())));
                 return;
             }
-            main.execute(() -> guarded(sender, () -> restore(sender, plotId, meta, text, nbt)));
+            main.execute(() -> guarded(op, () -> restore(op, plotId, meta, text, nbt)));
         }));
     }
 
-    private void restore(CommandSender sender, String plotId, Path meta, String text, byte @Nullable [] nbt) {
+    private void restore(Op op, String plotId, Path meta, String text, byte @Nullable [] nbt) {
         HouseBackup backup;
         try {
             YamlConfiguration yaml = new YamlConfiguration();
             yaml.loadFromString(text);
             backup = HouseBackup.fromMap(YamlFiles.toMap(yaml));
         } catch (InvalidConfigurationException | IllegalArgumentException e) {
-            finishNow(sender, "house.undo-failed", Placeholder.unparsed("problem",
+            finishNow(op, "house.undo-failed", Placeholder.unparsed("problem",
                     meta.getFileName() + ": " + e.getMessage()));
             return;
         }
         World world = dev.casperrs.cookieClicker.plot.PlotService.worldByKey(backup.worldKey()).orElse(null);
         if (world == null) {
-            finishNow(sender, "house.not-loaded", Placeholder.unparsed("id", plotId));
+            finishNow(op, "house.not-loaded", Placeholder.unparsed("id", plotId));
             return;
         }
         int[] c = backup.corner();
@@ -370,7 +372,7 @@ public final class HousePlacer {
         for (int cx = c[0] >> 4; cx <= (c[0] + s[0] - 1) >> 4; cx++) {
             for (int cz = c[2] >> 4; cz <= (c[2] + s[2] - 1) >> 4; cz++) {
                 if (!world.isChunkLoaded(cx, cz)) {
-                    finishNow(sender, "house.not-loaded", Placeholder.unparsed("id", plotId));
+                    finishNow(op, "house.not-loaded", Placeholder.unparsed("id", plotId));
                     return;
                 }
             }
@@ -391,7 +393,7 @@ public final class HousePlacer {
             try {
                 backup.restoreCells(worldAccess(world, new HashMap<>()));
             } catch (IllegalArgumentException e) {
-                finishNow(sender, "house.undo-failed", Placeholder.unparsed("problem", String.valueOf(e.getMessage())));
+                finishNow(op, "house.undo-failed", Placeholder.unparsed("problem", String.valueOf(e.getMessage())));
                 return;
             }
         }
@@ -400,14 +402,14 @@ public final class HousePlacer {
             plotFile.saveAsync(plots.all());
         });
         int count = backup.cells().size();
-        submit(sender, () -> {
+        submit(op, () -> {
             try {
                 Files.deleteIfExists(sibling(meta, ".nbt"));
                 Files.deleteIfExists(meta);
             } catch (IOException e) {
                 plugin.getLogger().log(Level.WARNING, "Could not delete the used backup " + meta, e);
             }
-            finish(sender, "house.undone", Placeholder.unparsed("id", plotId),
+            finish(op, "house.undone", Placeholder.unparsed("id", plotId),
                     Placeholder.unparsed("count", Integer.toString(count)));
         });
     }
@@ -439,25 +441,35 @@ public final class HousePlacer {
         return yaml.saveToString();
     }
 
-    // ---- busy flag + thread hops ------------------------------------------------------------------------------------
+    // ---- one operation at a time: token gate + thread hops -----------------------------------------------------------
 
-    private boolean begin(CommandSender sender) {
-        if (busy) {
+    /** One running house command: who to answer, and its {@link OperationGate} token. */
+    private record Op(CommandSender sender, long token) {
+    }
+
+    /** Starts an operation, or tells the sender another one runs (null). */
+    private @Nullable Op begin(CommandSender sender) {
+        long token = gate.begin();
+        if (token == OperationGate.REFUSED) {
             messages.send(sender, "house.busy");
-            return false;
+            return null;
         }
-        busy = true;
-        return true;
+        return new Op(sender, token);
     }
 
     /** Set by {@link #submit} while a {@link #guarded} step runs: the operation continues on the IO thread. */
     private boolean handedOff;
 
     /**
-     * Runs one main-thread step of a house operation. Unless the step handed the operation to the IO thread, the busy
-     * flag is cleared in {@code finally}, so an unexpected exception can never leave {@code busy} set.
+     * Runs one main-thread step of an operation. A stale token (a {@code /bakery reload} or disable cancelled the
+     * operation) runs nothing and leaves the gate alone: a newer operation may own it. Otherwise, unless the step handed
+     * the operation to the IO thread, the operation ends in {@code finally}, so an exception can never leave the gate
+     * busy, and it only ever ends its own token.
      */
-    private void guarded(CommandSender sender, Runnable step) {
+    private void guarded(Op op, Runnable step) {
+        if (!gate.valid(op.token())) {
+            return;
+        }
         handedOff = false;
         boolean completed = false;
         try {
@@ -465,50 +477,72 @@ public final class HousePlacer {
             completed = true;
         } catch (RuntimeException e) {
             plugin.getLogger().log(Level.SEVERE, "House command failed", e);
-            messages.send(sender, "house.place-failed", Placeholder.unparsed("problem", String.valueOf(e.getMessage())));
+            messages.send(op.sender(), "house.place-failed", Placeholder.unparsed("problem", String.valueOf(e.getMessage())));
         } finally {
             if (!completed || !handedOff) {
-                busy = false;
+                gate.end(op.token());
             }
             handedOff = false;
         }
     }
 
     /**
-     * Main thread: continues the operation on {@code io}. An exception there replies and clears busy; a rejected task
-     * (shutting down) clears busy right away.
+     * Main thread, once the backup files are written: paste only if the operation is still current. A cancelled
+     * operation pastes nothing and its now useless backup files are deleted on the IO thread.
      */
-    private void submit(CommandSender sender, Runnable task) {
+    private void afterBackup(Op op, Path nbtFile, Path ymlFile, Runnable paste) {
+        if (gate.valid(op.token())) {
+            guarded(op, paste);
+            return;
+        }
+        try {
+            io.execute(() -> deleteQuietly(nbtFile, ymlFile));
+        } catch (RuntimeException e) { // IO already stopped (disable): a stale backup is harmless
+            plugin.getLogger().fine("Left a cancelled house backup behind: " + ymlFile);
+        }
+    }
+
+    /**
+     * Main thread: continues the operation on {@code io}. An exception there replies and ends the operation; a
+     * rejected task (shutting down) ends it right away.
+     */
+    private void submit(Op op, Runnable task) {
         try {
             io.execute(() -> {
                 try {
                     task.run();
                 } catch (RuntimeException e) {
                     plugin.getLogger().log(Level.SEVERE, "House command failed on the IO thread", e);
-                    finish(sender, "house.place-failed", Placeholder.unparsed("problem", String.valueOf(e.getMessage())));
+                    finish(op, "house.place-failed", Placeholder.unparsed("problem", String.valueOf(e.getMessage())));
                 }
             });
             handedOff = true;
         } catch (RuntimeException e) {
-            busy = false;
-            messages.send(sender, "house.place-failed", Placeholder.unparsed("problem", "server is shutting down"));
+            gate.end(op.token());
+            messages.send(op.sender(), "house.place-failed", Placeholder.unparsed("problem", "server is shutting down"));
         }
     }
 
-    /** From the IO thread: hop to main, clear busy, reply. */
-    private void finish(CommandSender sender, String path,
-                        net.kyori.adventure.text.minimessage.tag.resolver.TagResolver... resolvers) {
-        main.execute(() -> finishNow(sender, path, resolvers));
+    /** From the IO thread: hop to main, end the operation, reply. */
+    private void finish(Op op, String path, net.kyori.adventure.text.minimessage.tag.resolver.TagResolver... resolvers) {
+        main.execute(() -> finishNow(op, path, resolvers));
     }
 
-    private void finishNow(CommandSender sender, String path,
+    /** Ends the operation and replies; a cancelled (stale) operation stays silent and leaves the gate alone. */
+    private void finishNow(Op op, String path,
                            net.kyori.adventure.text.minimessage.tag.resolver.TagResolver... resolvers) {
-        busy = false;
-        messages.send(sender, path, resolvers);
+        if (!gate.valid(op.token())) {
+            return;
+        }
+        gate.end(op.token());
+        messages.send(op.sender(), path, resolvers);
     }
 
-    /** Disable / reload: a running operation's late callbacks are dropped by {@code main}; allow new ones. */
+    /**
+     * Reload / disable: cancels the running operation. Its late callbacks find their token stale, so they neither
+     * change the world nor end a newer operation; a paste whose backup was still being written never happens.
+     */
     public void reset() {
-        busy = false;
+        gate.reset();
     }
 }
