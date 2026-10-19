@@ -77,9 +77,9 @@ final class ParticleJob extends Job {
 
     private void send(Particle particle, double x, double y, double z, int count, double ox, double oy, double oz) {
         if (viewer != null) {
-            viewer.spawnParticle(particle, x, y, z, count, ox, oy, oz, layer.speed(), data);
+            viewer.spawnParticle(particle, x, y, z, count, ox, oy, oz, layer.speed(), data, layer.force());
         } else {
-            world.spawnParticle(particle, x, y, z, count, ox, oy, oz, layer.speed(), data);
+            world.spawnParticle(particle, x, y, z, count, ox, oy, oz, layer.speed(), data, layer.force());
         }
     }
 
