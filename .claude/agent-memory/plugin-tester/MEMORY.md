@@ -1,2 +1,3 @@
 - [Testing GitHub App tools](testing-github-app-tools.md) — offline test recipe for tools/github_app (fake server, throwaway key, config gotcha)
 - [bakery-core test recipes](testing-bakery-core.md) — golden-values dry run, classpath libs, formatter bug note
+- [Ledger: vfx](ledger-vfx.md) — vfx package verified for starter-house; Proxy-based ticker test trick
