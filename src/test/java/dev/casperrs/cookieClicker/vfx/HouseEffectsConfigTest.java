@@ -55,6 +55,21 @@ class HouseEffectsConfigTest {
     }
 
     @Test
+    void outlinePresetsAreOneForcedParticle() throws Exception {
+        EffectsConfig config = shipped();
+        // played once per outline point (up to ~240 points per redraw), so one particle each and no entities
+        for (String id : List.of("plot_outline", "house_outline")) {
+            EffectsConfig.Preset outline = config.preset(id);
+            assertNotNull(outline, id + " exists");
+            assertEquals(1, outline.particleCost(), id + " cost");
+            assertEquals(0, outline.entityCost(), id + " entities");
+            for (LayerSpec layer : outline.layers()) {
+                assertTrue(assertInstanceOf(LayerSpec.Particles.class, layer).force(), id + " uses force");
+            }
+        }
+    }
+
+    @Test
     void chimneySmokeIsALoopSeenFromAfar() throws Exception {
         EffectsConfig.Preset smoke = shipped().preset("house_chimney_smoke");
         assertEquals(10, smoke.loopEvery());

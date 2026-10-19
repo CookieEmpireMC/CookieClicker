@@ -100,11 +100,13 @@ none (decided below)
 | effect | `house_block_drop` | vfx-designer | drop timings (`block-drop` layer), used only by `dropBlock` |
 | config | `effects.yml` `limits`: `max-falling-blocks-per-player: 24`, `max-falling-blocks-global: 240`, `max-loops-per-player: 4`; preset `loop-every`, particle `force` | vfx-designer | |
 | message keys | `house.cinematic.title`, `house.cinematic.subtitle`, `plot.*`, `house.*` command feedback, `plot.missing-worldguard` | plugin-coder | MiniMessage in `messages.yml`; title text "Your bakery is open!" |
-| command | `/bakery plot setviewpoint\|setpedestal\|setchimney\|show`, `/bakery house place <design>\|undo\|rebuild <player>` | plugin-coder | permission `cookieempire.admin` |
+| command | `/bakery plot setviewpoint\|setpedestal\|setchimney\|show`, `/bakery house place <design>\|undo\|rebuild <player>` | plugin-coder | permission `cookieempire.admin`  `/bakery station set\|remove` removed (Decision 2) |
 | config | `plots.yml`: `plots.<id>.{world, plot-region?, house-region? (optional fallback; flags are the source of truth), viewpoint{x,y,z,yaw,pitch}, pedestal{x,y,z,yaw}, chimney?}`; `house-backups/` (undo data) | plugin-coder | migration from `stations.yml` (Decision 2) |
 | config | `config.yml`: `house.cinematic.{enabled, trigger: enter-plot\|viewpoint, teleport-to-viewpoint, blocks-per-tick, max-falling-displays, layer-delay-ticks, keep-out: hold\|slow\|none, fake-air-per-tick, refresh-hidden-ticks, reassert-radius}`, `plot.show.{particle-step, duration-seconds}`, `plot.hide-others-near-pedestal.{enabled, radius}` | plugin-coder | names may shift slightly; the coder reports final keys |
 | dependency | `pom.xml`: `com.sk89q.worldguard:worldguard-bukkit:7.0.20`, `com.sk89q.worldedit:worldedit-bukkit:7.4.6` (`provided`, repo `https://maven.enginehub.org/repo/`); `plugin.yml`: `depend: [WorldGuard]` | plugin-coder | WG/WE/FAWE row in `docs/integrations.md`; missing/disabled WG → log `plot.missing-worldguard`, disable |
 | keep-out | `hold` = transient `MOVEMENT_SPEED` + `JUMP_STRENGTH` modifiers (-1, `MULTIPLY_SCALAR_1`) + move/teleport guard; removed on every cleanup path and on join | plugin-coder | research: fake-blocks Q6; no `setWalkSpeed`, no spectator |
+| config (final, pass 1) | added `plot.show.{redraw-ticks, max-points, plot-effect, house-effect}`, `plot.hide-others-near-pedestal.check-ticks`, `house.max-blocks`; removed `station.min-distance`, `station.remove-radius` | plugin-coder | |
+| effect | `plot_outline`, `house_outline` (one light particle per point, admin tool) | vfx-designer | requested by plugin-coder for `/bakery plot show` |
 | storage | schema v2: `<prefix>house_seen(uuid, plot_id, seen_at)` | plugin-coder | migrated from v1 on startup |
 
 ## Tasks
@@ -125,10 +127,10 @@ none (decided below)
 | resource-pack-researcher | merged | feature branch (docs) | — | 20:28 | 20:40 | WG 7.0.20 + WE 7.4.6 support 26.3; 2 notes + memory |
 | model-designer | merged | `starter-house/model-designer` | READY | 20:39 | 20:55 | default cottage, 170 blocks; needs an in-game look |
 | sound-designer | merged | `starter-house/sound-designer` | READY | 20:39 | 20:49 | 4 sounds + @block entry; needs a listen |
-| vfx-designer | merged | `starter-house/vfx-designer` | READY | 20:39 | 20:59 | 6 presets + dropBlock/loop/cancelFor; needs in-game look |
-| plugin-coder (pass 1) | running | `starter-house/plugin-coder` | | 20:39 | | |
+| vfx-designer | merged | `starter-house/vfx-designer` + `-outline` | READY ×2 | 20:39 | 21:02 | 6 presets + dropBlock/loop/cancelFor; plot_outline/house_outline; needs in-game look |
+| plugin-coder (pass 1) | in review | `starter-house/plugin-coder` | | 20:39 | 21:00 | DONE; 1 red test (schema v2) for Gandalf to update |
 | plugin-coder (pass 2) | planned | `starter-house/plugin-coder-2` | | | | |
-| plugin-tester | planned | (all) | | | | |
+| plugin-tester | running | (each branch) | READY ×3 | 20:49 | | sounds, house design, vfx READY; pass 1 in review |
 
 ## Merge order
 1. research notes (as they land)
