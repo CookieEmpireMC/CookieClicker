@@ -23,11 +23,23 @@ copy, so new effects in an update work with an old file. Nothing is ever thrown 
 | `max-particles-per-effect` | 200 | particles one play may spawn; heavier presets are thinned at load (logged) |
 | `max-display-entities-per-player` | 8 | effect display entities alive per viewer; at the cap the viewer's **oldest** display effect is removed early so the newest always shows |
 | `max-display-entities-global` | 150 | effect display entities alive server-wide; at the cap new display layers are dropped (particles still play) |
+| `max-falling-blocks-per-player` | 24 | `effects.dropBlock` displays falling at once for one viewer; at the cap a new drop **lands instantly** (see the API) |
+| `max-falling-blocks-global` | 240 | the same, server-wide |
+| `max-loops-per-player` | 4 | `effects.loop` loops per viewer; at the cap the new loop isn't started (logged once, `EffectHandle.NONE`) |
+
+Falling blocks and loops don't count toward the display-entity caps, so a running house cinematic never evicts the
+player's click numbers.
+
+### Every preset
+| Field | Default | Meaning |
+|---|---|---|
+| `layers` | required | list of layers (below) |
+| `loop-every` | none | ticks between plays when code runs the preset with `effects.loop(...)`; without it a loop plays every 20 ticks (logged once). `play` ignores it |
 
 ### Every layer
 | Field | Default | Meaning |
 |---|---|---|
-| `type` | required | `particle`, `floating-text`, `item-crumbs`, `scale-pop` |
+| `type` | required | `particle`, `floating-text`, `item-crumbs`, `scale-pop`, `block-drop` |
 | `delay-ticks` | 0 | start this many ticks after `play` |
 | `origin` | `[0, 0, 0]` | offset from the play location |
 
@@ -54,6 +66,7 @@ Personal particles: `viewer.spawnParticle(...)`; with `viewer == null`, `world.s
 | `speed` | 0 | launch speed in blocks/tick (outward/up) or vanilla random speed (none) |
 | `offset` | 0 | vanilla random spread per point (direction none only) |
 | `count` | 1 | particles per point (direction none only) |
+| `force` | false | send in the extended range and regardless of the viewer's particle setting (like vanilla campfire smoke); for effects seen from across the plot |
 
 Particle data by particle (checked against `Particle#getDataType()` in 26.3):
 
@@ -100,6 +113,29 @@ Only used by `effects.pop(display, viewer)`; `play` ignores it.
 `steps`: list of `{ scale: [x, y, z] or a number, ticks: n }`, multipliers of the display's rest scale. A final
 `{ scale: 1, ticks: 3 }` is added when the last step isn't 1.
 
+### `type: block-drop`
+Only used by `effects.dropBlock(...)` through the preset `house_block_drop`; `play` ignores it. A `BlockDisplay`
+(viewer only, non-persistent, tagged like every effect entity) anchored at the target block's integer corner spawns
+`drop-height` above it, then three client-interpolated segments run, one `setTransformation` per tick:
+fall → bounce with squash → settle. At the end the display is removed and `onLanded` runs in the same tick.
+
+| Field | Default | Meaning |
+|---|---|---|
+| `start-tick` | 2 | first segment (≥ 1: the client needs the spawn state first); the block hangs until then |
+| `drop-height` | 4.0 | blocks above the target it starts (0–16) |
+| `fall-ticks` | 6 | fall time; the **impact** is at `start-tick + fall-ticks` |
+| `bounce-height` | 0.25 | pop back up after the impact (0 = squash only) |
+| `bounce-ticks` | 2 | bounce time |
+| `squash` | `[1.08, 0.85, 1.08]` | width/height/depth at the top of the bounce (0.25–2, one number = all three); stays centred on the block, bottom face anchored |
+| `settle-ticks` | 2 | back to rest; **landing** at `start-tick + fall + bounce + settle` (12 by default) |
+| `impact-effect` | `house_block_land` | effect ID the engine plays for the viewer at the block's bottom centre on impact; `none` = off |
+| `impact-particles` | 4 | `block` particles of the dropped block itself on impact (0–32) |
+| `brightness` | `auto` | `auto` = the light just above the highest block of the target column (the roof once the house stands; the server-side house would otherwise make the display dark), or `[block, sky]` 0–15 |
+| `view-range` | 1.0 | display view range (1.0 = 64 blocks) |
+
+Cost: 1 `BlockDisplay` per falling block for 12 ticks (counts toward `max-falling-blocks-*`), 3 transformation
+updates, 1 particle packet (count 4) + `house_block_land` at the impact.
+
 ## Effect catalogue
 
 | ID | Looks like | When | Cost per play | Placeholders |
@@ -108,9 +144,20 @@ Only used by `effects.pop(display, viewer)`; `play` ignores it.
 | `cookie_crit` | Golden flash: a light-gold → deep-gold dust shell expands 0.25 → 0.75 over 3 ticks; 14 white firework sparks burst outward (~1 block); 12 cookie crumbs spray; 6 gold sparkle trails rise 1.1 around the number; 3 mini cookies (ItemDisplay) tumble out and drop; a big bold gold-gradient `+<amount>` (×1.8, overshoot 1.3) rises 1.0 and fades over 1.5 s. | crispy crit, instead of `cookie_click` | 122 particles, 4 display entities (≤ 30 ticks) | `amount` |
 | `purchase` | A cookie-gold ring opens 0.25 → 0.55 over 3 ticks, standing up and facing the buyer; 6 light-gold sparkle trails rise 0.9; 8 small white firework sparks burst 1 tick later. | a building was bought; play at the clicked panel row, viewer = buyer | 80 particles, 0 entities | none |
 | `pop` | Squash (1.25, 0.75, 1.25) 2 ticks → stretch (0.92, 1.10, 0.92) 2 ticks → rest 3 ticks, scale only. | through `effects.pop(display, viewer)` on the clicked cookie display | 3 metadata updates on an existing display | none |
+| `house_block_drop` | The block appears 4 blocks above its spot, hangs 2 ticks, falls in 6 (impact at tick 8), pops up 0.25 while squashing wide and flat (1.08 × 0.85), settles in 2; at tick 12 the display vanishes and the real block is there. A few crumbs of the block itself and the `house_block_land` puff at the impact. | only through `effects.dropBlock(...)`, never `play` | 1 BlockDisplay × 12 ticks + 4 block particles + 8 | none |
+| `house_block_land` | 8 small white poofs roll outward along the ground from just outside the block's foot. | played **by the engine** at every drop impact; play it yourself only for a block revealed without a drop | 8 particles | none |
+| `house_foundation_dust` | A dusty beige ring (#c9b79c) rolls out over the ground from under the block (0.75 → 1.1), plus 4 low poofs to the corners. | bottom layer only, per block, in `onImpact`; location = block bottom centre | 28 particles | none |
+| `house_sparkle` | 3 light-gold → gold sparks rise 0.7 off the top face of the new block (staggered), and 2 orange wax glints twinkle just above it. | every block, in `onLanded` (when the real block appears); location = block bottom centre | 20 particles | none |
+| `house_confetti` | Finale: a warm flash, 24 white firework sparks, a fountain of 24 totem confetti, and four dome shells of tinted leaves (gold, pink, mint, sky blue; radius 1.8 → 4.2, staggered by 1 tick) that hang around the roof and flutter down over the next seconds. | once when the roof is done; location = top centre of the house, about 1 block above the ridge | 153 particles | none |
+| `house_chimney_smoke` | `loop-every: 10`: each play sends one big campfire smoke puff drifting up (lingers ~5 s, so a column of ~10 puffs) and two small dark wisps; extended range (`force`). | `effects.loop("house_chimney_smoke", chimneyTop, viewer)` for every player in the plot who isn't mid-cinematic; location = centre of the chimney's top face | 3 particles per play = 6/s per viewer | none |
 
-Previews: `design/vfx-previews/cookie_click.png`, `cookie_crit.png`, `purchase.png`, `pop.png` (pop shows the
-outline of a 1-block disc at the interpolated scale per tick).
+Previews: `design/vfx-previews/<id>.png` for every preset (pop shows the outline of a 1-block disc at the
+interpolated scale per tick, `house_block_drop` the edges of the falling block per tick, `house_chimney_smoke` three
+loop cycles).
+
+Per-block budget during the cinematic, per block: drop 1 entity + ~3 packets for the impact, sparkle 20,
+foundation dust 28 (bottom layer only). At 2 blocks per tick that is about 50–100 particle packets per tick to one
+player for a second or two, then nothing but 6 smoke particles per second.
 
 ## Java API (for the plugin-coder)
 
@@ -136,6 +183,60 @@ effects.reload();                                 // = load(): stops running eff
 // onDisable
 effects.shutdown();                               // stops all, removes all, restores popped displays, unregisters
 ```
+
+### House cinematic (starter-house)
+
+```java
+// one block of the reveal (target = the block's location, data = the real block's BlockData there)
+boolean animating = effects.dropBlock(viewer, data, target,
+        () -> {                                   // onImpact: the falling block hits the ground (tick 8)
+            sounds.play("house_block_land", ...); sounds.play("house_hammer", ...);
+            if (bottomLayer) effects.play("house_foundation_dust", bottomCentre, viewer);
+        },
+        () -> {                                   // onLanded: display already removed, same tick (tick 12)
+            fakeBlocks.reveal(viewer, pos);       // resend the real block
+            sounds.play("house_block_place", ...);  // "@block": the block's own place sound
+            effects.play("house_sparkle", bottomCentre, viewer);
+        });
+// or without the impact callback: effects.dropBlock(viewer, data, target, onLanded)
+
+// completion
+effects.play("house_confetti", houseTopCentre, viewer);
+EffectHandle smoke = effects.loop("house_chimney_smoke", chimneyTop, viewer);   // keep it per viewer
+smoke.cancel();                                   // the viewer left the plot
+effects.cancelFor(viewer);                        // abort: all this viewer's drops and loops, no callbacks
+```
+
+`bottomCentre` = `(x + 0.5, y, z + 0.5)` of the block; `chimneyTop` = the centre of the chimney's top face.
+The engine already plays `house_block_land` at the impact (the `impact-effect` of `house_block_drop`), so don't
+play it yourself for dropped blocks.
+
+**`dropBlock` callback rules** (`onImpact` may be null; both run on the main thread, at most once each,
+`onImpact` always first; exceptions are logged and swallowed):
+
+| Result | When | Callbacks |
+|---|---|---|
+| `true` | the block is falling | `onImpact` at the impact, `onLanded` at the landing, the display removed **before** `onLanded` in the same tick. If the display disappears early (chunk unload) while the viewer is still there, both run on the next tick ("land now"), so the reveal never stalls. |
+| `true`, then cancelled | `cancelFor(viewer)`, viewer quit or world change, `reload()`, `shutdown()` | display removed; a callback that hasn't run **never** runs. The caller's own cleanup resends the real blocks. |
+| `false`, callbacks already ran | at `max-falling-blocks-per-player` / `-global`, block data is air, engine not loaded, spawn failed | "landed instantly": `onImpact` then `onLanded` run **inside** the `dropBlock` call (impact effects still play) |
+| `false`, nothing ran | called off the main thread, or the viewer is offline or not in the target's world | nothing; restore the block yourself |
+
+Pace the reveal with your own `house.cinematic.max-falling-displays` (≤ 24); the engine's cap is the hard safety
+net, and a capped block simply appears without its fall. `onLanded` frees the cap slot before it runs, so starting
+the next drop from inside `onLanded` is fine.
+
+**`loop`**: `effects.loop(id, loc, viewer[, onRepeat])` returns an `EffectHandle` (`cancel()`, `isActive()`).
+First play immediately, then every `loop-every` ticks (10 for the smoke). Skips plays while the location's chunk
+isn't loaded. `onRepeat` runs after every play (e.g. replay `house_chimney_crackle` every 6th cycle ≈ 3 s; sounds
+stay in `SoundService`). Ends on `cancel()`, `cancelFor(viewer)`, viewer quit or world change, `reload()` and
+`shutdown()`; **after `/bakery reload` start the smoke loops again**. Returns `EffectHandle.NONE` (inactive) for an
+unknown ID, an offline/other-world viewer, or at `max-loops-per-player`.
+
+**Wiring**: nothing new. The same `Effects` instance; `load()`/`reload()` and `shutdown()` already stop all drops
+and loops, and the engine's own listener handles quit. Debug counters: `activeFallingBlocks()`, `activeLoops()`.
+Constant `Effects.BLOCK_DROP` = `"house_block_drop"`.
+
+### Other public methods
 
 Other public methods: `play(id, loc, viewer)` (no placeholders), `pop(display, viewer, presetId)`, `has(id)`,
 `effectIds()`, `sweepLeftovers()` (also run by `load()`; returns the count), `entityKey()` (the
@@ -185,3 +286,19 @@ Notes for the caller:
    change the cookie's size.
 8. Two players at the same station: neither sees the other's particles, numbers or crumbs.
 9. `/bakery reload` and a restart mid-effect: no floating numbers or crumbs left behind.
+10. Block drop: the block appears in the air and falls smoothly (no snap to the ground on the first tick; if it
+    snaps, raise `start-tick` to 3), bounces with a readable squash, and swaps to the real block at the landing
+    without a flicker, z-fighting or a lighting jump. Check at night and inside the hollow (fake-air) house:
+    `brightness: auto` should match the real blocks; else try `[15, 15]` or report.
+11. Drops are seen only by the cinematic player (second account sees nothing falling).
+12. `house_block_land` and `house_foundation_dust` read as a soft puff/dust roll at the block's foot, not as
+    smoke; impact `block` crumbs use the block's own texture.
+13. `house_sparkle` per block isn't too busy when ~2 blocks land per tick; tone down to `points: 2` if it is.
+14. `house_confetti`: the tinted leaves hang in a dome over the roof and flutter down (they live ~15 s on the
+    client and may rest on the roof); the totem fountain shows colourful confetti. Not too much at 1 block above
+    the ridge?
+15. `house_chimney_smoke`: a calm continuous column visible from the plot edge (`force`); the column isn't broken
+    (gaps mean `loop-every` too long) or too thick. Stops when leaving the plot, on relog and after reload until
+    the coder restarts it.
+16. Quit, `/bakery reload` and a world change mid-cinematic: no BlockDisplay left floating (`/minecraft:kill
+    @e[type=block_display,tag=cookieclicker]` should find nothing).
