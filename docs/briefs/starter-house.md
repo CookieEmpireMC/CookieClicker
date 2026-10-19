@@ -127,7 +127,7 @@ none (decided below)
 | resource-pack-researcher | merged | feature branch (docs) | — | 20:28 | 20:40 | WG 7.0.20 + WE 7.4.6 support 26.3; 2 notes + memory |
 | model-designer | merged | `starter-house/model-designer` | READY | 20:39 | 20:55 | default cottage, 170 blocks; needs an in-game look |
 | sound-designer | merged | `starter-house/sound-designer` | READY | 20:39 | 20:49 | 4 sounds + @block entry; needs a listen |
-| vfx-designer | merged | `starter-house/vfx-designer` | READY | 20:39 | 20:59 | 6 presets + dropBlock/loop/cancelFor; needs in-game look |
+| vfx-designer | merged | `starter-house/vfx-designer` + `-outline` | READY ×2 | 20:39 | 21:02 | 6 presets + dropBlock/loop/cancelFor; plot_outline/house_outline; needs in-game look |
 | plugin-coder (pass 1) | in review | `starter-house/plugin-coder` | | 20:39 | 21:00 | DONE; 1 red test (schema v2) for Gandalf to update |
 | plugin-coder (pass 2) | planned | `starter-house/plugin-coder-2` | | | | |
 | plugin-tester | running | (each branch) | READY ×3 | 20:49 | | sounds, house design, vfx READY; pass 1 in review |
