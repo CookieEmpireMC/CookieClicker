@@ -4,6 +4,7 @@ import dev.casperrs.cookieClicker.command.BakeryCommand;
 import dev.casperrs.cookieClicker.config.PluginSettings;
 import dev.casperrs.cookieClicker.economy.Economy;
 import dev.casperrs.cookieClicker.economy.EconomyConfig;
+import dev.casperrs.cookieClicker.house.HouseCinematics;
 import dev.casperrs.cookieClicker.house.HousePlacer;
 import dev.casperrs.cookieClicker.house.HouseSeen;
 import dev.casperrs.cookieClicker.hud.BakeryTicker;
@@ -74,6 +75,7 @@ public final class CookieClicker extends JavaPlugin {
     private PedestalPrivacy pedestalPrivacy;
     private HousePlacer houses;
     private HouseSeen houseSeen;
+    private HouseCinematics cinematics;
     private SessionManager sessions;
     private Hud hud;
     private BakeryTicker ticker;
@@ -151,7 +153,7 @@ public final class CookieClicker extends JavaPlugin {
             }
         });
         sessions.start();
-        houseSeen = new HouseSeen(store, io, mainThread, getLogger()); // starter-house pass 2 (cinematic) uses it
+        houseSeen = new HouseSeen(store, io, mainThread, getLogger());
 
         stations = new StationRegistry(getLogger());
         PlotRegistry plotRegistry = new PlotRegistry(regions, PlotService::worldByKey);
@@ -182,6 +184,9 @@ public final class CookieClicker extends JavaPlugin {
         views.start();
 
         plotTracker = new PlotTracker(this, plotRegistry);
+        cinematics = new HouseCinematics(this, plotRegistry, plotTracker, houseSeen, effects, sounds, messages,
+                () -> settings.house());
+        cinematics.start(); // before the tracker: its first resync fires onEnterPlot for players already online
         plotTracker.start();
         outlines = new PlotOutlines(this, effects, () -> settings.plot().show());
         pedestalPrivacy = new PedestalPrivacy(this, () -> settings.plot().hideOthers(), stations::all);
@@ -189,7 +194,7 @@ public final class CookieClicker extends JavaPlugin {
         houses = new HousePlacer(this, plotRegistry, plotFile, messages, io, mainThread,
                 () -> settings.house().maxBlocks());
 
-        BakeryCommand command = new BakeryCommand(plots, outlines, houses, () -> settings, messages, this::reload);
+        BakeryCommand command = new BakeryCommand(plots, outlines, houses, cinematics, () -> settings, messages, this::reload);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
                 event -> event.registrar().register(command.node(), "Cookie Empire admin commands"));
 
@@ -245,6 +250,9 @@ public final class CookieClicker extends JavaPlugin {
             autosaveTask.cancel();
         }
         // a throw here must never skip the session flush below
+        if (cinematics != null) {
+            safely("the house cinematics", cinematics::shutdown); // restores every hidden house first
+        }
         safely("plot tracking", () -> {
             if (plotTracker != null) {
                 plotTracker.shutdown();
@@ -302,11 +310,13 @@ public final class CookieClicker extends JavaPlugin {
         loader.loadBalance(economy, messages, problems);
         loader.loadSounds(sounds, problems);
         outlines.stopAll();
+        cinematics.abortAll(); // restores hidden houses before effects and regions change
         houses.reset();
         loader.loadPlots(plots, problems);
         effects.reload();
         views.restart(); // removes every view; the next refresh respawns with the new layout and balance
         plotTracker.resyncAll();
+        cinematics.restart(); // smoke loops died with effects.reload()
         pedestalPrivacy.restart();
         applySettings();
         packSender.onReload(packBefore);

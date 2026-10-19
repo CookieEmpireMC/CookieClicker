@@ -1,0 +1,10 @@
+---
+name: ledger-coder-pass2
+description: review ledger for starter-house plugin-coder pass 2 (cinematic) and the feature integration review
+metadata:
+  type: reference
+---
+- starter-house/plugin-coder-2 reviewed at b03c8e3 + Gandalf tests (2026-10-19): house/{RevealOrder,RevealPlan,HouseBox,FakeBlocks,KeepOut,ChimneySmoke,HouseCinematics}, HouseSettings, wiring in CookieClicker, `/bakery house rebuild`. Safety funnel (`abort`), re-entrancy, generation guard, per-player sends, cleanup all verified by reading. READY. Integration review of the whole feature same commit: all checks green (435 tests), contract IDs present.
+- Open LOWs (not blocking): `Sound#key()` deprecated-for-removal at SoundService.java:131 (fix `Registry.SOUNDS.getKey(sound)`, nullable; verified in paper-api-26.3.build.205-stable-sources.jar Sound.java:4045-4073); INSIDE check misses a player standing on the house; abort()/landed() lack try/finally; RevealPlan budget cap loses fractions for blocks-per-tick > 1 non-integer; `pending` per player not per plot.
+- Re-review: `git diff b03c8e3..HEAD -- src/main/java/dev/casperrs/cookieClicker/house src/main/java/dev/casperrs/cookieClicker/config src/main/java/dev/casperrs/cookieClicker/sound`.
+- Test notes: HouseCinematics/FakeBlocks/KeepOut need a server (no MockBukkit in pom); pure tests are RevealOrderTest, RevealPlanTest, HouseBoxTest, HouseSettingsTest; `HouseSettingsTest.shippedConfigMatchesTheCodeDefaults` compares config.yml against in-code defaults via record equality (trick). ArchitectureRulesTest `hits()` filters by file name prefix for allowed-file rules. `mise run ownership-check <branch>` needs `--base feature/<name>` when run from the branch itself (default base = current branch = 0 commits). Compile deprecations: `mvn -o compile -Dmaven.compiler.showDeprecation=true` after `rm -rf target/classes/dev`.

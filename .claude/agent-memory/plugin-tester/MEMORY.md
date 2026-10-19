@@ -3,3 +3,4 @@
 - [Review ledger](reviews-ledger.md) — per reviewed area: the commit it was verified at + what passed; re-review only `git diff <commit>..HEAD`
 - [Ledger: vfx](ledger-vfx.md) — vfx package verified for starter-house; Proxy-based ticker test trick
 - [Ledger: coder pass 1](ledger-coder-pass1.md) — starter-house plot/house/worldguard review at 57df6ec; open Outline hang; Proxy World trick
+- [Ledger: coder pass 2](ledger-coder-pass2.md) — cinematic + starter-house integration at b03c8e3; open LOWs; Sound#key() replacement; ownership-check --base tip
