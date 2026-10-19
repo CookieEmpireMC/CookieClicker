@@ -14,6 +14,9 @@ import io.papermc.paper.event.packet.PlayerChunkLoadEvent;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.OfflinePlayer;
+import org.bukkit.command.CommandSender;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
@@ -636,6 +639,43 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
                 && run.box.near(x, y, z, settings.get().cinematic().reassertRadius())) {
             run.plan.requestResend(); // next tick: after the server's rollback packets
         }
+    }
+
+    // ---- /bakery house rebuild <player> ------------------------------------------------------------------------
+
+    /**
+     * Forgets that {@code name} has seen {@code plotId}'s house (aborting a running cinematic first, restoring the
+     * blocks) and plays the cinematic right away if they are online and in that plot.
+     */
+    public void rebuild(CommandSender sender, String plotId, String name) {
+        Player target = Bukkit.getPlayerExact(name);
+        OfflinePlayer offline = target != null ? target : Bukkit.getOfflinePlayerIfCached(name);
+        if (offline == null) {
+            messages.send(sender, "house.rebuild-unknown-player", Placeholder.unparsed("name", name));
+            return;
+        }
+        UUID id = offline.getUniqueId();
+        String shown = offline.getName() != null ? offline.getName() : name;
+        abort(id, true);
+        pending.remove(id);
+        seen.clear(id, plotId, () -> {
+            Player p = Bukkit.getPlayer(id);
+            if (p == null || !tracker.presence(id).inPlot(plotId)) {
+                messages.send(sender, "house.rebuild-cleared", Placeholder.unparsed("name", shown),
+                        Placeholder.unparsed("id", plotId));
+                return;
+            }
+            String key = switch (start(p, plotId)) {
+                case STARTED -> "house.rebuild-started";
+                case INSIDE -> "house.rebuild-inside";
+                case NOT_LOADED -> "house.rebuild-not-loaded";
+                case NO_HOUSE, WRONG_WORLD, NOTHING_TO_BUILD -> "house.rebuild-no-house";
+            };
+            if (!running.containsKey(id)) {
+                startSmoke(p, plotId);
+            }
+            messages.send(sender, key, Placeholder.unparsed("name", shown), Placeholder.unparsed("id", plotId));
+        });
     }
 
     /** Whether the player is watching their cinematic right now. */

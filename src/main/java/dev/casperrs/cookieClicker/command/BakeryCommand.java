@@ -5,6 +5,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import dev.casperrs.cookieClicker.config.PluginSettings;
+import dev.casperrs.cookieClicker.house.HouseCinematics;
 import dev.casperrs.cookieClicker.house.HousePlacer;
 import dev.casperrs.cookieClicker.plot.Plot;
 import dev.casperrs.cookieClicker.plot.PlotOutlines;
@@ -14,6 +15,7 @@ import dev.casperrs.cookieClicker.text.Messages;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
@@ -25,7 +27,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
- * {@code /bakery plot setviewpoint|setpedestal|setchimney|show}, {@code /bakery house place <design>|undo} and
+ * {@code /bakery plot setviewpoint|setpedestal|setchimney|show}, {@code /bakery house place <design>|undo|rebuild <player>} and
  * {@code /bakery reload}, permission {@code cookieempire.admin}. Plot commands act on the plot whose
  * {@code bakery-plot} region the admin stands in. Built for Paper's Brigadier lifecycle registration
  * ({@link #node()}).
@@ -43,12 +45,14 @@ public final class BakeryCommand {
     private final PlotService plots;
     private final PlotOutlines outlines;
     private final HousePlacer houses;
+    private final HouseCinematics cinematics;
     private final Supplier<PluginSettings> settings;
     private final Messages messages;
     private final Reloader reloader;
 
-    public BakeryCommand(PlotService plots, PlotOutlines outlines, HousePlacer houses,
+    public BakeryCommand(PlotService plots, PlotOutlines outlines, HousePlacer houses, HouseCinematics cinematics,
                          Supplier<PluginSettings> settings, Messages messages, Reloader reloader) {
+        this.cinematics = cinematics;
         this.plots = plots;
         this.outlines = outlines;
         this.houses = houses;
@@ -69,7 +73,14 @@ public final class BakeryCommand {
                         .then(Commands.literal("place")
                                 .then(Commands.argument("design", StringArgumentType.word())
                                         .executes(this::place)))
-                        .then(Commands.literal("undo").executes(this::undo)))
+                        .then(Commands.literal("undo").executes(this::undo))
+                        .then(Commands.literal("rebuild")
+                                .then(Commands.argument("player", StringArgumentType.word())
+                                        .suggests((c, b) -> {
+                                            Bukkit.getOnlinePlayers().forEach(p -> b.suggest(p.getName()));
+                                            return b.buildFuture();
+                                        })
+                                        .executes(this::rebuild))))
                 .then(Commands.literal("reload").executes(this::reload))
                 .executes(ctx -> {
                     messages.send(ctx.getSource().getSender(), "commands.usage");
@@ -207,6 +218,15 @@ public final class BakeryCommand {
             return 0;
         }
         houses.undo(h.player(), h.plot());
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int rebuild(CommandContext<CommandSourceStack> ctx) {
+        Here h = here(ctx);
+        if (h == null) {
+            return 0;
+        }
+        cinematics.rebuild(h.player(), h.plot().id(), StringArgumentType.getString(ctx, "player"));
         return Command.SINGLE_SUCCESS;
     }
 

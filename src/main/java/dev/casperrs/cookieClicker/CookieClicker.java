@@ -194,7 +194,7 @@ public final class CookieClicker extends JavaPlugin {
         houses = new HousePlacer(this, plotRegistry, plotFile, messages, io, mainThread,
                 () -> settings.house().maxBlocks());
 
-        BakeryCommand command = new BakeryCommand(plots, outlines, houses, () -> settings, messages, this::reload);
+        BakeryCommand command = new BakeryCommand(plots, outlines, houses, cinematics, () -> settings, messages, this::reload);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
                 event -> event.registrar().register(command.node(), "Cookie Empire admin commands"));
 
