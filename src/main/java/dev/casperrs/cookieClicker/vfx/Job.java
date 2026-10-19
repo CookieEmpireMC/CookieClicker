@@ -26,7 +26,13 @@ abstract class Job {
     /** Removes everything this job spawned. Called at most once per job. */
     protected abstract void cleanup();
 
-    final void cancel() {
+    /** True once the job has ended (finished, cancelled or failed) and cleaned up. */
+    final boolean ended() {
+        return cancelled;
+    }
+
+    /** Ends the job now and cleans up. Idempotent. (Public so {@link LoopJob} can be an {@link EffectHandle}.) */
+    public final void cancel() {
         if (!cancelled) {
             cancelled = true;
             cleanup();

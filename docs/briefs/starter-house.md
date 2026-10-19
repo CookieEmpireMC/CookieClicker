@@ -83,7 +83,7 @@ none (decided below)
 | Kind | ID | Owner | Notes |
 |---|---|---|---|
 | WorldGuard flags | `bakery-plot`, `bakery-house` (**StringFlag**, value = plot id) | plugin-coder | registered in `onLoad` (reuse on `FlagConflictException` if same type); `bakery-plot: <id>` on the plot region, `bakery-house: <id>` on its house region; cache region **ids**, not objects (research: worldguard-plot) |
-| house design | `src/main/resources/houses/default.yml` | model-designer | format: `size [x,y,z]`, `origin`, `palette: {char: block data}`, `layers` (bottom→top, rows of chars, `.` = keep/air), `points.chimney [x,y,z]`, optional `points.door`; coder parses it, tester tests the parser |
+| house design | `src/main/resources/houses/default.yml` | model-designer | format: `size [x,y,z]`, `origin`, `palette: {char: block data}`, `layers` (bottom→top, rows from z=0 north, chars from x=0 west; `.` = keep existing block (no change, no backup), `_` = explicit air), `signs: [{at, lines}]` (optional); full format in `design/house-default.md`, `points.chimney [x,y,z]`, optional `points.door`; coder parses it, tester tests the parser |
 | sound event | `house_hammer` | sound-designer | key `cookieclicker:house.hammer`, 3+ variants, fallback `minecraft:block.anvil.place` (quiet, high pitch) |
 | sound event | `house_block_land` | sound-designer | key `cookieclicker:house.block_land`, 3+ variants, fallback `minecraft:block.wood.place` |
 | sound event | `house_block_place` | sound-designer | **special**: `key: "@block"` = the block's own vanilla place sound (from its sound group); volume/pitch/source from `sounds.yml`; played only through `SoundService` |
@@ -96,6 +96,9 @@ none (decided below)
 | effect | `house_chimney_smoke` | vfx-designer | looping preset |
 | vfx API | `Effects.dropBlock(viewer, BlockData, Location target, Runnable onLanded)` | vfx-designer | per-player `BlockDisplay` (hidden by default, anchored at the block corner), first transformation ≥1 tick after spawn, 3 segments fall/bounce-squash/settle (timings in `effects.yml`), counts toward a new `limits` cap (default 24 per player), removed in the same tick `onLanded` runs; `Effects.cancelFor(viewer)` removes it and **never** calls `onLanded` (research: fake-blocks Q7) |
 | vfx API | `Effects.loop(id, Location, viewer) → EffectHandle` (`cancel()`), `Effects.cancelFor(viewer)` | vfx-designer | chimney smoke; all loops/drops stopped on reload/disable/quit |
+| vfx API (additions, vfx-designer) | `boolean dropBlock(viewer, data, target, @Nullable Runnable onImpact, Runnable onLanded)`; `loop(id, loc, viewer, @Nullable Runnable onRepeat)`; `EffectHandle{cancel(), isActive(), NONE}`; `activeFallingBlocks()`, `activeLoops()` | vfx-designer | `dropBlock` returns false when it "landed instantly" (cap hit / air / not loaded: callbacks already ran) or did nothing (off main thread, viewer offline/other world). Engine plays `house_block_land` + block particles at impact itself. Callbacks never run after `cancelFor`/quit/reload/shutdown |
+| effect | `house_block_drop` | vfx-designer | drop timings (`block-drop` layer), used only by `dropBlock` |
+| config | `effects.yml` `limits`: `max-falling-blocks-per-player: 24`, `max-falling-blocks-global: 240`, `max-loops-per-player: 4`; preset `loop-every`, particle `force` | vfx-designer | |
 | message keys | `house.cinematic.title`, `house.cinematic.subtitle`, `plot.*`, `house.*` command feedback, `plot.missing-worldguard` | plugin-coder | MiniMessage in `messages.yml`; title text "Your bakery is open!" |
 | command | `/bakery plot setviewpoint\|setpedestal\|setchimney\|show`, `/bakery house place <design>\|undo\|rebuild <player>` | plugin-coder | permission `cookieempire.admin` |
 | config | `plots.yml`: `plots.<id>.{world, plot-region?, house-region? (optional fallback; flags are the source of truth), viewpoint{x,y,z,yaw,pitch}, pedestal{x,y,z,yaw}, chimney?}`; `house-backups/` (undo data) | plugin-coder | migration from `stations.yml` (Decision 2) |
@@ -120,10 +123,10 @@ none (decided below)
 | Agent | Status | Branch | Verdict | Started | Done | Notes |
 |---|---|---|---|---|---|---|
 | resource-pack-researcher | merged | feature branch (docs) | — | 20:28 | 20:40 | WG 7.0.20 + WE 7.4.6 support 26.3; 2 notes + memory |
-| model-designer | planned | `starter-house/model-designer` | | | | |
-| sound-designer | planned | `starter-house/sound-designer` | | | | |
-| vfx-designer | planned | `starter-house/vfx-designer` | | | | |
-| plugin-coder (pass 1) | planned | `starter-house/plugin-coder` | | | | |
+| model-designer | merged | `starter-house/model-designer` | READY | 20:39 | 20:55 | default cottage, 170 blocks; needs an in-game look |
+| sound-designer | merged | `starter-house/sound-designer` | READY | 20:39 | 20:49 | 4 sounds + @block entry; needs a listen |
+| vfx-designer | merged | `starter-house/vfx-designer` | READY | 20:39 | 20:59 | 6 presets + dropBlock/loop/cancelFor; needs in-game look |
+| plugin-coder (pass 1) | running | `starter-house/plugin-coder` | | 20:39 | | |
 | plugin-coder (pass 2) | planned | `starter-house/plugin-coder-2` | | | | |
 | plugin-tester | planned | (all) | | | | |
 

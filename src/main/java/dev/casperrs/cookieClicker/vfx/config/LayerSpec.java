@@ -1,6 +1,7 @@
 package dev.casperrs.cookieClicker.vfx.config;
 
 import dev.casperrs.cookieClicker.vfx.shape.DisplayTrack;
+import dev.casperrs.cookieClicker.vfx.shape.DropTrack;
 import dev.casperrs.cookieClicker.vfx.shape.PopSequence;
 import dev.casperrs.cookieClicker.vfx.shape.ShapeParams;
 import dev.casperrs.cookieClicker.vfx.shape.ShapePlan;
@@ -43,7 +44,14 @@ public sealed interface LayerSpec {
     /** {@code type: particle}. */
     record Particles(String label, int delayTicks, double ox, double oy, double oz,
                      Particle particle, ParticleData data, ShapeParams shape, ShapePlan plan,
-                     int count, double offset, double speed) implements LayerSpec {
+                     int count, double offset, double speed, boolean force) implements LayerSpec {
+
+        /** Without {@code force} (false: vanilla's normal 32-block particle range). */
+        public Particles(String label, int delayTicks, double ox, double oy, double oz,
+                         Particle particle, ParticleData data, ShapeParams shape, ShapePlan plan,
+                         int count, double offset, double speed) {
+            this(label, delayTicks, ox, oy, oz, particle, data, shape, plan, count, offset, speed, false);
+        }
 
         /** True when particles are launched along a direction (vanilla count = 0) instead of placed. */
         public boolean directional() {
@@ -86,6 +94,43 @@ public sealed interface LayerSpec {
 
     /** {@code type: scale-pop}: squash/stretch of the display passed to {@code Effects.pop}. Ignored by play. */
     record ScalePop(String label, PopSequence sequence) implements LayerSpec {
+        @Override
+        public int delayTicks() {
+            return 0;
+        }
+
+        @Override
+        public double ox() {
+            return 0;
+        }
+
+        @Override
+        public double oy() {
+            return 0;
+        }
+
+        @Override
+        public double oz() {
+            return 0;
+        }
+    }
+
+    /**
+     * {@code type: block-drop}: how {@code Effects.dropBlock} animates a falling block. Ignored by play.
+     *
+     * @param impactEffect    effect ID played for the viewer at the block's bottom centre on impact, or null
+     * @param impactParticles {@code block} particles of the dropped block itself on impact (0 = none)
+     * @param blockLight      fixed block light 0-15, or -1 for {@code brightness: auto}
+     * @param skyLight        fixed sky light 0-15, or -1 for {@code brightness: auto}
+     */
+    record BlockDrop(String label, DropTrack track, @Nullable String impactEffect, int impactParticles,
+                     int blockLight, int skyLight, float viewRange) implements LayerSpec {
+
+        /** True when the light is sampled above the target column at drop time. */
+        public boolean autoBrightness() {
+            return blockLight < 0 || skyLight < 0;
+        }
+
         @Override
         public int delayTicks() {
             return 0;

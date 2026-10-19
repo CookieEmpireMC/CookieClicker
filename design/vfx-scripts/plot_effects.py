@@ -17,7 +17,7 @@ from matplotlib import cm  # noqa: E402
 POINTS = Path("target/vfx-points")
 OUT = Path("design/vfx-previews")
 MARKERS = ["o", "*", "^", "s", "D", "P", "X", "v"]
-ENTITY_SUFFIXES = (" text", " crumbs", " scale")
+ENTITY_SUFFIXES = (" text", " crumbs", " scale", " block")
 GHOST_SUFFIXES = ("~flight",) + ENTITY_SUFFIXES
 
 
@@ -69,7 +69,10 @@ def plot(path: Path) -> Path:
     ax3d.set_ylabel("z")
     ax3d.set_zlabel("y (up)")
     ax3d.set_box_aspect((1, 1, 1))
-    lim = 1.6
+    # 1.6 blocks fits the click effects; bigger ones (confetti, block drops) widen the view to fit
+    reach = max((abs(v) for l in layers.values() for k in "xz" for v in l[k]), default=0)
+    top = max((v for l in layers.values() for v in l["y"]), default=0)
+    lim = max(1.6, reach * 1.05, top / 2 * 1.05)
     ax3d.set_xlim(-lim, lim)
     ax3d.set_ylim(-lim, lim)
     ax3d.set_zlim(-lim / 2, 2 * lim)

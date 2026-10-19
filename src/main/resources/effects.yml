@@ -11,6 +11,13 @@
 #   max-particles-per-effect         (200)  particles one play may spawn; heavier effects are thinned at load
 #   max-display-entities-per-player  (8)    effect display entities alive per viewer; the oldest is removed early
 #   max-display-entities-global      (150)  effect display entities alive on the server; new ones are dropped
+#   max-falling-blocks-per-player    (24)   effects.dropBlock displays falling at once per viewer; more land instantly
+#   max-falling-blocks-global        (240)  the same, server-wide
+#   max-loops-per-player             (4)    effects.loop loops per viewer; more are not started (logged once)
+#
+# Every preset: { layers: [...] } plus
+#   loop-every   (none)       ticks between plays when code runs it with effects.loop(id, loc, viewer); a preset
+#                             without it loops every 20 ticks. play() ignores it.
 #
 # Every layer: { type: <type>, ... } plus
 #   delay-ticks  (0)          start this many ticks after play
@@ -50,6 +57,8 @@
 #   speed        (0)          launch speed (outward/up) or vanilla random speed (none)
 #   offset       (0)          vanilla random spread around each point (direction none only)
 #   count        (1)          particles per point (direction none only)
+#   force        (false)      send in the extended range (and ignore the viewer's particle setting), like vanilla
+#                             campfire smoke; for effects seen from afar (chimney smoke)
 #   cost = points over all ticks x count; checked against max-particles-per-effect at load.
 #
 # type: floating-text  -- one TextDisplay (only the viewer sees it) that pops in, rises and fades
@@ -73,11 +82,35 @@
 # type: scale-pop  -- squash/stretch of the display passed to effects.pop(display, viewer); play() ignores it
 #   steps        list of { scale: [x, y, z] or a number, ticks: n }, multipliers of the display's rest scale;
 #                a final { scale: 1, ticks: 3 } is added if the last step isn't 1. Only the scale is changed.
+#
+# type: block-drop  -- how effects.dropBlock(viewer, blockData, target, onLanded) animates a falling block; used
+#   from the house_block_drop preset; play() ignores it. A BlockDisplay (viewer only) anchored at the target block's
+#   corner spawns drop-height above it, then 3 client-interpolated segments: fall, bounce + squash, settle.
+#   start-tick   (2)          first segment tick (>= 1: the client needs the spawn state first); the block hangs
+#                             in the air until then
+#   drop-height  (4.0)        blocks above the target it starts (0-16)
+#   fall-ticks   (6)          fall time; the impact is at start-tick + fall-ticks
+#   bounce-height (0.25)      how high it pops back up after the impact (0 = squash only)
+#   bounce-ticks (2)          bounce time
+#   squash       ([1.08, 0.85, 1.08])  width/height/depth at the top of the bounce (0.25-2; one number = all
+#                             three), centred on the block
+#   settle-ticks (2)          back to rest; at start-tick + fall + bounce + settle the display is removed and the
+#                             caller's onLanded runs in the same tick
+#   impact-effect (house_block_land)  effect ID played for the viewer at the block's bottom centre on impact;
+#                             none = no effect
+#   impact-particles (4)      block particles of the dropped block itself on impact (0-32)
+#   brightness   (auto)       auto = light just above the highest block of the target column; or [block, sky]
+#                             0-15 each, e.g. [15, 15] for full bright
+#   view-range   (1.0)        display view range (1.0 = 64 blocks)
+#   cost: 1 BlockDisplay per falling block for its fall (counts toward max-falling-blocks-*), plus the impact
 
 limits:
   max-particles-per-effect: 200
   max-display-entities-per-player: 8
   max-display-entities-global: 150
+  max-falling-blocks-per-player: 24
+  max-falling-blocks-global: 240
+  max-loops-per-player: 4
 
 # Click on the giant cookie: a few cookie crumbs pop off the hit point and fall, and "+<amount>" floats up.
 # Spammable, so tiny: 8 particles + 1 text.
@@ -122,3 +155,67 @@ pop:
     - { type: scale-pop, steps: [ { scale: [1.25, 0.75, 1.25], ticks: 2 },
                                   { scale: [0.92, 1.10, 0.92], ticks: 2 },
                                   { scale: 1, ticks: 3 } ] }
+
+# ---- starter-house cinematic (all personal: viewer = the player watching their house go up) ----------------------
+# Per-block effects take the block's bottom centre: (x + 0.5, y, z + 0.5).
+
+# How effects.dropBlock animates each falling block: appears 4 blocks up, hangs 2 ticks, falls 6, pops up 0.25
+# while squashing (wide and flat), settles in 2. Lands 12 ticks after the call; impact at tick 8.
+house_block_drop:
+  layers:
+    - { type: block-drop, start-tick: 2, drop-height: 4.0, fall-ticks: 6, bounce-height: 0.25, bounce-ticks: 2,
+        squash: [1.08, 0.85, 1.08], settle-ticks: 2, impact-effect: house_block_land, impact-particles: 4,
+        brightness: auto, view-range: 1.0 }
+
+# Small soft puff just outside the block's foot when it hits the ground. Played by the engine at every drop impact
+# (impact-effect above), so code doesn't play it for dropped blocks. 8 particles.
+house_block_land:
+  layers:
+    - { type: particle, particle: poof, shape: ring, points: 8, radius: 0.72, start-angle: 22.5,
+        direction: outward, speed: 0.05, origin: [0, 0.08, 0] }
+
+# First layer only (the foundation): a dusty ring rolls out over the ground from under the block, plus four low
+# puffs. Play it in onImpact for blocks of the bottom layer. 28 particles.
+house_foundation_dust:
+  layers:
+    - { type: particle, particle: dust, color: "#c9b79c", size: 1.5, shape: ring, points: 12, radius-start: 0.75,
+        radius: 1.1, duration-ticks: 2, origin: [0, 0.1, 0] }
+    - { type: particle, particle: poof, shape: ring, points: 4, radius: 0.8, start-angle: 45, direction: outward,
+        speed: 0.1, origin: [0, 0.1, 0], delay-ticks: 1 }
+
+# Construction sparkle: three light-gold sparks rise off the top of the freshly placed block and two wax glints
+# twinkle around it. Play it per block in onLanded (when the real block appears). 20 particles.
+house_sparkle:
+  layers:
+    - { type: particle, particle: dust_color_transition, color: "#fff2a8", to-color: "#f5c542", size: 0.7,
+        shape: sparkles, points: 3, radius: 0.7, height: 0.7, duration-ticks: 6, stagger-ticks: 4,
+        origin: [0, 1.0, 0] }
+    - { type: particle, particle: wax_on, count: 2, offset: 0.4, origin: [0, 1.1, 0], delay-ticks: 2 }
+
+# The house is finished: a warm flash, white firework sparks, a fountain of totem confetti and four colours of
+# tinted leaves that hang in a dome around the roof and flutter down over the next seconds. Play once at the top
+# centre of the house (about 1 block above the roof ridge). 153 particles.
+house_confetti:
+  layers:
+    - { type: particle, particle: flash, color: "#fff2a8", count: 1 }
+    - { type: particle, particle: firework, shape: burst, points: 24, radius: 0.3, up-bias: 0.35, speed: 0.35 }
+    - { type: particle, particle: totem_of_undying, shape: fountain, points: 24, spread: 40, speed: 0.7,
+        delay-ticks: 1 }
+    - { type: particle, particle: tinted_leaves, color: "#f5c542", shape: burst, direction: none, points: 26,
+        radius: 1.8, up-bias: 0.6, duration-ticks: 4 }
+    - { type: particle, particle: tinted_leaves, color: "#ff8fc8", shape: burst, direction: none, points: 26,
+        radius: 2.6, up-bias: 0.6, duration-ticks: 4, delay-ticks: 1 }
+    - { type: particle, particle: tinted_leaves, color: "#7fe3c4", shape: burst, direction: none, points: 26,
+        radius: 3.4, up-bias: 0.6, duration-ticks: 4, delay-ticks: 2 }
+    - { type: particle, particle: tinted_leaves, color: "#8ec5ff", shape: burst, direction: none, points: 26,
+        radius: 4.2, up-bias: 0.6, duration-ticks: 4, delay-ticks: 3 }
+
+# Chimney smoke, looped with effects.loop("house_chimney_smoke", chimneyTop, viewer): every 10 ticks one big
+# campfire smoke puff drifts up (it lingers ~5 s, so ~10 puffs make a column) plus two small dark wisps. Sent in
+# the extended range so it shows from across the plot. 3 particles per play = 6 per second.
+house_chimney_smoke:
+  loop-every: 10
+  layers:
+    - { type: particle, particle: campfire_cosy_smoke, direction: up, speed: 0.05, origin: [0, 0.1, 0],
+        force: true }
+    - { type: particle, particle: smoke, count: 2, offset: 0.08, speed: 0.01, origin: [0, 0.25, 0], force: true }

@@ -13,6 +13,8 @@ The effect catalogue and config format are in `design/effects.md`.
 | Dough | `#e8c49a` | soft accents, crumbs |
 | Choc chip | `#5a3825` | contrast flecks (sparingly; reads as dirt in the dark) |
 | Spark white | (firework / end_rod default) | sparkles, highlights |
+| Mortar dust | `#c9b79c` | construction dust at ground level (house foundation) |
+| Confetti pink / mint / sky | `#ff8fc8`, `#7fe3c4`, `#8ec5ff` | celebration finales only, always next to cookie gold |
 
 Keep one dominant colour per effect plus at most one accent. Crumbs come from the cookie itself (`item` particle
 with the cookie item), so they always match the cookie's texture.
@@ -38,6 +40,8 @@ with the cookie item), so they always match the cookie's texture.
 | Crit (≈5 % of clicks) | ≤ 130 | ≤ 4 | personal only |
 | Purchase / upgrade | 40–120 | 0–1 | personal by default |
 | Milestone / global | ≤ 200 (hard cap `max-particles-per-effect`) | ≤ 6 | |
+| Per-block (played hundreds of times in a row) | ≤ 10 (impact), ≤ 30 (all layers of one block) | the drop itself | sum over blocks per tick matters more than one block |
+| Ambient loop | ≤ 5 per play, ≤ 10 per second | 0 | long-lived particles (campfire smoke) instead of many short ones |
 
 - Rings: about 24–30 points per block of radius. Fewer looks dotted, more turns into a solid line and costs more.
 - Growing rings/spheres redraw every tick (cost × ticks): keep them to 3 ticks.
@@ -52,6 +56,18 @@ with the cookie item), so they always match the cookie's texture.
   fan out on a small golden-angle disc (`spread`) so numbers never stack into one blob.
 - Text opacity isn't interpolated: shrink the scale (interpolated) at the end and step opacity down (≥ 27).
 - Pops change the scale only, relative to the rest scale captured at the first pop of a run.
+
+- Falling blocks: `BlockDisplay` at the block corner, 3 segments (fall, bounce + squash, settle), squash centred on
+  x/z with the bottom face anchored, removed in the same tick the real block is resent. Fixed brightness, never the
+  light sampled inside a (fake-hollow) building.
+
+## Placement
+
+- Per-block effects take the block's **bottom centre** `(x + 0.5, y, z + 0.5)`. Anything that should be seen must
+  start **outside the block volume**: rings at radius ≥ 0.72 (the corner diagonal is 0.71), sparks from the top face
+  (y ≥ 1.0). Particles inside a solid block are invisible.
+- Finales over a structure: a dome (`burst`, `direction: none`, `up-bias` ~0.6) centred about 1 block above the
+  highest point, radius up to half the structure's width.
 
 ## Juicy but readable
 

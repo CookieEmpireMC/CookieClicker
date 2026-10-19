@@ -16,6 +16,9 @@ final class EffectTicker {
 
     private final Plugin plugin;
     private final List<Job> jobs = new ArrayList<>();
+    /** Jobs started while {@link #run()} is iterating (loops and drop impacts play effects from inside a job). */
+    private final List<Job> pending = new ArrayList<>();
+    private boolean running;
     private @Nullable BukkitTask task;
     private boolean warned;
 
@@ -26,26 +29,43 @@ final class EffectTicker {
     /** Runs the job's first tick right now; keeps it if it has more ticks to go. */
     void start(Job job) {
         if (safeStep(job)) {
-            jobs.add(job);
-            if (task == null) {
-                // the Runnable overload returns the task, so it can be cancelled on shutdown
-                task = plugin.getServer().getScheduler().runTaskTimer(plugin, this::run, 1L, 1L);
+            if (running) {
+                pending.add(job); // stepped from the next tick on, never twice in this one
+            } else {
+                jobs.add(job);
+                ensureTask();
             }
         }
     }
 
-    private void run() {
-        for (int i = 0; i < jobs.size(); ) {
-            if (safeStep(jobs.get(i))) {
-                i++;
-            } else {
-                int last = jobs.size() - 1;
-                jobs.set(i, jobs.get(last));
-                jobs.remove(last);
-            }
+    private void ensureTask() {
+        if (task == null) {
+            // the Runnable overload returns the task, so it can be cancelled on shutdown
+            task = plugin.getServer().getScheduler().runTaskTimer(plugin, this::run, 1L, 1L);
         }
+    }
+
+    private void run() {
+        running = true;
+        try {
+            for (int i = 0; i < jobs.size(); ) {
+                if (safeStep(jobs.get(i))) {
+                    i++;
+                } else if (i < jobs.size()) { // a callback may have cleared the list (cancelAll)
+                    int last = jobs.size() - 1;
+                    jobs.set(i, jobs.get(last));
+                    jobs.remove(last);
+                }
+            }
+        } finally {
+            running = false;
+        }
+        jobs.addAll(pending);
+        pending.clear();
         if (jobs.isEmpty()) {
             stopTask();
+        } else {
+            ensureTask();
         }
     }
 
@@ -68,7 +88,9 @@ final class EffectTicker {
 
     void cancelAll() {
         List<Job> copy = new ArrayList<>(jobs);
+        copy.addAll(pending);
         jobs.clear();
+        pending.clear();
         for (Job job : copy) {
             try {
                 job.cancel();
