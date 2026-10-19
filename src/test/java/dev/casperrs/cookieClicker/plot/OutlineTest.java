@@ -100,14 +100,12 @@ class OutlineTest {
      * edges and each edge yields at least one point, so a limit below 12 can never be met and
      * {@link Outline#points} loops forever on the main thread (step grows, point count stops shrinking at 12).
      */
-    @org.junit.jupiter.api.Disabled("OPEN BUG (starter-house pass 1 review): Outline.points never returns for plot.show.max-points < 12 "
-            + "(config allows 4..2000). Remove this @Disabled when the coder fixes Outline.points.")
     @Test
     void aMaxPointsLimitBelowTheMinimumOutlineStillTerminates() {
         RegionShape box = RegionShape.cuboid("c", 0, 0, 0, 9, 9, 9);
         RegionShape tri = new RegionShape("tri", true, 0, 0, 0, 9, 9, 9,
                 List.of(new int[] {0, 0}, new int[] {9, 0}, new int[] {0, 9}), (x, y, z) -> true);
-        for (int max : new int[] {4, 8, 11}) { // 4 is the smallest value the config accepts
+        for (int max : new int[] {1, 4, 8, 11, 12}) { // 4 is the smallest value the config accepts
             for (RegionShape shape : new RegionShape[] {box, tri}) {
                 List<double[]> pts = assertTimeoutPreemptively(Duration.ofSeconds(5), () -> Outline.points(shape, 1.0, max),
                         "Outline.points hangs for maxPoints=" + max + " on " + shape.id());
