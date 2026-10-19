@@ -86,15 +86,49 @@ resource-pack:
 storage:
   load-failed: "<prefix><red>Your bakery couldn't be loaded right now, so nothing will be saved. Please rejoin in a moment.</red>"
 
+# Bakery plots (/bakery plot ...). <id> = plot id (the value of the bakery-plot flag), <x> <y> <z> = position.
+plot:
+  # Console only (logged on startup when the plugin disables itself)
+  missing-worldguard: "<red>WorldGuard is missing or disabled (or its bakery-plot / bakery-house flags could not be registered). Cookie Empire needs WorldGuard 7.0.20+ with WorldEdit 7.4.6+ (or FAWE) on Paper 26.3 and is disabling itself.</red>"
+  not-in-plot: "<prefix><red>Stand inside a bakery plot first: a WorldGuard region with <white>/rg flag \\<region> bakery-plot \\<id></white>.</red>"
+  bad-id: "<prefix><red>Plot id <white><id></white> may only use a-z, 0-9, _ and - (change the bakery-plot flag).</red>"
+  viewpoint-set: "<prefix><green>Viewpoint of plot <white><id></white> set to <white><x> <y> <z></white> (with your facing).</green>"
+  pedestal-set: "<prefix><green>Pedestal of plot <white><id></white> set to <white><x> <y> <z></white>. Everyone's cookie and shop now stand here.</green>"
+  chimney-set: "<prefix><green>Chimney smoke of plot <white><id></white> starts at <white><x> <y> <z></white>.</green>"
+  chimney-no-target: "<prefix><red>Look at the top block of the chimney (within <radius> blocks) first.</red>"
+  show-started: "<prefix><gray>Showing the outline of plot <white><id></white> for <amount> seconds.</gray>"
+  show-no-regions: "<prefix><red>Plot <white><id></white> has no plot region in this world. Check <white>/rg info</white> and run <white>/bakery reload</white> after changing regions.</red>"
+  show-no-house: "<prefix><yellow>Plot <white><id></white> has no house region yet (<white>/rg flag \\<region> bakery-house <id></white>); showing the plot only.</yellow>"
+
+# House building (/bakery house ...). <name> = design name, <count> = blocks.
+house:
+  bad-design-name: "<prefix><red>Design names may only use a-z, 0-9, _ and -: <white><name></white></red>"
+  no-house-region: "<prefix><red>Plot <white><id></white> has no house region. Make one with <white>//wand</white> + <white>/rg define</white>, then <white>/rg flag \\<region> bakery-house <id></white> and <white>/bakery reload</white>.</red>"
+  design-not-found: "<prefix><red>There is no house design <white><name></white> (houses/<name>.yml).</red>"
+  design-invalid: "<prefix><red>House design <white><name></white> can't be used: <gray><problem></gray></red>"
+  too-big: "<prefix><red>Design <white><name></white> is <count> blocks; house.max-blocks allows <amount>.</red>"
+  not-loaded: "<prefix><red>The house area of plot <white><id></white> isn't loaded (or doesn't fit in the world height). Stand next to it and try again.</red>"
+  placed: "<prefix><green>Built <white><name></white> in plot <white><id></white>: <count> blocks changed. <gray>/bakery house undo</gray> puts the old blocks back.</green>"
+  place-failed: "<prefix><red>Nothing was changed: <gray><problem></gray></red>"
+  nothing-to-undo: "<prefix><yellow>There is no house placement to undo in plot <white><id></white>.</yellow>"
+  undone: "<prefix><green>Restored the blocks of plot <white><id></white> from before the last placement (<count> blocks).</green>"
+  undo-failed: "<prefix><red>Could not undo: <gray><problem></gray></red>"
+  busy: "<prefix><yellow>Still working on the last house command, try again in a moment.</yellow>"
+  # First-visit build cinematic (starter-house pass 2): title when the house is complete
+  cinematic:
+    title: "<gradient:#e0a060:#a0622d><b>Your bakery is open!</b></gradient>"
+    subtitle: "<gray>Click the cookie to start baking</gray>"
+
 commands:
-  usage: "<prefix><gray>/bakery station set</gray> <dark_gray>|</dark_gray> <gray>/bakery station remove</gray> <dark_gray>|</dark_gray> <gray>/bakery reload</gray>"
+  usage: "<prefix><gray>/bakery plot setviewpoint|setpedestal|setchimney|show</gray> <dark_gray>|</dark_gray> <gray>/bakery house place \\<design>|undo</gray> <dark_gray>|</dark_gray> <gray>/bakery reload</gray>"
   players-only: "<prefix><red>Only players can do that.</red>"
+  # Replaced by /bakery plot setpedestal (starter-house); unused, kept for existing translations and tests
   station:
     set: "<prefix><green>Placed bakery station <white><id></white> at <white><x> <y> <z></white> in <white><world></white>.</green>"
     too-close: "<prefix><red>There's already a station within <distance> blocks.</red>"
     removed: "<prefix><yellow>Removed bakery station <white><id></white>.</yellow>"
     none-nearby: "<prefix><red>No station within <radius> blocks.</red>"
   reload:
-    done: "<prefix><green>Reloaded config, messages, sounds, effects, balance and stations.</green>"
+    done: "<prefix><green>Reloaded config, messages, sounds, effects, balance and plots.</green>"
     problems: "<prefix><yellow>Reloaded with <count> problem(s):</yellow>"
     problem: "<dark_gray> - </dark_gray><gray><problem></gray>"

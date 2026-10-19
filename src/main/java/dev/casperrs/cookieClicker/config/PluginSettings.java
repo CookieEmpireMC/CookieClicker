@@ -9,11 +9,12 @@ import java.util.function.Consumer;
 /** Everything in {@code config.yml}. Reloadable except {@code database}, which needs a restart. */
 public record PluginSettings(DatabaseSettings database, int autosaveSeconds, int shutdownSaveTimeoutSeconds,
                              Hud hud, StationSettings station, ResourcePack resourcePack,
-                             StationVisualSettings visuals) {
+                             StationVisualSettings visuals, PlotSettings plot, HouseSettings house) {
 
     /** Same settings with another database block (reload keeps the running database until a restart). */
     public PluginSettings withDatabase(DatabaseSettings db) {
-        return new PluginSettings(db, autosaveSeconds, shutdownSaveTimeoutSeconds, hud, station, resourcePack, visuals);
+        return new PluginSettings(db, autosaveSeconds, shutdownSaveTimeoutSeconds, hud, station, resourcePack, visuals,
+                plot, house);
     }
 
     /** @param refreshSeconds how often the action bar is re-sent (production always ticks once per second) */
@@ -21,11 +22,12 @@ public record PluginSettings(DatabaseSettings database, int autosaveSeconds, int
     }
 
     /**
+     * How {@code /bakery plot setpedestal} turns the admin's position into the pedestal.
+     *
+     * @param snapToBlock    use the centre of the block the admin stands on
      * @param snapYawDegrees round the placing admin's yaw to this step (0 = keep it exact)
-     * @param minDistance    {@code station set} refuses a spot closer than this to another station
-     * @param removeRadius   {@code station remove} takes the nearest station within this radius
      */
-    public record StationSettings(boolean snapToBlock, float snapYawDegrees, double minDistance, double removeRadius) {
+    public record StationSettings(boolean snapToBlock, float snapYawDegrees) {
     }
 
     /**
@@ -66,11 +68,11 @@ public record PluginSettings(DatabaseSettings database, int autosaveSeconds, int
                 positive(c, "database.shutdown-save-timeout-seconds", 10, problems),
                 new Hud(c.getBoolean("hud.enabled", true), positive(c, "hud.refresh-seconds", 1, problems)),
                 new StationSettings(c.getBoolean("station.snap-to-block", true),
-                        (float) Math.max(0, c.getDouble("station.snap-yaw-degrees", 90)),
-                        Math.max(0, c.getDouble("station.min-distance", 8)),
-                        Math.max(0, c.getDouble("station.remove-radius", 8))),
+                        (float) Math.max(0, c.getDouble("station.snap-yaw-degrees", 90))),
                 resourcePack(c, problems),
-                StationVisualSettings.from(c, problems));
+                StationVisualSettings.from(c, problems),
+                PlotSettings.from(c, problems),
+                HouseSettings.from(c, problems));
     }
 
     private static ResourcePack resourcePack(ConfigurationSection c, Consumer<String> problems) {

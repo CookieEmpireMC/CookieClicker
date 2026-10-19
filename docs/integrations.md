@@ -1,9 +1,9 @@
-# Plugin integrations: ItemsAdder & ModelEngine
+# Plugin integrations: ItemsAdder, ModelEngine & WorldGuard
 
 Reference for all agents. Read together with the Paper reference for the project's target version (`docs/paper-121x-reference.md` or `docs/paper-26x-reference.md`).
-Both plugins are **closed source and paid**. We compile against their public API jars only and never redistribute them.
+ItemsAdder and ModelEngine are **closed source and paid**. We compile against their public API jars only and never redistribute them. WorldGuard/WorldEdit are open source (EngineHub); same rule: `provided`, never shaded.
 
-Last checked: 2026-10-18
+Last checked: 2026-10-19 (WorldGuard section); 2026-10-18 (ItemsAdder, ModelEngine)
 
 ---
 
@@ -13,6 +13,7 @@ Last checked: 2026-10-18
 |---|---|---|---|
 | ItemsAdder (v4) | ✅ 1.20.6 – 1.21.11 | ✅ 26.1 listed; users run it on 26.2 | ⚠️ tracked for **4.1.0** ([issue #5527](https://github.com/PluginBugs/Issues-ItemsAdder/issues/5527)); users reported errors on 4.0.18 |
 | ModelEngine 4 | ✅ (supports 1.19.4+) | ✅ up to 26.2 (official listing) | ❌ not officially supported yet |
+| WorldGuard + WorldEdit / FAWE | ✅ (older WG 7.0.x releases) | ✅ WG 7.0.18 (26.1–26.3), 7.0.19 (26.2+) | ✅ **WG 7.0.20** ("Requires MC 26.3+", 2026-10-16) + **WE 7.4.6** (1.21.4–26.3, 2026-10-15) or **FAWE 2.16.x** (2.16.0 "26.3 Support", 2.16.1 latest). Checked 2026-10-19, `docs/research/worldguard-plot.md` |
 
 > **CookieClicker server (recorded 2026-10-18):** the game server runs **ItemsAdder 4.0.18** (reported by the user). CookieClicker uses a **plain resource pack** (`resourcepack/`) and does **not** depend on ItemsAdder or ModelEngine, so this is not blocking. Our pack is sent **alongside** ItemsAdder's (multiple server packs, no merging); that coexistence is to be verified in the bakery-core in-game test. 4.0.18 lists Paper support only up to 26.2, so watch IA for errors on 26.3.
 
@@ -193,3 +194,93 @@ anim.forceStopAnimation("attack"); // snaps out immediately
 
 - Both generate a resource pack. Only one pack can be the server pack, so let ItemsAdder send it and merge ModelEngine's output into it. ItemsAdder documents this: https://wiki.itemsadder.com/compatibility-with-other-plugins/compatible/modelengine
 - ItemsAdder can also do custom entities itself. Don't use both for the same mob — pick one per feature and note the choice in `docs/architecture.md`.
+
+---
+
+## WorldGuard (bakery plots and houses)
+
+CookieClicker **hard-depends** on WorldGuard since `starter-house`: plots and their houses are WorldGuard regions. Research and sources: `docs/research/worldguard-plot.md`.
+
+### Versions (Paper 26.3)
+Server: **WorldGuard 7.0.20** with **WorldEdit 7.4.6**, or with **FastAsyncWorldEdit 2.16.x** instead of WorldEdit (never both). WorldGuard 7.0.20 refuses older Minecraft. The plugin warns at startup when WorldGuard is older than 7.0.20.
+
+### Maven
+```xml
+<repository>
+    <id>enginehub</id>
+    <url>https://maven.enginehub.org/repo/</url>
+</repository>
+
+<dependency>
+    <groupId>com.sk89q.worldguard</groupId>
+    <artifactId>worldguard-bukkit</artifactId>
+    <version>7.0.20</version>
+    <scope>provided</scope>
+</dependency>
+<dependency>  <!-- BukkitAdapter, BlockVector3: WorldEdit types used directly -->
+    <groupId>com.sk89q.worldedit</groupId>
+    <artifactId>worldedit-bukkit</artifactId>
+    <version>7.4.6</version>
+    <scope>provided</scope>
+</dependency>
+```
+Both pull their `-core` artifacts transitively as `provided`; the jar must contain no `com/sk89q` classes. Pin exact versions (not the `-SNAPSHOT` dev lines).
+
+### plugin.yml and startup
+- `depend: [WorldGuard]` (WorldGuard itself depends on WorldEdit/FAWE). Without it Paper refuses to load the plugin with a "missing dependency" error.
+- WorldGuard can be installed but **disabled** (it disables itself on an unsupported version). `onEnable` checks `getPlugin("WorldGuard").isEnabled()` and that our flags were registered; otherwise it logs `plot.missing-worldguard` (messages.yml) to the console and disables CookieClicker.
+- All `com.sk89q` imports live in one class, `worldguard/WorldGuardHook`, behind the `plot.PlotRegions` interface (tests use a fake).
+
+### Custom flags: register in `onLoad`
+Two **`StringFlag`s**, value = the plot id (`[a-z0-9_-]+`):
+- `bakery-plot: <id>` on the plot region, `bakery-house: <id>` on its house region. Several plots = several ids.
+- Register in `onLoad` via `WorldGuard.getInstance().getFlagRegistry().register(flag)`. After WorldGuard enables, the registry is locked (registering in `onEnable` throws).
+- `FlagConflictException` (same name already registered, e.g. a second `onLoad`): reuse the existing flag if it is a `StringFlag`; any other type is a hard conflict (logged, the plugin disables).
+- `/bakery reload` never re-registers; it re-reads `plots.yml` and re-resolves the regions.
+- Admins set and see the flags with `/rg flag` and `/rg info`. The plugin **never** sets flags or creates regions.
+
+### Finding regions (RegionContainer / RegionQuery)
+```java
+RegionContainer container = WorldGuard.getInstance().getPlatform().getRegionContainer();
+ApplicableRegionSet set = container.createQuery()          // cached for ~1-2 s, cheap: create per use
+        .getApplicableRegions(BukkitAdapter.adapt(location)); // never pass a Bukkit Location directly
+if (set.isVirtual()) { /* protection disabled or region data failed to load: treat as "no plot" */ }
+for (ProtectedRegion r : set) { String plot = r.getFlag(BAKERY_PLOT); /* highest priority wins */ }
+RegionManager rm = container.get(BukkitAdapter.adapt(world)); // null when regions are disabled in that world
+```
+- **Cache region ids, never `ProtectedRegion` objects**: `/rg redefine` replaces the object. Re-read with `rm.getRegion(id)` each time; `/bakery reload` re-resolves ids, so `/rg redefine` + `/bakery reload` moves or resizes a plot without a restart.
+- Plot ↔ house: at load/reload one scan of `rm.getRegions()` per world finds the region with `bakery-plot == id` and the one with `bakery-house == id`. Two regions with the same value: error naming both, that area is ignored. `plots.yml` `plot-region` / `house-region` are only a fallback for regions without the flag.
+- Player tracking: only on a block change (`PlayerMoveEvent#hasChangedBlock`), teleport, respawn and join, never on every move event.
+- Shapes: `getMinimumPoint()` / `getMaximumPoint()` (inclusive block coords, `x()/y()/z()`), `getPoints()` (2D vertices; cuboids give their 4 corners), `ProtectedPolygonalRegion` for polygons, `contains(x, y, z)` for exact membership. The global region has no area (`isPhysicalArea()` false): rejected.
+- The region API is thread safe, but we read it on the main thread anyway.
+
+### Admin setup and recommended plot flags
+```
+//wand  (select the plot)        /rg define bakery_plot     /rg flag bakery_plot bakery-plot main
+//wand  (select the house)       /rg define bakery_house    /rg flag bakery_house bakery-house main
+/rg setparent bakery_house bakery_plot          (optional)
+/bakery reload                                   (after defining or redefining regions)
+```
+A region without owners/members already stops non-members from building. Recommended on the plot (the admin sets them; the plugin never does):
+```
+/rg flag bakery_plot build deny              (explicit; non-members are already denied)
+/rg flag bakery_plot use allow               (doors, trapdoors, buttons, levers; not containers)
+/rg flag bakery_plot chest-access deny
+/rg flag bakery_plot mob-spawning deny
+/rg flag bakery_plot tnt deny
+/rg flag bakery_plot creeper-explosion deny
+/rg flag bakery_plot other-explosion deny
+/rg flag bakery_plot fire-spread deny        (needs WorldGuard's high-frequency flags enabled)
+/rg flag bakery_plot lava-fire deny          (same)
+/rg flag bakery_plot pvp deny                (optional)
+/rg flag bakery_plot invincible allow        (optional)
+```
+- **Interaction-click caveat:** the cookie and shop rows are `Interaction` entities. WorldGuard's `build`/`interact` checks also cover entity interactions, so with `build deny` it may cancel the click before our listener sees it. **Test the cookie and shop clicks inside the plot in game**; if they fail, add `/rg flag bakery_plot interact allow`. Prefer `use allow` over `interact allow` otherwise (`interact` also allows mounting and entity use).
+- No `entry`/`exit` flags: they would block the players who should walk onto the plot.
+- `/bakery house place|undo` write blocks through the Bukkit API, which WorldGuard does not block. Admins building by hand need membership or `worldguard.region.bypass.<world>` (ops have it).
+
+### Pitfalls
+- `RegionQuery` results are cached for ~1–2 s; after `/rg redefine`, reload and give it a moment.
+- Region ids are case-insensitive; flag values are not: the plugin lower-cases plot ids.
+- `//wand` selections live in the WorldEdit session and are not available to us (no selection commands of our own).
+- The later `paper-plugin.yml` (feature `optimize`) must keep WorldGuard loading first (`load: BEFORE` on the dependency), or flag registration breaks.
