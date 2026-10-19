@@ -83,7 +83,7 @@ none (decided below)
 | Kind | ID | Owner | Notes |
 |---|---|---|---|
 | WorldGuard flags | `bakery-plot`, `bakery-house` (**StringFlag**, value = plot id) | plugin-coder | registered in `onLoad` (reuse on `FlagConflictException` if same type); `bakery-plot: <id>` on the plot region, `bakery-house: <id>` on its house region; cache region **ids**, not objects (research: worldguard-plot) |
-| house design | `src/main/resources/houses/default.yml` | model-designer | format: `size [x,y,z]`, `origin`, `palette: {char: block data}`, `layers` (bottom→top, rows of chars, `.` = keep/air), `points.chimney [x,y,z]`, optional `points.door`; coder parses it, tester tests the parser |
+| house design | `src/main/resources/houses/default.yml` | model-designer | format: `size [x,y,z]`, `origin`, `palette: {char: block data}`, `layers` (bottom→top, rows from z=0 north, chars from x=0 west; `.` = keep existing block (no change, no backup), `_` = explicit air), `signs: [{at, lines}]` (optional); full format in `design/house-default.md`, `points.chimney [x,y,z]`, optional `points.door`; coder parses it, tester tests the parser |
 | sound event | `house_hammer` | sound-designer | key `cookieclicker:house.hammer`, 3+ variants, fallback `minecraft:block.anvil.place` (quiet, high pitch) |
 | sound event | `house_block_land` | sound-designer | key `cookieclicker:house.block_land`, 3+ variants, fallback `minecraft:block.wood.place` |
 | sound event | `house_block_place` | sound-designer | **special**: `key: "@block"` = the block's own vanilla place sound (from its sound group); volume/pitch/source from `sounds.yml`; played only through `SoundService` |
