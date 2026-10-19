@@ -82,8 +82,9 @@ public final class RevealPlan {
         if (delay > 0) {
             delay--;
         } else {
-            // never bank more than one tick's worth (a long layer wait must not cause a burst afterwards)
-            startBudget = Math.min(startBudget + pace.blocksPerTick(), Math.max(1.0, pace.blocksPerTick()));
+            // never bank more than one tick's worth plus the carried fraction (< 1): keeps 2.5 averaging 2.5,
+            // while a long layer wait still yields floor(blocksPerTick + 1 - eps) blocks, not a burst
+            startBudget = Math.min(startBudget + pace.blocksPerTick(), Math.nextDown(pace.blocksPerTick() + 1.0));
         }
         if (pace.refreshTicks() > 0 && ++sinceRefresh >= pace.refreshTicks()) {
             requestResend();

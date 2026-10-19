@@ -127,9 +127,8 @@ class RevealPlanTest {
             plan.beginTick();
             total += dropsThisTick(plan).size();
         }
-        // KNOWN (LOW, pass 2 review): the budget cap max(1, blocksPerTick) drops the fraction when blocksPerTick > 1
-        // (2.5 behaves like 2 per tick = 8 here, not 10). Harmless at the default of 1; fix = cap at blocksPerTick + 1.
-        assertTrue(total >= 8 && total <= 10, "got " + total);
+        // the carried fraction is kept (cap = blocksPerTick + 1 - eps): 2.5 averages 2.5, so 10 in 4 ticks
+        assertEquals(10, total);
         // a stall (cap reached) must not bank unlimited budget
         RevealPlan capped = new RevealPlan(order(10, 1), pace(1, 1, 0));
         hideAll(capped);
