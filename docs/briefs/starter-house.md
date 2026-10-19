@@ -82,7 +82,7 @@ none (decided below)
 ## Contract (fixed names; change only via the orchestrator)
 | Kind | ID | Owner | Notes |
 |---|---|---|---|
-| WorldGuard flags | `bakery-plot`, `bakery-house` (StateFlag) | plugin-coder | **pending research**: may become region names in `config.yml` instead |
+| WorldGuard flags | `bakery-plot`, `bakery-house` (**StringFlag**, value = plot id) | plugin-coder | registered in `onLoad` (reuse on `FlagConflictException` if same type); `bakery-plot: <id>` on the plot region, `bakery-house: <id>` on its house region; cache region **ids**, not objects (research: worldguard-plot) |
 | house design | `src/main/resources/houses/default.yml` | model-designer | format: `size [x,y,z]`, `origin`, `palette: {char: block data}`, `layers` (bottom→top, rows of chars, `.` = keep/air), `points.chimney [x,y,z]`, optional `points.door`; coder parses it, tester tests the parser |
 | sound event | `house_hammer` | sound-designer | key `cookieclicker:house.hammer`, 3+ variants, fallback `minecraft:block.anvil.place` (quiet, high pitch) |
 | sound event | `house_block_land` | sound-designer | key `cookieclicker:house.block_land`, 3+ variants, fallback `minecraft:block.wood.place` |
@@ -94,12 +94,14 @@ none (decided below)
 | effect | `house_sparkle` | vfx-designer | construction sparkle around the build |
 | effect | `house_confetti` | vfx-designer | completion |
 | effect | `house_chimney_smoke` | vfx-designer | looping preset |
-| vfx API | `Effects.dropBlock(viewer, BlockData, Location target, Runnable onLanded)` | vfx-designer | per-player `BlockDisplay` drop + bounce (timings in `effects.yml`), counts toward a new `limits` cap, removed right after `onLanded`; cancelled cleanly by `Effects.cancelFor(viewer)` |
+| vfx API | `Effects.dropBlock(viewer, BlockData, Location target, Runnable onLanded)` | vfx-designer | per-player `BlockDisplay` (hidden by default, anchored at the block corner), first transformation ≥1 tick after spawn, 3 segments fall/bounce-squash/settle (timings in `effects.yml`), counts toward a new `limits` cap (default 24 per player), removed in the same tick `onLanded` runs; `Effects.cancelFor(viewer)` removes it and **never** calls `onLanded` (research: fake-blocks Q7) |
 | vfx API | `Effects.loop(id, Location, viewer) → EffectHandle` (`cancel()`), `Effects.cancelFor(viewer)` | vfx-designer | chimney smoke; all loops/drops stopped on reload/disable/quit |
 | message keys | `house.cinematic.title`, `house.cinematic.subtitle`, `plot.*`, `house.*` command feedback, `plot.missing-worldguard` | plugin-coder | MiniMessage in `messages.yml`; title text "Your bakery is open!" |
 | command | `/bakery plot setviewpoint\|setpedestal\|setchimney\|show`, `/bakery house place <design>\|undo\|rebuild <player>` | plugin-coder | permission `cookieempire.admin` |
-| config | `plots.yml`: `plots.<id>.{world, plot-region, house-region, viewpoint{x,y,z,yaw,pitch}, pedestal{x,y,z,yaw}, chimney?}`; `house-backups/` (undo data) | plugin-coder | migration from `stations.yml` (Decision 2) |
-| config | `config.yml`: `house.cinematic.{enabled, trigger: enter-plot\|viewpoint, teleport-to-viewpoint, blocks-per-tick, max-falling-displays, layer-delay-ticks, keep-out: hold\|slow\|none}`, `plot.show.{particle-step, duration-seconds}`, `plot.hide-others-near-pedestal.{enabled, radius}` | plugin-coder | names may shift slightly; the coder reports final keys |
+| config | `plots.yml`: `plots.<id>.{world, plot-region?, house-region? (optional fallback; flags are the source of truth), viewpoint{x,y,z,yaw,pitch}, pedestal{x,y,z,yaw}, chimney?}`; `house-backups/` (undo data) | plugin-coder | migration from `stations.yml` (Decision 2) |
+| config | `config.yml`: `house.cinematic.{enabled, trigger: enter-plot\|viewpoint, teleport-to-viewpoint, blocks-per-tick, max-falling-displays, layer-delay-ticks, keep-out: hold\|slow\|none, fake-air-per-tick, refresh-hidden-ticks, reassert-radius}`, `plot.show.{particle-step, duration-seconds}`, `plot.hide-others-near-pedestal.{enabled, radius}` | plugin-coder | names may shift slightly; the coder reports final keys |
+| dependency | `pom.xml`: `com.sk89q.worldguard:worldguard-bukkit:7.0.20`, `com.sk89q.worldedit:worldedit-bukkit:7.4.6` (`provided`, repo `https://maven.enginehub.org/repo/`); `plugin.yml`: `depend: [WorldGuard]` | plugin-coder | WG/WE/FAWE row in `docs/integrations.md`; missing/disabled WG → log `plot.missing-worldguard`, disable |
+| keep-out | `hold` = transient `MOVEMENT_SPEED` + `JUMP_STRENGTH` modifiers (-1, `MULTIPLY_SCALAR_1`) + move/teleport guard; removed on every cleanup path and on join | plugin-coder | research: fake-blocks Q6; no `setWalkSpeed`, no spectator |
 | storage | schema v2: `<prefix>house_seen(uuid, plot_id, seen_at)` | plugin-coder | migrated from v1 on startup |
 
 ## Tasks
@@ -117,7 +119,7 @@ none (decided below)
 ## Status
 | Agent | Status | Branch | Verdict | Started | Done | Notes |
 |---|---|---|---|---|---|---|
-| resource-pack-researcher | running | feature branch (docs) | — | 20:28 | | blocking |
+| resource-pack-researcher | merged | feature branch (docs) | — | 20:28 | 20:40 | WG 7.0.20 + WE 7.4.6 support 26.3; 2 notes + memory |
 | model-designer | planned | `starter-house/model-designer` | | | | |
 | sound-designer | planned | `starter-house/sound-designer` | | | | |
 | vfx-designer | planned | `starter-house/vfx-designer` | | | | |
@@ -137,5 +139,6 @@ none (decided below)
 - [ ] The `default` cottage design (preview + in game)
 - [ ] `.claude/ownership.json` change for the house design path (Decision 1)
 - [ ] `.claude/agents/*.md`: new "Memory: check before you look up / fetch" section in every agent file, incl. Gandalf's review ledger (user request 2026-10-19)
-- [ ] `pom.xml` WorldGuard/WorldEdit dependencies, `plugin.yml` `depend`
+- [ ] `pom.xml` WorldGuard/WorldEdit dependencies, `plugin.yml` `depend: [WorldGuard]`
+- [ ] In game: cookie/panel clicks still work inside a `build deny` plot (else set `interact allow`, research Q4)
 - [ ] In-game test guide with 2 accounts (in the PR)
