@@ -150,6 +150,8 @@ updates, 1 particle packet (count 4) + `house_block_land` at the impact.
 | `house_sparkle` | 3 light-gold → gold sparks rise 0.7 off the top face of the new block (staggered), and 2 orange wax glints twinkle just above it. | every block, in `onLanded` (when the real block appears); location = block bottom centre | 20 particles | none |
 | `house_confetti` | Finale: a warm flash, 24 white firework sparks, a fountain of 24 totem confetti, and four dome shells of tinted leaves (gold, pink, mint, sky blue; radius 1.8 → 4.2, staggered by 1 tick) that hang around the roof and flutter down over the next seconds. | once when the roof is done; location = top centre of the house, about 1 block above the ridge | 153 particles | none |
 | `house_chimney_smoke` | `loop-every: 10`: each play sends one big campfire smoke puff drifting up (lingers ~5 s, so a column of ~10 puffs) and two small dark wisps; extended range (`force`). | `effects.loop("house_chimney_smoke", chimneyTop, viewer)` for every player in the plot who isn't mid-cinematic; location = centre of the chimney's top face | 3 particles per play = 6/s per viewer | none |
+| `plot_outline` | **Admin-only tool.** One sky-blue (`#8ec5ff`) dust mote, size 1.5, extended range (`force`) so the outline shows from across the plot. | `/bakery plot show`: once per outline point of the **plot** region, viewer = the admin (`plot.show.plot-effect`) | 1 particle per play (≈120 per region redraw) | none |
+| `house_outline` | **Admin-only tool.** Same as `plot_outline` in cookie gold (`#f5c542`), so plot and house borders are told apart at a glance. | `/bakery plot show`: once per outline point of the **house** region (`plot.show.house-effect`) | 1 particle per play (≈120 per region redraw) | none |
 
 Previews: `design/vfx-previews/<id>.png` for every preset (pop shows the outline of a 1-block disc at the
 interpolated scale per tick, `house_block_drop` the edges of the falling block per tick, `house_chimney_smoke` three
@@ -302,3 +304,7 @@ Notes for the caller:
     the coder restarts it.
 16. Quit, `/bakery reload` and a world change mid-cinematic: no BlockDisplay left floating (`/minecraft:kill
     @e[type=block_display,tag=cookieclicker]` should find nothing).
+17. `plot_outline` / `house_outline` (`/bakery plot show`): blue plot and gold house borders are easy to tell
+    apart and visible from the far side of the plot. Dust motes live a random, short time on the client, so with a
+    20-tick redraw the line may flicker or show gaps; if it does, raise `size` (longer-lived, fatter motes) or ask
+    the coder for a shorter redraw interval rather than adding particles per point.

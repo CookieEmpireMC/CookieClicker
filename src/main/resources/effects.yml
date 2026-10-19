@@ -219,3 +219,14 @@ house_chimney_smoke:
     - { type: particle, particle: campfire_cosy_smoke, direction: up, speed: 0.05, origin: [0, 0.1, 0],
         force: true }
     - { type: particle, particle: smoke, count: 2, offset: 0.08, speed: 0.01, origin: [0, 0.25, 0], force: true }
+
+# ---- admin tools (not seen by normal players) ----------------------------------------------------------------------
+# /bakery plot show: code plays one of these per outline point (up to ~120 points per region, redrawn every
+# 20 ticks), viewer = the admin. One fat dust mote per play, sent in the extended range so the whole outline shows
+# from across the plot. Sky blue = plot region, cookie gold = house region. 1 particle per play.
+plot_outline:
+  layers:
+    - { type: particle, particle: dust, color: "#8ec5ff", size: 1.5, force: true }
+house_outline:
+  layers:
+    - { type: particle, particle: dust, color: "#f5c542", size: 1.5, force: true }
