@@ -103,10 +103,27 @@ class ArchitectureRulesTest {
     }
 
     @Test
-    void fakeBlocksAndTheirPacketsAreNotSentFromPassOne() throws IOException {
-        // pass 2 (cinematic) will add sendBlockChange; until then nothing may send fake blocks
-        assertTrue(hits("sendBlockChange", null).isEmpty(), hits("sendBlockChange", null).toString());
-        assertTrue(hits("sendMultiBlockChange", null).isEmpty());
+    void fakeBlocksAreOnlySentFromFakeBlocks() throws IOException {
+        // the cinematic's one place that talks fake blocks to a player; the world itself is never changed by it
+        for (String needle : new String[] {"sendBlockChange(", "sendBlockChanges(", "sendMultiBlockChange(",
+                "sendBlockUpdate("}) {
+            List<String> found = new ArrayList<>(hits(needle, null));
+            found.removeAll(hits(needle, null).stream().filter(h -> h.startsWith("FakeBlocks.java:")).toList());
+            assertTrue(found.isEmpty(), needle + " outside house/FakeBlocks.java: " + found);
+        }
+        assertTrue(!hits("sendMultiBlockChange(", null).isEmpty(), "FakeBlocks should send the batches");
+    }
+
+    @Test
+    void theWorldIsNeverModifiedByTheCinematicClasses() throws IOException {
+        for (String cls : new String[] {"HouseCinematics", "FakeBlocks", "KeepOut", "ChimneySmoke", "RevealPlan",
+                "RevealOrder", "HouseBox"}) {
+            String text = Files.readString(MAIN.resolve("dev/casperrs/cookieClicker/house/" + cls + ".java"));
+            for (String bad : new String[] {".setType(", ".setBlockData(", ".breakNaturally(", ".applyPhysics(",
+                    "getState().update(", ".setBlock("}) {
+                assertTrue(!text.contains(bad), cls + " modifies the world via " + bad);
+            }
+        }
     }
 
     @Test
