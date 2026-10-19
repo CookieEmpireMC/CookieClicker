@@ -76,3 +76,18 @@ Checks: `check` (382 tests, 0 failed, 0 skipped), `validate-assets`, `sound-chec
 
 ## Verdict
 **VERDICT: NOT READY** for the reload race above (MEDIUM, but it is exactly the requirement "a reload while the IO write is in flight must not paste afterwards"). Everything else from round 0 is fixed. Re-review after the fix needs only `HousePlacer.java` (+ the new gate class and its test).
+
+---
+
+# Re-review, fix round 2 (Gandalf, 2026-10-19), `git diff 571e351..HEAD` (code commit b2f2fef)
+
+Checks: `check` (391 tests, 0 failed, 0 skipped), `validate-assets`, `sound-check`, `balance-check`, `tools-test` green. New `OperationGateTest` (9): idle start, refusal while busy, end frees, reset invalidates old tokens and frees the gate, stale end does not free a newer operation, double end harmless, 1000 tokens unique across resets/ends, `REFUSED` never valid (also `end(REFUSED)` is a no-op), reset on idle.
+
+Reload race: **fixed.**
+- The three main-thread continuations check the token first: `place`'s `main.execute(() -> guarded(op, ...))`, `afterBackup` (`gate.valid` before `guarded`), and `undo`'s `main.execute(() -> guarded(op, ...))`. `guarded` returns before touching `handedOff` or the gate when stale. `finishNow` is silent and gate-neutral when stale, so every IO-side `finish` is covered too. `reset()` -> `gate.reset()` bumps the generation, so a late `apply` pastes nothing and a late `end` cannot free a newer operation.
+- Stale-path deletes: `afterBackup` deletes only the `nbtFile`/`ymlFile` of its own operation (`<createdAt>.nbt/.yml` captured at snapshot time); it cannot touch a newer operation's files unless both snapshots fall in the same millisecond (negligible, LOW). On disable the IO executor may be gone: handled (fine-log, stale backup left).
+- Disable remains safe (`main` drops callbacks).
+
+Remaining LOW notes, not blocking: (a) an undo cancelled by a reload in the tiny window between its main-thread restore and the IO delete of the used backup leaves that backup behind; a newer undo could restore it a second time (same snapshot, idempotent apart from edits made in between). (b) `handedOff` is still a single shared main-thread field; correct because `guarded` is never nested across operations (only one valid token exists at a time).
+
+**VERDICT: READY** (pass 1 complete). Open in-game checks remain as listed in section 6 above. Pass 2 may be merged after this branch.
