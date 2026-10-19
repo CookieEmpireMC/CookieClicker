@@ -288,19 +288,6 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
             }
         }
         HouseSettings.Cinematic c = settings.get().cinematic();
-        if (c.teleportToViewpoint() && plot.viewpoint() != null) {
-            Plot.Viewpoint v = plot.viewpoint();
-            selfTeleport.add(id);
-            try {
-                player.teleport(new Location(world, v.x(), v.y(), v.z(), v.yaw(), v.pitch()));
-            } finally {
-                selfTeleport.remove(id);
-            }
-            if (!player.isOnline() || !player.getWorld().equals(world)) {
-                return Result.WRONG_WORLD;
-            }
-        }
-
         // only blocks that are really there (air stays air), real data is read again when each one lands
         long[] blocks = new long[shape.blocks().length];
         int n = 0;
@@ -322,9 +309,23 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
         RevealPlan plan = new RevealPlan(RevealOrder.of(Arrays.copyOf(blocks, n)), new RevealPlan.Pace(
                 c.blocksPerTick(), c.maxFallingDisplays(), c.layerDelayTicks(), c.fakeAirPerTick(),
                 c.refreshHiddenTicks()));
-        Location feet = player.getLocation();
-        if (HouseBox.bodyOverlaps(feet.getX(), feet.getY(), feet.getZ(), plan::isHidden)) {
-            return Result.INSIDE; // they'd stand inside invisible solid blocks
+        Plot.Viewpoint v = c.teleportToViewpoint() ? plot.viewpoint() : null;
+        Location feet = v != null ? new Location(world, v.x(), v.y(), v.z(), v.yaw(), v.pitch()) : player.getLocation();
+        // checked where they will stand, before any teleport: inside hidden blocks, or on one (they'd fall)
+        if (HouseBox.bodyOverlaps(feet.getX(), feet.getY(), feet.getZ(), plan::isHidden)
+                || HouseBox.bodyOverlaps(feet.getX(), feet.getY() - 0.5, feet.getZ(), plan::isHidden)) {
+            return Result.INSIDE;
+        }
+        if (v != null) {
+            selfTeleport.add(id);
+            try {
+                player.teleport(feet);
+            } finally {
+                selfTeleport.remove(id);
+            }
+            if (!player.isOnline() || !player.getWorld().equals(world)) {
+                return Result.WRONG_WORLD;
+            }
         }
 
         smoke.stop(id);
@@ -332,7 +333,13 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
         Run run = new Run(id, plotId, world, box, plan, tiles);
         running.put(id, run);
         ensureTask();
-        step(run, player); // the house disappears this tick
+        try {
+            step(run, player); // the house disappears this tick
+        } catch (RuntimeException e) {
+            plugin.getLogger().log(Level.SEVERE, "House cinematic of " + player.getName() + " failed; restoring", e);
+            abort(id, true);
+            return Result.NOTHING_TO_BUILD;
+        }
         return Result.STARTED;
     }
 
@@ -442,7 +449,14 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
             return;
         }
         long pos = run.plan.position(i);
-        fakeBlocks.sendReal(p, run.world, new long[] {pos}, 1, run.tiles);
+        try {
+            fakeBlocks.sendReal(p, run.world, new long[] {pos}, 1, run.tiles);
+        } catch (RuntimeException e) { // the plan already counts it real: restore everything instead
+            plugin.getLogger().log(Level.SEVERE, "House cinematic of " + p.getName() + " failed; restoring", e);
+            guarded("restore landed block", () -> fakeBlocks.sendReal(p, run.world, new long[] {pos}, 1, run.tiles));
+            abort(run.player, true);
+            return;
+        }
         int x = RegionShape.unpackX(pos);
         int y = RegionShape.unpackY(pos);
         int z = RegionShape.unpackZ(pos);
@@ -491,13 +505,22 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
         long[] hidden = run.plan.abort();
         Player p = Bukkit.getPlayer(id);
         if (p != null) {
-            effects.cancelFor(p);
+            // each step on its own: a throwing cancelFor must never leave a missing house or a slowed player
+            guarded("cancel effects", () -> effects.cancelFor(p));
             if (online) {
-                fakeBlocks.sendReal(p, run.world, hidden, hidden.length, run.tiles);
+                guarded("restore blocks", () -> fakeBlocks.sendReal(p, run.world, hidden, hidden.length, run.tiles));
             }
-            keepOut.clear(p);
+            guarded("clear keep-out", () -> keepOut.clear(p));
         }
         return true;
+    }
+
+    private void guarded(String what, Runnable step) {
+        try {
+            step.run();
+        } catch (RuntimeException e) {
+            plugin.getLogger().log(Level.SEVERE, "House cinematic abort: " + what + " failed", e);
+        }
     }
 
     /** After an abort that leaves the player in the plot (death, teleport): smoke again a tick later. */
