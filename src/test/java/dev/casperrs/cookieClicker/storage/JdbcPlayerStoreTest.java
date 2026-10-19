@@ -176,8 +176,81 @@ class JdbcPlayerStoreTest {
     }
 
     @Test
-    void freshDatabaseStartsAtVersionOne() throws Exception {
-        assertEquals(1, store.schemaVersion());
+    void freshDatabaseStartsAtTheCurrentSchemaVersion() throws Exception {
+        assertEquals(JdbcPlayerStore.SCHEMA_VERSION, store.schemaVersion());
+        assertEquals(2, JdbcPlayerStore.SCHEMA_VERSION, "starter-house is schema v2; bump this test with the next migration");
+    }
+
+    @Test
+    void migratesAVersionOneDatabaseToVersionTwoAndKeepsItsData() throws Exception {
+        String v1url = "jdbc:h2:mem:v1db" + COUNTER.incrementAndGet() + ";DB_CLOSE_DELAY=-1";
+        UUID old = UUID.randomUUID();
+        try (Connection c = DriverManager.getConnection(v1url); Statement st = c.createStatement()) {
+            // exactly what a v1 plugin left behind: no house_seen table, schema_version = 1
+            st.execute("CREATE TABLE zz_players (uuid VARCHAR(36) NOT NULL PRIMARY KEY, pouch DOUBLE NOT NULL, baked DOUBLE NOT NULL, last_seen BIGINT NOT NULL, prestige DOUBLE NOT NULL DEFAULT 0)");
+            st.execute("CREATE TABLE zz_buildings (uuid VARCHAR(36) NOT NULL, building_id VARCHAR(64) NOT NULL, owned INT NOT NULL, PRIMARY KEY (uuid, building_id))");
+            st.execute("CREATE TABLE zz_upgrades (uuid VARCHAR(36) NOT NULL, upgrade_id VARCHAR(64) NOT NULL, PRIMARY KEY (uuid, upgrade_id))");
+            st.execute("CREATE TABLE zz_schema_version (id INT NOT NULL PRIMARY KEY, version INT NOT NULL)");
+            st.execute("INSERT INTO zz_schema_version VALUES (1, 1)");
+            st.execute("INSERT INTO zz_players VALUES ('" + old + "', 42, 100, 1, 0)");
+            st.execute("INSERT INTO zz_buildings VALUES ('" + old + "', 'baker', 7)");
+            st.execute("INSERT INTO zz_upgrades VALUES ('" + old + "', 'mitts')");
+        }
+        JdbcPlayerStore migrating = new JdbcPlayerStore(() -> DriverManager.getConnection(v1url), "zz_", () -> 99L);
+        assertEquals(1, migrating.schemaVersion());
+        migrating.init();
+        assertEquals(2, migrating.schemaVersion());
+        PouchSnapshot s = migrating.load(old).orElseThrow().snapshot();
+        assertEquals(42, s.pouch());
+        assertEquals(Map.of("baker", 7), s.owned());
+        assertEquals(Set.of("mitts"), s.upgrades());
+        // the new table works
+        assertFalse(migrating.isHouseSeen(old, "main"));
+        migrating.markHouseSeen(old, "main");
+        assertTrue(migrating.isHouseSeen(old, "main"));
+        migrating.init(); // second start: nothing to do, nothing lost
+        assertEquals(2, migrating.schemaVersion());
+        assertTrue(migrating.isHouseSeen(old, "main"));
+        migrating.close();
+        try (Connection c = DriverManager.getConnection(v1url); Statement st = c.createStatement()) {
+            st.execute("SHUTDOWN");
+        }
+    }
+
+    @Test
+    void houseSeenIsPerPlayerPerPlotAndIdempotent() throws Exception {
+        UUID other = UUID.randomUUID();
+        assertFalse(store.isHouseSeen(player, "main"));
+        store.markHouseSeen(player, "main");
+        store.markHouseSeen(player, "main"); // second call must not throw (primary key) or duplicate
+        assertTrue(store.isHouseSeen(player, "main"));
+        assertFalse(store.isHouseSeen(player, "other-plot"));
+        assertFalse(store.isHouseSeen(other, "main"));
+        try (Connection c = DriverManager.getConnection(url); Statement st = c.createStatement();
+             var rs = st.executeQuery("SELECT COUNT(*), MIN(seen_at) FROM cc_house_seen")) {
+            assertTrue(rs.next());
+            assertEquals(1, rs.getInt(1));
+            assertEquals(1234L, rs.getLong(2));
+        }
+    }
+
+    @Test
+    void clearHouseSeenReplaysOnlyThatPlotForThatPlayer() throws Exception {
+        UUID other = UUID.randomUUID();
+        store.markHouseSeen(player, "a");
+        store.markHouseSeen(player, "b");
+        store.markHouseSeen(other, "a");
+        store.clearHouseSeen(player, "a");
+        store.clearHouseSeen(player, "never-seen"); // harmless
+        assertFalse(store.isHouseSeen(player, "a"));
+        assertTrue(store.isHouseSeen(player, "b"));
+        assertTrue(store.isHouseSeen(other, "a"));
+    }
+
+    @Test
+    void houseSeenRejectsBadPlotIds() {
+        assertThrows(StorageException.class, () -> store.markHouseSeen(player, ""));
+        assertThrows(StorageException.class, () -> store.markHouseSeen(player, "x".repeat(65)));
     }
 
     @Test
