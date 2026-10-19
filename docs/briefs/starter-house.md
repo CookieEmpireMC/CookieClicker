@@ -120,10 +120,10 @@ none (decided below)
 | Agent | Status | Branch | Verdict | Started | Done | Notes |
 |---|---|---|---|---|---|---|
 | resource-pack-researcher | merged | feature branch (docs) | — | 20:28 | 20:40 | WG 7.0.20 + WE 7.4.6 support 26.3; 2 notes + memory |
-| model-designer | planned | `starter-house/model-designer` | | | | |
-| sound-designer | planned | `starter-house/sound-designer` | | | | |
-| vfx-designer | planned | `starter-house/vfx-designer` | | | | |
-| plugin-coder (pass 1) | planned | `starter-house/plugin-coder` | | | | |
+| model-designer | running | `starter-house/model-designer` | | 20:39 | | |
+| sound-designer | running | `starter-house/sound-designer` | | 20:39 | | |
+| vfx-designer | running | `starter-house/vfx-designer` | | 20:39 | | |
+| plugin-coder (pass 1) | running | `starter-house/plugin-coder` | | 20:39 | | |
 | plugin-coder (pass 2) | planned | `starter-house/plugin-coder-2` | | | | |
 | plugin-tester | planned | (all) | | | | |
 
