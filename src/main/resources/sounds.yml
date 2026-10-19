@@ -12,6 +12,13 @@
 #              master, music, record, weather, block, hostile, neutral, player, ambient,
 #              voice, ui (ui exists on Paper 26.3, check the Javadocs for other versions)
 #
+# Special key "@block": instead of a fixed sound, the plugin plays the vanilla *place* sound
+# of the block the event is about (BlockData#getSoundGroup().getPlaceSound()), e.g.
+# minecraft:block.wood.place for planks. Volume, pitch range and source still come from here;
+# `fallback` is used when the block's sound can't be resolved. It needs no sounds.json entry
+# and works with or without our resource pack. Only events that pass a block support it
+# (currently house_block_place).
+#
 # All sounds are mono, so they can also be played at a location in the world.
 
 cookie_click:
@@ -45,3 +52,46 @@ cant_afford:
   pitch-min: 0.95
   pitch-max: 1.0
   source: ui
+
+# --- starter-house: the per-player build cinematic (design/sounds.md) ---
+# These repeat dozens of times in a 20-30 s build: soft levels, 4 variants each, pitch spread.
+
+house_hammer:
+  key: "cookieclicker:house.hammer"         # 4 variants: 2 single taps, tap-tap, tap-tap-tap
+  fallback: "minecraft:block.anvil.place"   # shares volume/pitch below: quiet and high = small hammer
+  volume: 0.4
+  pitch-min: 1.15                           # files are authored for ~1.25
+  pitch-max: 1.35
+  source: block
+
+house_block_land:
+  key: "cookieclicker:house.block_land"     # 4 variants: soft thunk + small bounce
+  fallback: "minecraft:block.wood.place"
+  volume: 0.5
+  pitch-min: 0.9
+  pitch-max: 1.1
+  source: block
+
+house_block_place:
+  key: "@block"                             # special: the landed block's own vanilla place sound
+  fallback: "minecraft:block.stone.place"   # used if the block's sound can't be resolved
+  volume: 0.45
+  pitch-min: 0.8                            # vanilla plays place sounds at ~0.8 pitch
+  pitch-max: 0.95
+  source: block
+
+house_fanfare:
+  key: "cookieclicker:house.fanfare"        # 2.8 s, once when the roof is done
+  fallback: "minecraft:ui.toast.challenge_complete"
+  volume: 0.8
+  pitch-min: 1.0
+  pitch-max: 1.0                            # a fixed key: don't detune the chord
+  source: ui
+
+house_chimney_crackle:
+  key: "cookieclicker:house.chimney_crackle" # 3.0 s seamless loop; replay every 60 ticks
+  fallback: "minecraft:block.campfire.crackle"
+  volume: 0.5
+  pitch-min: 0.97                           # at pitch p the file lasts 3.0/p s (3.09-2.91 s)
+  pitch-max: 1.03
+  source: ambient
