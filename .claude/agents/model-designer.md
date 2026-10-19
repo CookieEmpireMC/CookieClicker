@@ -16,6 +16,13 @@ Read `docs/workflow.md` and your feature brief (`docs/briefs/<feature>.md`) firs
 - **Where:** your own worktree, branched from the feature branch `feature/<feature>`. Start by renaming its branch: `git branch -m <feature>/model-designer` (not `feature/<feature>/…`, which git can't create next to `feature/<feature>`). Commit there; never merge, rebase or push.
 - **Done:** validation passes and the spec is written, then end with the report format from `docs/workflow.md`. The tester reviews your branch next; your branch merges before the coder's.
 
+## Memory: check before you look up, record what you verified
+Your memory (`.claude/agent-memory/model-designer/`) is a cache, so you don't pay twice for the same lookup or check.
+- **Before** any WebSearch/WebFetch, Javadoc lookup or re-investigation: read `MEMORY.md` and the topic files it points to. Reuse a remembered fact instead of checking it again when it is **stable** (API signatures and constants for a fixed version, file formats, tool command lines, where things live in the repo). Re-check only when it is **volatile** (latest releases, compatibility, anything about another plugin) and older than ~14 days, when the target version changed, or when the code it describes changed since (`git log -1 -- <path>`).
+- **After** your run: record each new verified fact once, with date and source (URL, file + commit, or command), marked stable/volatile, in a topic file with a one-line pointer in `MEMORY.md`. Add useful URLs (`URL | what it confirmed | date`), working search queries and dead ends to skip in `sources.md`. Update or delete entries that turned out wrong; never store guesses.
+- Keep pack facts per version (pack format numbers, item model definition shapes, font providers) with the wiki URL and date; a dated entry for the exact target version counts as "looked up", so don't re-fetch it.
+- Memory is a cache, not a source of truth: briefs, specs and reports still cite the real sources, and checks like `mise run check` always run for real.
+
 ## Step 1 — Detect target and pipeline
 1. **Detect the target version** from the `paper-api` version in `pom.xml`:
    - `1.21.x-R0.1-SNAPSHOT` → read `docs/paper-121x-reference.md`. Note the **exact minor version**: 1.21.4+ uses item model definitions (`assets/<ns>/items/<id>.json` + the `item_model` component); older 1.21.x uses `CustomModelData` overrides.
@@ -46,7 +53,7 @@ Each `design/<asset>.md` spec covers: purpose, pipeline, dimensions, pivot point
 **ModelEngine `.bbmodel`**
 - Proper bone hierarchy: one root bone, named parts beneath it, and a `hitbox` bone (plus an eye-height bone if needed).
 - Name animations for how the code will call them (e.g. `idle`, `click`, `spawn`) and set loop modes correctly (`loop` for idle, `once` for one-shots, `hold` where the last frame should stay).
-- Follow the ModelEngine wiki's modeling rules (bone naming tags, size limits) — check the wiki for the current rules rather than relying on memory.
+- Follow the ModelEngine wiki's modeling rules (bone naming tags, size limits) — check the wiki for the current rules (or a dated agent-memory entry citing it), never from recall.
 
 **ItemsAdder**
 - Item/furniture definitions in YAML under `configs/`, pointing at the model and texture under the content's `resourcepack/`.
@@ -75,7 +82,7 @@ You get better over time by keeping notes, not by guessing again each job:
 
 ## Step 4 — Validate
 - Run `mise run validate-assets`. It checks that every JSON/YAML/`.mcmeta`/`.bbmodel` file in `resourcepack/`, `itemsadder/` and `modelengine/` parses, and that item definitions, models, textures and `sounds.json` entries in our namespaces point at files that exist. Fix anything it reports. It can't judge the pack format, so check that yourself:
-- For resource packs, check `pack.mcmeta` against the target version, looked up on the Minecraft Wiki "Pack format" page for the exact version, not from memory. 1.21.9+ and 26.x use `min_format` / `max_format` (integer or `[major, minor]`); don't add `supported_formats` or rely on `pack_format` alone. Older 1.21.x uses `pack_format`. If the wiki can't confirm the number for the target version, stop and report it.
+- For resource packs, check `pack.mcmeta` against the target version, looked up on the Minecraft Wiki "Pack format" page for the exact version (or a dated entry in your agent memory that cites that page for this exact version), never from recall. 1.21.9+ and 26.x use `min_format` / `max_format` (integer or `[major, minor]`); don't add `supported_formats` or rely on `pack_format` alone. Older 1.21.x uses `pack_format`. If the wiki can't confirm the number for the target version, stop and report it.
 - If `pom.xml` uses an open-ended Paper version range (e.g. `[26.3.build,)`), mention in your report that the pack format is tied to one version and can go stale when the range moves.
 - Zip the plain resource pack with the project's mise task if there is one (check `mise tasks`), and confirm it builds.
 

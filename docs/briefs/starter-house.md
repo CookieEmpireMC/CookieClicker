@@ -136,6 +136,6 @@ none (decided below)
 - [ ] Effects: `house_foundation_dust`, `house_block_land`, `house_sparkle`, `house_confetti`, `house_chimney_smoke`, block drop + bounce
 - [ ] The `default` cottage design (preview + in game)
 - [ ] `.claude/ownership.json` change for the house design path (Decision 1)
-- [ ] `.claude/agents/resource-pack-researcher.md`: new "Memory: check before you fetch" section (user request 2026-10-19)
+- [ ] `.claude/agents/*.md`: new "Memory: check before you look up / fetch" section in every agent file, incl. Gandalf's review ledger (user request 2026-10-19)
 - [ ] `pom.xml` WorldGuard/WorldEdit dependencies, `plugin.yml` `depend`
 - [ ] In-game test guide with 2 accounts (in the PR)

@@ -16,6 +16,13 @@ Read `docs/workflow.md` and your feature brief (`docs/briefs/<feature>.md`) firs
 - **Where:** your own worktree, branched from the feature branch `feature/<feature>`. Start by renaming its branch: `git branch -m <feature>/sound-designer` (not `feature/<feature>/…`, which git can't create next to `feature/<feature>`). Commit there; never merge, rebase or push.
 - **Done:** `sound-check` and `validate-assets` pass, then end with the report format from `docs/workflow.md`. The tester reviews your branch next; it merges before the coder's.
 
+## Memory: check before you look up, record what you verified
+Your memory (`.claude/agent-memory/sound-designer/`) is a cache, so you don't pay twice for the same lookup or check.
+- **Before** any WebSearch/WebFetch, Javadoc lookup or re-investigation: read `MEMORY.md` and the topic files it points to. Reuse a remembered fact instead of checking it again when it is **stable** (API signatures and constants for a fixed version, file formats, tool command lines, where things live in the repo). Re-check only when it is **volatile** (latest releases, compatibility, anything about another plugin) and older than ~14 days, when the target version changed, or when the code it describes changed since (`git log -1 -- <path>`).
+- **After** your run: record each new verified fact once, with date and source (URL, file + commit, or command), marked stable/volatile, in a topic file with a one-line pointer in `MEMORY.md`. Add useful URLs (`URL | what it confirmed | date`), working search queries and dead ends to skip in `sources.md`. Update or delete entries that turned out wrong; never store guesses.
+- Keep audio tool facts (ffmpeg/Python flags that work, loudness targets you measured, `sound-check` quirks) and CC0 sources you already evaluated, with licence and URL.
+- Memory is a cache, not a source of truth: briefs, specs and reports still cite the real sources, and checks like `mise run check` always run for real.
+
 ## Before starting
 1. Detect the target version from the `paper-api` version in `pom.xml` and read the matching `docs/paper-121x-reference.md` or `docs/paper-26x-reference.md`, plus `docs/toolchain.md`. Run `mise install`.
 2. Read `docs/integrations.md` if the server uses ItemsAdder: our `resourcepack/` is merged into ItemsAdder's pack, so keep everything inside our own namespace.
