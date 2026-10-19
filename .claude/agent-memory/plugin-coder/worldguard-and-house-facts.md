@@ -32,5 +32,8 @@ Repo conventions learned:
 - Review lessons (Gandalf, pass 1 round 1, 2026-10-19): any "grow until it fits" loop must terminate even when the
   limit is below the shape's minimum (Outline: stop once the step exceeds the longest edge); write undo backups to
   disk BEFORE changing the world; clear busy flags in try/finally (HousePlacer.guarded + handedOff pattern).
+- Round 2 lesson: async multi-step operations need a cancellation token, not a boolean busy flag. reload/disable
+  must invalidate in-flight IO callbacks (house/OperationGate: begin() token, valid(), end(token), reset() bumps the
+  generation); check the token first in every main-thread continuation and only end your own token.
 - Gandalf disables tests that reproduce open bugs (@Disabled); run them with the DisabledCondition deactivation flag
   (see paper-263-api-facts) to prove a fix, and tell Rick it's ready to un-disable.
