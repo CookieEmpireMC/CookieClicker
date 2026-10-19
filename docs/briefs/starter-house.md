@@ -1,6 +1,6 @@
 # starter-house
 
-**Status:** review  <!-- planned | in progress | review | done -->
+**Status:** done  <!-- planned | in progress | review | done -->
 **Created:** 2026-10-19 · **Approved:** 2026-10-19 · **Depends on:** bakery-core (merged, PR #4)
 
 ## Goal
@@ -132,8 +132,13 @@ none (decided below)
 | vfx-designer | merged | `starter-house/vfx-designer` + `-outline` | READY ×2 | 20:39 | 21:02 | 6 presets + dropBlock/loop/cancelFor; plot_outline/house_outline; needs in-game look |
 | plugin-coder (pass 1) | merged | `starter-house/plugin-coder` | READY (round 2) | 20:39 | 21:20 | WG, plots, migration, commands, place/undo + OperationGate, schema v2, @block |
 | plugin-coder (pass 2) | merged | `starter-house/plugin-coder-2` | READY | 21:20 | 21:43 | cinematic; review combined with integration |
-| plugin-coder (fixes) | running | `starter-house/plugin-coder-fixes` | | 21:43 | | Sound#key deprecation, roof/floor start, abort try/finally, fractional budget |
+| plugin-coder (fixes) | merged | `starter-house/plugin-coder-fixes` | READY | 21:43 | 21:47 | Sound#key deprecation, roof/floor start, abort try/finally, fractional budget |
 | plugin-tester | integration done | (each branch + feature) | READY | 20:49 | 21:43 | 6 reviews + integration; 435 Java + 146 tool tests |
+
+## Results
+- Clean tree: `check` 435 tests / 0 failed / 0 skipped; `validate-assets` 12 files 0 problems; `sound-check` 17/17; `balance-check` 6/6; `tools-test` 146 OK; `ownership-check` OK for every agent branch. CI green on PR #5.
+- Reviews: `docs/reviews/2026-10-19-starter-house*.md`; integration READY. Cleanup pass (4b) skipped (no findings worth refactoring); a small fix round handled the review's LOW/MEDIUM items instead.
+- Follow-ups: a dedicated `FAILED` result for a cinematic whose first step throws (now reported as "no house"); the async seen check keyed per plot; `bakery-growth`, `game-start`, `optimize`.
 
 ## Merge order
 1. research notes (as they land)
