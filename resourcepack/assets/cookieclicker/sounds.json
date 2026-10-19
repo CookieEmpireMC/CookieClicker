@@ -25,5 +25,35 @@
     "sounds": [
       "cookieclicker:ui/cant_afford"
     ]
+  },
+  "house.hammer": {
+    "subtitle": "subtitles.cookieclicker.house_hammer",
+    "sounds": [
+      "cookieclicker:house/hammer_1",
+      "cookieclicker:house/hammer_2",
+      "cookieclicker:house/hammer_3",
+      "cookieclicker:house/hammer_4"
+    ]
+  },
+  "house.block_land": {
+    "subtitle": "subtitles.cookieclicker.house_block_land",
+    "sounds": [
+      "cookieclicker:house/block_land_1",
+      "cookieclicker:house/block_land_2",
+      "cookieclicker:house/block_land_3",
+      "cookieclicker:house/block_land_4"
+    ]
+  },
+  "house.fanfare": {
+    "subtitle": "subtitles.cookieclicker.house_fanfare",
+    "sounds": [
+      "cookieclicker:house/fanfare"
+    ]
+  },
+  "house.chimney_crackle": {
+    "subtitle": "subtitles.cookieclicker.house_chimney_crackle",
+    "sounds": [
+      "cookieclicker:house/chimney_crackle"
+    ]
   }
 }
