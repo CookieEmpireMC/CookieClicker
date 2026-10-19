@@ -30,3 +30,9 @@ The character every sound in the set shares, so new sounds fit the same family.
 ## Workflow
 - Generators in `design/sound-scripts/` (one per sound/family, parameters as constants at the top, fixed seeds), run with `mise run sounds`. Shared helpers only in `design/sound-tools/`.
 - Check with `mise run sound-check`, `mise run sound-previews` (Read the PNGs), then `mise run validate-assets`.
+
+## Long sounds and loops (added 2026-10-19, starter-house)
+- **Jingles/fanfares (>= 400 ms):** -16 LUFS via `synth.gain_to_lufs`. If peak-limited, apply `synth.soft_limit` (tanh, drive 1.5-2.5) to the mix **before** `finish()`'s low-pass. Warm plucks (`bell` with harmonic partials 1-4) on top of a soft reed/horn pad (harmonics 1-6 at 1/n^1.5, 35 ms attack, low-passed ~2.6 kHz); reuse the crit sparkle bells for "reward".
+- **Ambient loops:** about **-19 LUFS** (3 dB under the set, still inside sound-check's ±4) and config volume ~0.5, `source: ambient`. Build circularly (`place_circular`, `fft_filter`, periodic FFT noise), keep transients 60 ms away from the loop point, and dip the bed there; no fades needed.
+- **Repeated world sounds (build cinematics):** 4 variants, soft attacks (2 ms on thuds), config volume 0.4-0.5, `source: block`, and a pitch spread of about ±10 %.
+- **Fire:** low bed (≤ 450 Hz) + band-passed crackle grains (1.2-5.5 kHz, tanh drive 3) + a few short resonant pops (500-1100 Hz); never a broadband hiss bed.

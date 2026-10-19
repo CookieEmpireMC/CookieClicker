@@ -65,6 +65,39 @@ class ShippedContentConsistencyTest {
     }
 
     @Test
+    void starterHouseSoundEventsMatchTheBriefContract() throws IOException {
+        YamlConfiguration sounds = yaml("sounds.yml");
+        JsonObject soundsJson = json(PACK.resolve("sounds.json"));
+        JsonObject lang = json(PACK.resolve("lang/en_us.json"));
+        var expected = new java.util.LinkedHashMap<String, String[]>();
+        expected.put("house_hammer", new String[] {"cookieclicker:house.hammer", "minecraft:block.anvil.place", "3"});
+        expected.put("house_block_land", new String[] {"cookieclicker:house.block_land", "minecraft:block.wood.place", "3"});
+        expected.put("house_fanfare", new String[] {"cookieclicker:house.fanfare", "minecraft:ui.toast.challenge_complete", "1"});
+        expected.put("house_chimney_crackle",
+                new String[] {"cookieclicker:house.chimney_crackle", "minecraft:block.campfire.crackle", "1"});
+        for (var e : expected.entrySet()) {
+            String ev = e.getKey();
+            assertEquals(e.getValue()[0], sounds.getString(ev + ".key"), ev);
+            assertEquals(e.getValue()[1], sounds.getString(ev + ".fallback"), ev);
+            String name = e.getValue()[0].substring("cookieclicker:".length());
+            assertTrue(soundsJson.has(name), "sounds.json lacks " + name);
+            var files = soundsJson.getAsJsonObject(name).getAsJsonArray("sounds");
+            assertTrue(files.size() >= Integer.parseInt(e.getValue()[2]), ev + " variants");
+            files.forEach(f -> assertTrue(Files.isRegularFile(
+                    PACK.resolve("sounds/" + f.getAsString().substring("cookieclicker:".length()) + ".ogg")), f.getAsString()));
+            String subtitle = soundsJson.getAsJsonObject(name).get("subtitle").getAsString();
+            assertTrue(lang.has(subtitle), "lang lacks " + subtitle);
+            assertTrue(sounds.getDouble(ev + ".volume") > 0 && sounds.getDouble(ev + ".pitch-min") <= sounds.getDouble(ev + ".pitch-max"), ev);
+        }
+        assertEquals("ambient", sounds.getString("house_chimney_crackle.source"));
+        // special key: the block's own place sound, needs no sounds.json entry, but a vanilla fallback
+        assertEquals("@block", sounds.getString("house_block_place.key"));
+        assertTrue(sounds.getString("house_block_place.fallback").startsWith("minecraft:"));
+        assertTrue(sounds.getDouble("house_block_place.volume") > 0);
+        assertFalse(soundsJson.has("@block"));
+    }
+
+    @Test
     void javaEventNamesExistInEffectsAndSounds() throws IOException {
         String src = Files.readString(Path.of("src/main/java/dev/casperrs/cookieClicker/view/StationInteractions.java"));
         YamlConfiguration effects = yaml("effects.yml");

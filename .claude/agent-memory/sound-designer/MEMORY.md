@@ -1,2 +1,2 @@
-- [Sound tooling facts](tooling-facts.md) — Vorbis random serial fix, compression_level works, validator/review quirks, source: ui on 26.3
+- [Sound tooling facts](tooling-facts.md) — Vorbis serial fix, validator quirks (@block passes by accident), synth LUFS/loop helpers, guard quirks, source: ui on 26.3
 - Style guide + lessons live in design/sound-style-guide.md and design/sound-lessons.md (read those first)
