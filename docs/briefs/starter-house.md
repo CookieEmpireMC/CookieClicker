@@ -1,6 +1,6 @@
 # starter-house
 
-**Status:** in progress  <!-- planned | in progress | review | done -->
+**Status:** review  <!-- planned | in progress | review | done -->
 **Created:** 2026-10-19 · **Approved:** 2026-10-19 · **Depends on:** bakery-core (merged, PR #4)
 
 ## Goal
@@ -131,8 +131,9 @@ none (decided below)
 | sound-designer | merged | `starter-house/sound-designer` | READY | 20:39 | 20:49 | 4 sounds + @block entry; needs a listen |
 | vfx-designer | merged | `starter-house/vfx-designer` + `-outline` | READY ×2 | 20:39 | 21:02 | 6 presets + dropBlock/loop/cancelFor; plot_outline/house_outline; needs in-game look |
 | plugin-coder (pass 1) | merged | `starter-house/plugin-coder` | READY (round 2) | 20:39 | 21:20 | WG, plots, migration, commands, place/undo + OperationGate, schema v2, @block |
-| plugin-coder (pass 2) | in review | `starter-house/plugin-coder-2` | | 21:20 | 21:33 | cinematic DONE; 1 rule test for Gandalf; combined with integration review |
-| plugin-tester | running | (each branch) | READY ×3 | 20:49 | | sounds, house design, vfx READY; pass 1 in review |
+| plugin-coder (pass 2) | merged | `starter-house/plugin-coder-2` | READY | 21:20 | 21:43 | cinematic; review combined with integration |
+| plugin-coder (fixes) | running | `starter-house/plugin-coder-fixes` | | 21:43 | | Sound#key deprecation, roof/floor start, abort try/finally, fractional budget |
+| plugin-tester | integration done | (each branch + feature) | READY | 20:49 | 21:43 | 6 reviews + integration; 435 Java + 146 tool tests |
 
 ## Merge order
 1. research notes (as they land)
