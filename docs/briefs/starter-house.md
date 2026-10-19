@@ -106,6 +106,8 @@ none (decided below)
 | dependency | `pom.xml`: `com.sk89q.worldguard:worldguard-bukkit:7.0.20`, `com.sk89q.worldedit:worldedit-bukkit:7.4.6` (`provided`, repo `https://maven.enginehub.org/repo/`); `plugin.yml`: `depend: [WorldGuard]` | plugin-coder | WG/WE/FAWE row in `docs/integrations.md`; missing/disabled WG → log `plot.missing-worldguard`, disable |
 | keep-out | `hold` = transient `MOVEMENT_SPEED` + `JUMP_STRENGTH` modifiers (-1, `MULTIPLY_SCALAR_1`) + move/teleport guard; removed on every cleanup path and on join | plugin-coder | research: fake-blocks Q6; no `setWalkSpeed`, no spectator |
 | config (final, pass 1) | added `plot.show.{redraw-ticks, max-points, plot-effect, house-effect}`, `plot.hide-others-near-pedestal.check-ticks`, `house.max-blocks`; removed `station.min-distance`, `station.remove-radius` | plugin-coder | |
+| config (final, pass 2) | `house.cinematic.{viewpoint-radius, hammer-every, slow-amount, confetti-height}` added, `blocks-per-tick` is a decimal, `max-falling-displays` clamped ≤24; `house.chimney.{smoke, crackle-every}`; `trigger: viewpoint` = a teleport ending within `viewpoint-radius` of the viewpoint | plugin-coder | |
+| message keys (pass 2) | `house.rebuild-{unknown-player, cleared, started, inside, not-loaded, no-house}` | plugin-coder | |
 | effect | `plot_outline`, `house_outline` (one light particle per point, admin tool) | vfx-designer | requested by plugin-coder for `/bakery plot show` |
 | storage | schema v2: `<prefix>house_seen(uuid, plot_id, seen_at)` | plugin-coder | migrated from v1 on startup |
 
@@ -129,7 +131,7 @@ none (decided below)
 | sound-designer | merged | `starter-house/sound-designer` | READY | 20:39 | 20:49 | 4 sounds + @block entry; needs a listen |
 | vfx-designer | merged | `starter-house/vfx-designer` + `-outline` | READY ×2 | 20:39 | 21:02 | 6 presets + dropBlock/loop/cancelFor; plot_outline/house_outline; needs in-game look |
 | plugin-coder (pass 1) | merged | `starter-house/plugin-coder` | READY (round 2) | 20:39 | 21:20 | WG, plots, migration, commands, place/undo + OperationGate, schema v2, @block |
-| plugin-coder (pass 2) | running | `starter-house/plugin-coder-2` | | 21:20 | | cinematic |
+| plugin-coder (pass 2) | in review | `starter-house/plugin-coder-2` | | 21:20 | 21:33 | cinematic DONE; 1 rule test for Gandalf; combined with integration review |
 | plugin-tester | running | (each branch) | READY ×3 | 20:49 | | sounds, house design, vfx READY; pass 1 in review |
 
 ## Merge order
