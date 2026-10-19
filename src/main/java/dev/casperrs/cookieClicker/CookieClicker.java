@@ -4,10 +4,18 @@ import dev.casperrs.cookieClicker.command.BakeryCommand;
 import dev.casperrs.cookieClicker.config.PluginSettings;
 import dev.casperrs.cookieClicker.economy.Economy;
 import dev.casperrs.cookieClicker.economy.EconomyConfig;
+import dev.casperrs.cookieClicker.house.HousePlacer;
+import dev.casperrs.cookieClicker.house.HouseSeen;
 import dev.casperrs.cookieClicker.hud.BakeryTicker;
 import dev.casperrs.cookieClicker.hud.Hud;
 import dev.casperrs.cookieClicker.pack.ResourcePackSender;
 import dev.casperrs.cookieClicker.pack.ResourcePackTracker;
+import dev.casperrs.cookieClicker.plot.PedestalPrivacy;
+import dev.casperrs.cookieClicker.plot.PlotFile;
+import dev.casperrs.cookieClicker.plot.PlotOutlines;
+import dev.casperrs.cookieClicker.plot.PlotRegistry;
+import dev.casperrs.cookieClicker.plot.PlotService;
+import dev.casperrs.cookieClicker.plot.PlotTracker;
 import dev.casperrs.cookieClicker.session.SessionBukkitListener;
 import dev.casperrs.cookieClicker.session.SessionListener;
 import dev.casperrs.cookieClicker.session.SessionManager;
@@ -21,10 +29,13 @@ import dev.casperrs.cookieClicker.vfx.Effects;
 import dev.casperrs.cookieClicker.view.ClickRouter;
 import dev.casperrs.cookieClicker.view.StationInteractions;
 import dev.casperrs.cookieClicker.view.StationViews;
+import dev.casperrs.cookieClicker.worldguard.WorldGuardHook;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.IllegalPluginAccessException;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -38,9 +49,11 @@ import java.util.random.RandomGenerator;
 
 /**
  * Cookie Empire. This class only wires services together and owns their lifecycle
- * (enable → reload → disable); feature logic lives in the sub-packages.
+ * (load → enable → reload → disable); feature logic lives in the sub-packages.
  *
- * <p>Disable order: tasks -> station views -> effects -> stations -> sessions (flush saves, stop IO).
+ * <p>Load: WorldGuard flags {@code bakery-plot} / {@code bakery-house} (only possible before WorldGuard enables).
+ * <p>Disable order: tasks -> plot tracker, outlines, pedestal privacy -> station views -> effects -> stations ->
+ * sessions (flush saves, stop IO).
  */
 public final class CookieClicker extends JavaPlugin {
 
@@ -55,7 +68,12 @@ public final class CookieClicker extends JavaPlugin {
     private Effects effects;
     private StationViews views;
     private StationRegistry stations;
-    private StationFile stationFile;
+    private PlotService plots;
+    private PlotTracker plotTracker;
+    private PlotOutlines outlines;
+    private PedestalPrivacy pedestalPrivacy;
+    private HousePlacer houses;
+    private HouseSeen houseSeen;
     private SessionManager sessions;
     private Hud hud;
     private BakeryTicker ticker;
@@ -63,14 +81,36 @@ public final class CookieClicker extends JavaPlugin {
     private BakeryConfigLoader loader;
     private BukkitTask tickTask;
     private BukkitTask autosaveTask;
+    private boolean flagsRegistered;
+
+    @Override
+    public void onLoad() {
+        try {
+            WorldGuardHook.registerFlags();
+            flagsRegistered = true;
+        } catch (RuntimeException | LinkageError e) { // conflict, or WorldGuard not usable
+            getLogger().log(Level.SEVERE, "Could not register the WorldGuard flags bakery-plot / bakery-house", e);
+        }
+    }
 
     @Override
     public void onEnable() {
         loader = new BakeryConfigLoader(this);
         List<String> problems = BakeryConfigLoader.newProblemList();
+        messages = new Messages(getLogger());
+        loader.loadMessages(messages, problems);
+
+        WorldGuardHook regions = worldGuard();
+        if (regions == null) {
+            getLogger().severe(PlainTextComponentSerializer.plainText().serialize(
+                    messages.component("plot.missing-worldguard")));
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
+
         settings = loader.loadSettings(problems);
 
-        // One storage thread: DB loads/saves and stations.yml writes, in order
+        // One storage thread: DB loads/saves, plots.yml/stations.yml writes and house backups, in order
         io = Executors.newSingleThreadExecutor(r -> {
             Thread t = new Thread(r, "CookieClicker-IO");
             t.setDaemon(true);
@@ -87,9 +127,6 @@ public final class CookieClicker extends JavaPlugin {
             }
         };
 
-        messages = new Messages(getLogger());
-        loader.loadMessages(messages, problems);
-
         economy = new Economy(EconomyConfig.DISABLED, RandomGenerator.getDefault());
         loader.loadBalance(economy, messages, problems);
 
@@ -101,8 +138,9 @@ public final class CookieClicker extends JavaPlugin {
         loader.loadSounds(sounds, problems);
 
         getLogger().info("Storage: " + settings.database().describe());
-        sessions = new SessionManager(new JdbcPlayerStore(new DriverConnectionFactory(settings.database()),
-                settings.database().tablePrefix()), io, mainThread, getLogger());
+        JdbcPlayerStore store = new JdbcPlayerStore(new DriverConnectionFactory(settings.database()),
+                settings.database().tablePrefix());
+        sessions = new SessionManager(store, io, mainThread, getLogger());
         sessions.addListener(new SessionListener() {
             @Override
             public void onLoadFailed(UUID player) {
@@ -113,10 +151,14 @@ public final class CookieClicker extends JavaPlugin {
             }
         });
         sessions.start();
+        houseSeen = new HouseSeen(store, io, mainThread, getLogger()); // starter-house pass 2 (cinematic) uses it
 
         stations = new StationRegistry(getLogger());
-        stationFile = new StationFile(this, io);
-        loader.loadStations(stationFile, stations, problems);
+        PlotRegistry plotRegistry = new PlotRegistry(regions, PlotService::worldByKey);
+        PlotFile plotFile = new PlotFile(getDataFolder().toPath(), getLogger(), io);
+        plots = new PlotService(plotRegistry, plotFile, new StationFile(this, io), stations,
+                getDataFolder().toPath(), getLogger(), PlotService::worldByKey);
+        loader.loadPlots(plots, problems);
 
         hud = new Hud(messages, economy, resourcePacks::hasPack);
         ticker = new BakeryTicker(sessions, economy, hud, Bukkit::getPlayer);
@@ -139,7 +181,15 @@ public final class CookieClicker extends JavaPlugin {
         pm.registerEvents(new ClickRouter(views, interactions, () -> settings.visuals(), getLogger()), this);
         views.start();
 
-        BakeryCommand command = new BakeryCommand(stations, stationFile, () -> settings, messages, this::reload);
+        plotTracker = new PlotTracker(this, plotRegistry);
+        plotTracker.start();
+        outlines = new PlotOutlines(this, effects, () -> settings.plot().show());
+        pedestalPrivacy = new PedestalPrivacy(this, () -> settings.plot().hideOthers(), stations::all);
+        pedestalPrivacy.restart();
+        houses = new HousePlacer(this, plotRegistry, plotFile, messages, io, mainThread,
+                () -> settings.house().maxBlocks());
+
+        BakeryCommand command = new BakeryCommand(plots, outlines, houses, () -> settings, messages, this::reload);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
                 event -> event.registrar().register(command.node(), "Cookie Empire admin commands"));
 
@@ -148,9 +198,42 @@ public final class CookieClicker extends JavaPlugin {
         // Players already online (e.g. after /reload confirm) get their sessions too
         Bukkit.getOnlinePlayers().forEach(p -> sessions.join(p.getUniqueId()));
 
-        getLogger().info("Enabled with " + stations.all().size() + " station(s), "
-                + economy.config().buildings().size() + " building(s)"
+        getLogger().info("Enabled with " + plotRegistry.all().size() + " plot(s), " + stations.all().size()
+                + " pedestal(s), " + economy.config().buildings().size() + " building(s)"
                 + (problems.isEmpty() ? "" : "; " + problems.size() + " config problem(s), see above"));
+    }
+
+    /** The region hook, or null when WorldGuard is missing, disabled or our flags could not be registered. */
+    private WorldGuardHook worldGuard() {
+        Plugin wg = getServer().getPluginManager().getPlugin("WorldGuard");
+        if (wg == null || !wg.isEnabled() || !flagsRegistered) {
+            return null;
+        }
+        String version = wg.getPluginMeta().getVersion();
+        if (olderThan(version, WorldGuardHook.MIN_VERSION)) {
+            getLogger().warning("WorldGuard " + version + " is older than " + WorldGuardHook.MIN_VERSION
+                    + ", the first release confirmed for Paper 26.3; update it if plots misbehave");
+        }
+        return WorldGuardHook.create(getLogger()).orElse(null);
+    }
+
+    /** Compares the leading dotted numbers ("7.0.20-SNAPSHOT;abc" -> 7, 0, 20). Unparseable = not older. */
+    static boolean olderThan(String version, String min) {
+        String[] a = version.split("[^0-9.]", 2)[0].split("\\.");
+        String[] b = min.split("\\.");
+        for (int i = 0; i < b.length; i++) {
+            int x;
+            try {
+                x = i < a.length ? Integer.parseInt(a[i]) : 0;
+            } catch (NumberFormatException e) {
+                return false;
+            }
+            int y = Integer.parseInt(b[i]);
+            if (x != y) {
+                return x < y;
+            }
+        }
+        return false;
     }
 
     @Override
@@ -162,22 +245,28 @@ public final class CookieClicker extends JavaPlugin {
             autosaveTask.cancel();
         }
         // a throw here must never skip the session flush below
-        if (views != null) {
-            try {
-                views.shutdown(); // every player's UI, independent of session events
-            } catch (RuntimeException e) {
-                getLogger().log(Level.SEVERE, "Could not remove the station views on disable", e);
+        safely("plot tracking", () -> {
+            if (plotTracker != null) {
+                plotTracker.shutdown();
             }
+            if (outlines != null) {
+                outlines.shutdown();
+            }
+            if (pedestalPrivacy != null) {
+                pedestalPrivacy.shutdown(); // shows every player it hid
+            }
+            if (houses != null) {
+                houses.reset();
+            }
+        });
+        if (views != null) {
+            safely("the station views", views::shutdown); // every player's UI, independent of session events
         }
         if (effects != null) {
-            try {
-                effects.shutdown();
-            } catch (RuntimeException e) {
-                getLogger().log(Level.SEVERE, "Could not shut down the effects on disable", e);
-            }
+            safely("the effects", effects::shutdown);
         }
         if (stations != null) {
-            stations.clear(); // tells pass-2 listeners to despawn everything; stations.yml is untouched
+            stations.clear(); // tells listeners to despawn everything; plots.yml is untouched
         }
         if (sessions != null) {
             sessions.shutdown(settings.shutdownSaveTimeoutSeconds()); // flushes every save, then stops the IO thread
@@ -186,7 +275,18 @@ public final class CookieClicker extends JavaPlugin {
         }
     }
 
-    /** {@code /bakery reload}: config, messages, sounds, effects, balance and stations. The database needs a restart. */
+    private void safely(String what, Runnable step) {
+        try {
+            step.run();
+        } catch (RuntimeException e) {
+            getLogger().log(Level.SEVERE, "Could not shut down " + what + " on disable", e);
+        }
+    }
+
+    /**
+     * {@code /bakery reload}: config, messages, sounds, effects, balance, plots (re-reads plots.yml and re-resolves
+     * the WorldGuard regions, so {@code /rg redefine} applies) and stations. The database needs a restart.
+     */
     public List<String> reload() {
         List<String> problems = BakeryConfigLoader.newProblemList();
         PluginSettings fresh = loader.loadSettings(problems);
@@ -201,9 +301,13 @@ public final class CookieClicker extends JavaPlugin {
         loader.loadMessages(messages, problems);
         loader.loadBalance(economy, messages, problems);
         loader.loadSounds(sounds, problems);
-        loader.loadStations(stationFile, stations, problems);
+        outlines.stopAll();
+        houses.reset();
+        loader.loadPlots(plots, problems);
         effects.reload();
         views.restart(); // removes every view; the next refresh respawns with the new layout and balance
+        plotTracker.resyncAll();
+        pedestalPrivacy.restart();
         applySettings();
         packSender.onReload(packBefore);
         return problems;
@@ -241,6 +345,18 @@ public final class CookieClicker extends JavaPlugin {
 
     public StationRegistry stations() {
         return stations;
+    }
+
+    public PlotService plots() {
+        return plots;
+    }
+
+    public PlotTracker plotTracker() {
+        return plotTracker;
+    }
+
+    public HouseSeen houseSeen() {
+        return houseSeen;
     }
 
     public SessionManager sessions() {

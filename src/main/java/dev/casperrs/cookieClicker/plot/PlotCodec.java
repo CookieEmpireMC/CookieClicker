@@ -1,0 +1,156 @@
+package dev.casperrs.cookieClicker.plot;
+
+import org.jspecify.annotations.Nullable;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.function.Consumer;
+import java.util.regex.Pattern;
+
+/**
+ * {@code plots.yml} &lt;-&gt; {@link Plot}s. Layout:
+ * <pre>
+ * plots:
+ *   main:
+ *     world: minecraft:overworld
+ *     plot-region: bakery_plot      # optional fallback; the bakery-plot flag is the source of truth
+ *     house-region: bakery_house    # optional fallback; the bakery-house flag is the source of truth
+ *     viewpoint: { x: 10.5, y: 64.0, z: -3.5, yaw: 90.0, pitch: 10.0 }
+ *     pedestal: { x: 12.5, y: 64.0, z: -3.5, yaw: 90.0 }
+ *     chimney: { x: 20.5, y: 72.0, z: 1.5 }   # optional
+ * </pre>
+ * Bad entries are reported and skipped; a bad optional point is reported and left out. Pure Java.
+ */
+public final class PlotCodec {
+
+    private static final Pattern WORLD_KEY = Pattern.compile("[a-z0-9_.-]+:[a-z0-9_./-]+");
+
+    private PlotCodec() {
+    }
+
+    public static List<Plot> fromMap(Map<String, ?> root, Consumer<String> problems) {
+        List<Plot> out = new ArrayList<>();
+        if (!(root.get("plots") instanceof Map<?, ?> plots)) {
+            return out;
+        }
+        for (Map.Entry<?, ?> e : plots.entrySet()) {
+            String id = String.valueOf(e.getKey()).toLowerCase(Locale.ROOT);
+            String where = "plots.yml: " + e.getKey();
+            if (!Plot.validId(id)) {
+                problems.accept(where + ": plot ids may only use a-z, 0-9, _ and - (max 64)");
+                continue;
+            }
+            if (!(e.getValue() instanceof Map<?, ?> spec)) {
+                problems.accept(where + " must be a section");
+                continue;
+            }
+            Object world = spec.get("world");
+            if (!(world instanceof String w) || !WORLD_KEY.matcher(w).matches()) {
+                problems.accept(where + " needs 'world' as a world key like minecraft:overworld, got " + world);
+                continue;
+            }
+            Plot.Viewpoint viewpoint = null;
+            if (spec.get("viewpoint") != null) {
+                double[] v = numbers(spec.get("viewpoint"), "x", "y", "z", "yaw", "pitch");
+                if (v == null) {
+                    problems.accept(where + ".viewpoint needs numeric x, y, z (yaw, pitch optional); ignored");
+                } else {
+                    viewpoint = new Plot.Viewpoint(v[0], v[1], v[2], (float) v[3], (float) v[4]);
+                }
+            }
+            Plot.Pedestal pedestal = null;
+            if (spec.get("pedestal") != null) {
+                double[] v = numbers(spec.get("pedestal"), "x", "y", "z", "yaw");
+                if (v == null) {
+                    problems.accept(where + ".pedestal needs numeric x, y, z (yaw optional); ignored");
+                } else {
+                    pedestal = new Plot.Pedestal(v[0], v[1], v[2], (float) v[3]);
+                }
+            }
+            Plot.Point chimney = null;
+            if (spec.get("chimney") != null) {
+                double[] v = numbers(spec.get("chimney"), "x", "y", "z");
+                if (v == null) {
+                    problems.accept(where + ".chimney needs numeric x, y, z; ignored");
+                } else {
+                    chimney = new Plot.Point(v[0], v[1], v[2]);
+                }
+            }
+            out.add(new Plot(id, w, regionId(spec.get("plot-region")), regionId(spec.get("house-region")),
+                    viewpoint, pedestal, chimney));
+        }
+        return out;
+    }
+
+    public static Map<String, Object> toMap(Collection<Plot> plots) {
+        Map<String, Object> all = new LinkedHashMap<>();
+        for (Plot p : plots) {
+            Map<String, Object> spec = new LinkedHashMap<>();
+            spec.put("world", p.worldKey());
+            if (p.plotRegion() != null) {
+                spec.put("plot-region", p.plotRegion());
+            }
+            if (p.houseRegion() != null) {
+                spec.put("house-region", p.houseRegion());
+            }
+            if (p.viewpoint() != null) {
+                Plot.Viewpoint v = p.viewpoint();
+                spec.put("viewpoint", point(v.x(), v.y(), v.z(), "yaw", v.yaw(), "pitch", v.pitch()));
+            }
+            if (p.pedestal() != null) {
+                Plot.Pedestal v = p.pedestal();
+                spec.put("pedestal", point(v.x(), v.y(), v.z(), "yaw", v.yaw(), null, 0));
+            }
+            if (p.chimney() != null) {
+                Plot.Point v = p.chimney();
+                spec.put("chimney", point(v.x(), v.y(), v.z(), null, 0, null, 0));
+            }
+            all.put(p.id(), spec);
+        }
+        Map<String, Object> root = new LinkedHashMap<>();
+        root.put("plots", all);
+        return root;
+    }
+
+    private static Map<String, Object> point(double x, double y, double z, @Nullable String k1, float v1,
+                                             @Nullable String k2, float v2) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("x", x);
+        m.put("y", y);
+        m.put("z", z);
+        if (k1 != null) {
+            m.put(k1, (double) v1);
+        }
+        if (k2 != null) {
+            m.put(k2, (double) v2);
+        }
+        return m;
+    }
+
+    /** x, y, z required; any further keys default to 0. Null when not a section or a required value is missing. */
+    private static double @Nullable [] numbers(Object raw, String... keys) {
+        if (!(raw instanceof Map<?, ?> m)) {
+            return null;
+        }
+        double[] out = new double[keys.length];
+        for (int i = 0; i < keys.length; i++) {
+            Object v = m.get(keys[i]);
+            if (v == null && i >= 3) {
+                continue;
+            }
+            if (!(v instanceof Number n) || !Double.isFinite(n.doubleValue())) {
+                return null;
+            }
+            out[i] = n.doubleValue();
+        }
+        return out;
+    }
+
+    private static @Nullable String regionId(Object raw) {
+        return raw instanceof String s && !s.isBlank() ? s.trim().toLowerCase(Locale.ROOT) : null;
+    }
+}

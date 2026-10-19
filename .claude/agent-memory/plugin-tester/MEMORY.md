@@ -2,3 +2,4 @@
 - [bakery-core test recipes](testing-bakery-core.md) — golden-values dry run, classpath libs, formatter bug note
 - [Review ledger](reviews-ledger.md) — per reviewed area: the commit it was verified at + what passed; re-review only `git diff <commit>..HEAD`
 - [Ledger: vfx](ledger-vfx.md) — vfx package verified for starter-house; Proxy-based ticker test trick
+- [Ledger: coder pass 1](ledger-coder-pass1.md) — starter-house plot/house/worldguard review at 57df6ec; open Outline hang; Proxy World trick

@@ -80,10 +80,10 @@ class MessagesTest {
     @Test
     void everyPathUsedInSourceExistsInMessagesYml() throws Exception {
         java.nio.file.Path root = java.nio.file.Path.of("src/main/java");
-        java.util.regex.Pattern p = java.util.regex.Pattern.compile("\"((?:commands|storage|hud|panel|click|resource-pack)\\.[a-z0-9.-]+)\"");
+        java.util.regex.Pattern p = java.util.regex.Pattern.compile("\"((?:commands|storage|hud|panel|click|resource-pack|plot|house)\\.[a-z0-9.-]+)\"");
         List<String> missing = new ArrayList<>();
         try (var files = java.nio.file.Files.walk(root)) {
-            for (java.nio.file.Path f : files.filter(x -> x.toString().endsWith(".java") && !x.endsWith("PluginSettings.java")).toList()) {
+            for (java.nio.file.Path f : files.filter(x -> x.toString().endsWith(".java") && !x.endsWith("PluginSettings.java") && !x.endsWith("PlotSettings.java") && !x.endsWith("HouseSettings.java")).toList()) {
                 var m = p.matcher(java.nio.file.Files.readString(f));
                 while (m.find()) {
                     // resource-pack.prompt in config.yml is a messages path pointer too; both live in messages.yml
@@ -99,7 +99,7 @@ class MessagesTest {
     @Test
     void playerInputInPlaceholdersShowsLiterally() {
         String evil = "<red><click:run_command:/op me>HI</click></red><b>";
-        Component c = messages.component("commands.station.removed", Placeholder.unparsed("id", evil));
+        Component c = messages.component("plot.pedestal-set", Placeholder.unparsed("id", evil));
         String text = PLAIN.serialize(c);
         assertTrue(text.contains(evil), text);
         assertDoesNotThrowAnyClick(c);
@@ -128,7 +128,7 @@ class MessagesTest {
                 sent.add(message);
             }
         };
-        messages.send(audience, "commands.station.none-nearby", Placeholder.unparsed("radius", "<gold>8"));
+        messages.send(audience, "plot.chimney-no-target", Placeholder.unparsed("radius", "<gold>8"));
         assertEquals(1, sent.size());
         String text = PLAIN.serialize(sent.get(0));
         assertTrue(text.contains("Cookie Empire"), text);

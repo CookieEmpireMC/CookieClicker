@@ -4,8 +4,12 @@ import net.kyori.adventure.key.InvalidKeyException;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.sound.Sound;
 import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Player;
+import org.jspecify.annotations.Nullable;
 
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
@@ -26,6 +30,8 @@ public final class SoundService {
     private final Predicate<Player> hasPack;
     private final Set<String> warned = new HashSet<>();
     private Map<String, SoundDef> sounds = Map.of();
+    /** Place sound key per block material ({@code @block} events); a block's sound group doesn't change. */
+    private final Map<Material, Key> blockSounds = new EnumMap<>(Material.class);
 
     /** @param hasPack whether the player has our resource pack loaded (picks key vs fallback) */
     public SoundService(Logger log, RandomGenerator random, Predicate<Player> hasPack) {
@@ -38,6 +44,7 @@ public final class SoundService {
     public void load(Map<String, SoundDef> sounds) {
         this.sounds = Map.copyOf(sounds);
         warned.clear();
+        blockSounds.clear();
     }
 
     public boolean has(String event) {
@@ -60,24 +67,75 @@ public final class SoundService {
         }
     }
 
-    private Sound resolve(Player player, String event) {
+    /**
+     * Plays an {@code @block} event (e.g. {@code house_block_place}) to {@code player} only, at {@code at}: the
+     * vanilla place sound of {@code block}'s sound group, with the event's volume, pitch range and source. Works with
+     * or without our resource pack; the event's fallback is used only when the block's sound can't be resolved.
+     * A normal event played through here ignores {@code block}.
+     */
+    public void playBlock(Player player, String event, Location at, BlockData block) {
+        Sound sound = resolve(player, event, block);
+        if (sound != null) {
+            player.playSound(sound, at.getX(), at.getY(), at.getZ());
+        }
+    }
+
+    private @Nullable Sound resolve(Player player, String event) {
+        return resolve(player, event, null);
+    }
+
+    private @Nullable Sound resolve(Player player, String event, @Nullable BlockData block) {
         SoundDef def = sounds.get(event);
         if (def == null) {
             warnOnce(event, "Unknown sound event '" + event + "' (not in sounds.yml); skipped");
             return null;
         }
-        String keyString = hasPack.test(player) ? def.key() : def.fallback();
         Key key;
-        try {
-            key = Key.key(keyString);
-        } catch (InvalidKeyException e) {
-            warnOnce(event, "sounds.yml: '" + event + "' has an invalid key '" + keyString + "'; skipped");
+        if (def.blockSound()) {
+            key = block == null ? null : blockSound(block);
+            if (key == null) {
+                if (block == null) {
+                    warnOnce(event, "Sound event '" + event + "' is an @block sound but was played without a block");
+                }
+                key = parse(event, def.fallback());
+            }
+        } else {
+            key = parse(event, hasPack.test(player) ? def.key() : def.fallback());
+        }
+        if (key == null) {
             return null;
         }
         float pitch = def.pitchMax() > def.pitchMin()
                 ? def.pitchMin() + random.nextFloat() * (def.pitchMax() - def.pitchMin())
                 : def.pitchMin();
         return Sound.sound(key, source(def.source()), def.volume(), pitch);
+    }
+
+    private @Nullable Key parse(String event, String keyString) {
+        if (SoundDef.BLOCK_KEY.equals(keyString)) {
+            return null; // @block without a usable fallback: silent
+        }
+        try {
+            return Key.key(keyString);
+        } catch (InvalidKeyException e) {
+            warnOnce(event, "sounds.yml: '" + event + "' has an invalid key '" + keyString + "'; skipped");
+            return null;
+        }
+    }
+
+    private @Nullable Key blockSound(BlockData block) {
+        Material material = block.getMaterial();
+        Key cached = blockSounds.get(material);
+        if (cached == null) {
+            try {
+                cached = block.getSoundGroup().getPlaceSound().key();
+                blockSounds.put(material, cached);
+            } catch (RuntimeException e) { // unregistered sound in a custom/modded group: use the fallback
+                warnOnce("@block:" + material, "No place sound for " + material + "; using the fallback");
+                return null;
+            }
+        }
+        return cached;
     }
 
     private void warnOnce(String event, String message) {

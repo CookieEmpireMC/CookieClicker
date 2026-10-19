@@ -6,6 +6,10 @@ api-version: '26.3'
 load: POSTWORLD
 description: Cookie Empire - a per-player cookie bakery.
 
+# Bakery plots and houses are WorldGuard regions (flags bakery-plot / bakery-house, registered in onLoad,
+# so WorldGuard must load first). WorldGuard 7.0.20+ with WorldEdit 7.4.6+ or FAWE 2.16+ for Paper 26.3.
+depend: [WorldGuard]
+
 # JDBC drivers, downloaded by Paper from Maven Central (no shading needed).
 # Versions must match the h2.version / mariadb.version properties in pom.xml.
 libraries:
@@ -14,5 +18,5 @@ libraries:
 
 permissions:
   cookieempire.admin:
-    description: Manage bakery stations and reload Cookie Empire.
+    description: Set up bakery plots and houses, and reload Cookie Empire.
     default: op

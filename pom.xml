@@ -76,6 +76,11 @@
             <id>papermc-repo</id>
             <url>https://repo.papermc.io/repository/maven-public/</url>
         </repository>
+        <!-- WorldGuard / WorldEdit API (docs/integrations.md, WorldGuard section) -->
+        <repository>
+            <id>enginehub</id>
+            <url>https://maven.enginehub.org/repo/</url>
+        </repository>
     </repositories>
 
     <dependencies>
@@ -96,6 +101,19 @@
             <groupId>org.mariadb.jdbc</groupId>
             <artifactId>mariadb-java-client</artifactId>
             <version>${mariadb.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <!-- provided: WorldGuard + WorldEdit (or FAWE) are on the server; plugin.yml depend: [WorldGuard] -->
+        <dependency>
+            <groupId>com.sk89q.worldguard</groupId>
+            <artifactId>worldguard-bukkit</artifactId>
+            <version>7.0.20</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.sk89q.worldedit</groupId>
+            <artifactId>worldedit-bukkit</artifactId>
+            <version>7.4.6</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

@@ -8,8 +8,7 @@ import dev.casperrs.cookieClicker.economy.EconomyConfigException;
 import dev.casperrs.cookieClicker.economy.EconomyConfigParser;
 import dev.casperrs.cookieClicker.sound.SoundConfigParser;
 import dev.casperrs.cookieClicker.sound.SoundService;
-import dev.casperrs.cookieClicker.station.StationFile;
-import dev.casperrs.cookieClicker.station.StationRegistry;
+import dev.casperrs.cookieClicker.plot.PlotService;
 import dev.casperrs.cookieClicker.text.Messages;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -100,12 +99,9 @@ final class BakeryConfigLoader {
         }
     }
 
-    void loadStations(StationFile file, StationRegistry registry, List<String> problems) {
-        try {
-            registry.replaceAll(file.load());
-        } catch (YamlFiles.BadYamlException e) {
-            collector(problems).accept(e.getMessage() + " (keeping the current stations)");
-        }
+    /** plots.yml (migrating stations.yml on the first start), region resolution, and the stations from pedestals. */
+    void loadPlots(PlotService plots, List<String> problems) {
+        plots.load(collector(problems));
     }
 
     static List<String> newProblemList() {

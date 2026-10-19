@@ -77,4 +77,67 @@ class ArchitectureRulesTest {
             }
         }
     }
+
+    @Test
+    void worldGuardIsOnlyTouchedInTheWorldguardPackage() throws IOException {
+        for (String bad : new String[] {"com.sk89q."}) {
+            List<String> found = new ArrayList<>();
+            for (Path p : sources()) {
+                if (p.toString().contains("/worldguard/")) {
+                    continue;
+                }
+                if (Files.readString(p).contains(bad)) {
+                    found.add(p.getFileName().toString());
+                }
+            }
+            assertTrue(found.isEmpty(), bad + " outside worldguard/: " + found);
+        }
+    }
+
+    @Test
+    void onlyTheHousePackageChangesBlocksInTheWorld() throws IOException {
+        // starter-house: "the world is only ever modified by /bakery house place and /bakery house undo"
+        for (String bad : new String[] {".setBlockData(", ".setType(", ".breakNaturally(", "setBiome(", "getStructureManager("}) {
+            assertTrue(hits(bad, "/house/").isEmpty(), bad + " outside house/: " + hits(bad, "/house/"));
+        }
+    }
+
+    @Test
+    void fakeBlocksAndTheirPacketsAreNotSentFromPassOne() throws IOException {
+        // pass 2 (cinematic) will add sendBlockChange; until then nothing may send fake blocks
+        assertTrue(hits("sendBlockChange", null).isEmpty(), hits("sendBlockChange", null).toString());
+        assertTrue(hits("sendMultiBlockChange", null).isEmpty());
+    }
+
+    @Test
+    void noRegionQueryOnEveryMoveEventInTheTracker() throws IOException {
+        String tracker = Files.readString(MAIN.resolve("dev/casperrs/cookieClicker/plot/PlotTracker.java"));
+        int onMove = tracker.indexOf("public void onMove(");
+        assertTrue(onMove > 0);
+        int guard = tracker.indexOf("if (event.hasChangedBlock())", onMove);
+        int update = tracker.indexOf("update(", onMove);
+        assertTrue(guard > 0 && guard < update, "region checks must be guarded by hasChangedBlock()");
+    }
+
+    @Test
+    void noRegionObjectsAreCachedOnlyIds() throws IOException {
+        for (Path p : sources()) {
+            if (p.toString().contains("/worldguard/")) {
+                continue;
+            }
+            String text = Files.readString(p);
+            assertTrue(!text.contains("ProtectedRegion") && !text.contains("RegionManager"), p.getFileName() + " touches WG region types");
+        }
+    }
+
+    @Test
+    void ioExecutorWorkIsKeptOffBukkitInThePlotAndHouseFiles() throws IOException {
+        // file/DB classes must not call the Bukkit world from the io lambda; spot check: HouseSeen and PlotFile have no Bukkit imports
+        for (String name : new String[] {"house/HouseSeen.java", "plot/PlotFile.java", "plot/PlotCodec.java", "plot/RegionShape.java",
+                "plot/Outline.java", "house/HouseBackup.java", "house/HouseDesignParser.java", "plot/PlotResolver.java"}) {
+            String text = Files.readString(MAIN.resolve("dev/casperrs/cookieClicker/" + name));
+            assertTrue(!text.contains("import org.bukkit.entity") && !text.contains("import org.bukkit.Bukkit;")
+                    && !text.contains("import org.bukkit.World;") && !text.contains("import org.bukkit.Location;"), name + " must stay pure");
+        }
+    }
 }
