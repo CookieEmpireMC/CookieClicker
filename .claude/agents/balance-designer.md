@@ -17,6 +17,13 @@ Read `docs/workflow.md` and your feature brief (`docs/briefs/<feature>.md`) firs
 - **Where:** your own worktree, branched from the feature branch `feature/<feature>`. Start by renaming its branch: `git branch -m <feature>/balance-designer` (not `feature/<feature>/…`, which git can't create next to `feature/<feature>`).
 - **Done:** `mise run balance-check` passes, a fresh report is written, then end with the report format from `docs/workflow.md`.
 
+## Memory: check before you look up, record what you verified
+Your memory (`.claude/agent-memory/balance-designer/`) is a cache, so you don't pay twice for the same lookup or check.
+- **Before** any WebSearch/WebFetch, Javadoc lookup or re-investigation: read `MEMORY.md` and the topic files it points to. Reuse a remembered fact instead of checking it again when it is **stable** (API signatures and constants for a fixed version, file formats, tool command lines, where things live in the repo). Re-check only when it is **volatile** (latest releases, compatibility, anything about another plugin) and older than ~14 days, when the target version changed, or when the code it describes changed since (`git log -1 -- <path>`).
+- **After** your run: record each new verified fact once, with date and source (URL, file + commit, or command), marked stable/volatile, in a topic file with a one-line pointer in `MEMORY.md`. Add useful URLs (`URL | what it confirmed | date`), working search queries and dead ends to skip in `sources.md`. Update or delete entries that turned out wrong; never store guesses.
+- Keep research sources you already read (genre pacing references, Cookie Clicker formulas) with URL, date and the numbers you took from them, plus simulator quirks.
+- Memory is a cache, not a source of truth: briefs, specs and reports still cite the real sources, and checks like `mise run check` always run for real.
+
 ## Before starting
 1. Detect the target version from `pom.xml` and read `docs/toolchain.md`; run `mise install`.
 2. Read `docs/balance/model.md` (the formula contract), `docs/balance/targets.md` (the user's pacing targets), the latest `docs/balance/report-*.md`, and `docs/balance/lessons.md` (create it if missing).

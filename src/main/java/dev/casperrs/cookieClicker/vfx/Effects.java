@@ -3,6 +3,7 @@ package dev.casperrs.cookieClicker.vfx;
 import dev.casperrs.cookieClicker.vfx.config.EffectsConfig;
 import dev.casperrs.cookieClicker.vfx.config.EffectsConfigParser;
 import dev.casperrs.cookieClicker.vfx.config.LayerSpec;
+import dev.casperrs.cookieClicker.vfx.shape.DropTrack;
 import dev.casperrs.cookieClicker.vfx.shape.PopSequence;
 import dev.casperrs.cookieClicker.vfx.shape.Shapes;
 import io.papermc.paper.datacomponent.DataComponentTypes;
@@ -32,9 +33,11 @@ import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
 import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -55,11 +58,17 @@ import org.jspecify.annotations.Nullable;
  * player: particles via {@link Player#spawnParticle}, display entities hidden by default and shown to the viewer.
  * Every spawned entity is non-persistent, tagged ({@code cookieclicker} scoreboard tag + {@code cookieclicker:vfx}
  * PDC key), tracked and removed on completion, chunk unload, viewer quit, reload and shutdown.
+ *
+ * <p>House cinematic API: {@link #dropBlock} (a per-player falling {@code BlockDisplay}), {@link #loop} (a preset
+ * replayed on an interval, e.g. chimney smoke) and {@link #cancelFor} (stop both for one viewer). See
+ * {@code design/effects.md} for the exact callback rules.
  */
 public final class Effects {
 
     /** Preset used by {@link #pop(Display, Player)}. */
     public static final String POP = "pop";
+    /** Preset whose {@code block-drop} layer animates {@link #dropBlock}. */
+    public static final String BLOCK_DROP = "house_block_drop";
     private static final String FILE = "effects.yml";
     private static final int JITTER_SLOTS = 12;
 
@@ -70,6 +79,10 @@ public final class Effects {
     private final EffectTicker ticker;
     private final VfxListener listener;
     private final Map<UUID, PopJob> pops = new HashMap<>();
+    private final ViewerJobs<DropJob> drops = new ViewerJobs<>();
+    private final ViewerJobs<LoopJob> loops = new ViewerJobs<>();
+    private final Set<UUID> dropEntities = new HashSet<>();
+    private EffectsConfig.Limits limits = EffectsConfig.Limits.DEFAULTS;
     private final Set<String> warned = new HashSet<>();
     private Map<String, Compiled> presets = Map.of();
     private Predicate<Player> packCheck = p -> false;
@@ -95,7 +108,7 @@ public final class Effects {
         this.miniMessage = miniMessage;
         this.spawner = new Spawner(plugin);
         this.ticker = new EffectTicker(plugin);
-        this.listener = new VfxListener(registry, spawner);
+        this.listener = new VfxListener(registry, spawner, this::tracks, this::viewerGone);
     }
 
     // ---- lifecycle --------------------------------------------------------------------------------------------
@@ -125,7 +138,8 @@ public final class Effects {
             compiled.put(preset.id(), new Compiled(preset, List.copyOf(layers)));
         }
         presets = Map.copyOf(compiled);
-        registry.limits(config.limits());
+        limits = config.limits();
+        registry.limits(limits);
         if (!listening) {
             plugin.getServer().getPluginManager().registerEvents(listener, plugin);
             listening = true;
@@ -171,7 +185,7 @@ public final class Effects {
         int removed = 0;
         for (World world : plugin.getServer().getWorlds()) {
             for (Entity entity : world.getEntities()) {
-                if (spawner.isOurs(entity) && !registry.tracks(entity.getUniqueId())) {
+                if (spawner.isOurs(entity) && !tracks(entity.getUniqueId())) {
                     entity.remove();
                     removed++;
                 }
@@ -211,12 +225,19 @@ public final class Effects {
         if (!ready("play('" + effectId + "')")) {
             return;
         }
+        Compiled compiled = presets.get(effectId);
+        if (compiled == null) {
+            warnOnce("unknown:" + effectId, "Unknown effect ID '" + effectId + "' (not in effects.yml); skipped");
+            return;
+        }
+        playLayers(compiled, loc, viewer, placeholders);
+    }
+
+    /** Starts every layer of a loaded preset. Never throws (failures are logged once per effect). */
+    private void playLayers(Compiled compiled, Location loc, @Nullable Player viewer,
+                            Map<String, String> placeholders) {
+        String effectId = compiled.preset().id();
         try {
-            Compiled compiled = presets.get(effectId);
-            if (compiled == null) {
-                warnOnce("unknown:" + effectId, "Unknown effect ID '" + effectId + "' (not in effects.yml); skipped");
-                return;
-            }
             World world = loc.getWorld();
             if (world == null || (viewer != null && (!viewer.isOnline() || !viewer.getWorld().equals(world)))) {
                 return;
@@ -238,7 +259,8 @@ public final class Effects {
                     case LayerSpec.ItemCrumbs c when data instanceof ItemStack item ->
                             ticker.start(new CrumbJob(spawner, registry, c, item, loc, viewer));
                     default -> {
-                        // scale-pop layers only run through pop(); crumbs without an item were logged at load
+                        // scale-pop / block-drop layers only run through pop() / dropBlock(); crumbs without an
+                        // item were logged at load
                     }
                 }
             }
@@ -282,6 +304,186 @@ public final class Effects {
         }
     }
 
+    // ---- house cinematic: falling blocks, loops ---------------------------------------------------------------
+
+    /**
+     * Drops a block for one viewer: a {@code BlockDisplay} of {@code data} (only {@code viewer} sees it) spawns above
+     * {@code target}'s block, falls, bounces with a squash and settles, as set by the {@code block-drop} layer of
+     * {@value #BLOCK_DROP}. At the landing the display is removed and {@code onLanded} runs, in the same tick, so the
+     * caller can resend the real block without a visible gap or overlap. Same as
+     * {@link #dropBlock(Player, BlockData, Location, Runnable, Runnable)} without an impact callback.
+     */
+    public boolean dropBlock(Player viewer, BlockData data, Location target, Runnable onLanded) {
+        return dropBlock(viewer, data, target, null, onLanded);
+    }
+
+    /**
+     * Drops a block for one viewer (see {@link #dropBlock(Player, BlockData, Location, Runnable)}), with a callback
+     * at the impact (the moment the falling block first touches the ground, before the bounce): the right moment
+     * for the landing thunk. At the impact the engine itself plays the layer's {@code impact-effect} (default
+     * {@code house_block_land}) and a few {@code block} particles of {@code data} for the viewer.
+     *
+     * <p>Callback rules: {@code onImpact} and {@code onLanded} each run at most once, {@code onImpact} first, both on
+     * the main thread; exceptions they throw are logged and swallowed.
+     * <ul>
+     *   <li><b>true</b>: the block is falling. {@code onLanded} runs when it settles (12 ticks with the default
+     *       preset), or earlier if the display disappears first (chunk unload) while the viewer is still there. It
+     *       never runs after {@link #cancelFor}, viewer quit or world change, {@link #reload()} or
+     *       {@link #shutdown()}; those remove the display without any further callback.</li>
+     *   <li><b>false, callbacks already ran</b> ("landed instantly", inside this call): the viewer is at
+     *       {@code limits.max-falling-blocks-per-player} or the server at {@code max-falling-blocks-global}, the
+     *       block data is air, the engine isn't loaded, or the spawn failed. Impact effects still play.</li>
+     *   <li><b>false, nothing ran</b>: called off the main thread, or the viewer is offline or in another world
+     *       than {@code target}. The caller restores the block itself.</li>
+     * </ul>
+     *
+     * @param viewer   the only player who sees the falling block
+     * @param data     the block to show (usually the real block's data at {@code target})
+     * @param target   any location inside the target block; the display is anchored at its integer corner
+     * @param onImpact run when the block hits the ground, or null
+     * @param onLanded run when the drop is over and the display is gone (resend the real block here)
+     * @return true when the block is animating, false when it landed instantly or was skipped (see above)
+     */
+    public boolean dropBlock(Player viewer, BlockData data, Location target, @Nullable Runnable onImpact,
+                             Runnable onLanded) {
+        if (!onMainThread("dropBlock()")) {
+            return false;
+        }
+        World world = target.getWorld();
+        if (world == null || !viewer.isOnline() || !viewer.getWorld().equals(world)) {
+            return false;
+        }
+        int bx = target.getBlockX();
+        int by = target.getBlockY();
+        int bz = target.getBlockZ();
+        LayerSpec.BlockDrop spec = blockDropSpec();
+        Runnable impact = () -> impact(spec, viewer, world, bx, by, bz, data, onImpact);
+        UUID id = viewer.getUniqueId();
+        if (!loaded) {
+            warnOnce("not-loaded", "Effects.dropBlock() was called before Effects.load(); landing instantly");
+        }
+        if (!loaded || data.getMaterial().isAir()
+                || !drops.hasRoom(id, limits.maxFallingBlocksPerPlayer(), limits.maxFallingBlocksGlobal())) {
+            return landInstantly(impact, onLanded);
+        }
+        BlockDisplay display;
+        try {
+            DropTrack track = spec.track();
+            Display.Brightness light = spec.autoBrightness() ? lightAbove(world, bx, by, bz)
+                    : new Display.Brightness(spec.blockLight(), spec.skyLight());
+            display = spawner.spawn(new Location(world, bx, by, bz), BlockDisplay.class, viewer, e -> {
+                e.setBlock(data);
+                e.setBrightness(light);
+                e.setViewRange(spec.viewRange());
+                e.setInterpolationDelay(0);
+                e.setInterpolationDuration(0);
+                e.setTransformation(BlockDropBody.transformation(track.spawn()));
+            });
+        } catch (RuntimeException e) {
+            warnOnce("error:dropBlock", "Effects.dropBlock() could not spawn the display; landing instantly", e);
+            return landInstantly(impact, onLanded);
+        }
+        UUID entityId = display.getUniqueId();
+        dropEntities.add(entityId);
+        DropJob job = new DropJob(spec.track(), new BlockDropBody(display),
+                () -> viewer.isOnline() && viewer.getWorld().equals(world),
+                impact, () -> safeRun(onLanded, "onLanded"),
+                ended -> {
+                    drops.remove(id, ended);
+                    dropEntities.remove(entityId);
+                });
+        drops.add(id, job);
+        ticker.start(job);
+        return true;
+    }
+
+    /**
+     * Replays a preset for one viewer every {@code loop-every} ticks of that preset (first play now) until the
+     * handle is cancelled. Same as {@link #loop(String, Location, Player, Runnable)} without a callback.
+     */
+    public EffectHandle loop(String effectId, Location loc, Player viewer) {
+        return loop(effectId, loc, viewer, null);
+    }
+
+    /**
+     * Replays a preset for one viewer (e.g. {@code house_chimney_smoke} at the chimney top) every
+     * {@code loop-every} ticks of that preset ({@value EffectsConfigParser#DEFAULT_LOOP_EVERY} if it has none), the
+     * first play right now. Plays are skipped while the location's chunk isn't loaded. The loop ends on
+     * {@link EffectHandle#cancel()}, {@link #cancelFor}, viewer quit or world change, {@link #reload()} and
+     * {@link #shutdown()}; start it again after a reload.
+     *
+     * @param onRepeat run right after every play (e.g. to replay a crackle sound every n-th cycle), or null
+     * @return the running loop, or {@link EffectHandle#NONE} (already inactive) when the ID is unknown, the viewer
+     *         is offline or in another world, {@code limits.max-loops-per-player} is reached (logged once), or the
+     *         engine isn't loaded / not on the main thread
+     */
+    public EffectHandle loop(String effectId, Location loc, Player viewer, @Nullable Runnable onRepeat) {
+        if (!ready("loop('" + effectId + "')")) {
+            return EffectHandle.NONE;
+        }
+        Compiled compiled = presets.get(effectId);
+        if (compiled == null) {
+            warnOnce("unknown:" + effectId, "Unknown effect ID '" + effectId + "' (not in effects.yml); skipped");
+            return EffectHandle.NONE;
+        }
+        World world = loc.getWorld();
+        if (world == null || !viewer.isOnline() || !viewer.getWorld().equals(world)) {
+            return EffectHandle.NONE;
+        }
+        UUID id = viewer.getUniqueId();
+        if (!loops.hasRoom(id, limits.maxLoopsPerPlayer(), Integer.MAX_VALUE)) {
+            warnOnce("loop-cap:" + effectId, "A player reached limits.max-loops-per-player ("
+                    + limits.maxLoopsPerPlayer() + "); loop of '" + effectId + "' not started");
+            return EffectHandle.NONE;
+        }
+        int every = compiled.preset().loopEvery();
+        if (every <= 0) {
+            warnOnce("loop-every:" + effectId, "Effect '" + effectId + "' has no loop-every; looping every "
+                    + EffectsConfigParser.DEFAULT_LOOP_EVERY + " ticks");
+            every = EffectsConfigParser.DEFAULT_LOOP_EVERY;
+        }
+        Location at = loc.clone();
+        int chunkX = at.getBlockX() >> 4;
+        int chunkZ = at.getBlockZ() >> 4;
+        LoopJob job = new LoopJob(every,
+                () -> viewer.isOnline() && viewer.getWorld().equals(world),
+                () -> {
+                    if (world.isChunkLoaded(chunkX, chunkZ)) {
+                        playLayers(compiled, at, viewer, Map.of());
+                        if (onRepeat != null) {
+                            safeRun(onRepeat, "loop onRepeat");
+                        }
+                    }
+                },
+                ended -> loops.remove(id, ended));
+        loops.add(id, job);
+        ticker.start(job);
+        return job;
+    }
+
+    /**
+     * Stops this viewer's falling blocks (displays removed, {@code onImpact}/{@code onLanded} never run) and loops.
+     * Other effects (click numbers, crumbs) are left alone. Also done automatically when the viewer quits.
+     */
+    public void cancelFor(Player viewer) {
+        if (!onMainThread("cancelFor()")) {
+            return;
+        }
+        UUID id = viewer.getUniqueId();
+        drops.cancelViewer(id);
+        loops.cancelViewer(id);
+    }
+
+    /** Falling blocks animating right now (for debug commands and the tester). */
+    public int activeFallingBlocks() {
+        return drops.total();
+    }
+
+    /** Loops running right now (for debug commands and the tester). */
+    public int activeLoops() {
+        return loops.total();
+    }
+
     /** True if {@code effectId} is loaded (useful for the coder's own checks and tests). */
     public boolean has(String effectId) {
         return presets.containsKey(effectId);
@@ -303,6 +505,80 @@ public final class Effects {
     }
 
     // ---- internals --------------------------------------------------------------------------------------------
+
+    private boolean tracks(UUID entity) {
+        return registry.tracks(entity) || dropEntities.contains(entity);
+    }
+
+    /** The viewer quit: everything shown to them goes (no drop callbacks). */
+    private void viewerGone(UUID viewer) {
+        registry.cancelViewer(viewer);
+        drops.cancelViewer(viewer);
+        loops.cancelViewer(viewer);
+    }
+
+    private boolean landInstantly(Runnable impact, Runnable onLanded) {
+        impact.run();
+        safeRun(onLanded, "onLanded");
+        return false;
+    }
+
+    /** Impact of a drop: the block's own particles, the impact effect, then the caller's callback. */
+    private void impact(LayerSpec.BlockDrop spec, Player viewer, World world, int bx, int by, int bz,
+                        BlockData data, @Nullable Runnable onImpact) {
+        try {
+            if (spec.impactParticles() > 0 && !data.getMaterial().isAir()) {
+                viewer.spawnParticle(Particle.BLOCK, bx + 0.5, by + 0.1, bz + 0.5, spec.impactParticles(),
+                        0.3, 0.05, 0.3, 0, data);
+            }
+            if (spec.impactEffect() != null && loaded) {
+                play(spec.impactEffect(), new Location(world, bx + 0.5, by, bz + 0.5), viewer);
+            }
+        } catch (RuntimeException e) {
+            warnOnce("error:impact", "Block drop impact effect failed and was skipped", e);
+        }
+        if (onImpact != null) {
+            safeRun(onImpact, "onImpact");
+        }
+    }
+
+    /**
+     * Fixed display light for a drop: the light just above the highest block of the target column (the roof once
+     * the house stands), so the falling block isn't dark inside the real, server-side house.
+     */
+    private static Display.Brightness lightAbove(World world, int bx, int by, int bz) {
+        int y = Math.max(world.getHighestBlockYAt(bx, bz), by) + 1;
+        y = Math.min(y, world.getMaxHeight() - 1);
+        Block above = world.getBlockAt(bx, y, bz);
+        return new Display.Brightness(above.getLightFromBlocks(), above.getLightFromSky());
+    }
+
+    /** The {@code block-drop} layer of {@value #BLOCK_DROP}, or the built-in defaults (logged once). */
+    private LayerSpec.BlockDrop blockDropSpec() {
+        Compiled compiled = presets.get(BLOCK_DROP);
+        if (compiled != null) {
+            for (Resolved r : compiled.layers()) {
+                if (r.spec() instanceof LayerSpec.BlockDrop drop) {
+                    return drop;
+                }
+            }
+        }
+        if (loaded) {
+            warnOnce("drop:" + BLOCK_DROP, "Effect '" + BLOCK_DROP + "' has no block-drop layer; using the defaults");
+        }
+        return DEFAULT_DROP;
+    }
+
+    private static final LayerSpec.BlockDrop DEFAULT_DROP = new LayerSpec.BlockDrop("default:block-drop",
+            DropTrack.of(DropTrack.Params.DEFAULTS), "house_block_land", 4, -1, -1, 1.0f);
+
+    private void safeRun(Runnable callback, String what) {
+        try {
+            callback.run();
+        } catch (RuntimeException e) {
+            plugin.getLogger().log(Level.WARNING, "Effects: the " + what + " callback threw", e);
+        }
+    }
 
     private boolean ready(String what) {
         if (!onMainThread(what)) {

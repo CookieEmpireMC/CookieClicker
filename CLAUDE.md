@@ -46,7 +46,7 @@ The target version is whatever `paper-api` version `pom.xml` declares: either **
 | Agent | Role | Writes to |
 |---|---|---|
 | `resource-pack-researcher` | researches resource pack techniques for the target version | `docs/research/` only |
-| `model-designer` | creates assets: models, item model definitions, .bbmodel, ItemsAdder YAML, placeholder textures, fonts/glyphs, pack.mcmeta | `resourcepack/` (see ownership), `itemsadder/`, `modelengine/`, `design/` (its files) |
+| `model-designer` | creates assets: models, item model definitions, .bbmodel, ItemsAdder YAML, placeholder textures, fonts/glyphs, pack.mcmeta, house design files | `resourcepack/` (see ownership), `itemsadder/`, `modelengine/`, `src/main/resources/houses/`, `design/` (its files) |
 | `sound-designer` | creates original .ogg sounds (synthesized or processed CC0), sounds.json, subtitles, sounds.yml | `resourcepack/assets/<ns>/{sounds,sounds.json,lang}`, `src/main/resources/sounds.yml`, `design/sound-*`, `design/sounds.md`, `design/CREDITS.md` |
 | `vfx-designer` | builds the effects engine (particles, display-entity effects) and its presets | `src/main/java/…/vfx/` + its tests, `src/main/resources/effects.yml`, particle files in the pack, `design/vfx-*`, `design/effects.md` |
 | `balance-designer` | economy numbers, formula contract, pacing simulator and reports | `buildings.yml`, `upgrades.yml`, `tools/balance/`, `docs/balance/` |
@@ -71,7 +71,7 @@ Everyone commits under their own name, per commit (`git -c user.name=… -c user
 The orchestrator commits as Rickroll Rick (`git -c user.name="Rickroll Rick" -c user.email="rick@bakery.invalid" …`), including research notes and integration reviews on behalf of agents without a shell or branch (credited with `--author`). Rick merges agent branches into the feature branch and opens the pull request; **only the user merges into `main`**.
 
 ### Asset ownership
-- **model-designer:** models, item model definitions, textures, fonts/glyphs, `pack.mcmeta`, `itemsadder/`, `modelengine/`
+- **model-designer:** models, item model definitions, textures, fonts/glyphs, `pack.mcmeta`, `itemsadder/`, `modelengine/`, house design files (`src/main/resources/houses/`)
 - **sound-designer:** `.ogg` files, `sounds.json`, subtitle lang files, `sounds.yml`
 - **vfx-designer:** the `vfx` package and its tests, `effects.yml`, particle definitions and textures
 - **balance-designer:** `buildings.yml`, `upgrades.yml` (later golden cookie/prestige values), `tools/balance/`, `docs/balance/`

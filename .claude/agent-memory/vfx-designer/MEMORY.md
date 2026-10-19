@@ -1,2 +1,3 @@
-- [Paper 26.3 VFX API facts](reference_paper263_vfx_api.md) — Particle enum/data types, spawnParticle, scheduler, what runs in plain JUnit; check via local sources jar
-- [Effects engine decisions](project_effects_engine.md) — stable Effects API (add only), pop as a preset, entity-based caps, pack check default
+- [Paper 26.3 VFX API facts](reference_paper263_vfx_api.md) — Particle enum/data types, spawnParticle+force, BlockDisplay, light, scheduler; via local sources jar
+- [Effects engine decisions](project_effects_engine.md) — stable Effects API (add only) incl. dropBlock/loop/cancelFor, caps, pop/drop as presets
+- [Sources and lookup routes](sources.md) — where facts were verified, fast routes, dead ends (worktree Bash quirk)

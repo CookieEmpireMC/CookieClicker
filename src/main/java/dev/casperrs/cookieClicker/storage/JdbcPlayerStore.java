@@ -28,12 +28,13 @@ import java.util.function.LongSupplier;
  *       {@code prestige} are reserved for offline earnings / prestige</li>
  *   <li>{@code buildings(uuid, building_id, owned)}</li>
  *   <li>{@code upgrades(uuid, upgrade_id)}</li>
+ *   <li>{@code house_seen(uuid, plot_id, seen_at)} (v2) — first completed house cinematic per plot</li>
  * </ul>
  */
-public final class JdbcPlayerStore implements PlayerStore {
+public final class JdbcPlayerStore implements PlayerStore, HouseSeenStore {
 
     /** Bump when adding a migration below. */
-    public static final int SCHEMA_VERSION = 1;
+    public static final int SCHEMA_VERSION = 2;
     static final int MAX_ID_LENGTH = 64;
 
     private final ConnectionFactory connections;
@@ -72,7 +73,14 @@ public final class JdbcPlayerStore implements PlayerStore {
                         "CREATE TABLE IF NOT EXISTS " + p + "upgrades ("
                                 + "uuid VARCHAR(36) NOT NULL, "
                                 + "upgrade_id VARCHAR(" + MAX_ID_LENGTH + ") NOT NULL, "
-                                + "PRIMARY KEY (uuid, upgrade_id))"));
+                                + "PRIMARY KEY (uuid, upgrade_id))"),
+                // v1 -> v2 (starter-house): who has seen which plot's house cinematic
+                List.of(
+                        "CREATE TABLE IF NOT EXISTS " + p + "house_seen ("
+                                + "uuid VARCHAR(36) NOT NULL, "
+                                + "plot_id VARCHAR(" + MAX_ID_LENGTH + ") NOT NULL, "
+                                + "seen_at BIGINT NOT NULL, "
+                                + "PRIMARY KEY (uuid, plot_id))"));
     }
 
     @Override
@@ -294,6 +302,56 @@ public final class JdbcPlayerStore implements PlayerStore {
 
     private static boolean validId(String id) {
         return !id.isBlank() && id.length() <= MAX_ID_LENGTH;
+    }
+
+    // ---- house_seen (schema v2) -------------------------------------------------------------------------------
+
+    @Override
+    public boolean isHouseSeen(UUID player, String plotId) throws StorageException {
+        try (PreparedStatement st = connection().prepareStatement(
+                "SELECT 1 FROM " + p + "house_seen WHERE uuid = ? AND plot_id = ?")) {
+            st.setString(1, player.toString());
+            st.setString(2, plotId);
+            try (ResultSet rs = st.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            invalidate();
+            throw new StorageException("Could not read house_seen of " + player, e);
+        }
+    }
+
+    @Override
+    public void markHouseSeen(UUID player, String plotId) throws StorageException {
+        if (!validId(plotId)) {
+            throw new StorageException("bad plot id '" + plotId + "'");
+        }
+        if (isHouseSeen(player, plotId)) {
+            return; // keep the first seen_at; single storage thread, so no race between check and insert
+        }
+        try (PreparedStatement st = connection().prepareStatement(
+                "INSERT INTO " + p + "house_seen (uuid, plot_id, seen_at) VALUES (?, ?, ?)")) {
+            st.setString(1, player.toString());
+            st.setString(2, plotId);
+            st.setLong(3, clock.getAsLong());
+            st.executeUpdate();
+        } catch (SQLException e) {
+            invalidate();
+            throw new StorageException("Could not write house_seen of " + player, e);
+        }
+    }
+
+    @Override
+    public void clearHouseSeen(UUID player, String plotId) throws StorageException {
+        try (PreparedStatement st = connection().prepareStatement(
+                "DELETE FROM " + p + "house_seen WHERE uuid = ? AND plot_id = ?")) {
+            st.setString(1, player.toString());
+            st.setString(2, plotId);
+            st.executeUpdate();
+        } catch (SQLException e) {
+            invalidate();
+            throw new StorageException("Could not clear house_seen of " + player, e);
+        }
     }
 
     private Connection connection() throws SQLException {

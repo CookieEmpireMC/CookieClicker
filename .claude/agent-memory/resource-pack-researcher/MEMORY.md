@@ -1,1 +1,3 @@
 - [Paper 26.3 verified API](paper-26-3-verified-api.md) — displays, visibility, click events, resource pack API, pack formats, libraries (2026-10-18)
+- [WorldGuard/fake-block facts 26.3](worldguard-26-3.md) — WG 7.0.20/WE 7.4.6 versions, Maven, flags, RegionQuery, sendMultiBlockChange, SoundGroup (2026-10-19)
+- [Fetched sources index](sources.md) — URL | fact | date | stable/volatile, working searches, dead ends; check before fetching

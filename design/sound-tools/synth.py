@@ -142,3 +142,45 @@ def write(x: np.ndarray, relative: str) -> Path:
     peak = 20 * np.log10(np.max(np.abs(x)))
     print(f"  wrote {out.relative_to(REPO)}  {len(x) / SR * 1000:.0f} ms  pre-encode peak {peak:.1f} dBFS")
     return out
+
+
+TARGET_LUFS = -16.0        # clips >= 400 ms
+
+
+def gain_to_lufs(x: np.ndarray, target_lufs: float = TARGET_LUFS) -> np.ndarray:
+    """Scale to an integrated-loudness target (pyloudnorm, as sound-check measures), capped by the peak ceiling."""
+    import pyloudnorm
+    loudness = pyloudnorm.Meter(SR).integrated_loudness(x)
+    gain = db_to_lin(target_lufs - loudness)
+    gain = min(gain, db_to_lin(PEAK_CEILING_DBFS) / np.max(np.abs(x)))
+    return x * gain
+
+
+def fft_filter(x: np.ndarray, highpass_hz: float = 40.0, lowpass_hz: float = 7000.0, order: int = 4) -> np.ndarray:
+    """Zero-phase Butterworth-shaped magnitude filter applied in the frequency domain.
+
+    Circular, so a seamless loop stays seamless (time-domain IIR filters would leave a start transient).
+    """
+    spec = np.fft.rfft(x)
+    f = np.fft.rfftfreq(len(x), 1 / SR)
+    mag = np.ones_like(f)
+    if highpass_hz:
+        with np.errstate(divide="ignore"):
+            mag *= 1 / np.sqrt(1 + (highpass_hz / np.maximum(f, 1e-9)) ** (2 * order))
+    if lowpass_hz:
+        mag *= 1 / np.sqrt(1 + (f / lowpass_hz) ** (2 * order))
+    return np.fft.irfft(spec * mag, n=len(x))
+
+
+def place_circular(buf: np.ndarray, sound: np.ndarray, at_seconds: float, gain: float = 1.0) -> None:
+    """Like place(), but wraps around the end of buf (for seamless loops)."""
+    start = int(round(at_seconds * SR)) % len(buf)
+    idx = (start + np.arange(len(sound))) % len(buf)
+    np.add.at(buf, idx, gain * sound)
+
+
+def soft_limit(x: np.ndarray, drive: float = 2.0) -> np.ndarray:
+    """Gentle tanh saturation of the whole mix (normalised to peak 1 first): tames stacked attacks
+    so a peak-limited sound can reach its loudness target. drive ~1.5-2.5 stays clean."""
+    x = x / np.max(np.abs(x))
+    return np.tanh(drive * x) / np.tanh(drive)

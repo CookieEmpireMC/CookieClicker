@@ -104,4 +104,33 @@ class SoundConfigParserTest {
         }
         assertEquals(Sound.Source.VOICE, SoundService.source("voice"));
     }
+
+    @Test
+    void atBlockKeyIsAcceptedWithOrWithoutFallback() {
+        List<String> problems = new ArrayList<>();
+        Map<String, SoundDef> out = SoundConfigParser.parse(Map.of(
+                "with", spec("key", "@block", "fallback", "minecraft:block.stone.place", "source", "block"),
+                "without", spec("key", "@block")), problems::add);
+        assertTrue(problems.isEmpty(), problems.toString());
+        assertTrue(out.get("with").blockSound());
+        assertEquals("minecraft:block.stone.place", out.get("with").fallback());
+        assertTrue(out.get("without").blockSound());
+        assertEquals(SoundDef.BLOCK_KEY, out.get("without").fallback(), "no fallback: unresolved blocks stay silent");
+    }
+
+    @Test
+    void otherAtKeysAreStillRejected() {
+        List<String> problems = new ArrayList<>();
+        Map<String, SoundDef> out = SoundConfigParser.parse(Map.of("x", spec("key", "@other", "fallback", "minecraft:block.stone.place")),
+                problems::add);
+        assertTrue(out.isEmpty());
+        assertEquals(1, problems.size());
+    }
+
+    @Test
+    void normalEventsAreNotBlockSounds() {
+        Map<String, SoundDef> out = SoundConfigParser.parse(Map.of("c", spec("key", "cookieclicker:ui.c", "fallback", "minecraft:block.wood.hit")),
+                p -> { });
+        assertTrue(!out.get("c").blockSound());
+    }
 }

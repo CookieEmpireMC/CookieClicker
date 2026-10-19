@@ -23,4 +23,18 @@ First built in feature bakery-core (2026-10-18, branch bakery-core/vfx-designer)
   `cookieclicker:vfx` PDC key (PERF), so every effect entity must keep getting **both**. `play`, `pop` and
   `sweepLeftovers` are main-thread guarded via `onMainThread` (log once, skip); `load`/`shutdown` are not (lifecycle).
 
+- starter-house (2026-10-19, branch starter-house/vfx-designer) added to the contract API: `dropBlock(viewer,
+  data, target, onLanded)` + 5-arg overload with `onImpact` (returns boolean; false+callbacks = landed instantly at
+  cap/air/not loaded; false+nothing = off-thread/viewer gone), `loop(id, loc, viewer[, onRepeat]) -> EffectHandle`,
+  `cancelFor(viewer)`, `activeFallingBlocks/activeLoops`, `BLOCK_DROP = "house_block_drop"`. Drop timings live
+  in that preset's `block-drop` layer; preset-level `loop-every`; particle `force`. Drops/loops have their own caps
+  (`max-falling-blocks-*`, `max-loops-per-player`), not the display caps. Pure parts: `DropTrack`, `DropJob`
+  (fake `Body` in tests), `LoopJob`, `ViewerJobs`. **Why:** coder pass 2 compiles against these. **How to apply:**
+  same add-only rule.
+- starter-house outline follow-up (2026-10-19, branch starter-house/vfx-designer-outline): presets
+  `plot_outline` (#8ec5ff) and `house_outline` (#f5c542), 1 forced dust each, for `/bakery plot show` (played per
+  outline point). Pinned in `HouseEffectsConfigTest.outlinePresetsAreOneForcedParticle`. **How to apply:** keep
+  per-point tool presets at 1 particle; never reuse player-facing presets for them.
+- EffectTicker buffers jobs started during its own run (`pending`) so callback-started jobs aren't stepped twice.
+
 Related: [[reference-paper263-vfx-api]]

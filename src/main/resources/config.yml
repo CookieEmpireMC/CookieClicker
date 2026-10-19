@@ -29,20 +29,18 @@ hud:
   # Re-send the action bar every N seconds (production always ticks once per second)
   refresh-seconds: 1
 
+# Every plot's pedestal is a "station": the anchor of each player's own cookie, pedestal and shop panel.
+# Set it with /bakery plot setpedestal while standing in the plot (saved in plots.yml).
 station:
-  # /bakery station set: put the station in the centre of the block you stand on
+  # /bakery plot setpedestal: put the pedestal in the centre of the block you stand on
   snap-to-block: true
   # Round your facing to this many degrees (0 = exact)
   snap-yaw-degrees: 90
-  # Refuse to place a station closer than this (blocks) to another one
-  min-distance: 8
-  # /bakery station remove: removes the nearest station within this radius (blocks)
-  remove-radius: 8
 
   # --- Per-player visuals (only the owner sees their own cookie and panel) ---
-  # Positions are [right, up, forward] in blocks from the station, as seen by the admin who placed it
+  # Positions are [right, up, forward] in blocks from the pedestal point, as seen by the admin who set it
   # (forward = the way you faced). Players stand on your side and look the same way.
-  # Spawn a player's bakery when they are within this many blocks of the station
+  # Spawn a player's bakery when they are within this many blocks of the pedestal
   view-distance: 24
   # How often (ticks) to check who is near which station and to update the panel
   refresh-ticks: 20
@@ -141,6 +139,72 @@ resource-pack:
   prompt: resource-pack.prompt
   # Wait this many ticks after join before sending (lets other plugins' packs go first)
   send-delay-ticks: 20
+
+# Bakery plots: WorldGuard regions with the flag bakery-plot <id> (the house: bakery-house <id>).
+# Points (viewpoint, pedestal, chimney) live in plots.yml. See docs/integrations.md for the region setup.
+plot:
+  # /bakery plot show: outline of the plot and house regions, only for you
+  show:
+    # Blocks between outline points (grows automatically for big regions, see max-points)
+    particle-step: 1.0
+    duration-seconds: 15
+    # Replay the outline this often (ticks)
+    redraw-ticks: 20
+    # At most this many points per outline (12 to 2000; every edge keeps at least one point)
+    max-points: 120
+    # effects.yml presets played at every outline point
+    plot-effect: plot_outline
+    house-effect: house_outline
+  # /bakery plot setchimney: look at the chimney top within this many blocks
+  chimney-reach: 16
+  # Players near a pedestal don't see other players near the same pedestal (less clutter). Off by default.
+  hide-others-near-pedestal:
+    enabled: false
+    # Blocks around the pedestal point
+    radius: 6
+    # How often to check (ticks)
+    check-ticks: 10
+
+house:
+  # /bakery house place: refuse designs whose box (x * y * z) is bigger than this
+  max-blocks: 40000
+  # First-visit build cinematic, seen only by that player (the house itself never changes)
+  cinematic:
+    enabled: true
+    # enter-plot: start when the player walks onto the plot outside the house
+    # viewpoint: start once the player has been moved to the plot's viewpoint
+    trigger: enter-plot
+    # Move the player to the plot's viewpoint (/bakery plot setviewpoint) when it starts
+    teleport-to-viewpoint: false
+    # trigger viewpoint: a teleport must end within this many blocks of the viewpoint
+    viewpoint-radius: 2.0
+    # Blocks that start falling per tick (0.5 = one every other tick). Each landing is ~12 particles + 3 sounds,
+    # so keep it modest. The default cottage (170 blocks) takes about 20 seconds at 1.
+    blocks-per-tick: 1
+    # Falling block displays alive at once per player (1-24; 24 is the effects engine's cap)
+    max-falling-displays: 24
+    # Pause before the first layer and after each layer has landed (ticks)
+    layer-delay-ticks: 12
+    # Play the hammer sound on every n-th landing (0 = never)
+    hammer-every: 3
+    # Keep the player out of the (invisible but solid) house: hold (stand still), slow, none.
+    # A move into a still-hidden block is always refused.
+    keep-out: hold
+    # keep-out slow: movement speed change (-1 = stand still, 0 = normal speed)
+    slow-amount: -0.7
+    # Fake-air blocks sent per tick when hiding the house (and when re-sending it)
+    fake-air-per-tick: 4096
+    # Re-send fake air for still-hidden blocks this often (ticks, 0 = off)
+    refresh-hidden-ticks: 40
+    # After a click within this many blocks of the house, re-send fake air
+    reassert-radius: 2
+    # Confetti bursts this many blocks above the top of the house region
+    confetti-height: 1.0
+  # Chimney smoke (plots.yml chimney point), shown to every player in the plot who isn't watching the cinematic
+  chimney:
+    smoke: true
+    # Replay the crackle sound every n-th smoke puff (the smoke puffs every 10 ticks; 0 = no sound)
+    crackle-every: 6
 
 debug:
   # Log every click event on a bakery hitbox (which events fire, who tracks the entity). For testing.

@@ -3,6 +3,7 @@ package dev.casperrs.cookieClicker.vfx.config;
 import dev.casperrs.cookieClicker.vfx.config.EffectsConfig.Limits;
 import dev.casperrs.cookieClicker.vfx.config.EffectsConfig.Preset;
 import dev.casperrs.cookieClicker.vfx.shape.DisplayTrack;
+import dev.casperrs.cookieClicker.vfx.shape.DropTrack;
 import dev.casperrs.cookieClicker.vfx.shape.Motions;
 import dev.casperrs.cookieClicker.vfx.shape.PopSequence;
 import dev.casperrs.cookieClicker.vfx.shape.ShapeKind;
@@ -35,8 +36,11 @@ import org.jspecify.annotations.Nullable;
 public final class EffectsConfigParser {
 
     public static final String LIMITS = "limits";
+    /** Preset-level field: ticks between plays of {@code Effects.loop}. */
+    public static final String LOOP_EVERY = "loop-every";
     private static final Pattern ID = Pattern.compile("[a-z0-9_]+");
     private static final double[] ZERO = {0, 0, 0};
+    private static final String TYPES = "particle, floating-text, item-crumbs, scale-pop or block-drop";
 
     private EffectsConfigParser() {
     }
@@ -67,7 +71,10 @@ public final class EffectsConfigParser {
         Limits l = new Limits(
                 f.integer("max-particles-per-effect", def.maxParticlesPerEffect(), 1, 2000),
                 f.integer("max-display-entities-per-player", def.maxDisplayEntitiesPerPlayer(), 0, 64),
-                f.integer("max-display-entities-global", def.maxDisplayEntitiesGlobal(), 0, 2000));
+                f.integer("max-display-entities-global", def.maxDisplayEntitiesGlobal(), 0, 2000),
+                f.integer("max-falling-blocks-per-player", def.maxFallingBlocksPerPlayer(), 0, 256),
+                f.integer("max-falling-blocks-global", def.maxFallingBlocksGlobal(), 0, 4000),
+                f.integer("max-loops-per-player", def.maxLoopsPerPlayer(), 0, 32));
         f.reportUnknown();
         return l;
     }
@@ -88,10 +95,11 @@ public final class EffectsConfigParser {
                 continue;
             }
             for (String key : s.getKeys(false)) {
-                if (!key.equals("layers")) {
+                if (!key.equals("layers") && !key.equals(LOOP_EVERY)) {
                     problems.add(id + ": unknown field '" + key + "' ignored");
                 }
             }
+            int loopEvery = loopEvery(id, s.get(LOOP_EVERY), problems);
             List<LayerSpec> layers = new ArrayList<>();
             List<Map<?, ?>> raw = s.getMapList("layers");
             if (raw.size() != s.getList("layers", List.of()).size()) {
@@ -114,10 +122,27 @@ public final class EffectsConfigParser {
                 problems.add(id + ": no valid layers - effect skipped");
                 continue;
             }
-            out.put(id, new Preset(id, List.copyOf(layers)));
+            out.put(id, new Preset(id, List.copyOf(layers), loopEvery));
         }
         return out;
     }
+
+    /** {@code loop-every}: whole ticks 1..1200, or absent (0). Bad values are logged and the field ignored. */
+    private static int loopEvery(String id, @Nullable Object raw, List<String> problems) {
+        if (raw == null) {
+            return 0;
+        }
+        if ((raw instanceof Integer || raw instanceof Long) && ((Number) raw).longValue() >= 1
+                && ((Number) raw).longValue() <= 1200) {
+            return ((Number) raw).intValue();
+        }
+        problems.add(id + ": 'loop-every' must be a whole number of ticks 1..1200, got '" + raw
+                + "'; loops of this effect use " + DEFAULT_LOOP_EVERY);
+        return 0;
+    }
+
+    /** Interval used by {@code Effects.loop} for presets without a valid {@code loop-every}. */
+    public static final int DEFAULT_LOOP_EVERY = 20;
 
     static @Nullable LayerSpec layer(String id, int index, Map<?, ?> map, List<String> problems) {
         Object typeRaw = map.get("type");
@@ -130,12 +155,13 @@ public final class EffectsConfigParser {
             case "floating-text" -> floatingText(label, f);
             case "item-crumbs" -> itemCrumbs(label, f);
             case "scale-pop" -> scalePop(label, f);
+            case "block-drop" -> blockDrop(label, f);
             case "" -> {
-                f.fail("missing 'type' (particle, floating-text, item-crumbs or scale-pop)");
+                f.fail("missing 'type' (" + TYPES + ")");
                 yield null;
             }
             default -> {
-                f.fail("unknown type '" + type + "' (use particle, floating-text, item-crumbs or scale-pop)");
+                f.fail("unknown type '" + type + "' (use " + TYPES + ")");
                 yield null;
             }
         };
@@ -194,7 +220,8 @@ public final class EffectsConfigParser {
                 particle, data, shape, Shapes.build(shape),
                 f.integer("count", 1, 1, 100),
                 f.number("offset", 0, 0, 4),
-                f.number("speed", 0, 0, 4));
+                f.number("speed", 0, 0, 4),
+                f.bool("force", false));
     }
 
     /** Resolves {@code dust} or {@code minecraft:dust} against the 26.3 {@link Particle} enum. */
@@ -315,12 +342,12 @@ public final class EffectsConfigParser {
             int count = Math.max(1, (int) Math.floor(p.count() * factor));
             if (count < p.count()) {
                 return new LayerSpec.Particles(p.label(), p.delayTicks(), p.ox(), p.oy(), p.oz(), p.particle(),
-                        p.data(), p.shape(), p.plan(), count, p.offset(), p.speed());
+                        p.data(), p.shape(), p.plan(), count, p.offset(), p.speed(), p.force());
             }
         }
         ShapeParams s = p.shape().withPoints(Math.max(1, (int) Math.floor(p.shape().points() * factor)));
         return new LayerSpec.Particles(p.label(), p.delayTicks(), p.ox(), p.oy(), p.oz(), p.particle(), p.data(),
-                s, Shapes.build(s), p.count(), p.offset(), p.speed());
+                s, Shapes.build(s), p.count(), p.offset(), p.speed(), p.force());
     }
 
     // ---- floating text ------------------------------------------------------------------------------------
@@ -411,6 +438,63 @@ public final class EffectsConfigParser {
             steps.add(new PopSequence.Step(scale[0], scale[1], scale[2], ticks));
         }
         return new LayerSpec.ScalePop(label, new PopSequence(steps));
+    }
+
+    // ---- block drop ---------------------------------------------------------------------------------------
+
+    private static @Nullable LayerSpec blockDrop(String label, Fields f) {
+        DropTrack.Params d = DropTrack.Params.DEFAULTS;
+        double[] squash = f.raw("squash") instanceof Number n
+                ? new double[] {n.doubleValue(), n.doubleValue(), n.doubleValue()}
+                : f.vec3("squash", new double[] {d.squashX(), d.squashY(), d.squashZ()});
+        for (int i = 0; i < 3; i++) {
+            if (!(squash[i] >= 0.25 && squash[i] <= 2)) {
+                f.problem("'squash' values must be between 0.25 and 2; using the default");
+                squash = new double[] {d.squashX(), d.squashY(), d.squashZ()};
+                break;
+            }
+        }
+        DropTrack.Params p = new DropTrack.Params(
+                f.integer("start-tick", d.startTick(), 1, 10),
+                f.number("drop-height", d.dropHeight(), 0, 16),
+                f.integer("fall-ticks", d.fallTicks(), 1, 40),
+                f.number("bounce-height", d.bounceHeight(), 0, 2),
+                f.integer("bounce-ticks", d.bounceTicks(), 1, 20),
+                squash[0], squash[1], squash[2],
+                f.integer("settle-ticks", d.settleTicks(), 1, 20));
+        String impact = f.string("impact-effect");
+        if (impact != null) {
+            impact = Fields.lower(impact);
+            if (impact.isEmpty() || impact.equals("none")) {
+                impact = null;
+            } else if (!ID.matcher(impact).matches()) {
+                f.problem("'impact-effect' '" + impact + "' is not an effect ID; ignored");
+                impact = null;
+            }
+        }
+        int[] light = brightness(f);
+        return new LayerSpec.BlockDrop(label, DropTrack.of(p), impact,
+                f.integer("impact-particles", 4, 0, 32), light[0], light[1],
+                (float) f.number("view-range", 1.0, 0.05, 4));
+    }
+
+    /** {@code brightness: auto} (default) or {@code [block, sky]} with 0..15 each. */
+    private static int[] brightness(Fields f) {
+        Object raw = f.raw("brightness");
+        int[] auto = {-1, -1};
+        if (raw == null || (raw instanceof String s && Fields.lower(s).equals("auto"))) {
+            return auto;
+        }
+        if (raw instanceof List<?> list && list.size() == 2 && list.stream().allMatch(e -> e instanceof Integer)) {
+            int block = (Integer) list.get(0);
+            int sky = (Integer) list.get(1);
+            if (block >= 0 && block <= 15 && sky >= 0 && sky <= 15) {
+                return new int[] {block, sky};
+            }
+        }
+        f.problem("'brightness' must be auto or [block, sky] with whole numbers 0..15, got '" + raw
+                + "'; using auto");
+        return auto;
     }
 
     // ---- helpers ------------------------------------------------------------------------------------------
