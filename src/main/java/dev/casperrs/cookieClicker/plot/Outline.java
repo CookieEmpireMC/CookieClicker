@@ -15,16 +15,31 @@ public final class Outline {
 
     /**
      * @param step      distance between points along an edge (blocks)
-     * @param maxPoints the step grows until the outline fits (keeps huge regions cheap)
+     * @param maxPoints the step grows until the outline fits (keeps huge regions cheap). Every edge keeps at least
+     *                  one point, so an outline never gets below its edge count (12 for a cuboid, 3 per polygon
+     *                  vertex): then the coarsest outline is returned
      */
     public static List<double[]> points(RegionShape shape, double step, int maxPoints) {
         double s = Math.max(0.25, step);
         List<double[]> pts = trace(shape, s);
-        while (pts.size() > Math.max(1, maxPoints)) {
+        int limit = Math.max(1, maxPoints);
+        while (pts.size() > limit) {
             s *= 1.5;
-            pts = trace(shape, s);
+            List<double[]> coarser = trace(shape, s);
+            if (coarser.size() >= pts.size() && s > longestEdge(shape)) {
+                return coarser; // one point per edge already: it can't shrink any further
+            }
+            pts = coarser;
         }
         return pts;
+    }
+
+    /** Upper bound of any edge length; once the step exceeds it, every edge is a single point. */
+    private static double longestEdge(RegionShape r) {
+        double dx = r.maxX() - r.minX() + 1.0;
+        double dy = r.maxY() - r.minY() + 1.0;
+        double dz = r.maxZ() - r.minZ() + 1.0;
+        return Math.sqrt(dx * dx + dy * dy + dz * dz);
     }
 
     private static List<double[]> trace(RegionShape r, double step) {

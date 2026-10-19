@@ -150,11 +150,13 @@ plot:
     duration-seconds: 15
     # Replay the outline this often (ticks)
     redraw-ticks: 20
-    # At most this many points per outline
+    # At most this many points per outline (12 to 2000; every edge keeps at least one point)
     max-points: 120
     # effects.yml presets played at every outline point
-    plot-effect: purchase
-    house-effect: purchase
+    plot-effect: plot_outline
+    house-effect: house_outline
+  # /bakery plot setchimney: look at the chimney top within this many blocks
+  chimney-reach: 16
   # Players near a pedestal don't see other players near the same pedestal (less clutter). Off by default.
   hide-others-near-pedestal:
     enabled: false

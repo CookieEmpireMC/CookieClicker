@@ -100,7 +100,7 @@ public final class HousePlacer {
             return;
         }
         Path dataFolder = plugin.getDataFolder().toPath();
-        submit(sender, () -> {
+        guarded(sender, () -> submit(sender, () -> {
             String text;
             try {
                 text = readDesign(dataFolder, designName);
@@ -121,16 +121,15 @@ public final class HousePlacer {
                 parsed = new HouseDesignParser.Result(null, List.of("not valid YAML: " + e.getMessage()));
             }
             HouseDesignParser.Result result = parsed;
-            main.execute(() -> {
+            main.execute(() -> guarded(sender, () -> {
                 if (result.design() == null) {
-                    busy = false;
-                    messages.send(sender, "house.design-invalid", Placeholder.unparsed("name", designName),
+                    finishNow(sender, "house.design-invalid", Placeholder.unparsed("name", designName),
                             Placeholder.unparsed("problem", String.join("; ", result.problems())));
                     return;
                 }
                 paste(sender, plot.id(), result.design());
-            });
-        });
+            }));
+        }));
     }
 
     /** Data folder {@code houses/<name>.yml} first (admins can add designs), then the jar's copy. Null = none. */
@@ -144,7 +143,10 @@ public final class HousePlacer {
         }
     }
 
-    /** Main thread: validate against the world, back up, paste, then write the backup files. */
+    /**
+     * Main thread: validate against the world and snapshot the box (structure + old block data), then write the
+     * backup on IO; {@link #apply} pastes only once the backup is saved.
+     */
     private void paste(CommandSender sender, String plotId, HouseDesign design) {
         Plot plot = plots.get(plotId).orElse(null);
         Optional<RegionShape> house = plots.houseShape(plotId);
@@ -175,17 +177,9 @@ public final class HousePlacer {
         int[] regionMin = {shape.minX(), shape.minY(), shape.minZ()};
         int[] corner = design.toWorld(regionMin, 0, 0, 0);
         int[] size = {design.sizeX(), design.sizeY(), design.sizeZ()};
-        if (corner[1] < world.getMinHeight() || corner[1] + size[1] > world.getMaxHeight()) {
+        if (!loaded(world, corner, size)) {
             finishNow(sender, "house.not-loaded", Placeholder.unparsed("id", plotId));
             return;
-        }
-        for (int cx = corner[0] >> 4; cx <= (corner[0] + size[0] - 1) >> 4; cx++) {
-            for (int cz = corner[2] >> 4; cz <= (corner[2] + size[2] - 1) >> 4; cz++) {
-                if (!world.isChunkLoaded(cx, cz)) {
-                    finishNow(sender, "house.not-loaded", Placeholder.unparsed("id", plotId));
-                    return;
-                }
-            }
         }
 
         List<HouseBackup.Change> changes = new ArrayList<>();
@@ -215,6 +209,45 @@ public final class HousePlacer {
         HouseBackup.BlockAccess access = worldAccess(world, byString);
         HouseBackup backup = HouseBackup.capture(plotId, design.name(), plot.worldKey(), System.currentTimeMillis(),
                 corner, size, plot.chimney(), changes, access);
+
+        // The undo must be on disk before the first block changes: write first, paste only after it succeeded.
+        String yaml = toYaml(backup.toMap());
+        Path dir = plugin.getDataFolder().toPath().resolve(BACKUP_DIR).resolve(plotId);
+        Path nbtFile = dir.resolve(backup.createdAt() + ".nbt");
+        Path ymlFile = dir.resolve(backup.createdAt() + ".yml");
+        submit(sender, () -> {
+            try {
+                Files.createDirectories(dir);
+                Files.write(nbtFile, structureBytes);
+                Files.writeString(ymlFile, yaml, StandardCharsets.UTF_8);
+            } catch (IOException e) {
+                plugin.getLogger().log(Level.SEVERE, "Could not write the house backup of plot " + plotId
+                        + "; nothing was placed", e);
+                deleteQuietly(nbtFile, ymlFile);
+                finish(sender, "house.place-failed", Placeholder.unparsed("problem",
+                        "could not save the undo backup (" + e.getMessage() + ")"));
+                return;
+            }
+            main.execute(() -> guarded(sender, () -> apply(sender, plotId, design, regionMin, changes, byString,
+                    backup.cells().size(), nbtFile, ymlFile)));
+        });
+    }
+
+    /** Main thread, after the backup is on disk: paste the changes, set sign text and the chimney point. */
+    private void apply(CommandSender sender, String plotId, HouseDesign design, int[] regionMin,
+                       List<HouseBackup.Change> changes, Map<String, BlockData> byString, int changed,
+                       Path nbtFile, Path ymlFile) {
+        Plot plot = plots.get(plotId).orElse(null);
+        World world = plot == null ? null : plots.world(plot).orElse(null);
+        if (plot == null || world == null || !loaded(world, design.toWorld(regionMin, 0, 0, 0),
+                new int[] {design.sizeX(), design.sizeY(), design.sizeZ()})) {
+            submit(sender, () -> { // nothing was placed: the backup is useless
+                deleteQuietly(nbtFile, ymlFile);
+                finish(sender, "house.not-loaded", Placeholder.unparsed("id", plotId));
+            });
+            return;
+        }
+        HouseBackup.BlockAccess access = worldAccess(world, byString);
         for (HouseBackup.Change c : changes) {
             if (!access.get(c.x(), c.y(), c.z()).equals(c.newData())) { // identical blocks stay untouched
                 access.set(c.x(), c.y(), c.z(), c.newData());
@@ -242,21 +275,33 @@ public final class HousePlacer {
             plotFile.saveAsync(plots.all());
         }
 
-        int changed = backup.cells().size();
-        String yaml = toYaml(backup.toMap());
-        Path dir = plugin.getDataFolder().toPath().resolve(BACKUP_DIR).resolve(plotId);
-        submit(sender, () -> {
-            try {
-                Files.createDirectories(dir);
-                Files.write(dir.resolve(backup.createdAt() + ".nbt"), structureBytes);
-                Files.writeString(dir.resolve(backup.createdAt() + ".yml"), yaml, StandardCharsets.UTF_8);
-            } catch (IOException e) {
-                plugin.getLogger().log(Level.SEVERE, "Could not write the house backup of plot " + plotId
-                        + "; /bakery house undo will not be able to restore this paste", e);
+        finishNow(sender, "house.placed", Placeholder.unparsed("name", design.name()),
+                Placeholder.unparsed("id", plotId), Placeholder.unparsed("count", Integer.toString(changed)));
+    }
+
+    private static boolean loaded(World world, int[] corner, int[] size) {
+        if (corner[1] < world.getMinHeight() || corner[1] + size[1] > world.getMaxHeight()) {
+            return false;
+        }
+        for (int cx = corner[0] >> 4; cx <= (corner[0] + size[0] - 1) >> 4; cx++) {
+            for (int cz = corner[2] >> 4; cz <= (corner[2] + size[2] - 1) >> 4; cz++) {
+                if (!world.isChunkLoaded(cx, cz)) {
+                    return false;
+                }
             }
-            finish(sender, "house.placed", Placeholder.unparsed("name", design.name()),
-                    Placeholder.unparsed("id", plotId), Placeholder.unparsed("count", Integer.toString(changed)));
-        });
+        }
+        return true;
+    }
+
+    /** IO thread only. */
+    private void deleteQuietly(Path... files) {
+        for (Path f : files) {
+            try {
+                Files.deleteIfExists(f);
+            } catch (IOException e) {
+                plugin.getLogger().log(Level.WARNING, "Could not delete " + f, e);
+            }
+        }
     }
 
     private static HouseBackup.BlockAccess worldAccess(World world, Map<String, BlockData> known) {
@@ -282,7 +327,7 @@ public final class HousePlacer {
         }
         String plotId = plot.id();
         Path dir = plugin.getDataFolder().toPath().resolve(BACKUP_DIR).resolve(plotId);
-        submit(sender, () -> {
+        guarded(sender, () -> submit(sender, () -> {
             Path meta;
             String text;
             byte[] nbt;
@@ -300,8 +345,8 @@ public final class HousePlacer {
                 finish(sender, "house.undo-failed", Placeholder.unparsed("problem", String.valueOf(e.getMessage())));
                 return;
             }
-            main.execute(() -> restore(sender, plotId, meta, text, nbt));
-        });
+            main.execute(() -> guarded(sender, () -> restore(sender, plotId, meta, text, nbt)));
+        }));
     }
 
     private void restore(CommandSender sender, String plotId, Path meta, String text, byte @Nullable [] nbt) {
@@ -405,10 +450,45 @@ public final class HousePlacer {
         return true;
     }
 
-    /** Runs on {@code io}; a rejected task (shutting down) clears the busy flag. */
+    /** Set by {@link #submit} while a {@link #guarded} step runs: the operation continues on the IO thread. */
+    private boolean handedOff;
+
+    /**
+     * Runs one main-thread step of a house operation. Unless the step handed the operation to the IO thread, the busy
+     * flag is cleared in {@code finally}, so an unexpected exception can never leave {@code busy} set.
+     */
+    private void guarded(CommandSender sender, Runnable step) {
+        handedOff = false;
+        boolean completed = false;
+        try {
+            step.run();
+            completed = true;
+        } catch (RuntimeException e) {
+            plugin.getLogger().log(Level.SEVERE, "House command failed", e);
+            messages.send(sender, "house.place-failed", Placeholder.unparsed("problem", String.valueOf(e.getMessage())));
+        } finally {
+            if (!completed || !handedOff) {
+                busy = false;
+            }
+            handedOff = false;
+        }
+    }
+
+    /**
+     * Main thread: continues the operation on {@code io}. An exception there replies and clears busy; a rejected task
+     * (shutting down) clears busy right away.
+     */
     private void submit(CommandSender sender, Runnable task) {
         try {
-            io.execute(task);
+            io.execute(() -> {
+                try {
+                    task.run();
+                } catch (RuntimeException e) {
+                    plugin.getLogger().log(Level.SEVERE, "House command failed on the IO thread", e);
+                    finish(sender, "house.place-failed", Placeholder.unparsed("problem", String.valueOf(e.getMessage())));
+                }
+            });
+            handedOff = true;
         } catch (RuntimeException e) {
             busy = false;
             messages.send(sender, "house.place-failed", Placeholder.unparsed("problem", "server is shutting down"));

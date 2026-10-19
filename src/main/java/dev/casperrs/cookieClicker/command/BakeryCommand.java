@@ -33,8 +33,6 @@ import java.util.function.Supplier;
 public final class BakeryCommand {
 
     public static final String PERMISSION = "cookieempire.admin";
-    /** {@code setchimney}: how far away the looked-at block may be. */
-    private static final int CHIMNEY_REACH = 16;
 
     /** Result of {@code /bakery reload}: problems found (empty = all good). */
     @FunctionalInterface
@@ -151,9 +149,10 @@ public final class BakeryCommand {
         if (h == null) {
             return 0;
         }
-        Block target = h.player().getTargetBlockExact(CHIMNEY_REACH);
+        int reach = settings.get().plot().chimneyReach();
+        Block target = h.player().getTargetBlockExact(reach);
         if (target == null) {
-            messages.send(h.player(), "plot.chimney-no-target", Placeholder.unparsed("radius", Integer.toString(CHIMNEY_REACH)));
+            messages.send(h.player(), "plot.chimney-no-target", Placeholder.unparsed("radius", Integer.toString(reach)));
             return 0;
         }
         double x = target.getX() + 0.5;

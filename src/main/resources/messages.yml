@@ -122,12 +122,6 @@ house:
 commands:
   usage: "<prefix><gray>/bakery plot setviewpoint|setpedestal|setchimney|show</gray> <dark_gray>|</dark_gray> <gray>/bakery house place \\<design>|undo</gray> <dark_gray>|</dark_gray> <gray>/bakery reload</gray>"
   players-only: "<prefix><red>Only players can do that.</red>"
-  # Replaced by /bakery plot setpedestal (starter-house); unused, kept for existing translations and tests
-  station:
-    set: "<prefix><green>Placed bakery station <white><id></white> at <white><x> <y> <z></white> in <white><world></white>.</green>"
-    too-close: "<prefix><red>There's already a station within <distance> blocks.</red>"
-    removed: "<prefix><yellow>Removed bakery station <white><id></white>.</yellow>"
-    none-nearby: "<prefix><red>No station within <radius> blocks.</red>"
   reload:
     done: "<prefix><green>Reloaded config, messages, sounds, effects, balance and plots.</green>"
     problems: "<prefix><yellow>Reloaded with <count> problem(s):</yellow>"
