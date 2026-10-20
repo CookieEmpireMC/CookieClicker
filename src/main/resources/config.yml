@@ -30,9 +30,10 @@ hud:
   refresh-seconds: 1
 
 # Every plot's pedestal is a "station": the anchor of each player's own cookie, pedestal and shop panel.
-# Set it with /bakery plot setpedestal while standing in the plot (saved in plots.yml).
+# /bakery plot setup places it from the design's layout (saved in plots.yml). With a layout the cookie stands on the
+# layout pedestal and the panel on the layout shop spot: only the "up" part of the offsets below is used.
 station:
-  # /bakery plot setpedestal: put the pedestal in the centre of the block you stand on
+  # (unused since /bakery plot setup; kept for hand-edited plots.yml pedestals)
   snap-to-block: true
   # Round your facing to this many degrees (0 = exact)
   snap-yaw-degrees: 90
@@ -155,7 +156,7 @@ plot:
     # effects.yml presets played at every outline point
     plot-effect: plot_outline
     house-effect: house_outline
-  # /bakery plot setchimney: look at the chimney top within this many blocks
+  # (unused since /bakery plot setup sets every smoke point)
   chimney-reach: 16
   # Players near a pedestal don't see other players near the same pedestal (less clutter). Off by default.
   hide-others-near-pedestal:
@@ -166,7 +167,8 @@ plot:
     check-ticks: 10
 
 house:
-  # /bakery house place: refuse designs whose box (x * y * z) is bigger than this
+  # /bakery plot setup and /bakery house place: refuse designs whose box (x * y * z), or layouts whose area (x * z),
+  # is bigger than this
   max-blocks: 40000
   # First-visit build cinematic, seen only by that player (the house itself never changes)
   cinematic:
@@ -174,17 +176,19 @@ house:
     # enter-plot: start when the player walks onto the plot outside the house
     # viewpoint: start once the player has been moved to the plot's viewpoint
     trigger: enter-plot
-    # Move the player to the plot's viewpoint (/bakery plot setviewpoint) when it starts
-    teleport-to-viewpoint: false
+    # Move the player to the plot's viewpoint (from the layout, set by /bakery plot setup) when it starts, so the
+    # build is always seen from the same spot
+    teleport-to-viewpoint: true
     # trigger viewpoint: a teleport must end within this many blocks of the viewpoint
     viewpoint-radius: 2.0
     # Blocks that start falling per tick (0.5 = one every other tick). Each landing is ~12 particles + 3 sounds,
-    # so keep it modest. The default cottage (170 blocks) takes about 20 seconds at 1.
-    blocks-per-tick: 1
+    # so keep it modest. Tuned for the factory (~600-1200 blocks): about 17-30 seconds at 2.25 with the layer
+    # delay below. The small cottage (170 blocks) is over in a few seconds; use 1 for it.
+    blocks-per-tick: 2.25
     # Falling block displays alive at once per player (1-24; 24 is the effects engine's cap)
     max-falling-displays: 24
     # Pause before the first layer and after each layer has landed (ticks)
-    layer-delay-ticks: 12
+    layer-delay-ticks: 5
     # Play the hammer sound on every n-th landing (0 = never)
     hammer-every: 3
     # Keep the player out of the (invisible but solid) house: hold (stand still), slow, none.
@@ -200,11 +204,25 @@ house:
     reassert-radius: 2
     # Confetti bursts this many blocks above the top of the house region
     confetti-height: 1.0
-  # Chimney smoke (plots.yml chimney point), shown to every player in the plot who isn't watching the cinematic
+  # Chimney smoke at every smoke point of the plot (plots.yml chimney / smoke, set by /bakery house place), shown
+  # to every player in the plot who isn't watching the cinematic
   chimney:
     smoke: true
     # Replay the crackle sound every n-th smoke puff (the smoke puffs every 10 ticks; 0 = no sound)
     crackle-every: 6
+  # Factory steam (factory_steam effect) at every steam point of the plot (plots.yml steam)
+  steam:
+    enabled: true
+    # Ticks between the start of one vent and the next, so vents don't puff together
+    every: 7
+  # Low oven hum (factory_ambient sound) for players in the plot near the factory
+  ambient:
+    enabled: true
+    # Ticks between plays (the sound is a 4 second loop)
+    every: 80
+    # Only players within this many blocks of the first steam point (or the house centre) hear it
+    radius: 24.0
+  # /bakery plot setup: the fence style is houses/fence.yml (data folder first, then the plugin's copy).
 
 debug:
   # Log every click event on a bakery hitbox (which events fire, who tracks the entity). For testing.

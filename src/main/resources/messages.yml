@@ -99,6 +99,21 @@ plot:
   show-started: "<prefix><gray>Showing the outline of plot <white><id></white> for <amount> seconds.</gray>"
   show-no-regions: "<prefix><red>Plot <white><id></white> has no plot region in this world. Check <white>/rg info</white> and run <white>/bakery reload</white> after changing regions.</red>"
   show-no-house: "<prefix><yellow>Plot <white><id></white> has no house region yet (<white>/rg flag \\<region> bakery-house <id></white>); showing the plot only.</yellow>"
+  # /bakery plot setup [design] | setup undo. <id> = plot id, <name> = design, <count> = blocks.
+  setup:
+    no-plot-region: "<prefix><red>Plot <white><id></white> has no plot region in this world. Check <white>/rg info</white> and run <white>/bakery reload</white> after changing regions.</red>"
+    no-layout: "<prefix><red>Design <white><name></white> has no layout section, so it can't set up a plot. Use <white>/bakery house place <name></white> instead.</red>"
+    no-fence-style: "<prefix><red>There is no fence style (houses/fence.yml).</red>"
+    fence-style-invalid: "<prefix><red>The fence style houses/fence.yml can't be used: <gray><problem></gray></red>"
+    too-small: "<prefix><red>The plot region is <have> blocks; <white><name></white> needs at least <need> (x by z). Grow it with <white>/rg redefine</white> and <white>/bakery reload</white>.</red>"
+    not-flat: "<prefix><red>The ground isn't flat: Y <low> to <high> (at most <amount> apart). Flatten the area first.</red>"
+    not-loaded: "<prefix><red>Part of plot <white><id></white> isn't loaded (or the house doesn't fit in the world height). Stand in the middle of it and try again.</red>"
+    done: "<prefix><green>Plot <white><id></white> is set up with <white><name></white>: ground Y <white><ground></white>, <count> blocks changed. Pedestal <white><pedestal></white>, gate <white><entrance></white>, <smoke> smoke and <steam> steam points. <gray>/bakery plot setup undo</gray> puts everything back.</green>"
+    failed: "<prefix><red>Nothing was built: <gray><problem></gray></red>"
+    nothing-to-undo: "<prefix><yellow>There is no setup to undo in plot <white><id></white>.</yellow>"
+    undone: "<prefix><green>Removed the setup of plot <white><id></white> (<count> blocks restored).</green>"
+    undo-failed: "<prefix><red>Could not undo the setup: <gray><problem></gray></red>"
+    busy: "<prefix><yellow>Still working on the last setup command, try again in a moment.</yellow>"
 
 # House building (/bakery house ...). <name> = design name, <count> = blocks.
 house:
@@ -127,7 +142,7 @@ house:
     subtitle: "<gray>Click the cookie to start baking</gray>"
 
 commands:
-  usage: "<prefix><gray>/bakery plot setviewpoint|setpedestal|setchimney|show</gray> <dark_gray>|</dark_gray> <gray>/bakery house place \\<design>|undo|rebuild \\<player></gray> <dark_gray>|</dark_gray> <gray>/bakery reload</gray>"
+  usage: "<prefix><gray>/bakery plot setup [design]|setup undo|show</gray> <dark_gray>|</dark_gray> <gray>/bakery house place \\<design>|undo|rebuild \\<player></gray> <dark_gray>|</dark_gray> <gray>/bakery reload</gray>"
   players-only: "<prefix><red>Only players can do that.</red>"
   reload:
     done: "<prefix><green>Reloaded config, messages, sounds, effects, balance and plots.</green>"

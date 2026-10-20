@@ -5,6 +5,7 @@ import dev.casperrs.cookieClicker.config.PluginSettings;
 import dev.casperrs.cookieClicker.economy.Economy;
 import dev.casperrs.cookieClicker.economy.EconomyConfig;
 import dev.casperrs.cookieClicker.house.HouseCinematics;
+import dev.casperrs.cookieClicker.house.PlotSetup;
 import dev.casperrs.cookieClicker.house.HousePlacer;
 import dev.casperrs.cookieClicker.house.HouseSeen;
 import dev.casperrs.cookieClicker.hud.BakeryTicker;
@@ -74,6 +75,7 @@ public final class CookieClicker extends JavaPlugin {
     private PlotOutlines outlines;
     private PedestalPrivacy pedestalPrivacy;
     private HousePlacer houses;
+    private PlotSetup setup;
     private HouseSeen houseSeen;
     private HouseCinematics cinematics;
     private SessionManager sessions;
@@ -193,8 +195,14 @@ public final class CookieClicker extends JavaPlugin {
         pedestalPrivacy.restart();
         houses = new HousePlacer(this, plotRegistry, plotFile, messages, io, mainThread,
                 () -> settings.house().maxBlocks());
+        setup = new PlotSetup(this, plotRegistry,
+                plot -> {
+                    plots.update(plot, problem -> getLogger().warning(problem));
+                    cinematics.plotChanged(plot.id());
+                }, messages, io, mainThread,
+                () -> settings.house().maxBlocks());
 
-        BakeryCommand command = new BakeryCommand(plots, outlines, houses, cinematics, () -> settings, messages, this::reload);
+        BakeryCommand command = new BakeryCommand(plots, outlines, houses, setup, cinematics, () -> settings, messages, this::reload);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
                 event -> event.registrar().register(command.node(), "Cookie Empire admin commands"));
 
@@ -266,6 +274,9 @@ public final class CookieClicker extends JavaPlugin {
             if (houses != null) {
                 houses.reset();
             }
+            if (setup != null) {
+                setup.reset();
+            }
         });
         if (views != null) {
             safely("the station views", views::shutdown); // every player's UI, independent of session events
@@ -312,6 +323,7 @@ public final class CookieClicker extends JavaPlugin {
         outlines.stopAll();
         cinematics.abortAll(); // restores hidden houses before effects and regions change
         houses.reset();
+        setup.reset();
         loader.loadPlots(plots, problems);
         effects.reload();
         views.restart(); // removes every view; the next refresh respawns with the new layout and balance

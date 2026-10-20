@@ -96,7 +96,7 @@ public final class PlotService {
         for (Station s : plan.leftovers()) {
             problems.accept("stations.yml: station " + s.id() + " at " + s.worldKey() + " " + s.x() + " " + s.y()
                     + " " + s.z() + " is not inside a bakery-plot region (or its plot already has a pedestal); it "
-                    + "no longer works. It is kept in " + STATIONS_BACKUP + "; set a pedestal with /bakery plot setpedestal");
+                    + "no longer works. It is kept in " + STATIONS_BACKUP + "; set the plot up with /bakery plot setup");
         }
         file.saveAsync(plan.plots(), () -> {
             try { // only once plots.yml is safely written

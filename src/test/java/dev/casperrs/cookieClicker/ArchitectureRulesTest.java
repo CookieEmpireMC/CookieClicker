@@ -103,6 +103,16 @@ class ArchitectureRulesTest {
     }
 
     @Test
+    void onlyHousePlacerAndPlotSetupWriteBlocks() throws IOException {
+        // factory-makeover: /bakery plot setup (PlotSetup) joined /bakery house place (HousePlacer) as a world writer
+        for (String bad : new String[] {".setBlockData(", ".setType(", ".breakNaturally("}) {
+            List<String> found = new ArrayList<>(hits(bad, null));
+            found.removeIf(h -> h.startsWith("HousePlacer.java:") || h.startsWith("PlotSetup.java:"));
+            assertTrue(found.isEmpty(), bad + " outside HousePlacer/PlotSetup: " + found);
+        }
+    }
+
+    @Test
     void fakeBlocksAreOnlySentFromFakeBlocks() throws IOException {
         // the cinematic's one place that talks fake blocks to a player; the world itself is never changed by it
         for (String needle : new String[] {"sendBlockChange(", "sendBlockChanges(", "sendMultiBlockChange(",

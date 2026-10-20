@@ -19,8 +19,12 @@ import java.util.Map;
  * layers:                    # bottom -> top; each layer is a list of rows (north -> south),
  *   - ["PPPPPPPPP", ...]     # each row a string of characters (west -> east)
  * points:
- *   chimney: [7, 7, 1]       # the cell the smoke starts in (smoke plays at its bottom centre)
+ *   chimney: [7, 7, 1]       # the cell the smoke starts in (smoke plays at its bottom centre); = smoke: [[7, 7, 1]]
+ *   smoke: [[3, 9, 1], [8, 7, 2]]   # optional: several smoke start cells (used instead of chimney when given)
+ *   steam: [[5, 6, 3]]       # optional: factory_steam vents
+ *   belt_out: [4, 1, 8]      # optional: where the conveyor belt leaves the building
  *   door: [4, 1, 6]          # optional; every point must be inside size
+ * layout: ...                # optional: the fixed plot layout for /bakery plot setup, see HouseLayout
  * signs:                     # optional: plain text set on the sign's front side after pasting
  *   - at: [5, 2, 0]
  *     lines: ["", "Bakery", "", ""]
@@ -31,6 +35,10 @@ import java.util.Map;
 public final class HouseDesignParser {
 
     public static final char KEEP = '.';
+    public static final String CHIMNEY = "chimney";
+    public static final String SMOKE = "smoke";
+    public static final String STEAM = "steam";
+    public static final String BELT_OUT = "belt_out";
     /** Per axis; a typo in {@code size} must not allocate a huge grid. */
     public static final int MAX_SIZE = 256;
 
@@ -109,20 +117,30 @@ public final class HouseDesignParser {
         }
 
         Map<String, int[]> points = new LinkedHashMap<>();
+        List<int[]> smoke = new ArrayList<>();
+        List<int[]> steam = new ArrayList<>();
         if (yaml.get("points") instanceof Map<?, ?> rawPoints) {
             for (Map.Entry<?, ?> e : rawPoints.entrySet()) {
+                String key = String.valueOf(e.getKey());
+                if (key.equals(SMOKE) || key.equals(STEAM)) {
+                    pointList(key, e.getValue(), size, key.equals(SMOKE) ? smoke : steam, problems);
+                    continue;
+                }
                 int[] p = ints(e.getValue(), 3);
                 if (p == null) {
-                    problems.add("points." + e.getKey() + " must be [x, y, z] whole numbers");
+                    problems.add("points." + key + " must be [x, y, z] whole numbers");
                 } else if (!inside(p, size)) {
-                    problems.add("points." + e.getKey() + " " + java.util.Arrays.toString(p) + " is outside size "
+                    problems.add("points." + key + " " + java.util.Arrays.toString(p) + " is outside size "
                             + java.util.Arrays.toString(size));
                 } else {
-                    points.put(String.valueOf(e.getKey()), p);
+                    points.put(key, p);
                 }
             }
         } else if (yaml.get("points") != null) {
             problems.add("points must be a section");
+        }
+        if (smoke.isEmpty() && points.get(CHIMNEY) != null) {
+            smoke.add(points.get(CHIMNEY)); // the cottage's single chimney = a one-item smoke list
         }
 
         List<HouseDesign.SignText> signs = new ArrayList<>();
@@ -155,10 +173,42 @@ public final class HouseDesignParser {
             problems.add("signs must be a list");
         }
 
+        HouseLayout layout = null;
+        if (yaml.get("layout") != null) {
+            layout = HouseLayout.parse(yaml.get("layout"), problems);
+            if (layout != null) {
+                int[] min = {layout.houseAt()[0] - origin[0], layout.houseAt()[2] - origin[2]};
+                if (min[0] < 1 || min[1] < 1 || min[0] + size[0] > layout.sizeX() - 1
+                        || min[1] + size[2] > layout.sizeZ() - 1) {
+                    problems.add("layout.house-at puts the house (" + size[0] + " x " + size[2]
+                            + ") outside the area inside the fence (plot-size minus the outer ring)");
+                }
+            }
+        }
+
         return problems.isEmpty()
                 ? new Result(new HouseDesign(name, size[0], size[1], size[2], origin, Map.copyOf(palette), grid,
-                        points, List.copyOf(signs)), List.of())
+                        points, List.copyOf(smoke), List.copyOf(steam), List.copyOf(signs), layout), List.of())
                 : new Result(null, problems);
+    }
+
+    /** {@code points.smoke} / {@code points.steam}: a list of [x, y, z], each inside size. */
+    private static void pointList(String key, Object raw, int[] size, List<int[]> out, List<String> problems) {
+        if (!(raw instanceof List<?> list)) {
+            problems.add("points." + key + " must be a list of [x, y, z]");
+            return;
+        }
+        for (int i = 0; i < list.size(); i++) {
+            int[] p = ints(list.get(i), 3);
+            if (p == null) {
+                problems.add("points." + key + "[" + i + "] must be [x, y, z] whole numbers");
+            } else if (!inside(p, size)) {
+                problems.add("points." + key + "[" + i + "] " + java.util.Arrays.toString(p) + " is outside size "
+                        + java.util.Arrays.toString(size));
+            } else {
+                out.add(p);
+            }
+        }
     }
 
     private static boolean inside(int[] p, int[] size) {
