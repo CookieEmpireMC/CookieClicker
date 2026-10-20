@@ -34,7 +34,7 @@ DEFAULT_CONFIG_PATH = os.path.join("~", ".config", "cookieclicker", "github-app.
 CONFIG_ENV_VAR = "GITHUB_APP_CONFIG"
 API_URL_ENV_VAR = "GITHUB_API_URL"
 DEFAULT_API_URL = "https://api.github.com"
-DEFAULT_REPO = "Self-Learned/Cookie-Clicker"
+DEFAULT_REPO = "CookieEmpireMC/CookieClicker"
 CONFIG_KEYS = ("APP_ID", "INSTALLATION_ID", "KEY_PATH")
 
 JWT_BACKDATE_SECONDS = 60       # iat: allow for clock drift

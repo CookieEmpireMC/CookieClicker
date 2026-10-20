@@ -3,13 +3,20 @@
 This is a **Paper Minecraft plugin**, built with **Maven** (Paper API only, no NMS).
 The target version is whatever `paper-api` version `pom.xml` declares: either **1.21.x** or **26.x**.
 
+## Shared team and knowledge (plugin `bakery-team`)
+The team comes from the **`bakery-team`** plugin of [CookieEmpireMC/CookieMemory](https://github.com/CookieEmpireMC/CookieMemory), enabled in `.claude/settings.json`. It is shared with CookieCore and every later Cookie Empire repo:
+- agents run as `bakery-team:<agent>` (e.g. `subagent_type: "bakery-team:plugin-coder"`)
+- `/bakery-team:feature <name> <description>` runs a feature end to end
+- every agent preloads two skills: **`bakery-context`** (the team and git identities, ownership model, the full workflow: briefs, gates, merge order, fix loop, report format, agent memory, ground rules) and **`game-design`** (the user's full game design document, §1–10, plus its "Differences from the current build")
+- the ownership hook ships with the plugin and reads **this repo's** `.claude/ownership.json`
+
+Shared knowledge changes only through a PR on CookieMemory that the user merges. Everything below is specific to CookieClicker and stays here: this file, `.claude/ownership.json`, `docs/`, `design/`, and the agents' memory for this repo in `.claude/agent-memory/bakery-team-<agent>/`.
+
 ## Docs (in `docs/`)
 
 | File | Covers | Read when |
 |---|---|---|
-| `game-design.md` | the user's game design document: server concept, atmosphere & lore, plot layout (factory, pedestal, conveyor belt, holograms, shop), visual growth; the vision every feature must fit | always, before designing or building anything (agents and orchestrator) |
-| `workflow.md` | who runs when: feature briefs, start gates, merge order, fix loop, report format | always, before launching or acting as any agent |
-| `briefs/<feature>.md` | feature brief from `briefs/TEMPLATE.md`: goal, player story, acceptance criteria, contract (fixed IDs), tasks, status (planned / in progress / review / done); start one with `/feature <name> <description>` | before working on that feature |
+| `briefs/<feature>.md` | feature brief from `briefs/TEMPLATE.md`: goal, player story, acceptance criteria, contract (fixed IDs), tasks, status (planned / in progress / review / done); start one with `/bakery-team:feature <name> <description>` | before working on that feature |
 | `paper-121x-reference.md` | Java 21, Adventure 4, item model changes across 1.21.x, rules, supporting both versions in one jar | `pom.xml` has `1.21.x-R0.1-SNAPSHOT` |
 | `paper-26x-reference.md` | Java 25, new version strings, unobfuscated server, Adventure 5, world keys, API changes 26.1–26.3, rules | `pom.xml` has `26.x.build.…` |
 | `toolchain.md` | mise: pinned Java/Maven/Python per target, build/test/asset tasks, worktree trust | before any build or test |
@@ -42,7 +49,7 @@ The target version is whatever `paper-api` version `pom.xml` declares: either **
 | `src/main/resources/effects.yml` | effect presets (layers) and performance `limits` | vfx-designer |
 | `src/main/resources/buildings.yml`, `upgrades.yml` | all balance values (format in `docs/balance/model.md`) | balance-designer |
 
-## Agents (in `dot-claude`)
+## Agents (from the plugin) and what they write here
 
 | Agent | Role | Writes to |
 |---|---|---|
@@ -55,21 +62,7 @@ The target version is whatever `paper-api` version `pom.xml` declares: either **
 | `plugin-tester` | writes/runs tests, reviews architecture, gives a merge verdict | `src/test/`, `docs/reviews/`, `docs/architecture.md` |
 
 ### The team (git identities)
-
-Everyone commits under their own name, per commit (`git -c user.name=… -c user.email=… commit`), never by changing git config. Each agent file's "Commits" section has its exact command and rules; `mise run team` shows commits per member.
-
-| Agent | Name | Email | Motto |
-|---|---|---|---|
-| main session (orchestrator, merges into feature branches) | Rickroll Rick | rick@bakery.invalid | never gonna push to main, never gonna merge your PR |
-| resource-pack-researcher | Citation Cindy | cindy@bakery.invalid | [citation needed] is a lifestyle |
-| plugin-coder | Works4Me Wesly | wesly@bakery.invalid | it compiled on my machine |
-| plugin-tester | Gandalf | gandalf@bakery.invalid | no branch passes without a verdict |
-| model-designer | Pixel Pat | pat@bakery.invalid | no mistakes, just happy little texels |
-| sound-designer | Bassboost Bruno | bruno@bakery.invalid | every click deserves a drop |
-| vfx-designer | Flare Larry | larry@bakery.invalid | if it doesn't sparkle, it isn't done |
-| balance-designer | Stonks Stan | stan@bakery.invalid | number go up (on schedule) |
-
-The orchestrator commits as Rickroll Rick (`git -c user.name="Rickroll Rick" -c user.email="rick@bakery.invalid" …`), including research notes and integration reviews on behalf of agents without a shell or branch (credited with `--author`). Rick merges agent branches into the feature branch and opens the pull request; **only the user merges into `main`**.
+Names, emails, mottos and the commit rules are in the `bakery-context` skill. The orchestrator (main session) is **Rickroll Rick** (`rick@bakery.invalid`); he merges agent branches into the feature branch and opens the pull request; **only the user merges into `main`**. `mise run team` shows commits per member.
 
 ### Asset ownership
 - **model-designer:** models, item model definitions, textures, fonts/glyphs, `pack.mcmeta`, `itemsadder/`, `modelengine/`, house design files (`src/main/resources/houses/`)
@@ -79,23 +72,15 @@ The orchestrator commits as Rickroll Rick (`git -c user.name="Rickroll Rick" -c 
 - **plugin-coder:** everything else in `src/main/` (incl. wiring the `Effects` service and the single sound service that reads `sounds.yml`), `pom.xml`, `plugin.yml`, other config; tooling (`tools/` except `tools/balance/` and tool tests, `mise.toml`, `.gitignore`, `.gitattributes`, `.mailmap`, `design/requirements.txt`) and the reference docs (`docs/paper-*.md`, `docs/toolchain.md`, `docs/minimessage.md`, `docs/integrations.md`). `mise.toml` and `.gitattributes` changes always go under "Needs human review" in the PR.
 - **plugin-tester:** `src/test/`, tool tests (`tools/**/test_*.py`), `docs/reviews/`, `docs/architecture.md`
 - **orchestrator (Rick):** `CLAUDE.md`, `docs/briefs/`, `.github/`, merge commits
-- **Human-controlled (no agent):** `.claude/agents/`, `.claude/skills/`, `docs/workflow.md`, `.claude/ownership.*`, `.claude/hooks/`, `.claude/settings.json`. Rick edits them only when the user explicitly asks, and every change goes under "Needs human review".
+- **Human-controlled (no agent):** `.claude/ownership.*`, `.claude/settings.json` (and the shared team in CookieMemory). Rick edits them only when the user explicitly asks, and every change goes under "Needs human review".
 - Nobody edits another owner's files; ask the owner instead.
-- **Agent memory:** every agent has `memory: project`, a private cache in `.claude/agent-memory/<agent_type>/` (its `MEMORY.md` loads at startup) for verified facts it would otherwise rediscover each run. Only that agent may write it; what to store and what not is in `docs/workflow.md` → "Agent memory".
-- **Enforced** by `.claude/ownership.json` in two layers: a PreToolUse hook that denies `Edit`/`Write`/`NotebookEdit` outside an agent's globs (early warning; Bash-written files aren't covered), and `mise run ownership-check <branch>`, which checks every commit against its author's globs before Rick merges (the real gate; authorship is self-declared, so it catches mistakes, not tampering). Details in `docs/workflow.md`.
+- **Agent memory:** every agent has `memory: project`, a private cache in `.claude/agent-memory/bakery-team-<agent>/` (its `MEMORY.md` loads at startup) for verified facts about **this repo** it would otherwise rediscover each run. Only that agent may write it; what to store and what not is in the `bakery-context` skill → "Agent memory".
+- **Enforced** by `.claude/ownership.json` in two layers: the plugin's PreToolUse hook that denies `Edit`/`Write`/`NotebookEdit` outside an agent's globs (early warning; Bash-written files aren't covered), and `mise run ownership-check <branch>`, which checks every commit against its author's globs before Rick merges (the real gate; authorship is self-declared, so it catches mistakes, not tampering). The check loads its matcher from `tools/ownership/ownership_lib.py`, a copy of the plugin's (keep them identical). Details in the `bakery-context` skill.
 
 Every agent that writes code or assets runs in its own worktree (`isolation: worktree` in its frontmatter), branched from the feature branch, on branch `<name>/<agent>`. Agent branches are merged into the feature branch one at a time; the feature reaches `main` only through a pull request the user merges.
 
 ## Feature workflow (branches + pull requests)
-
-Run a feature with **`/feature <name> <description>`** (`.claude/skills/feature/SKILL.md`); details and start gates are in `docs/workflow.md`.
-
-1. **Branch:** Rickroll Rick (the main session) runs `git switch main && git pull && git switch -c feature/<name>` and stays on it, in the main checkout. He **never `cd`s into an agent worktree** (that moves the whole session); he uses `git -C <path>` and `mise -C <path> run …` / `--cd` instead.
-2. **Brief:** drafts `docs/briefs/<name>.md` from the template, waits for the user's approval, commits it on the feature branch.
-3. **Agents:** researcher first if needed; then model-designer, sound-designer, vfx-designer, balance-designer and coder in parallel (the coder uses new effect IDs and sound events from the brief while the designers add them; it waits only for a Java API that isn't on `main` yet, like the first `Effects` service), each in its own worktree **branched from the feature branch** (`.claude/settings.json`: `"worktree": { "baseRef": "head" }`), on branch `<name>/<agent>`, committing with its own identity. Agents never push, merge or touch `main`.
-4. **Review + merge:** Gandalf reviews each agent branch; Rick runs `mise run ownership-check <name>/<agent>` (a violation goes back to the agent), merges `READY` branches into the feature branch with `git merge --no-ff` (assets and config before code), runs `check`, `validate-assets`, `sound-check` and `balance-check` after each merge, sends red checks back to the owner, resolves conflicts only where the owner is clear, then removes the merged worktree and branch (`git branch -d <name>/<agent>`, `git worktree prune`). Leftover `<name>/*` branches or worktrees are listed in the final summary.
-5. **Pull request:** after Gandalf's integration review, Rick checks `gh auth status`, pushes `feature/<name>` (only `feature/*`, never force), and opens a PR **as `cookie-bakery[bot]`** with `mise run pr-open` (so the user can approve it; `main` requires 1 approval and the `check` job), filled from `.github/pull_request_template.md`: ready when everything is green and `READY`, otherwise draft with the open issues. He waits for CI with `gh pr checks --watch`, fixes failures through the owners, **opens the PR in the user's browser automatically** (`gh pr view --web`) once the feature is fully implemented, and gives the user the URL and a 3-line summary.
-6. **Merge:** the user reviews and merges the PR. Rick never merges into `main`.
+Run a feature with **`/bakery-team:feature <name> <description>`**; the steps, gates and merge order are in the `bakery-context` skill. Repo-specific parts: agent worktrees branch from the feature branch (`.claude/settings.json`: `"worktree": { "baseRef": "head" }`); after each merge Rick runs `check`, `validate-assets`, `sound-check` and `balance-check` (and `tools-test` when tools change); PRs are opened as `cookie-bakery[bot]` with `mise run pr-open` (default repo `CookieEmpireMC/CookieClicker`; `--repo` for the others).
 
 ## Ground rules
 

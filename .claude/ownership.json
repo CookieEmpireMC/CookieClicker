@@ -1,18 +1,17 @@
 {
   "_comment": [
     "Who may edit what. Human-controlled: only the user changes this file (the orchestrator only when the user asks).",
-    "Read by .claude/hooks/ownership.py (PreToolUse, Edit|Write|NotebookEdit) and tools/ownership/check.py (mise run ownership-check).",
+    "Read by the bakery-team plugin's ownership hook (PreToolUse, Edit|Write|NotebookEdit) and tools/ownership/check.py (mise run ownership-check).",
     "Format: orchestrator = main session (no agent_type); agents = keyed by agent_type; each has the git name/email it commits with and 'paths'.",
     "Globs on repo-relative paths: ** = any depth (also none), * = within one segment, leading ! excludes a path an earlier glob allowed (last match wins).",
-    "human_controlled wins over every list: agents are denied, the orchestrator gets 'ask'. A path may have several owners. Full rules: docstring of .claude/hooks/ownership_lib.py.",
-    "Each agent also owns its own persistent memory folder .claude/agent-memory/<agent_type>/ (memory: project in its agent file)."
+    "human_controlled wins over every list: agents are denied, the orchestrator gets 'ask'. A path may have several owners. Full rules: docstring of tools/ownership/ownership_lib.py (same file as the plugin's hooks/ownership_lib.py).",
+    "Each agent also owns its own persistent memory folder .claude/agent-memory/bakery-team-<agent>/ (plugin agents run as bakery-team:<agent>; memory: project)."
   ],
   "orchestrator": {
     "name": "Rickroll Rick",
     "email": "rick@bakery.invalid",
     "paths": [
       "CLAUDE.md",
-      "docs/game-design.md",
       "docs/briefs/**",
       ".github/**"
     ]
@@ -23,7 +22,7 @@
       "email": "cindy@bakery.invalid",
       "paths": [
         "docs/research/**",
-        ".claude/agent-memory/resource-pack-researcher/**"
+        ".claude/agent-memory/bakery-team-resource-pack-researcher/**"
       ]
     },
     "plugin-coder": {
@@ -50,7 +49,7 @@
         "docs/toolchain.md",
         "docs/minimessage.md",
         "docs/integrations.md",
-        ".claude/agent-memory/plugin-coder/**"
+        ".claude/agent-memory/bakery-team-plugin-coder/**"
       ]
     },
     "plugin-tester": {
@@ -61,7 +60,7 @@
         "tools/**/test_*.py",
         "docs/reviews/**",
         "docs/architecture.md",
-        ".claude/agent-memory/plugin-tester/**"
+        ".claude/agent-memory/bakery-team-plugin-tester/**"
       ]
     },
     "model-designer": {
@@ -84,7 +83,7 @@
         "!design/sounds.md",
         "!design/effects.md",
         "!design/CREDITS.md",
-        ".claude/agent-memory/model-designer/**"
+        ".claude/agent-memory/bakery-team-model-designer/**"
       ]
     },
     "sound-designer": {
@@ -99,7 +98,7 @@
         "design/sound-*/**",
         "design/sounds.md",
         "design/CREDITS.md",
-        ".claude/agent-memory/sound-designer/**"
+        ".claude/agent-memory/bakery-team-sound-designer/**"
       ]
     },
     "vfx-designer": {
@@ -114,7 +113,7 @@
         "design/vfx-*",
         "design/vfx-*/**",
         "design/effects.md",
-        ".claude/agent-memory/vfx-designer/**"
+        ".claude/agent-memory/bakery-team-vfx-designer/**"
       ]
     },
     "balance-designer": {
@@ -126,7 +125,7 @@
         "tools/balance/**",
         "!tools/**/test_*.py",
         "docs/balance/**",
-        ".claude/agent-memory/balance-designer/**"
+        ".claude/agent-memory/bakery-team-balance-designer/**"
       ]
     }
   },

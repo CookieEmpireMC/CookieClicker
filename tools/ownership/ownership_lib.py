@@ -1,3 +1,4 @@
+# Keep in sync: the bakery-team plugin ships this same file for its ownership hook; everything below this line must stay identical.
 """File-ownership matcher shared by the PreToolUse hook and the merge-time check.
 
 Standard library only. This module is human-controlled: the hook and
