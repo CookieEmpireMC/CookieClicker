@@ -5,6 +5,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import dev.casperrs.cookieClicker.config.PluginSettings;
+import dev.casperrs.cookieClicker.house.FencePlacer;
 import dev.casperrs.cookieClicker.house.HouseCinematics;
 import dev.casperrs.cookieClicker.house.HousePlacer;
 import dev.casperrs.cookieClicker.plot.Plot;
@@ -27,7 +28,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
- * {@code /bakery plot setviewpoint|setpedestal|setchimney|show}, {@code /bakery house place <design>|undo|rebuild <player>} and
+ * {@code /bakery plot setviewpoint|setpedestal|setchimney|show|fence place|fence undo}, {@code /bakery house place <design>|undo|rebuild <player>} and
  * {@code /bakery reload}, permission {@code cookieempire.admin}. Plot commands act on the plot whose
  * {@code bakery-plot} region the admin stands in. Built for Paper's Brigadier lifecycle registration
  * ({@link #node()}).
@@ -45,17 +46,20 @@ public final class BakeryCommand {
     private final PlotService plots;
     private final PlotOutlines outlines;
     private final HousePlacer houses;
+    private final FencePlacer fences;
     private final HouseCinematics cinematics;
     private final Supplier<PluginSettings> settings;
     private final Messages messages;
     private final Reloader reloader;
 
-    public BakeryCommand(PlotService plots, PlotOutlines outlines, HousePlacer houses, HouseCinematics cinematics,
+    public BakeryCommand(PlotService plots, PlotOutlines outlines, HousePlacer houses, FencePlacer fences,
+                         HouseCinematics cinematics,
                          Supplier<PluginSettings> settings, Messages messages, Reloader reloader) {
         this.cinematics = cinematics;
         this.plots = plots;
         this.outlines = outlines;
         this.houses = houses;
+        this.fences = fences;
         this.settings = settings;
         this.messages = messages;
         this.reloader = reloader;
@@ -68,7 +72,10 @@ public final class BakeryCommand {
                         .then(Commands.literal("setviewpoint").executes(this::setViewpoint))
                         .then(Commands.literal("setpedestal").executes(this::setPedestal))
                         .then(Commands.literal("setchimney").executes(this::setChimney))
-                        .then(Commands.literal("show").executes(this::show)))
+                        .then(Commands.literal("show").executes(this::show))
+                        .then(Commands.literal("fence")
+                                .then(Commands.literal("place").executes(this::fencePlace))
+                                .then(Commands.literal("undo").executes(this::fenceUndo))))
                 .then(Commands.literal("house")
                         .then(Commands.literal("place")
                                 .then(Commands.argument("design", StringArgumentType.word())
@@ -218,6 +225,27 @@ public final class BakeryCommand {
             return 0;
         }
         houses.undo(h.player(), h.plot());
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int fencePlace(CommandContext<CommandSourceStack> ctx) {
+        Here h = here(ctx);
+        if (h == null) {
+            return 0;
+        }
+        if (!plots.registry().has(h.plot().id())) {
+            plots.update(h.plot(), problem -> { }); // the fence needs a plots.yml entry for its entrance
+        }
+        fences.place(h.player(), plots.registry().get(h.plot().id()).orElse(h.plot()));
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int fenceUndo(CommandContext<CommandSourceStack> ctx) {
+        Here h = here(ctx);
+        if (h == null) {
+            return 0;
+        }
+        fences.undo(h.player(), h.plot());
         return Command.SINGLE_SUCCESS;
     }
 

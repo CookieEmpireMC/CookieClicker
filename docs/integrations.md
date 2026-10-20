@@ -260,7 +260,10 @@ RegionManager rm = container.get(BukkitAdapter.adapt(world)); // null when regio
 //wand  (select the house)       /rg define bakery_house    /rg flag bakery_house bakery-house main
 /rg setparent bakery_house bakery_plot          (optional)
 /bakery reload                                   (after defining or redefining regions)
+/bakery house place factory                      (stand in the plot; the cottage is `default`)
+/bakery plot fence place                         (stand near the edge where the gate should be)
 ```
+The fence follows the inside edge of the plot region (polygons too), on the ground of each column, with a 3-wide gate at the border point nearest you; it never touches the house region. To grow the plot: `/rg redefine bakery_plot`, `/bakery reload`, then `/bakery plot fence place` again (it removes the old fence first). `/bakery plot fence undo` puts the old blocks back.
 A region without owners/members already stops non-members from building. Recommended on the plot (the admin sets them; the plugin never does):
 ```
 /rg flag bakery_plot build deny              (explicit; non-members are already denied)
@@ -277,7 +280,7 @@ A region without owners/members already stops non-members from building. Recomme
 ```
 - **Interaction-click caveat:** the cookie and shop rows are `Interaction` entities. WorldGuard's `build`/`interact` checks also cover entity interactions, so with `build deny` it may cancel the click before our listener sees it. **Test the cookie and shop clicks inside the plot in game**; if they fail, add `/rg flag bakery_plot interact allow`. Prefer `use allow` over `interact allow` otherwise (`interact` also allows mounting and entity use).
 - No `entry`/`exit` flags: they would block the players who should walk onto the plot.
-- `/bakery house place|undo` write blocks through the Bukkit API, which WorldGuard does not block. Admins building by hand need membership or `worldguard.region.bypass.<world>` (ops have it).
+- `/bakery house place|undo` and `/bakery plot fence place|undo` write blocks through the Bukkit API, which WorldGuard does not block. Admins building by hand need membership or `worldguard.region.bypass.<world>` (ops have it).
 
 ### Pitfalls
 - `RegionQuery` results are cached for ~1–2 s; after `/rg redefine`, reload and give it a moment.

@@ -99,6 +99,21 @@ plot:
   show-started: "<prefix><gray>Showing the outline of plot <white><id></white> for <amount> seconds.</gray>"
   show-no-regions: "<prefix><red>Plot <white><id></white> has no plot region in this world. Check <white>/rg info</white> and run <white>/bakery reload</white> after changing regions.</red>"
   show-no-house: "<prefix><yellow>Plot <white><id></white> has no house region yet (<white>/rg flag \\<region> bakery-house <id></white>); showing the plot only.</yellow>"
+  # /bakery plot fence place|undo. <id> = plot id, <count> = blocks, <x> <y> <z> = gate centre.
+  fence:
+    no-plot-region: "<prefix><red>Plot <white><id></white> has no plot region in this world. Check <white>/rg info</white> and run <white>/bakery reload</white> after changing regions.</red>"
+    too-big: "<prefix><red>This plot is <count> columns big; house.max-blocks allows <amount>.</red>"
+    style-not-found: "<prefix><red>There is no fence style (houses/fence.yml).</red>"
+    style-invalid: "<prefix><red>The fence style houses/fence.yml can't be used: <gray><problem></gray></red>"
+    not-loaded: "<prefix><red>Part of plot <white><id></white> isn't loaded. Stand in the middle of it and try again.</red>"
+    no-border: "<prefix><yellow>Plot <white><id></white> has no edge to put a fence on (any old fence was removed).</yellow>"
+    unchanged: "<prefix><yellow>The fence of plot <white><id></white> needed no changes.</yellow>"
+    placed: "<prefix><green>Fenced plot <white><id></white>: <count> blocks changed, gate at <white><x> <y> <z></white>. <gray>/bakery plot fence undo</gray> puts the old blocks back.</green>"
+    failed: "<prefix><red>No fence was placed: <gray><problem></gray></red>"
+    nothing-to-undo: "<prefix><yellow>There is no fence to undo in plot <white><id></white>.</yellow>"
+    undone: "<prefix><green>Removed the fence of plot <white><id></white> (<count> blocks restored).</green>"
+    undo-failed: "<prefix><red>Could not undo the fence: <gray><problem></gray></red>"
+    busy: "<prefix><yellow>Still working on the last fence command, try again in a moment.</yellow>"
 
 # House building (/bakery house ...). <name> = design name, <count> = blocks.
 house:
@@ -127,7 +142,7 @@ house:
     subtitle: "<gray>Click the cookie to start baking</gray>"
 
 commands:
-  usage: "<prefix><gray>/bakery plot setviewpoint|setpedestal|setchimney|show</gray> <dark_gray>|</dark_gray> <gray>/bakery house place \\<design>|undo|rebuild \\<player></gray> <dark_gray>|</dark_gray> <gray>/bakery reload</gray>"
+  usage: "<prefix><gray>/bakery plot setviewpoint|setpedestal|setchimney|show|fence place|fence undo</gray> <dark_gray>|</dark_gray> <gray>/bakery house place \\<design>|undo|rebuild \\<player></gray> <dark_gray>|</dark_gray> <gray>/bakery reload</gray>"
   players-only: "<prefix><red>Only players can do that.</red>"
   reload:
     done: "<prefix><green>Reloaded config, messages, sounds, effects, balance and plots.</green>"
