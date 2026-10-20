@@ -24,6 +24,7 @@ import java.util.Map;
  *   steam: [[5, 6, 3]]       # optional: factory_steam vents
  *   belt_out: [4, 1, 8]      # optional: where the conveyor belt leaves the building
  *   door: [4, 1, 6]          # optional; every point must be inside size
+ * layout: ...                # optional: the fixed plot layout for /bakery plot setup, see HouseLayout
  * signs:                     # optional: plain text set on the sign's front side after pasting
  *   - at: [5, 2, 0]
  *     lines: ["", "Bakery", "", ""]
@@ -172,9 +173,22 @@ public final class HouseDesignParser {
             problems.add("signs must be a list");
         }
 
+        HouseLayout layout = null;
+        if (yaml.get("layout") != null) {
+            layout = HouseLayout.parse(yaml.get("layout"), problems);
+            if (layout != null) {
+                int[] min = {layout.houseAt()[0] - origin[0], layout.houseAt()[2] - origin[2]};
+                if (min[0] < 1 || min[1] < 1 || min[0] + size[0] > layout.sizeX() - 1
+                        || min[1] + size[2] > layout.sizeZ() - 1) {
+                    problems.add("layout.house-at puts the house (" + size[0] + " x " + size[2]
+                            + ") outside the area inside the fence (plot-size minus the outer ring)");
+                }
+            }
+        }
+
         return problems.isEmpty()
                 ? new Result(new HouseDesign(name, size[0], size[1], size[2], origin, Map.copyOf(palette), grid,
-                        points, List.copyOf(smoke), List.copyOf(steam), List.copyOf(signs)), List.of())
+                        points, List.copyOf(smoke), List.copyOf(steam), List.copyOf(signs), layout), List.of())
                 : new Result(null, problems);
     }
 

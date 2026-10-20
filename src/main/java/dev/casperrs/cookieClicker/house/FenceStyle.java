@@ -10,37 +10,50 @@ import java.util.Map;
  * The look of the plot fence ({@code houses/fence.yml}, brief factory-makeover, Contract "fence style"). Pure data and
  * parser over the YAML as plain maps:
  * <pre>
- * post: "minecraft:spruce_fence"          # fence block data on post cells
- * rail: "minecraft:spruce_fence"          # fence block data between posts
- * post-every: 4                           # a post every n blocks along a straight side (1 = all posts)
- * corner: "minecraft:stripped_spruce_log" # block data on corner cells
- * topper: "minecraft:lantern"             # optional: block on top of a post/corner
- * topper-every: 2                         # every n-th post gets the topper (corners always do); 0 = none
+ * rail: "minecraft:spruce_fence"                        # every ring cell that is nothing else (y 0)
+ * post: ["minecraft:spruce_log[axis=y]"]                # column, bottom -> top (a single string = 1 high)
+ * post-every: 4                                         # a post every n cells along a side
+ * corner: ["minecraft:stone_bricks", "minecraft:spruce_log[axis=y]"]   # column
+ * topper: "minecraft:lantern"                           # optional: on top of every corner and some posts
+ * topper-every: 2                                       # every n-th post gets the topper; 0 = none
  * gate:
- *   width: 3                              # opening width in blocks (the walkway)
- *   left: "minecraft:stripped_spruce_log" # pillar beside the opening, left when looking out of the plot
- *   right: "minecraft:stripped_spruce_log"
- *   arch:                                 # per height above the ground, across the opening; the pillars are as tall
- *     - "minecraft:air"                   # height 0 (walkway, cleared)
- *     - "minecraft:air"
- *     - "minecraft:spruce_slab[type=top]" # the lintel
+ *   width: 3                                            # opening width (the walkway), centred on the entrance
+ *   left: [stone_bricks, bricks, ...]                   # pillar column, left as seen from outside
+ *   right: [...]                                        # (default: same as left)
+ *   arch: [null, null, null, dark_oak_planks, ...]      # per height over every opening cell; null = air
  * </pre>
- * Fence connections (north/east/south/west) are not part of the style: the placer computes them from the neighbours.
+ * Spec: design/fence.md. Rail connections (north/east/south/west) are computed from the neighbours.
  * Block data strings are checked against the server when placing. Every problem is collected.
  */
-public record FenceStyle(String post, String rail, int postEvery, String corner, @Nullable String topper,
-                         int topperEvery, int gateWidth, String gateLeft, String gateRight, List<String> arch) {
+public record FenceStyle(List<String> post, String rail, int postEvery, List<String> corner, @Nullable String topper,
+                         int topperEvery, int gateWidth, List<String> gateLeft, List<String> gateRight,
+                         List<String> arch) {
 
     public static final int MAX_GATE_WIDTH = 15;
     public static final int MAX_ARCH = 16;
 
+    public static final String AIR = "minecraft:air";
+
     public FenceStyle {
+        post = List.copyOf(post);
+        corner = List.copyOf(corner);
+        gateLeft = List.copyOf(gateLeft);
+        gateRight = List.copyOf(gateRight);
         arch = List.copyOf(arch);
     }
 
-    /** Pillar height: the arch's height, at least 1. */
-    public int pillarHeight() {
-        return Math.max(1, arch.size());
+    /** Every block data string the style uses. */
+    public List<String> allBlockData() {
+        List<String> out = new ArrayList<>(post);
+        out.add(rail);
+        out.addAll(corner);
+        out.addAll(gateLeft);
+        out.addAll(gateRight);
+        out.addAll(arch);
+        if (topper != null) {
+            out.add(topper);
+        }
+        return out;
     }
 
     /** The style, or null with at least one problem. */
@@ -49,35 +62,25 @@ public record FenceStyle(String post, String rail, int postEvery, String corner,
 
     public static Result parse(Map<String, ?> yaml) {
         List<String> problems = new ArrayList<>();
-        String post = data(yaml.get("post"), "post", problems);
+        List<String> post = column(yaml.get("post"), "post", false, problems);
         String rail = data(yaml.get("rail"), "rail", problems);
-        String corner = yaml.get("corner") == null ? post : data(yaml.get("corner"), "corner", problems);
+        List<String> corner = yaml.get("corner") == null ? post : column(yaml.get("corner"), "corner", false, problems);
         int postEvery = whole(yaml.get("post-every"), 4, 1, 64, "post-every", problems);
         String topper = yaml.get("topper") == null ? null : data(yaml.get("topper"), "topper", problems);
         int topperEvery = whole(yaml.get("topper-every"), topper == null ? 0 : 1, 0, 64, "topper-every", problems);
 
         int width = 3;
-        String left = null;
-        String right = null;
-        List<String> arch = new ArrayList<>();
+        List<String> left = List.of();
+        List<String> right = List.of();
+        List<String> arch = List.of(AIR, AIR);
         if (!(yaml.get("gate") instanceof Map<?, ?> gate)) {
             problems.add("gate must be a section with width, left, right and arch");
         } else {
             width = whole(gate.get("width"), 3, 1, MAX_GATE_WIDTH, "gate.width", problems);
-            left = data(gate.get("left"), "gate.left", problems);
-            right = gate.get("right") == null ? left : data(gate.get("right"), "gate.right", problems);
-            if (gate.get("arch") == null) {
-                arch.add("minecraft:air");
-                arch.add("minecraft:air");
-            } else if (!(gate.get("arch") instanceof List<?> raw) || raw.isEmpty() || raw.size() > MAX_ARCH) {
-                problems.add("gate.arch must be a list of 1 to " + MAX_ARCH + " block data strings (bottom first)");
-            } else {
-                for (int i = 0; i < raw.size(); i++) {
-                    String d = data(raw.get(i), "gate.arch[" + i + "]", problems);
-                    if (d != null) {
-                        arch.add(d);
-                    }
-                }
+            left = column(gate.get("left"), "gate.left", false, problems);
+            right = gate.get("right") == null ? left : column(gate.get("right"), "gate.right", false, problems);
+            if (gate.get("arch") != null) {
+                arch = column(gate.get("arch"), "gate.arch", true, problems);
             }
         }
         if (!problems.isEmpty()) {
@@ -85,6 +88,30 @@ public record FenceStyle(String post, String rail, int postEvery, String corner,
         }
         return new Result(new FenceStyle(post, rail, postEvery, corner, topper, topperEvery, width, left, right, arch),
                 List.of());
+    }
+
+    /** A column (list bottom -> top, or one string); {@code nullIsAir}: null entries mean air. */
+    private static List<String> column(@Nullable Object raw, String key, boolean nullIsAir, List<String> problems) {
+        if (raw instanceof String) {
+            String d = data(raw, key, problems);
+            return d == null ? List.of() : List.of(d);
+        }
+        if (!(raw instanceof List<?> list) || list.isEmpty() || list.size() > MAX_ARCH) {
+            problems.add(key + " must be a list of 1 to " + MAX_ARCH + " block data strings (bottom first)");
+            return List.of();
+        }
+        List<String> out = new ArrayList<>();
+        for (int i = 0; i < list.size(); i++) {
+            if (list.get(i) == null && nullIsAir) {
+                out.add(AIR);
+                continue;
+            }
+            String d = data(list.get(i), key + "[" + i + "]", problems);
+            if (d != null) {
+                out.add(d);
+            }
+        }
+        return out;
     }
 
     private static @Nullable String data(@Nullable Object raw, String key, List<String> problems) {

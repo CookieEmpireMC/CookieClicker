@@ -1,5 +1,7 @@
 package dev.casperrs.cookieClicker.house;
 
+import org.jspecify.annotations.Nullable;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -16,10 +18,11 @@ import java.util.Map;
  * @param smoke   every smoke start cell ({@code points.smoke}, or the one {@code points.chimney}); may be empty
  * @param steam   every steam vent cell ({@code points.steam}); may be empty
  * @param signs   text for sign blocks, set on their front side after pasting
+ * @param layout  the fixed plot layout ({@code /bakery plot setup}), or null (place-only designs like the cottage)
  */
 public record HouseDesign(String name, int sizeX, int sizeY, int sizeZ, int[] origin, Map<Character, String> palette,
                           char[][][] grid, Map<String, int[]> points, List<int[]> smoke, List<int[]> steam,
-                          List<SignText> signs) {
+                          List<SignText> signs, @Nullable HouseLayout layout) {
 
     /** Plain text (not MiniMessage) for the sign at design cell {@code at}, front side, up to 4 lines. */
     public record SignText(int[] at, List<String> lines) {

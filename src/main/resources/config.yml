@@ -30,9 +30,10 @@ hud:
   refresh-seconds: 1
 
 # Every plot's pedestal is a "station": the anchor of each player's own cookie, pedestal and shop panel.
-# Set it with /bakery plot setpedestal while standing in the plot (saved in plots.yml).
+# /bakery plot setup places it from the design's layout (saved in plots.yml). With a layout the cookie stands on the
+# layout pedestal and the panel on the layout shop spot: only the "up" part of the offsets below is used.
 station:
-  # /bakery plot setpedestal: put the pedestal in the centre of the block you stand on
+  # (unused since /bakery plot setup; kept for hand-edited plots.yml pedestals)
   snap-to-block: true
   # Round your facing to this many degrees (0 = exact)
   snap-yaw-degrees: 90
@@ -155,7 +156,7 @@ plot:
     # effects.yml presets played at every outline point
     plot-effect: plot_outline
     house-effect: house_outline
-  # /bakery plot setchimney: look at the chimney top within this many blocks
+  # (unused since /bakery plot setup sets every smoke point)
   chimney-reach: 16
   # Players near a pedestal don't see other players near the same pedestal (less clutter). Off by default.
   hide-others-near-pedestal:
@@ -166,7 +167,8 @@ plot:
     check-ticks: 10
 
 house:
-  # /bakery house place: refuse designs whose box (x * y * z) is bigger than this
+  # /bakery plot setup and /bakery house place: refuse designs whose box (x * y * z), or layouts whose area (x * z),
+  # is bigger than this
   max-blocks: 40000
   # First-visit build cinematic, seen only by that player (the house itself never changes)
   cinematic:
@@ -174,8 +176,9 @@ house:
     # enter-plot: start when the player walks onto the plot outside the house
     # viewpoint: start once the player has been moved to the plot's viewpoint
     trigger: enter-plot
-    # Move the player to the plot's viewpoint (/bakery plot setviewpoint) when it starts
-    teleport-to-viewpoint: false
+    # Move the player to the plot's viewpoint (from the layout, set by /bakery plot setup) when it starts, so the
+    # build is always seen from the same spot
+    teleport-to-viewpoint: true
     # trigger viewpoint: a teleport must end within this many blocks of the viewpoint
     viewpoint-radius: 2.0
     # Blocks that start falling per tick (0.5 = one every other tick). Each landing is ~12 particles + 3 sounds,
@@ -219,8 +222,7 @@ house:
     every: 80
     # Only players within this many blocks of the first steam point (or the house centre) hear it
     radius: 24.0
-  # /bakery plot fence place: the fence style is houses/fence.yml (data folder first, then the plugin's copy).
-  # Plots whose box (x * z) is bigger than house.max-blocks are refused.
+  # /bakery plot setup: the fence style is houses/fence.yml (data folder first, then the plugin's copy).
 
 debug:
   # Log every click event on a bakery hitbox (which events fire, who tracks the entity). For testing.

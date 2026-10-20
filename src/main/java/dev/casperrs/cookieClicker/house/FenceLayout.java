@@ -17,7 +17,7 @@ import java.util.Set;
  * Where the plot fence goes (pure, so it is testable without a server). The fence runs along the <b>inside</b> edge
  * of the plot region: every column that is inside and has a 4-neighbour outside (works for polygons too), at the
  * ground height of that column. The gate opening ({@link FenceStyle#gateWidth()} columns along the border) is centred
- * on the border column nearest the admin, with a pillar on each side. Nothing lands inside the house region.
+ * on the border column nearest {@code gateX, gateZ}, with a pillar on each side. Nothing lands inside the house region.
  */
 public final class FenceLayout {
 
@@ -48,21 +48,21 @@ public final class FenceLayout {
     /**
      * One block to set.
      *
-     * @param archLevel for {@link Role#ARCH}: index into {@link FenceStyle#arch()}; else -1
+     * @param level     index into the role's column (bottom = 0); 0 for rails and toppers
      * @param faces     for fence pieces: the neighbours it connects to
      */
-    public record Piece(int x, int y, int z, Role role, int archLevel, Set<Face> faces) {
+    public record Piece(int x, int y, int z, Role role, int level, Set<Face> faces) {
 
         /** The style's block data for this piece. */
         public String blockData(FenceStyle style) {
             return switch (role) {
                 case RAIL -> style.rail();
-                case POST -> style.post();
-                case CORNER -> style.corner();
+                case POST -> style.post().get(level);
+                case CORNER -> style.corner().get(level);
                 case TOPPER -> java.util.Objects.requireNonNull(style.topper());
-                case GATE_LEFT -> style.gateLeft();
-                case GATE_RIGHT -> style.gateRight();
-                case ARCH -> style.arch().get(archLevel);
+                case GATE_LEFT -> style.gateLeft().get(level);
+                case GATE_RIGHT -> style.gateRight().get(level);
+                case ARCH -> style.arch().get(level);
             };
         }
     }
@@ -81,7 +81,7 @@ public final class FenceLayout {
     private static final int[][] DIRS = {{0, -1}, {1, 0}, {0, 1}, {-1, 0}}; // N, E, S, W (same order as Face)
 
     public static Plan plan(int minX, int minZ, int maxX, int maxZ, Area area, Volume house, Ground ground,
-                            FenceStyle style, int adminX, int adminZ) {
+                            FenceStyle style, int gateX, int gateZ) {
         // border columns, in box order
         Set<Long> border = new LinkedHashSet<>();
         for (int z = minZ; z <= maxZ; z++) {
@@ -95,12 +95,12 @@ public final class FenceLayout {
             return new Plan(List.of(), null);
         }
 
-        // gate: nearest border column to the admin, then the closest border columns along the border
+        // gate: nearest border column to the gate target, then the closest border columns along the border
         long centre = 0;
         long best = Long.MAX_VALUE;
         for (long k : border) {
-            long dx = kx(k) - adminX;
-            long dz = kz(k) - adminZ;
+            long dx = kx(k) - gateX;
+            long dz = kz(k) - gateZ;
             long d = dx * dx + dz * dz;
             if (d < best) {
                 best = d;
@@ -112,8 +112,8 @@ public final class FenceLayout {
         int cx = kx(centre);
         int cz = kz(centre);
         int[] out = outward(area, cx, cz);
-        int leftX = out[1];   // left when looking outward (x east, z south): (dz, -dx)
-        int leftZ = -out[0];
+        int leftX = -out[1];  // left as seen from outside, looking in (-out): (dz, -dx) of the inward step
+        int leftZ = out[0];
         Map<Long, Role> pillars = new HashMap<>();
         for (long k : opening) {
             for (int[] d : DIRS) {
@@ -132,15 +132,29 @@ public final class FenceLayout {
                 heights.put(k, y);
             }
         }
+        Integer gateY = heights.get(centre); // the whole gate stands on the entrance's ground, so the lintel is level
+        if (gateY != null) {
+            opening.forEach(k -> heights.put(k, gateY));
+            pillars.keySet().forEach(k -> heights.put(k, gateY));
+        }
 
-        // fence pieces (rails, posts, corners), keyed by column; connections need the full set first
+        // roles: corners where the ring turns, posts every n along a side (not next to a corner or gate pillar)
         Map<Long, Role> fence = new HashMap<>();
         for (long k : border) {
-            if (openSet.contains(k) || pillars.containsKey(k) || !heights.containsKey(k)) {
-                continue;
+            if (!openSet.contains(k) && !pillars.containsKey(k) && heights.containsKey(k)) {
+                fence.put(k, role(border, k, minX, minZ, style.postEvery()));
             }
-            fence.put(k, role(border, k, minX, minZ, style.postEvery()));
         }
+        for (Map.Entry<Long, Role> e : fence.entrySet()) {
+            if (e.getValue() == Role.POST && nextToCornerOrPillar(e.getKey(), fence, pillars)) {
+                e.setValue(Role.RAIL);
+            }
+        }
+
+        // column heights (for rail connections): rails 1, posts/corners/pillars their column
+        Map<Long, Integer> tall = new HashMap<>();
+        fence.forEach((k, r) -> tall.put(k, columnHeight(r, style)));
+        pillars.forEach((k, r) -> tall.put(k, columnHeight(r, style)));
 
         List<Piece> pieces = new ArrayList<>();
         for (Map.Entry<Long, Role> e : fence.entrySet()) {
@@ -148,20 +162,26 @@ public final class FenceLayout {
             int x = kx(k);
             int z = kz(k);
             int y = heights.get(k);
-            Set<Face> faces = EnumSet.noneOf(Face.class);
-            for (int i = 0; i < DIRS.length; i++) {
-                long n = key(x + DIRS[i][0], z + DIRS[i][1]);
-                Integer ny = heights.get(n);
-                boolean fenceThere = fence.containsKey(n) && ny != null && ny == y;
-                boolean pillarThere = pillars.containsKey(n) && ny != null && y >= ny && y < ny + style.pillarHeight();
-                if (fenceThere || pillarThere) {
-                    faces.add(Face.values()[i]);
+            Role r = e.getValue();
+            if (r == Role.RAIL) {
+                Set<Face> faces = EnumSet.noneOf(Face.class);
+                for (int i = 0; i < DIRS.length; i++) {
+                    long n = key(x + DIRS[i][0], z + DIRS[i][1]);
+                    Integer ny = heights.get(n);
+                    Integer nh = tall.get(n);
+                    if (ny != null && nh != null && y >= ny && y < ny + nh) {
+                        faces.add(Face.values()[i]);
+                    }
                 }
+                add(pieces, house, new Piece(x, y, z, r, 0, Collections.unmodifiableSet(faces)));
+                continue;
             }
-            add(pieces, house, new Piece(x, y, z, e.getValue(), -1, Collections.unmodifiableSet(faces)));
-            if (style.topper() != null && style.topperEvery() > 0 && topped(e.getValue(), x, z, minX, minZ,
-                    border, style)) {
-                add(pieces, house, new Piece(x, y + 1, z, Role.TOPPER, -1, Set.of()));
+            int h = columnHeight(r, style);
+            for (int level = 0; level < h; level++) {
+                add(pieces, house, new Piece(x, y + level, z, r, level, Set.of()));
+            }
+            if (style.topper() != null && topped(r, x, z, minX, minZ, border, style)) {
+                add(pieces, house, new Piece(x, y + h, z, Role.TOPPER, 0, Set.of()));
             }
         }
         for (Map.Entry<Long, Role> e : pillars.entrySet()) {
@@ -169,8 +189,8 @@ public final class FenceLayout {
             if (y == null) {
                 continue;
             }
-            for (int h = 0; h < style.pillarHeight(); h++) {
-                add(pieces, house, new Piece(kx(e.getKey()), y + h, kz(e.getKey()), e.getValue(), -1, Set.of()));
+            for (int level = 0; level < columnHeight(e.getValue(), style); level++) {
+                add(pieces, house, new Piece(kx(e.getKey()), y + level, kz(e.getKey()), e.getValue(), level, Set.of()));
             }
         }
         for (long k : opening) {
@@ -178,12 +198,31 @@ public final class FenceLayout {
             if (y == null) {
                 continue;
             }
-            for (int h = 0; h < style.arch().size(); h++) {
-                add(pieces, house, new Piece(kx(k), y + h, kz(k), Role.ARCH, h, Set.of()));
+            for (int level = 0; level < style.arch().size(); level++) {
+                add(pieces, house, new Piece(kx(k), y + level, kz(k), Role.ARCH, level, Set.of()));
             }
         }
-        Integer cy = heights.get(centre);
-        return new Plan(List.copyOf(pieces), cy == null ? null : new int[] {cx, cy, cz});
+        return new Plan(List.copyOf(pieces), gateY == null ? null : new int[] {cx, gateY, cz});
+    }
+
+    private static int columnHeight(Role r, FenceStyle style) {
+        return switch (r) {
+            case POST -> style.post().size();
+            case CORNER -> style.corner().size();
+            case GATE_LEFT -> style.gateLeft().size();
+            case GATE_RIGHT -> style.gateRight().size();
+            default -> 1;
+        };
+    }
+
+    private static boolean nextToCornerOrPillar(long k, Map<Long, Role> fence, Map<Long, Role> pillars) {
+        for (int[] d : DIRS) {
+            long n = key(kx(k) + d[0], kz(k) + d[1]);
+            if (pillars.containsKey(n) || fence.get(n) == Role.CORNER) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static void add(List<Piece> pieces, Volume house, Piece p) {
@@ -254,7 +293,7 @@ public final class FenceLayout {
         if (role == Role.CORNER) {
             return true;
         }
-        if (role != Role.POST) {
+        if (role != Role.POST || style.topperEvery() <= 0) {
             return false;
         }
         int step = style.postEvery() * style.topperEvery();

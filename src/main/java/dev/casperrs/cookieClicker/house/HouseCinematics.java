@@ -171,6 +171,20 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
         }
     }
 
+    /**
+     * {@code /bakery plot setup} (and its undo) changed a plot's house box or points: forget its cached shape and
+     * restart smoke/steam/hum for the players in it who aren't mid-cinematic.
+     */
+    public void plotChanged(String plotId) {
+        shapes.remove(plotId);
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            if (plotId.equals(tracker.presence(p.getUniqueId()).plot()) && !running.containsKey(p.getUniqueId())) {
+                smoke.stop(p.getUniqueId());
+                startSmoke(p, plotId);
+            }
+        }
+    }
+
     /** Disable: everything off, every house restored. */
     public void shutdown() {
         abortAll();

@@ -254,6 +254,24 @@ public final class HousePlacer {
                 access.set(c.x(), c.y(), c.z(), c.newData());
             }
         }
+        writeSigns(plugin, world, design, regionMin);
+
+        // The design's smoke and steam cells replace the plot's (bottom centre of each cell); a design without smoke
+        // keeps the plot's own.
+        List<Plot.Point> smoke = cellCentres(design, regionMin, design.smoke());
+        Plot updated = (smoke.isEmpty() ? plot : plot.withSmoke(smoke))
+                .withSteam(cellCentres(design, regionMin, design.steam()));
+        if (!updated.equals(plot)) {
+            plots.put(updated, problem -> plugin.getLogger().warning(problem));
+            plotFile.saveAsync(plots.all());
+        }
+
+        finishNow(op, "house.placed", Placeholder.unparsed("name", design.name()),
+                Placeholder.unparsed("id", plotId), Placeholder.unparsed("count", Integer.toString(changed)));
+    }
+
+    /** Sets the design's sign text (plain, never parsed) on the pasted sign blocks. Main thread. */
+    static void writeSigns(JavaPlugin plugin, World world, HouseDesign design, int[] regionMin) {
         for (HouseDesign.SignText sign : design.signs()) {
             int[] w = design.toWorld(regionMin, sign.at()[0], sign.at()[1], sign.at()[2]);
             if (world.getBlockAt(w[0], w[1], w[2]).getState(false) instanceof Sign state) {
@@ -267,22 +285,9 @@ public final class HousePlacer {
                         + java.util.Arrays.toString(sign.at()) + " is not a sign block; text skipped");
             }
         }
-
-        // The design's smoke and steam cells replace the plot's (bottom centre of each cell); a design without smoke
-        // keeps the plot's own (e.g. one set by /bakery plot setchimney).
-        List<Plot.Point> smoke = cellCentres(design, regionMin, design.smoke());
-        Plot updated = (smoke.isEmpty() ? plot : plot.withSmoke(smoke))
-                .withSteam(cellCentres(design, regionMin, design.steam()));
-        if (!updated.equals(plot)) {
-            plots.put(updated, problem -> plugin.getLogger().warning(problem));
-            plotFile.saveAsync(plots.all());
-        }
-
-        finishNow(op, "house.placed", Placeholder.unparsed("name", design.name()),
-                Placeholder.unparsed("id", plotId), Placeholder.unparsed("count", Integer.toString(changed)));
     }
 
-    private static List<Plot.Point> cellCentres(HouseDesign design, int[] regionMin, List<int[]> cells) {
+    static List<Plot.Point> cellCentres(HouseDesign design, int[] regionMin, List<int[]> cells) {
         List<Plot.Point> out = new ArrayList<>(cells.size());
         for (int[] c : cells) {
             int[] w = design.toWorld(regionMin, c[0], c[1], c[2]);

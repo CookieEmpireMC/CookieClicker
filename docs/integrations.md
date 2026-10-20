@@ -255,15 +255,14 @@ RegionManager rm = container.get(BukkitAdapter.adapt(world)); // null when regio
 - The region API is thread safe, but we read it on the main thread anyway.
 
 ### Admin setup and recommended plot flags
+Only one region is needed, on flat ground, at least as big as the design's `layout.plot-size` (the factory: 31 × 30, x × z). Its height doesn't matter.
 ```
-//wand  (select the plot)        /rg define bakery_plot     /rg flag bakery_plot bakery-plot main
-//wand  (select the house)       /rg define bakery_house    /rg flag bakery_house bakery-house main
-/rg setparent bakery_house bakery_plot          (optional)
-/bakery reload                                   (after defining or redefining regions)
-/bakery house place factory                      (stand in the plot; the cottage is `default`)
-/bakery plot fence place                         (stand near the edge where the gate should be)
+//wand  (select the plot, any height)   /rg define bakery_plot
+/rg flag bakery_plot bakery-plot main
+/bakery reload                          (after defining or redefining regions)
+/bakery plot setup                      (stand anywhere in the plot; same as /bakery plot setup factory)
 ```
-The fence follows the inside edge of the plot region (polygons too), on the ground of each column, with a 3-wide gate at the border point nearest you; it never touches the house region. To grow the plot: `/rg redefine bakery_plot`, `/bakery reload`, then `/bakery plot fence place` again (it removes the old fence first). `/bakery plot fence undo` puts the old blocks back.
+`/bakery plot setup [design]` centres the design's layout on the region, finds the ground itself (the most common highest solid block, ignoring grass, flowers, leaves and snow; it refuses when the ground varies by more than 2 blocks) and builds everything at once: the house, the fence on the layout's outer ring with the gate at `layout.entrance`, and the pedestal, shop panel, viewpoint, entrance, smoke and steam points in `plots.yml`. The summary shows the ground Y. Running it again first undoes the previous setup; `/bakery plot setup undo` restores the world exactly. A `bakery-house` region is not needed (after a setup the layout's house box is used instead). Designs without a `layout:` section (the `default` cottage) still use `/bakery house place <design>` with a `bakery-house` region.
 A region without owners/members already stops non-members from building. Recommended on the plot (the admin sets them; the plugin never does):
 ```
 /rg flag bakery_plot build deny              (explicit; non-members are already denied)
@@ -280,7 +279,7 @@ A region without owners/members already stops non-members from building. Recomme
 ```
 - **Interaction-click caveat:** the cookie and shop rows are `Interaction` entities. WorldGuard's `build`/`interact` checks also cover entity interactions, so with `build deny` it may cancel the click before our listener sees it. **Test the cookie and shop clicks inside the plot in game**; if they fail, add `/rg flag bakery_plot interact allow`. Prefer `use allow` over `interact allow` otherwise (`interact` also allows mounting and entity use).
 - No `entry`/`exit` flags: they would block the players who should walk onto the plot.
-- `/bakery house place|undo` and `/bakery plot fence place|undo` write blocks through the Bukkit API, which WorldGuard does not block. Admins building by hand need membership or `worldguard.region.bypass.<world>` (ops have it).
+- `/bakery plot setup|setup undo` and `/bakery house place|undo` write blocks through the Bukkit API, which WorldGuard does not block. Admins building by hand need membership or `worldguard.region.bypass.<world>` (ops have it).
 
 ### Pitfalls
 - `RegionQuery` results are cached for ~1–2 s; after `/rg redefine`, reload and give it a moment.

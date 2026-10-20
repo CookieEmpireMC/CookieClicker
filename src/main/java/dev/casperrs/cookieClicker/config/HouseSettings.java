@@ -67,7 +67,7 @@ public record HouseSettings(int maxBlocks, Cinematic cinematic, Chimney chimney,
         Cinematic cinematic = new Cinematic(
                 c.getBoolean(p + "enabled", true),
                 parse(Trigger.class, c.getString(p + "trigger", "enter-plot"), Trigger.ENTER_PLOT, p + "trigger", problems),
-                c.getBoolean(p + "teleport-to-viewpoint", false),
+                c.getBoolean(p + "teleport-to-viewpoint", true),
                 Math.clamp(c.getDouble(p + "blocks-per-tick", 2.25), 0.05, 64.0),
                 Math.clamp(c.getInt(p + "max-falling-displays", 24), 1, 24),
                 Math.clamp(c.getInt(p + "layer-delay-ticks", 5), 0, 200),
