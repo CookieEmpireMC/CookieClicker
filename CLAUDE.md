@@ -7,6 +7,7 @@ The target version is whatever `paper-api` version `pom.xml` declares: either **
 
 | File | Covers | Read when |
 |---|---|---|
+| `game-design.md` | the user's game design document: server concept, atmosphere & lore, plot layout (factory, pedestal, conveyor belt, holograms, shop), visual growth; the vision every feature must fit | always, before designing or building anything (agents and orchestrator) |
 | `workflow.md` | who runs when: feature briefs, start gates, merge order, fix loop, report format | always, before launching or acting as any agent |
 | `briefs/<feature>.md` | feature brief from `briefs/TEMPLATE.md`: goal, player story, acceptance criteria, contract (fixed IDs), tasks, status (planned / in progress / review / done); start one with `/feature <name> <description>` | before working on that feature |
 | `paper-121x-reference.md` | Java 21, Adventure 4, item model changes across 1.21.x, rules, supporting both versions in one jar | `pom.xml` has `1.21.x-R0.1-SNAPSHOT` |
