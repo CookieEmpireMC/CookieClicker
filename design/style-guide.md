@@ -41,3 +41,6 @@ Rules every texture and model in this project follows. Change a rule only when a
 - Vanilla palette, warm and cosy: stone brick plinth, spruce timber frame, white terracotta infill, dark oak roof, brick chimney.
 - Nothing may need support from outside the design; no gravity blocks.
 - Review with `lib/voxel_render.py` from the front 3/4 on both sides, the back and a front elevation, plus a per-layer top view.
+- Factory/workshop buildings: brick walls on a stone brick plinth, white terracotta + spruce timber gables, dark oak roofs, **waxed** copper accents (never unwaxed copper: it oxidises in the world). Warm light sources (campfire, shroomlight, magma, lanterns) for anything that should glow.
+- Every house generator uses `lib/house_lib.py` (validation, YAML writer, previews); connection states (panes, bars, fences) are computed from the neighbours, never hand-written.
+- Plot layouts (`layout:` in the design file) are validated in the generator: inside the fence ring, free cells, margins.
