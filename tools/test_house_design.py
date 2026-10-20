@@ -8,6 +8,7 @@ Pillow (installed by `mise run assets-deps`, which `tools-test` depends on).
 import importlib.util
 import os
 import re
+import sys
 import unittest
 
 import yaml
@@ -19,6 +20,20 @@ GEN = os.path.join(REPO, "design", "scripts", "house_default.py")
 spec = importlib.util.spec_from_file_location("house_default", GEN)
 gen = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(gen)
+
+sys.path.insert(0, os.path.join(REPO, "design", "scripts", "lib"))
+import house_lib  # noqa: E402
+
+SIZE = (gen.SX, gen.SY, gen.SZ)
+
+
+def to_layers(g):
+    return house_lib.to_layers(g, SIZE)
+
+
+def validate(g, layers):
+    return house_lib.validate(g, layers, gen.PALETTE, SIZE, gen.ORIGIN, gen.POINTS, gen.SIGNS)
+
 
 BLOCK_RE = re.compile(r"^minecraft:[a-z0-9_]+(\[[a-z0-9_]+=[a-z0-9_]+(,[a-z0-9_]+=[a-z0-9_]+)*\])?$")
 
@@ -71,7 +86,7 @@ class DesignFileTest(unittest.TestCase):
             self.assertEqual(len(c), 1)
             self.assertRegex(data, BLOCK_RE)
             block = data[len("minecraft:"):].split("[")[0]
-            self.assertNotIn(block, gen.GRAVITY)
+            self.assertNotIn(block, house_lib.GRAVITY)
             self.assertFalse(block.endswith("_concrete_powder"))
 
     def test_points_and_signs_in_bounds_and_meaningful(self):
@@ -116,12 +131,12 @@ class DesignFileTest(unittest.TestCase):
 class GeneratorValidationTest(unittest.TestCase):
     def test_generator_accepts_its_own_design(self):
         g = gen.build()
-        layers = gen.to_layers(g)
-        self.assertEqual(gen.validate(g, layers), 170)
+        layers = to_layers(g)
+        self.assertEqual(validate(g, layers), 170)
 
     def test_committed_file_matches_generator(self):
         g = gen.build()
-        self.assertEqual(load()["layers"], gen.to_layers(g))
+        self.assertEqual(load()["layers"], to_layers(g))
 
     def test_block_data_rejects(self):
         bad = [
@@ -139,11 +154,11 @@ class GeneratorValidationTest(unittest.TestCase):
         for data in bad:
             with self.subTest(data=data):
                 with self.assertRaises(ValueError):
-                    gen.check_block_data(data)
+                    house_lib.check_block_data(data)
 
     def test_validate_rejects_broken_layouts(self):
         g = gen.build()
-        good = gen.to_layers(g)
+        good = to_layers(g)
 
         def mutated(fn):
             layers = [[r for r in layer] for layer in good]
@@ -159,16 +174,16 @@ class GeneratorValidationTest(unittest.TestCase):
         for name, fn in cases.items():
             with self.subTest(name):
                 with self.assertRaises(AssertionError):
-                    gen.validate(g, mutated(fn))
+                    validate(g, mutated(fn))
 
     def test_validate_rejects_point_out_of_bounds(self):
         g = gen.build()
-        layers = gen.to_layers(g)
+        layers = to_layers(g)
         old = dict(gen.POINTS)
         try:
             gen.POINTS["chimney"] = [9, 6, 3]
             with self.assertRaises(AssertionError):
-                gen.validate(g, layers)
+                validate(g, layers)
         finally:
             gen.POINTS.clear()
             gen.POINTS.update(old)
