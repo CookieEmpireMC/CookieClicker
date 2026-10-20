@@ -93,7 +93,7 @@ none (decided below)
 ## Status
 | Agent | Status | Branch | Verdict | Notes |
 |---|---|---|---|---|
-| model-designer | running | | | |
+| model-designer | merged | `factory-makeover/model-designer` | READY | factory 19×17×14 (796 blocks), plot 31×30, fence.yml; `belt.to` = last belt cell |
 | sound-designer | merged | `factory-makeover/sound-designer` | READY | `factory_ambient` 4.0 s loop done; replay every 80 ticks, fixed pitch |
 | vfx-designer | merged | `factory-makeover/vfx-designer` | READY | `factory_steam` done; contract change: `max-loops-per-player` 4 → 8 |
 | plugin-coder | running | | | |
