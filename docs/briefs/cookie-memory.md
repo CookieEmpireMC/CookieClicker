@@ -1,6 +1,6 @@
 # cookie-memory
 
-**Status:** in progress  <!-- planned | in progress | review | done -->
+**Status:** review  <!-- planned | in progress | review | done -->
 **Created:** 2026-10-20 · **Approved:** 2026-10-20 · **Depends on:** factory-makeover (merged, PR #6); repos moved to `CookieEmpireMC` (done)
 
 ## Goal
@@ -81,9 +81,9 @@ For `claude-code-guide` (blocking, before anything moves), with links to the doc
 ## Status
 | Agent | Status | Branch | Verdict | Notes |
 |---|---|---|---|---|
-| claude-code-guide | running | — | — | research Q1–5 |
-| orchestrator | waiting | | | on research |
-| plugin-coder | waiting | | | on research + app installation ID |
+| claude-code-guide | done | — | — | research note `cookie-memory-research.md`; risks (a)–(f) verified headless |
+| orchestrator | done | CookieMemory#1, CookieCore#1 (merged), `feature/cookie-memory` | — | plugin, CookieCore starter, CookieClicker switch-over |
+| plugin-coder | merged | `cookie-memory/plugin-coder` | READY | ownership-check uses `tools/ownership/ownership_lib.py`; bot default repo; tool tests updated by Gandalf |
 
 ## Merge order
 1. CookieMemory PR (plugin) → the user merges.
