@@ -63,7 +63,7 @@ class FakeGitHub:
     def ok_token(self):
         self.responses[("POST", self.token_path)] = (201, {"token": FAKE_TOKEN})
 
-    def pulls(self, status, body, repo="Self-Learned/Cookie-Clicker"):
+    def pulls(self, status, body, repo=app.DEFAULT_REPO):
         self.responses[("POST", f"/repos/{repo}/pulls")] = (status, body)
 
 
@@ -417,7 +417,7 @@ class PullRequestTests(Base):
             with self.subTest(repo=bad):
                 with self.assertRaises(app.ConfigError):
                     app.validate_repo(bad)
-        for good in ("a/.b", "a/b.c", "Self-Learned/Cookie-Clicker", "..a/b..", "a_b/c-d"):
+        for good in ("a/.b", "a/b.c", app.DEFAULT_REPO, "..a/b..", "a_b/c-d"):
             with self.subTest(repo=good):
                 self.assertEqual(app.validate_repo(good), good)
 
@@ -471,7 +471,7 @@ class PullRequestTests(Base):
     def test_exists_is_distinct_exception(self):
         self.fake.pulls(422, {"errors": [{"message": "A pull request already exists"}]})
         with self.assertRaises(app.PullRequestExistsError):
-            app.create_pull_request(FAKE_TOKEN, "Self-Learned/Cookie-Clicker", "h", "main",
+            app.create_pull_request(FAKE_TOKEN, app.DEFAULT_REPO, "h", "main",
                                     "t", "b", base_url=self.fake.url)
 
     def test_422_other(self):
