@@ -1,8 +1,6 @@
-"""Tests for the ownership map, the matcher, the PreToolUse hook and the merge-time check.
+"""Tests for the ownership map, the matcher and the merge-time check.
 
-Standard library only. The matcher is loaded from ``.claude/hooks/ownership_lib.py`` of
-this checkout; the hook runs as a subprocess against a temporary ``CLAUDE_PROJECT_DIR``
-that holds copies of the map, hook and matcher.
+Standard library only. The matcher is loaded from ``tools/ownership/ownership_lib.py``.
 """
 
 import importlib.util
@@ -15,8 +13,8 @@ import tempfile
 import unittest
 
 REPO = os.path.realpath(os.path.join(os.path.dirname(__file__), "..", ".."))
-LIB_PATH = os.path.join(REPO, ".claude", "hooks", "ownership_lib.py")
-HOOK_PATH = os.path.join(REPO, ".claude", "hooks", "ownership.py")
+LIB_PATH = os.path.join(REPO, "tools", "ownership", "ownership_lib.py")
+HOOK_LIB_PATH = os.path.join(REPO, ".claude", "hooks", "ownership_lib.py")
 MAP_PATH = os.path.join(REPO, ".claude", "ownership.json")
 CHECK_PATH = os.path.join(REPO, "tools", "ownership", "check.py")
 
@@ -268,191 +266,13 @@ class PathTests(unittest.TestCase):
             os.unlink(link)
 
 
-class HookTests(unittest.TestCase):
-    """Runs the real hook script as a subprocess against a temp project dir."""
-
-    @classmethod
-    def setUpClass(cls):
-        cls.tmp = tempfile.mkdtemp()
-        cls.proj = os.path.realpath(cls.tmp)
-        cls.install(cls.proj, MAP_PATH)
-        cls.wt = os.path.join(cls.proj, ".claude", "worktrees", "feat-a")
-        os.makedirs(cls.wt)
-
-    @classmethod
-    def tearDownClass(cls):
-        shutil.rmtree(cls.tmp, ignore_errors=True)
-
-    @staticmethod
-    def install(root, map_source):
-        os.makedirs(os.path.join(root, ".claude", "hooks"), exist_ok=True)
-        shutil.copy(map_source, os.path.join(root, ".claude", "ownership.json"))
-        shutil.copy(HOOK_PATH, os.path.join(root, ".claude", "hooks", "ownership.py"))
-        shutil.copy(LIB_PATH, os.path.join(root, ".claude", "hooks", "ownership_lib.py"))
-
-    def run_hook(self, event, project_dir="__default__", raw=None):
-        env = {k: v for k, v in os.environ.items() if k != "CLAUDE_PROJECT_DIR"}
-        pd = self.proj if project_dir == "__default__" else project_dir
-        if pd is not None:
-            env["CLAUDE_PROJECT_DIR"] = pd
-        stdin = raw if raw is not None else json.dumps(event)
-        script = os.path.join(self.proj, ".claude", "hooks", "ownership.py")
-        proc = subprocess.run([sys.executable, script], input=stdin, capture_output=True, text=True, env=env, timeout=30)
-        return proc
-
-    def edit(self, agent, path, tool="Edit", cwd=None, key="file_path"):
-        event = {"tool_name": tool, "tool_input": {key: path}, "cwd": cwd or self.proj}
-        if agent:
-            event["agent_type"] = agent
-        return self.run_hook(event)
-
-    def decision(self, proc):
-        self.assertEqual(proc.returncode, 0, proc.stderr)
-        if not proc.stdout.strip():
-            return None, ""
-        out = json.loads(proc.stdout)["hookSpecificOutput"]
-        self.assertEqual(out["hookEventName"], "PreToolUse")
-        return out["permissionDecision"], out["permissionDecisionReason"]
-
-    def test_allowed_edit_prints_nothing(self):
-        proc = self.edit(CODER, f"{self.proj}/src/main/java/A.java")
-        self.assertEqual((proc.returncode, proc.stdout.strip()), (0, ""))
-        proc = self.edit(CODER, f"{self.wt}/src/main/java/A.java", tool="Write", cwd=self.wt)
-        self.assertEqual((proc.returncode, proc.stdout.strip()), (0, ""))
-
-    def test_denied_edit_names_owner(self):
-        d, reason = self.decision(self.edit(CODER, f"{self.wt}/src/main/resources/sounds.yml", cwd=self.wt))
-        self.assertEqual(d, "deny")
-        self.assertIn("sound-designer", reason)
-
-    def test_main_checkout_worktree_and_relative_paths_agree(self):
-        paths = [(f"{self.proj}/src/main/resources/effects.yml", self.proj),
-                 (f"{self.wt}/src/main/resources/effects.yml", self.wt),
-                 ("src/main/resources/effects.yml", self.wt),
-                 ("src/main/resources/effects.yml", self.proj)]
-        for path, cwd in paths:
-            d, reason = self.decision(self.edit(CODER, path, cwd=cwd))
-            self.assertEqual(d, "deny", path)
-            self.assertIn("vfx-designer", reason)
-            self.assertEqual(self.decision(self.edit(VFX, path, cwd=cwd))[0], None, path)
-
-    def test_dotdot_cannot_smuggle_an_edit(self):
-        d, _ = self.decision(self.edit(CODER, f"{self.wt}/src/main/../../.claude/settings.json", cwd=self.wt))
-        self.assertEqual(d, "deny")
-        d, _ = self.decision(self.edit(CODER, "../../.claude/ownership.json", cwd=f"{self.wt}/src/main"))
-        self.assertEqual(d, "deny")
-
-    def test_outside_repo_allowed(self):
-        for agent in (CODER, "general-purpose", SOUND):
-            self.assertIsNone(self.decision(self.edit(agent, "/tmp/claude-scratch/x.txt"))[0])
-            self.assertIsNone(self.decision(self.edit(agent, os.path.expanduser("~/.claude/projects/x.md")))[0])
-
-    def test_notebook_path_and_multiedit(self):
-        d, _ = self.decision(self.edit(CODER, f"{self.proj}/src/test/x.ipynb", tool="NotebookEdit", key="notebook_path"))
-        self.assertEqual(d, "deny")
-        self.assertIsNone(self.decision(self.edit(TESTER, f"{self.proj}/src/test/x.ipynb", tool="NotebookEdit", key="notebook_path"))[0])
-
-    def test_unknown_agent_denied(self):
-        d, reason = self.decision(self.edit("general-purpose", f"{self.proj}/README.md"))
-        self.assertEqual(d, "deny")
-        self.assertIn("general-purpose", reason)
-
-    def test_read_only_agents_get_no_decision(self):
-        for agent in ("Explore", "Plan"):
-            for tool, tin in (("Read", {"file_path": f"{self.proj}/src/main/A.java"}),
-                              ("Grep", {"pattern": "x", "path": self.proj}),
-                              ("Glob", {"pattern": "**/*.java"}),
-                              ("Bash", {"command": "ls"})):
-                proc = self.run_hook({"tool_name": tool, "tool_input": tin, "agent_type": agent, "cwd": self.proj})
-                self.assertEqual((proc.returncode, proc.stdout.strip()), (0, ""), f"{agent}/{tool}")
-
-    def test_edit_without_path_gives_no_decision(self):
-        proc = self.run_hook({"tool_name": "Edit", "tool_input": {}, "agent_type": CODER})
-        self.assertEqual((proc.returncode, proc.stdout.strip()), (0, ""))
-
-    def test_orchestrator_allow_ask_deny(self):
-        self.assertIsNone(self.decision(self.edit(None, f"{self.proj}/CLAUDE.md"))[0])
-        self.assertIsNone(self.decision(self.edit(None, f"{self.proj}/docs/briefs/x.md"))[0])
-        self.assertIsNone(self.decision(self.edit(None, f"{self.proj}/.github/workflows/ci.yml"))[0])
-        self.assertEqual(self.decision(self.edit(None, f"{self.proj}/docs/workflow.md"))[0], "ask")
-        self.assertEqual(self.decision(self.edit(None, f"{self.proj}/.claude/skills/feature/SKILL.md"))[0], "ask")
-        self.assertEqual(self.decision(self.edit(None, f"{self.proj}/.claude/hooks/ownership.py"))[0], "ask")
-        self.assertEqual(self.decision(self.edit(None, f"{self.proj}/src/main/java/A.java"))[0], "deny")
-
-    def test_map_comes_from_project_dir_not_worktree(self):
-        loose = read_json(MAP_PATH)
-        loose["agents"][CODER]["paths"] = ["**"]
-        loose["human_controlled"] = []
-        loose_map = os.path.join(self.tmp, "loose.json")
-        write_text(loose_map, json.dumps(loose))
-        # a looser map, matcher and hook inside the fake worktree must all be ignored
-        self.install(self.wt, loose_map)
-        with open(os.path.join(self.wt, ".claude", "hooks", "ownership_lib.py"), "a") as fh:
-            fh.write("\n\ndef decide(*a, **k):\n    return ALLOW, ''\n")
-        for path in (f"{self.wt}/.claude/ownership.json", f"{self.wt}/docs/workflow.md",
-                     f"{self.wt}/src/main/resources/sounds.yml"):
-            d, _ = self.decision(self.edit(CODER, path, cwd=self.wt))
-            self.assertEqual(d, "deny", path)
-
-    def test_failure_no_project_dir(self):
-        proc = self.run_hook({"tool_name": "Edit", "tool_input": {"file_path": "/x"}, "agent_type": CODER}, project_dir=None)
-        self.assertEqual(proc.returncode, 2)
-        self.assertIn("CLAUDE_PROJECT_DIR", proc.stderr)
-
-    def test_failure_bad_project_dir(self):
-        proc = self.run_hook({"tool_name": "Edit", "tool_input": {"file_path": "/x"}}, project_dir="/nonexistent/dir")
-        self.assertEqual(proc.returncode, 2)
-
-    def test_failure_bad_json_input(self):
-        for raw in ("not json", "", "[1, 2]", "null"):
-            proc = self.run_hook(None, raw=raw)
-            self.assertEqual(proc.returncode, 2, repr(raw))
-            self.assertTrue(proc.stderr.strip())
-
-    def test_failure_missing_or_broken_map_and_lib(self):
-        for breaker in ("map-missing", "map-broken", "map-incomplete", "lib-missing"):
-            root = tempfile.mkdtemp()
-            try:
-                root = os.path.realpath(root)
-                self.install(root, MAP_PATH)
-                if breaker == "map-missing":
-                    os.unlink(os.path.join(root, ".claude", "ownership.json"))
-                elif breaker == "map-broken":
-                    write_text(os.path.join(root, ".claude", "ownership.json"), "{nope")
-                elif breaker == "map-incomplete":
-                    write_text(os.path.join(root, ".claude", "ownership.json"), '{"agents": {}}')
-                else:
-                    os.unlink(os.path.join(root, ".claude", "hooks", "ownership_lib.py"))
-                env = dict(os.environ, CLAUDE_PROJECT_DIR=root)
-                event = {"tool_name": "Edit", "tool_input": {"file_path": f"{root}/src/A.java"}, "agent_type": CODER}
-                proc = subprocess.run([sys.executable, HOOK_PATH], input=json.dumps(event),
-                                      capture_output=True, text=True, env=env, timeout=30)
-                self.assertEqual(proc.returncode, 2, breaker + proc.stdout)
-            finally:
-                shutil.rmtree(root, ignore_errors=True)
-
-    def test_fast_enough(self):
-        import time
-        start = time.time()
-        for _ in range(5):
-            self.edit(CODER, f"{self.proj}/src/main/java/A.java")
-        per_call = (time.time() - start) / 5
-        self.assertLess(per_call, 0.5, f"{per_call:.3f}s per call (budget is 200 ms; allowing slack for CI)")
-
-
-class SettingsTests(unittest.TestCase):
-    def test_hook_entry(self):
-        settings = read_json(os.path.join(REPO, ".claude", "settings.json"))
-        self.assertEqual(settings["worktree"]["baseRef"], "head")
-        entries = settings["hooks"]["PreToolUse"]
-        self.assertEqual(len(entries), 1)
-        self.assertEqual(entries[0]["matcher"], "Edit|Write|NotebookEdit")
-        handler = entries[0]["hooks"][0]
-        self.assertEqual(handler["command"], "${CLAUDE_PROJECT_DIR}/.claude/hooks/ownership.py")
-        self.assertEqual(handler["onFailure"], "block")
-        self.assertTrue(os.access(HOOK_PATH, os.X_OK), "hook must be executable")
-        with open(HOOK_PATH) as fh:
-            self.assertEqual(fh.readline().strip(), "#!/usr/bin/env python3")
+class LibSyncTests(unittest.TestCase):
+    @unittest.skipUnless(os.path.exists(HOOK_LIB_PATH), "no .claude/hooks/ownership_lib.py in this checkout")
+    def test_repo_copy_matches_hook_lib(self):
+        with open(LIB_PATH, encoding="utf-8") as fh:
+            repo_copy = fh.read().split(chr(10), 1)[1]
+        with open(HOOK_LIB_PATH, encoding="utf-8") as fh:
+            self.assertEqual(repo_copy, fh.read())
 
 
 # --------------------------------------------------------------------------
@@ -578,9 +398,10 @@ class CheckGitIntegrationTests(unittest.TestCase):
 
     @staticmethod
     def install_rules(root):
-        os.makedirs(os.path.join(root, ".claude", "hooks"), exist_ok=True)
+        os.makedirs(os.path.join(root, ".claude"), exist_ok=True)
+        os.makedirs(os.path.join(root, "tools", "ownership"), exist_ok=True)
         shutil.copy(MAP_PATH, os.path.join(root, ".claude", "ownership.json"))
-        shutil.copy(LIB_PATH, os.path.join(root, ".claude", "hooks", "ownership_lib.py"))
+        shutil.copy(LIB_PATH, os.path.join(root, "tools", "ownership", "ownership_lib.py"))
 
     @staticmethod
     def commit_as(root, email, files, subject, folder_ok=False):
@@ -592,7 +413,7 @@ class CheckGitIntegrationTests(unittest.TestCase):
             git(root, "add", rel)
         # the bootstrap commit also records the rules, which are not part of the checked branches
         if subject == "base":
-            git(root, "add", ".claude")
+            git(root, "add", ".claude", "tools")
         git(root, "-c", f"user.email={email}", "-c", "user.name=T", "commit", "-q", "-m", subject)
 
     def run_check(self, *args, project_dir=None):

@@ -48,10 +48,10 @@ Last checked: 2026-10-18
 
 ### Ownership enforcement
 
-Who may edit which file is defined once, in `.claude/ownership.json` (human-controlled; format and glob rules in the docstring of `.claude/hooks/ownership_lib.py`). Two layers use it:
+Who may edit which file is defined once, in `.claude/ownership.json` (human-controlled; format and glob rules in the docstring of `tools/ownership/ownership_lib.py`). The matcher exists twice: the `bakery-team` plugin ships it for its hook, and `tools/ownership/ownership_lib.py` is a repo copy for the merge check; the two must stay identical (apart from the copy's one-line header comment). Two layers use it:
 
-- **PreToolUse hook** (`.claude/hooks/ownership.py`, early warning): denies `Edit`/`Write`/`NotebookEdit` calls on files the agent doesn't own, with a reason that names the owner. Paths in `.claude/worktrees/<name>/` count as the same repo-relative path; paths outside the repository are always allowed. It loads the map and matcher only from `$CLAUDE_PROJECT_DIR` (the main checkout), so an agent's worktree copy can't loosen its rules. **Files written through Bash are not covered by the hook**, only by the merge check.
-- **`mise run ownership-check`** (the real guarantee, run by the orchestrator before every merge): judges each commit by its author. Human-controlled files are a violation for agents; for the orchestrator, or with `--human-approved` when the user explicitly approved the change, they're listed for "Needs human review" instead. The map and matcher come from `$CLAUDE_PROJECT_DIR`, else the main checkout, else the current checkout (the output says which).
+- **PreToolUse hook** (shipped by the `bakery-team` plugin, early warning): denies `Edit`/`Write`/`NotebookEdit` calls on files the agent doesn't own, with a reason that names the owner. Paths in `.claude/worktrees/<name>/` count as the same repo-relative path; paths outside the repository are always allowed. It loads the map and matcher only from `$CLAUDE_PROJECT_DIR` (the main checkout), so an agent's worktree copy can't loosen its rules. **Files written through Bash are not covered by the hook**, only by the merge check.
+- **`mise run ownership-check`** (the real guarantee, run by the orchestrator before every merge): judges each commit by its author. Human-controlled files are a violation for agents; for the orchestrator, or with `--human-approved` when the user explicitly approved the change, they're listed for "Needs human review" instead. The map (`.claude/ownership.json`) and matcher (`tools/ownership/ownership_lib.py`) come from `$CLAUDE_PROJECT_DIR`, else the main checkout, else the current checkout (the output says which).
 - **Authorship is self-declared** (`git -c user.email=…`), so both layers guard against mistakes, not against tampering.
 
 ### GitHub App PRs
@@ -67,7 +67,7 @@ Feature PRs are opened by the `cookie-bakery[bot]` GitHub App, so the user can a
   Environment variables with the same names override the file. `--config <file>` or `$GITHUB_APP_CONFIG` point at another file, and `$GITHUB_API_URL` replaces `https://api.github.com` (tests only; plain `http` only for localhost).
 - **Key permissions:** the private key must be a regular file owned by you with no group/other access (`chmod 600`); anything else is refused before the key is used. Python never reads the key; only `openssl` does.
 - **The token is never stored:** `pr-open` fetches it in memory and never prints it. `pr-token` prints it only on stdout, for a command substitution. Neither writes it to disk or logs, and error messages leave out the token, the JWT and key material.
-- **Who runs it:** Rick runs `mise run pr-open …` at the end of `/feature`, allowed by a `Bash(mise run pr-open:*)` permission rule that the user adds themselves. If the rule is missing or the call is denied, Rick stops and gives the user the exact `! mise run pr-open …` command. He never falls back to the user's account. `pr-open` runs from the repo root, so a relative `--body-file` is read from there.
+- **Who runs it:** Rick runs `mise run pr-open …` at the end of `/bakery-team:feature`, allowed by a `Bash(mise run pr-open:*)` permission rule that the user adds themselves. If the rule is missing or the call is denied, Rick stops and gives the user the exact `! mise run pr-open …` command. He never falls back to the user's account. `pr-open` runs from the repo root, so a relative `--body-file` is read from there.
 
 
 ---
