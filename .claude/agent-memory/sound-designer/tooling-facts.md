@@ -21,3 +21,8 @@ Verified 2026-10-19 (starter-house), stable unless the files change:
 - synth.py now has `gain_to_lufs` (pyloudnorm, same as sound-check), `soft_limit`, `fft_filter` (circular), `place_circular`. Generator LUFS lands ~1 dB lower after Vorbis on spiky material (crackle -19.0 -> -19.1 ok; earlier -20 -> -20.2).
 - Guard refuses Bash that runs `python3 - <<EOF` editing JSON plus `git` in one command, and `for s in ...; do mise exec ...$s` loops; write JSON with the Write tool, run scripts one per command.
 - `mise run check` in a fresh worktree: ~1 min incl. 238 tests (2026-10-19).
+
+Verified 2026-10-20 (factory-makeover), stable unless tools/sound_check.py changes:
+- Fresh worktree: `mise exec -- python` has no numpy until `mise run assets-deps` runs once (mise run sound-check etc. depend on it; plain mise exec doesn't).
+- Seam window for loops (tools/sound_check.py): last 2 ms must be < -30 dBFS AND first audible sample (> -40 dBFS) within 5 ms. Tonal loop: Gaussian loop dip 85 % / 80 ms passed; 55 % and 95 % failed.
+- config.yml (bakery-core/starter-house): chimney smoke puffs every 10 ticks, crackle sound every 6th puff (= 60 ticks).
