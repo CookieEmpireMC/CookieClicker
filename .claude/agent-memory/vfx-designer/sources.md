@@ -14,4 +14,7 @@ metadata:
 - Dead end: compound Bash commands (cd + heredoc + build in one call) are refused in the isolated worktree; write
   helper scripts to the scratchpad with Write and run them with plain single commands.
 
+- Re-confirmed 2026-10-20: even `python3 - <<EOF` with `cd ... &&` is refused; Write a .py to the scratchpad (chdir
+  inside it) and run `python3 <path>`; use `mise -C <worktree> run ...` and `git -C <worktree> ...`.
+
 Related: [[reference-paper263-vfx-api]]

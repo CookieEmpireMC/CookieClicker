@@ -35,6 +35,9 @@ First built in feature bakery-core (2026-10-18, branch bakery-core/vfx-designer)
   `plot_outline` (#8ec5ff) and `house_outline` (#f5c542), 1 forced dust each, for `/bakery plot show` (played per
   outline point). Pinned in `HouseEffectsConfigTest.outlinePresetsAreOneForcedParticle`. **How to apply:** keep
   per-point tool presets at 1 particle; never reuse player-facing presets for them.
+- factory-makeover (2026-10-20): preset `factory_steam` (loop-every 37, 8 particles/cycle, cloud + white_smoke, force);
+  `max-loops-per-player` default raised 4 -> 8 in both effects.yml and `Limits.DEFAULTS` (keep them equal). Pinned
+  in `HouseEffectsConfigTest.factorySteamIsACheapIrregularLoop`.
 - EffectTicker buffers jobs started during its own run (`pending`) so callback-started jobs aren't stepped twice.
 
 Related: [[reference-paper263-vfx-api]]
