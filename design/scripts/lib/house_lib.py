@@ -180,7 +180,10 @@ def validate(g: dict, layers: list[list[str]], palette: dict, size: tuple, origi
                 if is_solid(nb) or family(nb) == fam:
                     want = True
                 elif nb in NO_CONNECT or nb.endswith("_door") or nb.endswith("_wall_sign") \
-                        or nb.endswith("lantern") or nb.startswith("potted_") or nb == "campfire":
+                        or nb.endswith("lantern") or nb.startswith("potted_") or nb == "campfire" \
+                        or nb.endswith("_trapdoor") or nb.endswith("lightning_rod") \
+                        or nb.endswith("_slab") and props(x + dx, y, z + dz)["type"] != "double":
+                    # none of these has a sturdy full side face
                     want = False
                 elif fam == "wood_fence" and nb.endswith("_fence_gate"):
                     want = True
