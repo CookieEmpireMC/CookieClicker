@@ -1,6 +1,6 @@
 # cookie-memory
 
-**Status:** review  <!-- planned | in progress | review | done -->
+**Status:** done  <!-- planned | in progress | review | done -->
 **Created:** 2026-10-20 · **Approved:** 2026-10-20 · **Depends on:** factory-makeover (merged, PR #6); repos moved to `CookieEmpireMC` (done)
 
 ## Goal
