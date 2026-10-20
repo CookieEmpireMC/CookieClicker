@@ -80,10 +80,33 @@ class GlobTests(unittest.TestCase):
 
 
 class MapShapeTests(unittest.TestCase):
+    @staticmethod
+    def find_agent_dir():
+        """Agent files live in the bakery-team plugin, not in this repo."""
+        import glob
+        candidates = []
+        env = os.environ.get("BAKERY_TEAM_AGENTS")
+        if env:
+            candidates.append(env)
+        home = os.path.expanduser("~/.claude/plugins")
+        candidates += sorted(glob.glob(os.path.join(home, "**", "bakery-team", "agents"), recursive=True))
+        candidates.append(os.path.join(REPO, "..", "CookieMemory", "plugins", "bakery-team", "agents"))
+        for c in candidates:
+            if os.path.isdir(c) and any(f.endswith(".md") for f in os.listdir(c)):
+                return c
+        return None
+
     def test_every_agent_file_has_an_entry(self):
-        agent_dir = os.path.join(REPO, ".claude", "agents")
+        agent_dir = self.find_agent_dir()
+        if agent_dir is None:
+            self.skipTest("bakery-team agent files not found (set BAKERY_TEAM_AGENTS, install the plugin, "
+                          "or check out ../CookieMemory)")
         names = {f[:-3] for f in os.listdir(agent_dir) if f.endswith(".md")}
         self.assertEqual(names, set(lib.agents(DATA)))
+
+    def test_every_agent_owns_its_memory_folder(self):
+        for name, entry in lib.agents(DATA).items():
+            self.assertIn(f".claude/agent-memory/bakery-team-{name}/**", entry["paths"], name)
 
     def test_emails_are_unique_and_bakery_domain(self):
         emails = [DATA["orchestrator"]["email"]] + [a["email"] for a in lib.agents(DATA).values()]
