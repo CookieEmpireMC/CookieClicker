@@ -1,5 +1,7 @@
 package dev.casperrs.cookieClicker.station;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * A bakery station from {@code stations.yml}. Pure data: no Bukkit types, so registry logic is testable.
  *
@@ -8,8 +10,18 @@ package dev.casperrs.cookieClicker.station;
  * @param x        position of the station's base (block centre if {@code station.snap-to-block})
  * @param yaw      the admin's facing when placing it (snapped by {@code station.snap-yaw-degrees});
  *                 pass 2 decides how the cookie/panel are laid out relative to it
+ * @param shop     with a plot layout: where the shop panel stands (and its facing); the cookie then stands right on
+ *                 this station's position. Null: cookie and panel use the {@code station.*} offsets from here
  */
-public record Station(String id, String worldKey, double x, double y, double z, float yaw) {
+public record Station(String id, String worldKey, double x, double y, double z, float yaw, @Nullable Anchor shop) {
+
+    /** A position with a facing (same yaw meaning as {@link Station#yaw}). */
+    public record Anchor(double x, double y, double z, float yaw) {
+    }
+
+    public Station(String id, String worldKey, double x, double y, double z, float yaw) {
+        this(id, worldKey, x, y, z, yaw, null);
+    }
 
     public double distanceSquared(String world, double ox, double oy, double oz) {
         if (!worldKey.equals(world)) {

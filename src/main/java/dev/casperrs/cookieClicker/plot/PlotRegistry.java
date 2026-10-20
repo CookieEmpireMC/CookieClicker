@@ -57,8 +57,17 @@ public final class PlotRegistry {
         return worlds.apply(plot.worldKey());
     }
 
-    /** Current shape of the plot's house region (read fresh from WorldGuard). */
+    /**
+     * The plot's house: the box {@code /bakery plot setup} placed (plots.yml {@code house-box}) when there is one,
+     * otherwise the current shape of the {@code bakery-house} region (read fresh from WorldGuard).
+     */
     public Optional<RegionShape> houseShape(String id) {
+        Plot plot = plots.get(id);
+        if (plot != null && plot.house() != null) {
+            Plot.Box b = plot.house();
+            return Optional.of(RegionShape.cuboid("house-box:" + id, b.minX(), b.minY(), b.minZ(), b.maxX(), b.maxY(),
+                    b.maxZ()));
+        }
         return shape(id, resolved(id).houseRegion());
     }
 

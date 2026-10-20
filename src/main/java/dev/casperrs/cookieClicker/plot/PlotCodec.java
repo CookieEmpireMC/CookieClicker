@@ -24,7 +24,9 @@ import java.util.regex.Pattern;
  *     chimney: { x: 20.5, y: 72.0, z: 1.5 }   # optional: one smoke point (written when there is exactly one)
  *     smoke: [ { x: 20.5, y: 72.0, z: 1.5 }, ... ]   # optional: several smoke points (factory smokestacks)
  *     steam: [ { x: 18.5, y: 70.0, z: 2.5 }, ... ]   # optional: factory_steam vents
- *     entrance: { x: 3.5, y: 64.0, z: -9.5 }         # optional: fence gate centre (/bakery plot fence place)
+ *     entrance: { x: 3.5, y: 64.0, z: -9.5 }         # optional: fence gate centre (/bakery plot setup)
+ *     shop: { x: 14.5, y: 64.0, z: -3.5, yaw: 90.0 } # optional: shop panel spot (/bakery plot setup)
+ *     house-box: { min: [10, 64, -8], max: [22, 78, 2] }   # optional: the house placed by /bakery plot setup
  * </pre>
  * Bad entries are reported and skipped; a bad optional point is reported and left out. Pure Java.
  */
@@ -92,8 +94,24 @@ public final class PlotCodec {
                     problems.accept(where + ".entrance needs numeric x, y, z; ignored");
                 }
             }
+            Plot.Pedestal shop = null;
+            if (spec.get("shop") != null) {
+                double[] v = numbers(spec.get("shop"), "x", "y", "z", "yaw");
+                if (v == null) {
+                    problems.accept(where + ".shop needs numeric x, y, z (yaw optional); ignored");
+                } else {
+                    shop = new Plot.Pedestal(v[0], v[1], v[2], (float) v[3]);
+                }
+            }
+            Plot.Box house = null;
+            if (spec.get("house-box") != null) {
+                house = box(spec.get("house-box"));
+                if (house == null) {
+                    problems.accept(where + ".house-box needs min: [x, y, z] and max: [x, y, z]; ignored");
+                }
+            }
             out.add(new Plot(id, w, regionId(spec.get("plot-region")), regionId(spec.get("house-region")),
-                    viewpoint, pedestal, smoke, steam, entrance));
+                    viewpoint, pedestal, smoke, steam, entrance, shop, house));
         }
         return out;
     }
@@ -130,6 +148,17 @@ public final class PlotCodec {
                 Plot.Point v = p.entrance();
                 spec.put("entrance", point(v.x(), v.y(), v.z(), null, 0, null, 0));
             }
+            if (p.shop() != null) {
+                Plot.Pedestal v = p.shop();
+                spec.put("shop", point(v.x(), v.y(), v.z(), "yaw", v.yaw(), null, 0));
+            }
+            if (p.house() != null) {
+                Plot.Box b = p.house();
+                Map<String, Object> box = new LinkedHashMap<>();
+                box.put("min", List.of(b.minX(), b.minY(), b.minZ()));
+                box.put("max", List.of(b.maxX(), b.maxY(), b.maxZ()));
+                spec.put("house-box", box);
+            }
             all.put(p.id(), spec);
         }
         Map<String, Object> root = new LinkedHashMap<>();
@@ -150,6 +179,22 @@ public final class PlotCodec {
             m.put(k2, (double) v2);
         }
         return m;
+    }
+
+    private static Plot.@Nullable Box box(Object raw) {
+        if (!(raw instanceof Map<?, ?> m) || !(m.get("min") instanceof List<?> min) || !(m.get("max") instanceof List<?> max)
+                || min.size() != 3 || max.size() != 3) {
+            return null;
+        }
+        int[] v = new int[6];
+        for (int i = 0; i < 6; i++) {
+            if (!((i < 3 ? min.get(i) : max.get(i - 3)) instanceof Number n)) {
+                return null;
+            }
+            v[i] = n.intValue();
+        }
+        return new Plot.Box(Math.min(v[0], v[3]), Math.min(v[1], v[4]), Math.min(v[2], v[5]),
+                Math.max(v[0], v[3]), Math.max(v[1], v[4]), Math.max(v[2], v[5]));
     }
 
     private static List<Object> pointList(List<Plot.Point> points) {
