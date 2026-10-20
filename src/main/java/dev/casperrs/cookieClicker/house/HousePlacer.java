@@ -209,7 +209,7 @@ public final class HousePlacer {
 
         HouseBackup.BlockAccess access = worldAccess(world, byString);
         HouseBackup backup = HouseBackup.capture(plotId, design.name(), plot.worldKey(), System.currentTimeMillis(),
-                corner, size, plot.chimney(), changes, access);
+                corner, size, plot.smoke(), plot.steam(), changes, access);
 
         // The undo must be on disk before the first block changes: write first, paste only after it succeeded.
         String yaml = toYaml(backup.toMap());
@@ -268,10 +268,12 @@ public final class HousePlacer {
             }
         }
 
-        int[] chimney = design.points().get("chimney");
-        if (chimney != null) {
-            int[] w = design.toWorld(regionMin, chimney[0], chimney[1], chimney[2]);
-            Plot updated = plot.withChimney(new Plot.Point(w[0] + 0.5, w[1], w[2] + 0.5));
+        // The design's smoke and steam cells replace the plot's (bottom centre of each cell); a design without smoke
+        // keeps the plot's own (e.g. one set by /bakery plot setchimney).
+        List<Plot.Point> smoke = cellCentres(design, regionMin, design.smoke());
+        Plot updated = (smoke.isEmpty() ? plot : plot.withSmoke(smoke))
+                .withSteam(cellCentres(design, regionMin, design.steam()));
+        if (!updated.equals(plot)) {
             plots.put(updated, problem -> plugin.getLogger().warning(problem));
             plotFile.saveAsync(plots.all());
         }
@@ -280,7 +282,16 @@ public final class HousePlacer {
                 Placeholder.unparsed("id", plotId), Placeholder.unparsed("count", Integer.toString(changed)));
     }
 
-    private static boolean loaded(World world, int[] corner, int[] size) {
+    private static List<Plot.Point> cellCentres(HouseDesign design, int[] regionMin, List<int[]> cells) {
+        List<Plot.Point> out = new ArrayList<>(cells.size());
+        for (int[] c : cells) {
+            int[] w = design.toWorld(regionMin, c[0], c[1], c[2]);
+            out.add(new Plot.Point(w[0] + 0.5, w[1], w[2] + 0.5));
+        }
+        return out;
+    }
+
+    static boolean loaded(World world, int[] corner, int[] size) {
         if (corner[1] < world.getMinHeight() || corner[1] + size[1] > world.getMaxHeight()) {
             return false;
         }
@@ -398,7 +409,8 @@ public final class HousePlacer {
             }
         }
         plots.get(plotId).ifPresent(plot -> {
-            plots.put(plot.withChimney(backup.previousChimney()), problem -> plugin.getLogger().warning(problem));
+            plots.put(plot.withSmoke(backup.previousSmoke()).withSteam(backup.previousSteam()),
+                    problem -> plugin.getLogger().warning(problem));
             plotFile.saveAsync(plots.all());
         });
         int count = backup.cells().size();

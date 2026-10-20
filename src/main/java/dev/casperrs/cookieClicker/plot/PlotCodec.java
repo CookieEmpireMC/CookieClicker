@@ -21,7 +21,10 @@ import java.util.regex.Pattern;
  *     house-region: bakery_house    # optional fallback; the bakery-house flag is the source of truth
  *     viewpoint: { x: 10.5, y: 64.0, z: -3.5, yaw: 90.0, pitch: 10.0 }
  *     pedestal: { x: 12.5, y: 64.0, z: -3.5, yaw: 90.0 }
- *     chimney: { x: 20.5, y: 72.0, z: 1.5 }   # optional
+ *     chimney: { x: 20.5, y: 72.0, z: 1.5 }   # optional: one smoke point (written when there is exactly one)
+ *     smoke: [ { x: 20.5, y: 72.0, z: 1.5 }, ... ]   # optional: several smoke points (factory smokestacks)
+ *     steam: [ { x: 18.5, y: 70.0, z: 2.5 }, ... ]   # optional: factory_steam vents
+ *     entrance: { x: 3.5, y: 64.0, z: -9.5 }         # optional: fence gate centre (/bakery plot fence place)
  * </pre>
  * Bad entries are reported and skipped; a bad optional point is reported and left out. Pure Java.
  */
@@ -71,17 +74,26 @@ public final class PlotCodec {
                     pedestal = new Plot.Pedestal(v[0], v[1], v[2], (float) v[3]);
                 }
             }
-            Plot.Point chimney = null;
+            List<Plot.Point> smoke = new ArrayList<>();
             if (spec.get("chimney") != null) {
-                double[] v = numbers(spec.get("chimney"), "x", "y", "z");
-                if (v == null) {
+                Plot.Point c = point(spec.get("chimney"));
+                if (c == null) {
                     problems.accept(where + ".chimney needs numeric x, y, z; ignored");
                 } else {
-                    chimney = new Plot.Point(v[0], v[1], v[2]);
+                    smoke.add(c);
+                }
+            }
+            smoke.addAll(points(spec.get("smoke"), where + ".smoke", problems));
+            List<Plot.Point> steam = points(spec.get("steam"), where + ".steam", problems);
+            Plot.Point entrance = null;
+            if (spec.get("entrance") != null) {
+                entrance = point(spec.get("entrance"));
+                if (entrance == null) {
+                    problems.accept(where + ".entrance needs numeric x, y, z; ignored");
                 }
             }
             out.add(new Plot(id, w, regionId(spec.get("plot-region")), regionId(spec.get("house-region")),
-                    viewpoint, pedestal, chimney));
+                    viewpoint, pedestal, smoke, steam, entrance));
         }
         return out;
     }
@@ -105,9 +117,18 @@ public final class PlotCodec {
                 Plot.Pedestal v = p.pedestal();
                 spec.put("pedestal", point(v.x(), v.y(), v.z(), "yaw", v.yaw(), null, 0));
             }
-            if (p.chimney() != null) {
-                Plot.Point v = p.chimney();
+            if (p.smoke().size() == 1) {
+                Plot.Point v = p.smoke().getFirst();
                 spec.put("chimney", point(v.x(), v.y(), v.z(), null, 0, null, 0));
+            } else if (!p.smoke().isEmpty()) {
+                spec.put("smoke", pointList(p.smoke()));
+            }
+            if (!p.steam().isEmpty()) {
+                spec.put("steam", pointList(p.steam()));
+            }
+            if (p.entrance() != null) {
+                Plot.Point v = p.entrance();
+                spec.put("entrance", point(v.x(), v.y(), v.z(), null, 0, null, 0));
             }
             all.put(p.id(), spec);
         }
@@ -129,6 +150,40 @@ public final class PlotCodec {
             m.put(k2, (double) v2);
         }
         return m;
+    }
+
+    private static List<Object> pointList(List<Plot.Point> points) {
+        List<Object> out = new ArrayList<>(points.size());
+        for (Plot.Point v : points) {
+            out.add(point(v.x(), v.y(), v.z(), null, 0, null, 0));
+        }
+        return out;
+    }
+
+    private static Plot.@Nullable Point point(Object raw) {
+        double[] v = numbers(raw, "x", "y", "z");
+        return v == null ? null : new Plot.Point(v[0], v[1], v[2]);
+    }
+
+    /** A list of {x, y, z} sections; bad entries are reported and skipped. Null/absent = empty. */
+    private static List<Plot.Point> points(@Nullable Object raw, String where, Consumer<String> problems) {
+        List<Plot.Point> out = new ArrayList<>();
+        if (raw == null) {
+            return out;
+        }
+        if (!(raw instanceof List<?> list)) {
+            problems.accept(where + " must be a list of { x, y, z }; ignored");
+            return out;
+        }
+        for (int i = 0; i < list.size(); i++) {
+            Plot.Point p = point(list.get(i));
+            if (p == null) {
+                problems.accept(where + "[" + i + "] needs numeric x, y, z; ignored");
+            } else {
+                out.add(p);
+            }
+        }
+        return out;
     }
 
     /** x, y, z required; any further keys default to 0. Null when not a section or a required value is missing. */

@@ -134,7 +134,7 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
         this.messages = messages;
         this.settings = settings;
         this.keepOut = new KeepOut(plugin);
-        this.smoke = new ChimneySmoke(effects, sounds, () -> settings.get().chimney());
+        this.smoke = new ChimneySmoke(plugin, effects, sounds, settings);
     }
 
     /** Enable: listen to events and plot presence. Call before {@link PlotTracker#start()}. */
@@ -540,7 +540,9 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
         if (running.containsKey(p.getUniqueId())) {
             return; // mid-cinematic: smoke comes at the end
         }
-        plots.get(plotId).ifPresent(plot -> plots.world(plot).ifPresent(w -> smoke.start(p, plot, w)));
+        plots.get(plotId).ifPresent(plot -> plots.world(plot).ifPresent(w -> smoke.start(p, plot, w,
+                plots.houseShape(plotId).map(h -> new org.bukkit.Location(w, (h.minX() + h.maxX() + 1) / 2.0,
+                        (h.minY() + h.maxY() + 1) / 2.0, (h.minZ() + h.maxZ() + 1) / 2.0)).orElse(null))));
     }
 
     @EventHandler(priority = EventPriority.LOWEST)

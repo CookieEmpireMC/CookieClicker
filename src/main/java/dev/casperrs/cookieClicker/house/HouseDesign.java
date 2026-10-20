@@ -11,12 +11,15 @@ import java.util.Map;
  * @param origin  the design cell that lands on the house region's minimum corner
  * @param palette char -&gt; block data string (validated against the server when pasting)
  * @param grid    {@code grid[y][z][x]}; {@link HouseDesignParser#KEEP} = leave the world's block alone
- * @param points  named points ({@code chimney}, {@code door}, ...) as design-local {@code [x, y, z]}; {@code chimney}
- *                is the cell above the chimney top where the smoke starts
+ * @param points  named single points ({@code chimney}, {@code door}, {@code belt_out}, ...) as design-local
+ *                {@code [x, y, z]}; {@code chimney} is the cell above the chimney top where the smoke starts
+ * @param smoke   every smoke start cell ({@code points.smoke}, or the one {@code points.chimney}); may be empty
+ * @param steam   every steam vent cell ({@code points.steam}); may be empty
  * @param signs   text for sign blocks, set on their front side after pasting
  */
 public record HouseDesign(String name, int sizeX, int sizeY, int sizeZ, int[] origin, Map<Character, String> palette,
-                          char[][][] grid, Map<String, int[]> points, List<SignText> signs) {
+                          char[][][] grid, Map<String, int[]> points, List<int[]> smoke, List<int[]> steam,
+                          List<SignText> signs) {
 
     /** Plain text (not MiniMessage) for the sign at design cell {@code at}, front side, up to 4 lines. */
     public record SignText(int[] at, List<String> lines) {

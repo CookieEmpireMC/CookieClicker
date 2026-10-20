@@ -179,12 +179,13 @@ house:
     # trigger viewpoint: a teleport must end within this many blocks of the viewpoint
     viewpoint-radius: 2.0
     # Blocks that start falling per tick (0.5 = one every other tick). Each landing is ~12 particles + 3 sounds,
-    # so keep it modest. The default cottage (170 blocks) takes about 20 seconds at 1.
-    blocks-per-tick: 1
+    # so keep it modest. Tuned for the factory (~600-1200 blocks): about 17-30 seconds at 2.25 with the layer
+    # delay below. The small cottage (170 blocks) is over in a few seconds; use 1 for it.
+    blocks-per-tick: 2.25
     # Falling block displays alive at once per player (1-24; 24 is the effects engine's cap)
     max-falling-displays: 24
     # Pause before the first layer and after each layer has landed (ticks)
-    layer-delay-ticks: 12
+    layer-delay-ticks: 5
     # Play the hammer sound on every n-th landing (0 = never)
     hammer-every: 3
     # Keep the player out of the (invisible but solid) house: hold (stand still), slow, none.
@@ -200,11 +201,26 @@ house:
     reassert-radius: 2
     # Confetti bursts this many blocks above the top of the house region
     confetti-height: 1.0
-  # Chimney smoke (plots.yml chimney point), shown to every player in the plot who isn't watching the cinematic
+  # Chimney smoke at every smoke point of the plot (plots.yml chimney / smoke, set by /bakery house place), shown
+  # to every player in the plot who isn't watching the cinematic
   chimney:
     smoke: true
     # Replay the crackle sound every n-th smoke puff (the smoke puffs every 10 ticks; 0 = no sound)
     crackle-every: 6
+  # Factory steam (factory_steam effect) at every steam point of the plot (plots.yml steam)
+  steam:
+    enabled: true
+    # Ticks between the start of one vent and the next, so vents don't puff together
+    every: 7
+  # Low oven hum (factory_ambient sound) for players in the plot near the factory
+  ambient:
+    enabled: true
+    # Ticks between plays (the sound is a 4 second loop)
+    every: 80
+    # Only players within this many blocks of the first steam point (or the house centre) hear it
+    radius: 24.0
+  # /bakery plot fence place: the fence style is houses/fence.yml (data folder first, then the plugin's copy).
+  # Plots whose box (x * z) is bigger than house.max-blocks are refused.
 
 debug:
   # Log every click event on a bakery hitbox (which events fire, who tracks the entity). For testing.
