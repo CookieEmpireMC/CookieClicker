@@ -63,6 +63,7 @@ none (decided below)
 1. **Size:** the factory should look detailed and good, with room in front for the conveyor → pedestal. Not huge, but as big as needed; the designer decides. The plot grows to fit (the GDD's 11×11 is a guideline).
 2. **Fence:** part of this feature, and it may expand the plot.
 3. **Cottage:** stays as `default` for testing; the factory is the priority.
+4. **Foolproof admin setup** (user, later on 2026-10-20): no "stand in the right spot" commands. The admin draws one WorldGuard plot region (flag `bakery-plot`) and runs `/bakery plot setup`. A fixed `layout:` in the design places fence, gate, house, pedestal, shop, viewpoint and belt identically on every plot, and the cinematic is always watched from the same viewpoint and distance. `setpedestal`, `setviewpoint` and `setchimney` are removed, and so is the "gate nearest the admin" logic. The fence now runs on the layout's `plot-size` ring instead of the region border (to grow the plot, change the layout). This replaces Decision 2's "fence along the region border".
 
 ## Contract (fixed names; change only via the orchestrator)
 | Kind | ID | Owner | Notes |
@@ -72,7 +73,8 @@ none (decided below)
 | sound event | `factory_ambient` | sound-designer | key `cookieclicker:factory.ambient`, loop 3–6 s, source `ambient`, fallback `minecraft:block.furnace.fire_crackle` (quiet); played at the first `points.steam` (or the house centre) for players in the plot |
 | effect | `factory_steam` | vfx-designer | looping preset, used with `Effects.loop` |
 | fence style | `src/main/resources/houses/fence.yml` | model-designer | keys: `post`, `rail` (fence block data; connections computed by the coder from neighbours), `post-every`, `corner`, `topper` + `topper-every`, `gate: {width: 3, left, right, arch: [block data per height]}`; full format in `design/fence.md`; coder parses it, tester tests the parser |
-| command | `/bakery plot fence place\|undo` | plugin-coder | permission `cookieempire.admin`; backups in `house-backups/` style (`fence-backups/`) |
+| layout | `houses/factory.yml` `layout: {plot-size [x,z], house-at, pedestal{at,yaw}, shop{at,yaw}, viewpoint{at,yaw,pitch}, entrance [x,z], belt{from,to}}`, cells relative to the plot min corner, y 0 = first air layer, front north | model-designer (values), plugin-coder (parser) | Decision 4 |
+| command | `/bakery plot setup [design]`, `/bakery plot setup undo` (replaces `fence place\|undo`, `setpedestal`, `setviewpoint`, `setchimney`); layout anchored at the region bounding-box centre, region must be ≥ plot-size | plugin-coder | permission `cookieempire.admin`; backups in `house-backups/` style (`fence-backups/`) |
 | config | `plots.yml`: `plots.<id>.entrance{x,y,z}` | plugin-coder | |
 | message keys | `plot.fence.*` | plugin-coder | |
 | config | `config.yml` `house.chimney.*` covers every smoke point; new `house.steam.{enabled, every}`, `house.ambient.{enabled, every, radius}`; retuned `house.cinematic.{blocks-per-tick, layer-delay-ticks}` defaults | plugin-coder | final keys reported by the coder |
