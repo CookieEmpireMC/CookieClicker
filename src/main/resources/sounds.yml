@@ -95,3 +95,13 @@ house_chimney_crackle:
   pitch-min: 0.97                           # at pitch p the file lasts 3.0/p s (3.09-2.91 s)
   pitch-max: 1.03
   source: ambient
+
+# --- factory-makeover ---
+
+factory_ambient:
+  key: "cookieclicker:factory.ambient"       # 4.0 s seamless loop (80 ticks); replay every 80 ticks
+  fallback: "minecraft:block.furnace.fire_crackle"  # shares the quiet volume below
+  volume: 0.3                               # sits under house_chimney_crackle (0.5, file -19.1 LUFS)
+  pitch-min: 1.0                            # fixed pitch: a tonal hum would phase against itself
+  pitch-max: 1.0                            # if overlapping replays drifted in length
+  source: ambient
