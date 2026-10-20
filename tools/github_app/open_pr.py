@@ -1,7 +1,7 @@
 """Open a pull request as the ``cookie-bakery[bot]`` GitHub App.
 
     mise run pr-open --head feature/<name> --base main --title "<title>" --body-file <file> [--draft]
-    python tools/github_app/open_pr.py ... [--repo Self-Learned/Cookie-Clicker] [--config <env file>]
+    python tools/github_app/open_pr.py ... [--repo CookieEmpireMC/CookieClicker] [--config <env file>]
 
 Gets an installation token internally (never printed or stored), POSTs
 ``/repos/{repo}/pulls`` and prints ``url``, ``number`` and ``author`` on stdout.
