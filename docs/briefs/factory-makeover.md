@@ -1,6 +1,6 @@
 # factory-makeover
 
-**Status:** review  <!-- planned | in progress | review | done -->
+**Status:** done  <!-- planned | in progress | review | done -->
 **Created:** 2026-10-20 · **Approved:** 2026-10-20 · **Depends on:** starter-house (merged, PR #5)
 
 ## Goal
