@@ -12,16 +12,15 @@ The front (door, windows, sign) faces north (-Z).
 """
 from __future__ import annotations
 
-import re
 import sys
 from pathlib import Path
 
 import yaml
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
-from voxel_render import render  # noqa: E402
+import house_lib  # noqa: E402
 
 OUT_YML = ROOT / "src/main/resources/houses/default.yml"
 OUT_DIR = ROOT / "design/scripts/previews"
@@ -55,52 +54,7 @@ PALETTE = {
     "o": "minecraft:potted_orange_tulip",
 }
 
-# --- block data validation -------------------------------------------------------------------
-BLOCK_DATA_RE = re.compile(r"^minecraft:[a-z0-9_]+(\[[a-z0-9_]+=[a-z0-9_]+(,[a-z0-9_]+=[a-z0-9_]+)*\])?$")
-BOOL = {"true", "false"}
-HORIZONTAL = {"north", "south", "west", "east"}
-# property schemas (26.3 vanilla), matched by block id suffix/name
-SCHEMAS = [
-    (lambda b: b.endswith("_stairs"), {"facing": HORIZONTAL, "half": {"top", "bottom"},
-     "shape": {"straight", "inner_left", "inner_right", "outer_left", "outer_right"},
-     "waterlogged": BOOL}),
-    (lambda b: b.endswith("_slab"), {"type": {"top", "bottom", "double"}, "waterlogged": BOOL}),
-    (lambda b: b.endswith("_door"), {"facing": HORIZONTAL, "half": {"upper", "lower"},
-     "hinge": {"left", "right"}, "open": BOOL, "powered": BOOL}),
-    (lambda b: b.endswith("glass_pane"), {d: BOOL for d in ("east", "north", "south", "west", "waterlogged")}),
-    (lambda b: b.endswith("_log"), {"axis": {"x", "y", "z"}}),
-    (lambda b: b.endswith("_hanging_sign") and "_wall_" not in b,
-     {"attached": BOOL, "rotation": {str(i) for i in range(16)}, "waterlogged": BOOL}),
-    (lambda b: b == "lantern", {"hanging": BOOL, "waterlogged": BOOL}),
-    (lambda b: b in {"air", "stone_bricks", "mossy_stone_bricks", "spruce_planks", "white_terracotta",
-                     "bricks", "potted_red_tulip", "potted_orange_tulip"}, {}),
-]
-GRAVITY = {"sand", "red_sand", "gravel", "anvil", "dragon_egg", "pointed_dripstone", "scaffolding"}
-FULL_SOLID = {"S", "M", "F", "P", "X", "Z", "W", "B"}   # full cubes with sturdy faces
-PANE = {"-", "|"}
-
-
-def parse_block_data(data: str) -> tuple[str, dict[str, str]]:
-    if not BLOCK_DATA_RE.match(data):
-        raise ValueError(f"bad block data syntax: {data}")
-    block, _, rest = data[len("minecraft:"):].partition("[")
-    props = dict(p.split("=") for p in rest.rstrip("]").split(",")) if rest else {}
-    return block, props
-
-
-def check_block_data(data: str) -> None:
-    block, props = parse_block_data(data)
-    if block.removesuffix("_concrete_powder") != block or block in GRAVITY:
-        raise ValueError(f"gravity block not allowed: {data}")
-    for match, schema in SCHEMAS:
-        if match(block):
-            if set(props) != set(schema):
-                raise ValueError(f"{data}: properties {sorted(props)} != expected {sorted(schema)}")
-            for k, v in props.items():
-                if v not in schema[k]:
-                    raise ValueError(f"{data}: {k}={v} not in {sorted(schema[k])}")
-            return
-    raise ValueError(f"no schema for block {block}; add one before using it")
+FULL_SOLID = {"S", "M", "F", "P", "X", "Z", "W", "B"}   # full cubes with sturdy faces (preview notes only)
 
 
 # --- the design --------------------------------------------------------------------------------
@@ -173,78 +127,12 @@ POINTS = {"chimney": [8, 6, 3], "door": [4, 1, 1]}
 SIGNS = [{"at": [5, 2, 0], "lines": ["", "Bakery", "", ""]}]
 
 
-# --- structural checks -------------------------------------------------------------------------
-def validate(g: dict, layers: list[list[str]]) -> int:
-    for c, data in PALETTE.items():
-        assert len(c) == 1 and c != KEEP, c
-        check_block_data(data)
-    assert len(layers) == SY and all(len(l) == SZ and all(len(r) == SX for r in l) for l in layers)
-    for layer in layers:
-        for row in layer:
-            for c in row:
-                assert c == KEEP or c in PALETTE, f"unknown char {c!r}"
-    inside = lambda p: all(0 <= p[i] < (SX, SY, SZ)[i] for i in range(3))  # noqa: E731
-    assert inside(ORIGIN)
-    for name, p in POINTS.items():
-        assert inside(p), f"point {name} {p} out of bounds"
-    at = lambda x, y, z: g.get((x, y, z), KEEP)  # noqa: E731
-    cx, cy, cz = POINTS["chimney"]
-    assert at(cx, cy, cz) in (KEEP, "_") and at(cx, cy - 1, cz) == "B", "chimney point must sit on the stack"
-    assert at(*POINTS["door"]) == "d"
-    for s in SIGNS:
-        assert inside(s["at"]) and at(*s["at"]) == "H" and len(s["lines"]) <= 4
-
-    for (x, y, z), c in g.items():
-        # support from inside the design only
-        if c == "d":
-            assert at(x, y + 1, z) == "D" and at(x, y - 1, z) in FULL_SOLID, (x, y, z)
-        if c in ("L", "H"):
-            assert at(x, y + 1, z) in FULL_SOLID | {"v", "^", "s", "="}, f"hanging block needs a ceiling {(x, y, z)}"
-        # glass pane connections must match the neighbours (outside / keep = no connection)
-        if c in PANE:
-            _, props = parse_block_data(PALETTE[c])
-            for d, (dx, dz) in {"north": (0, -1), "south": (0, 1), "west": (-1, 0), "east": (1, 0)}.items():
-                n = at(x + dx, y, z + dz)
-                want = n in FULL_SOLID or n in PANE
-                assert (props[d] == "true") == want, f"pane {(x, y, z)} {d}: {props[d]} vs neighbour {n!r}"
-        # straight stairs: no perpendicular stair in front of / behind them (that would bend the shape)
-        if c in ("v", "^", "s"):
-            for dz in (-1, 1):
-                n = at(x, y, z + dz)
-                if n in ("v", "^", "s"):
-                    raise AssertionError(f"stair {(x, y, z)} has a stair neighbour along its facing axis")
-    blocks = sum(1 for c in g.values() if c != "_")
-    assert blocks < 2000
-    return blocks
-
-
-def to_layers(g: dict) -> list[list[str]]:
-    return [["".join(g.get((x, y, z), KEEP) for x in range(SX)) for z in range(SZ)] for y in range(SY)]
-
-
-def write_yaml(layers: list[list[str]], blocks: int) -> str:
-    q = lambda s: '"' + s.replace("\\", "\\\\").replace('"', '\\"') + '"'  # noqa: E731
-    out = [
-        "# The `default` bakery cottage. GENERATED by design/scripts/house_default.py; do not edit by hand.",
-        "# Format and coordinates: design/house-default.md",
-        "# Axes: x = west->east, y = bottom->top, z = north->south. Front (door) faces north (-Z).",
-        f"# {blocks} blocks (not counting air/keep).",
-        f"size: [{SX}, {SY}, {SZ}]",
-        f"origin: [{ORIGIN[0]}, {ORIGIN[1]}, {ORIGIN[2]}]",
-        "palette:",
-    ]
-    out += [f"  {q(c)}: {q(d)}" for c, d in PALETTE.items()]
-    out.append("layers:")
-    for y, layer in enumerate(layers):
-        out.append(f"  # y={y}")
-        out.append("  - [" + ", ".join(q(r) for r in layer) + "]")
-    out.append("points:")
-    out += [f"  {k}: [{v[0]}, {v[1]}, {v[2]}]" for k, v in POINTS.items()]
-    out.append("signs:")
-    for s in SIGNS:
-        out.append(f"  - at: [{s['at'][0]}, {s['at'][1]}, {s['at'][2]}]")
-        out.append("    lines: [" + ", ".join(q(l) for l in s["lines"]) + "]")
-    return "\n".join(out) + "\n"
+# --- structural checks (shared with every design: lib/house_lib.py) ----------------------------
+HEADER = [
+    "# The `default` bakery cottage. GENERATED by design/scripts/house_default.py; do not edit by hand.",
+    "# Format and coordinates: design/house-default.md",
+    "# Axes: x = west->east, y = bottom->top, z = north->south. Front (door) faces north (-Z).",
+]
 
 
 # --- previews ----------------------------------------------------------------------------------
@@ -294,75 +182,28 @@ def ground_boxes():
     return [((-2, -1, -3), (SX + 2, 0, SZ + 2), (96, 140, 62))]
 
 
-def font(size: int):
-    try:
-        return ImageFont.load_default(size=size)
-    except TypeError:
-        return ImageFont.load_default()
-
-
-def layer_sheet(layers) -> Image.Image:
-    cell, pad, head = 30, 16, 24
-    lw, lh = SX * cell, SZ * cell
-    cols = 4
-    rows = (len(layers) + cols - 1) // cols
-    img = Image.new("RGBA", (cols * (lw + pad) + pad, rows * (lh + head + pad) + pad + 22), (40, 44, 52, 255))
-    d = ImageDraw.Draw(img)
-    f, small = font(16), font(14)
-    d.text((pad, 6), "default cottage: layers bottom->top, x ->, z (north at top) v; '.' = keep", fill=(230, 230, 230), font=small)
-    for y, layer in enumerate(layers):
-        ox = pad + (y % cols) * (lw + pad)
-        oy = pad + 22 + (y // cols) * (lh + head + pad)
-        d.text((ox, oy), f"y={y}", fill=(240, 240, 240), font=f)
-        for z, row in enumerate(layer):
-            for x, c in enumerate(row):
-                x0, y0 = ox + x * cell, oy + head + z * cell
-                if c == KEEP:
-                    shade = (70, 76, 88) if (x + z) % 2 else (62, 67, 78)
-                    d.rectangle([x0, y0, x0 + cell - 1, y0 + cell - 1], fill=shade)
-                    continue
-                rgb = COLOURS[c] if c != "_" else (30, 32, 38)
-                d.rectangle([x0, y0, x0 + cell - 1, y0 + cell - 1], fill=rgb, outline=(20, 20, 24))
-                lum = 0.3 * rgb[0] + 0.59 * rgb[1] + 0.11 * rgb[2]
-                d.text((x0 + cell / 2, y0 + cell / 2), c, fill=(0, 0, 0) if lum > 120 else (245, 245, 245),
-                       font=f, anchor="mm")
-    return img
-
-
 def iso_sheet(g: dict) -> Image.Image:
     boxes = ground_boxes()
     for (x, y, z), c in sorted(g.items()):
         boxes += boxes_for(c, x, y, z)
-    views = [render(boxes, yaw=yaw, pitch=pitch, px_per_unit=36)
-             for yaw, pitch in ((215, 28), (145, 28), (35, 28), (180, 8))]
-    pad = 12
-    w = sum(v.width for v in views[:2]) + 3 * pad
-    h = max(v.height for v in views[:2]) + max(v.height for v in views[2:]) + 3 * pad
-    out = Image.new("RGBA", (w, h), (58, 64, 76, 255))
-    x = pad
-    for v in views[:2]:
-        out.alpha_composite(v, (x, pad))
-        x += v.width + pad
-    x = pad
-    y2 = pad * 2 + max(v.height for v in views[:2])
-    for v in views[2:]:
-        out.alpha_composite(v, (x, y2))
-        x += v.width + pad
-    return out
+    return house_lib.iso_sheet(boxes)
 
 
 def main() -> int:
     g = build()
-    layers = to_layers(g)
-    blocks = validate(g, layers)
-    text = write_yaml(layers, blocks)
+    size = (SX, SY, SZ)
+    layers = house_lib.to_layers(g, size)
+    blocks = house_lib.validate(g, layers, PALETTE, size, ORIGIN, POINTS, SIGNS)
+    text = house_lib.write_yaml(HEADER + [f"# {blocks} blocks (not counting air/keep)."], layers, PALETTE, size,
+                                ORIGIN, POINTS, SIGNS)
     parsed = yaml.safe_load(text)
     assert parsed["layers"] == layers and parsed["size"] == [SX, SY, SZ]
     assert parsed["palette"] == PALETTE and parsed["points"] == POINTS and parsed["signs"] == SIGNS
     OUT_YML.parent.mkdir(parents=True, exist_ok=True)
     OUT_YML.write_text(text, encoding="utf-8")
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    layer_sheet(layers).save(OUT_DIR / "house_default_layers.png")
+    house_lib.layer_sheet(layers, size, COLOURS, "default cottage: layers bottom->top, x ->, z (north at top) v; "
+                          "'.' = keep").save(OUT_DIR / "house_default_layers.png")
     iso_sheet(g).save(OUT_DIR / "house_default_iso.png")
     print(f"{OUT_YML.relative_to(ROOT)}: {blocks} blocks")
     print(f"previews in {OUT_DIR.relative_to(ROOT)}")
