@@ -1,2 +1,3 @@
 - [WorldGuard + house facts](worldguard-and-house-facts.md) — WG 7.0.20/WE 7.4.6 signatures, Structure/Sign/SoundGroup APIs, guard + test-pin quirks
 - [Paper 26.3 API facts](paper-263-api-facts.md) — verified Brigadier/world key/Adventure 5 sound+pack/display/click APIs, javap path, guard quirks, test-pinned keys
+- [factory-makeover facts](factory-makeover-facts.md) — layout yaw convention, compat ctors for test-built records, smoke-testing other branches' files, pinned-test build
