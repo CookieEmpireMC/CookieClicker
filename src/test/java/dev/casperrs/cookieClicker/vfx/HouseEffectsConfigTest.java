@@ -19,7 +19,7 @@ class HouseEffectsConfigTest {
 
     /** The effect IDs in the starter-house contract, plus the preset behind Effects.dropBlock. */
     private static final List<String> CONTRACT = List.of("house_foundation_dust", "house_block_land",
-            "house_sparkle", "house_confetti", "house_chimney_smoke", Effects.BLOCK_DROP);
+            "house_sparkle", "house_confetti", "house_chimney_smoke", "factory_steam", Effects.BLOCK_DROP);
 
     private static EffectsConfig parse(String text) throws Exception {
         YamlConfiguration y = new YamlConfiguration();
@@ -78,6 +78,34 @@ class HouseEffectsConfigTest {
             assertTrue(assertInstanceOf(LayerSpec.Particles.class, layer).force(), layer.label() + " uses force");
         }
         assertEquals(0, shipped().preset("cookie_click").loopEvery(), "presets without loop-every report 0");
+    }
+
+    @Test
+    void factorySteamIsACheapIrregularLoop() throws Exception {
+        EffectsConfig c = shipped();
+        EffectsConfig.Preset steam = c.preset("factory_steam");
+        assertNotNull(steam, "factory_steam exists");
+        assertEquals(37, steam.loopEvery());
+        assertTrue(steam.loopEvery() % c.preset("house_chimney_smoke").loopEvery() != 0, "not in sync with smoke");
+        assertTrue(steam.particleCost() <= 10, "cheap per cycle");
+        assertTrue(steam.particleCost() * 20.0 / steam.loopEvery() <= 10, "at most 10 particles per second");
+        assertEquals(0, steam.entityCost());
+        java.util.TreeSet<Integer> starts = new java.util.TreeSet<>();
+        for (LayerSpec layer : steam.layers()) {
+            assertTrue(assertInstanceOf(LayerSpec.Particles.class, layer).force(), layer.label() + " uses force");
+            assertTrue(layer.delayTicks() < steam.loopEvery(), "every puff inside one cycle");
+            starts.add(layer.delayTicks());
+        }
+        // uneven gaps between puffs (including the wrap to the next cycle): not a metronome
+        java.util.List<Integer> s = new java.util.ArrayList<>(starts);
+        java.util.Set<Integer> gaps = new java.util.HashSet<>();
+        for (int i = 0; i < s.size(); i++) {
+            int next = i + 1 < s.size() ? s.get(i + 1) : s.getFirst() + steam.loopEvery();
+            gaps.add(next - s.get(i));
+        }
+        assertTrue(s.size() >= 3 && gaps.size() >= 3, "irregular puff rhythm: " + s);
+        // factory: up to 3 smokestacks + 2 vents per viewer
+        assertTrue(c.limits().maxLoopsPerPlayer() >= 5, "loop cap fits the factory");
     }
 
     @Test

@@ -6,12 +6,13 @@ import java.util.Locale;
 import java.util.function.Consumer;
 
 /**
- * {@code config.yml} {@code house.*}: design limits, the first-visit build cinematic and the chimney smoke.
+ * {@code config.yml} {@code house.*}: design limits, the first-visit build cinematic, the chimney smoke, factory steam and
+ * the ambient oven hum.
  *
  * @param maxBlocks largest design box (x * y * z) {@code /bakery house place} accepts; also the largest house region
  *                  box the cinematic will hide
  */
-public record HouseSettings(int maxBlocks, Cinematic cinematic, Chimney chimney) {
+public record HouseSettings(int maxBlocks, Cinematic cinematic, Chimney chimney, Steam steam, Ambient ambient) {
 
     public enum Trigger { ENTER_PLOT, VIEWPOINT }
 
@@ -46,15 +47,30 @@ public record HouseSettings(int maxBlocks, Cinematic cinematic, Chimney chimney)
     public record Chimney(boolean smoke, int crackleEvery) {
     }
 
+    /**
+     * @param enabled play {@code factory_steam} at every steam point for players in the plot
+     * @param every   ticks between the start of one vent's loop and the next (so vents don't puff together)
+     */
+    public record Steam(boolean enabled, int every) {
+    }
+
+    /**
+     * @param enabled play {@code factory_ambient} for players in the plot
+     * @param every   ticks between plays (the sound is a 4 s loop: 80)
+     * @param radius  only for players within this many blocks of the first steam point (or the house centre)
+     */
+    public record Ambient(boolean enabled, int every, double radius) {
+    }
+
     public static HouseSettings from(ConfigurationSection c, Consumer<String> problems) {
         String p = "house.cinematic.";
         Cinematic cinematic = new Cinematic(
                 c.getBoolean(p + "enabled", true),
                 parse(Trigger.class, c.getString(p + "trigger", "enter-plot"), Trigger.ENTER_PLOT, p + "trigger", problems),
-                c.getBoolean(p + "teleport-to-viewpoint", false),
-                Math.clamp(c.getDouble(p + "blocks-per-tick", 1.0), 0.05, 64.0),
+                c.getBoolean(p + "teleport-to-viewpoint", true),
+                Math.clamp(c.getDouble(p + "blocks-per-tick", 2.25), 0.05, 64.0),
                 Math.clamp(c.getInt(p + "max-falling-displays", 24), 1, 24),
-                Math.clamp(c.getInt(p + "layer-delay-ticks", 12), 0, 200),
+                Math.clamp(c.getInt(p + "layer-delay-ticks", 5), 0, 200),
                 parse(KeepOut.class, c.getString(p + "keep-out", "hold"), KeepOut.HOLD, p + "keep-out", problems),
                 Math.clamp(c.getDouble(p + "slow-amount", -0.7), -1.0, 0.0),
                 Math.clamp(c.getInt(p + "fake-air-per-tick", 4096), 64, 65536),
@@ -66,7 +82,15 @@ public record HouseSettings(int maxBlocks, Cinematic cinematic, Chimney chimney)
         Chimney chimney = new Chimney(
                 c.getBoolean("house.chimney.smoke", true),
                 Math.clamp(c.getInt("house.chimney.crackle-every", 6), 0, 1000));
-        return new HouseSettings(Math.clamp(c.getInt("house.max-blocks", 40000), 1, 1_000_000), cinematic, chimney);
+        Steam steam = new Steam(
+                c.getBoolean("house.steam.enabled", true),
+                Math.clamp(c.getInt("house.steam.every", 7), 0, 200));
+        Ambient ambient = new Ambient(
+                c.getBoolean("house.ambient.enabled", true),
+                Math.clamp(c.getInt("house.ambient.every", 80), 10, 6000),
+                Math.clamp(c.getDouble("house.ambient.radius", 24.0), 1.0, 128.0));
+        return new HouseSettings(Math.clamp(c.getInt("house.max-blocks", 40000), 1, 1_000_000), cinematic, chimney,
+                steam, ambient);
     }
 
     private static <E extends Enum<E>> E parse(Class<E> type, String raw, E fallback, String path,

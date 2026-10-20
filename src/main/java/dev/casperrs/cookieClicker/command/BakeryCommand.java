@@ -5,6 +5,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import dev.casperrs.cookieClicker.config.PluginSettings;
+import dev.casperrs.cookieClicker.house.PlotSetup;
 import dev.casperrs.cookieClicker.house.HouseCinematics;
 import dev.casperrs.cookieClicker.house.HousePlacer;
 import dev.casperrs.cookieClicker.plot.Plot;
@@ -27,7 +28,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
- * {@code /bakery plot setviewpoint|setpedestal|setchimney|show}, {@code /bakery house place <design>|undo|rebuild <player>} and
+ * {@code /bakery plot setup [design]|setup undo|show}, {@code /bakery house place <design>|undo|rebuild <player>} and
  * {@code /bakery reload}, permission {@code cookieempire.admin}. Plot commands act on the plot whose
  * {@code bakery-plot} region the admin stands in. Built for Paper's Brigadier lifecycle registration
  * ({@link #node()}).
@@ -45,17 +46,20 @@ public final class BakeryCommand {
     private final PlotService plots;
     private final PlotOutlines outlines;
     private final HousePlacer houses;
+    private final PlotSetup setup;
     private final HouseCinematics cinematics;
     private final Supplier<PluginSettings> settings;
     private final Messages messages;
     private final Reloader reloader;
 
-    public BakeryCommand(PlotService plots, PlotOutlines outlines, HousePlacer houses, HouseCinematics cinematics,
+    public BakeryCommand(PlotService plots, PlotOutlines outlines, HousePlacer houses, PlotSetup setup,
+                         HouseCinematics cinematics,
                          Supplier<PluginSettings> settings, Messages messages, Reloader reloader) {
         this.cinematics = cinematics;
         this.plots = plots;
         this.outlines = outlines;
         this.houses = houses;
+        this.setup = setup;
         this.settings = settings;
         this.messages = messages;
         this.reloader = reloader;
@@ -65,9 +69,12 @@ public final class BakeryCommand {
         return Commands.literal("bakery")
                 .requires(src -> src.getSender().hasPermission(PERMISSION))
                 .then(Commands.literal("plot")
-                        .then(Commands.literal("setviewpoint").executes(this::setViewpoint))
-                        .then(Commands.literal("setpedestal").executes(this::setPedestal))
-                        .then(Commands.literal("setchimney").executes(this::setChimney))
+                        .then(Commands.literal("setup")
+                                .executes(ctx -> setup(ctx, PlotSetup.DEFAULT_DESIGN))
+                                .then(Commands.literal("undo").executes(this::setupUndo))
+                                .then(Commands.argument("design", StringArgumentType.word())
+                                        .executes(ctx -> setup(ctx, StringArgumentType.getString(ctx, "design")
+                                                .toLowerCase(Locale.ROOT)))))
                         .then(Commands.literal("show").executes(this::show)))
                 .then(Commands.literal("house")
                         .then(Commands.literal("place")
@@ -124,57 +131,6 @@ public final class BakeryCommand {
                 Placeholder.unparsed("problem", problem)));
     }
 
-    private int setViewpoint(CommandContext<CommandSourceStack> ctx) {
-        Here h = here(ctx);
-        if (h == null) {
-            return 0;
-        }
-        Location l = h.player().getLocation();
-        save(h.player(), h.plot().withViewpoint(new Plot.Viewpoint(l.getX(), l.getY(), l.getZ(), l.getYaw(), l.getPitch())));
-        messages.send(h.player(), "plot.viewpoint-set", Placeholder.unparsed("id", h.plot().id()),
-                Placeholder.unparsed("x", fmt(l.getX())), Placeholder.unparsed("y", fmt(l.getY())),
-                Placeholder.unparsed("z", fmt(l.getZ())));
-        return Command.SINGLE_SUCCESS;
-    }
-
-    private int setPedestal(CommandContext<CommandSourceStack> ctx) {
-        Here h = here(ctx);
-        if (h == null) {
-            return 0;
-        }
-        PluginSettings.StationSettings cfg = settings.get().station();
-        Location loc = h.player().getLocation();
-        double x = cfg.snapToBlock() ? loc.getBlockX() + 0.5 : loc.getX();
-        double y = cfg.snapToBlock() ? loc.getBlockY() : loc.getY();
-        double z = cfg.snapToBlock() ? loc.getBlockZ() + 0.5 : loc.getZ();
-        float yaw = snapYaw(loc.getYaw(), cfg.snapYawDegrees());
-        save(h.player(), h.plot().withPedestal(new Plot.Pedestal(x, y, z, yaw)));
-        messages.send(h.player(), "plot.pedestal-set", Placeholder.unparsed("id", h.plot().id()),
-                Placeholder.unparsed("x", fmt(x)), Placeholder.unparsed("y", fmt(y)), Placeholder.unparsed("z", fmt(z)));
-        return Command.SINGLE_SUCCESS;
-    }
-
-    /** The smoke starts at the bottom centre of the cell above the looked-at block (the chimney top). */
-    private int setChimney(CommandContext<CommandSourceStack> ctx) {
-        Here h = here(ctx);
-        if (h == null) {
-            return 0;
-        }
-        int reach = settings.get().plot().chimneyReach();
-        Block target = h.player().getTargetBlockExact(reach);
-        if (target == null) {
-            messages.send(h.player(), "plot.chimney-no-target", Placeholder.unparsed("radius", Integer.toString(reach)));
-            return 0;
-        }
-        double x = target.getX() + 0.5;
-        double y = target.getY() + 1.0;
-        double z = target.getZ() + 0.5;
-        save(h.player(), h.plot().withChimney(new Plot.Point(x, y, z)));
-        messages.send(h.player(), "plot.chimney-set", Placeholder.unparsed("id", h.plot().id()),
-                Placeholder.unparsed("x", fmt(x)), Placeholder.unparsed("y", fmt(y)), Placeholder.unparsed("z", fmt(z)));
-        return Command.SINGLE_SUCCESS;
-    }
-
     private int show(CommandContext<CommandSourceStack> ctx) {
         Here h = here(ctx);
         if (h == null) {
@@ -218,6 +174,27 @@ public final class BakeryCommand {
             return 0;
         }
         houses.undo(h.player(), h.plot());
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int setup(CommandContext<CommandSourceStack> ctx, String design) {
+        Here h = here(ctx);
+        if (h == null) {
+            return 0;
+        }
+        if (!plots.registry().has(h.plot().id())) {
+            plots.update(h.plot(), problem -> { }); // the setup stores its points in plots.yml
+        }
+        setup.setup(h.player(), plots.registry().get(h.plot().id()).orElse(h.plot()), design);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int setupUndo(CommandContext<CommandSourceStack> ctx) {
+        Here h = here(ctx);
+        if (h == null) {
+            return 0;
+        }
+        setup.undo(h.player(), plots.registry().get(h.plot().id()).orElse(h.plot()));
         return Command.SINGLE_SUCCESS;
     }
 

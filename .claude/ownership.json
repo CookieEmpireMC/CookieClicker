@@ -12,6 +12,7 @@
     "email": "rick@bakery.invalid",
     "paths": [
       "CLAUDE.md",
+      "docs/game-design.md",
       "docs/briefs/**",
       ".github/**"
     ]

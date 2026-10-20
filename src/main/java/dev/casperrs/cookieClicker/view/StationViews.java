@@ -278,8 +278,28 @@ public final class StationViews implements Listener, StationListener, SessionLis
 
     private boolean chunksLoaded(World world, Station station, StationVisualSettings s) {
         StationFrame frame = StationFrame.of(station);
-        return chunkLoaded(world, frame, Offset.ZERO) && chunkLoaded(world, frame, s.cookie().offset())
-                && chunkLoaded(world, frame, s.panel().offset());
+        return chunkLoaded(world, frame, Offset.ZERO) && chunkLoaded(world, frame, cookieOffset(station, s))
+                && chunkLoaded(world, panelFrame(station), panelOffset(station, s));
+    }
+
+    // With a plot layout (station.shop() set) the cookie stands right on the station point and the panel on the shop
+    // point: only the "up" part of the station.cookie/pedestal/panel offsets is used. Without one, the offsets apply.
+
+    private static Offset cookieOffset(Station station, StationVisualSettings s) {
+        return station.shop() == null ? s.cookie().offset() : upOnly(s.cookie().offset());
+    }
+
+    private static Offset panelOffset(Station station, StationVisualSettings s) {
+        return station.shop() == null ? s.panel().offset() : upOnly(s.panel().offset());
+    }
+
+    private static StationFrame panelFrame(Station station) {
+        Station.Anchor shop = station.shop();
+        return shop == null ? StationFrame.of(station) : new StationFrame(shop.x(), shop.y(), shop.z(), shop.yaw());
+    }
+
+    private static Offset upOnly(Offset o) {
+        return new Offset(0, o.up(), 0);
     }
 
     private static boolean chunkLoaded(World world, StationFrame frame, Offset o) {
@@ -305,7 +325,7 @@ public final class StationViews implements Listener, StationListener, SessionLis
         List<Entity> spawned = new ArrayList<>();
         try {
             StationVisualSettings.Cookie c = s.cookie();
-            double[] centre = frame.point(c.offset());
+            double[] centre = frame.point(cookieOffset(station, s));
             float scale = c.scale();
             ItemDisplay cookie = spawn(world, centre, frame.facingViewers(0), ItemDisplay.class, owner, spawned, d -> {
                 d.setItemStack(cookieStack(pack));
@@ -327,12 +347,17 @@ public final class StationViews implements Listener, StationListener, SessionLis
                 i.setResponsive(true);
             });
 
-            BlockDisplay pedestal = spawnPedestal(world, frame, s.pedestal(), owner, spawned);
+            StationVisualSettings.Pedestal ped = s.pedestal();
+            BlockDisplay pedestal = spawnPedestal(world, frame, station.shop() == null ? ped
+                    : new StationVisualSettings.Pedestal(ped.enabled(), ped.block(), upOnly(ped.offset()), ped.width(),
+                            ped.height()), owner, spawned);
 
             StationVisualSettings.Panel p = s.panel();
-            float textYaw = frame.facingViewers(p.textYawOffset());
-            float iconYaw = frame.facingViewers(p.iconYawOffset());
-            TextDisplay header = spawn(world, frame.point(p.offset()), textYaw, TextDisplay.class, owner, spawned, t -> {
+            StationFrame pf = panelFrame(station);
+            Offset po = panelOffset(station, s);
+            float textYaw = pf.facingViewers(p.textYawOffset());
+            float iconYaw = pf.facingViewers(p.iconYawOffset());
+            TextDisplay header = spawn(world, pf.point(po), textYaw, TextDisplay.class, owner, spawned, t -> {
                 styleText(t, p, p.headerScale(), p.color("header"));
                 t.setAlignment(TextDisplay.TextAlignment.CENTER);
                 t.text(messages.component("panel.header"));
@@ -341,10 +366,9 @@ public final class StationViews implements Listener, StationListener, SessionLis
             List<StationView.Row> rows = new ArrayList<>();
             int index = 0;
             for (String buildingId : economy.config().buildings().keySet()) {
-                Offset anchor = new Offset(p.offset().right(), p.offset().up() - p.firstRowDrop() - index * p.rowPitch(),
-                        p.offset().forward());
+                Offset anchor = new Offset(po.right(), po.up() - p.firstRowDrop() - index * p.rowPitch(), po.forward());
                 index++;
-                ItemDisplay icon = spawn(world, frame.point(anchor, p.iconOffset()), iconYaw, ItemDisplay.class, owner,
+                ItemDisplay icon = spawn(world, pf.point(anchor, p.iconOffset()), iconYaw, ItemDisplay.class, owner,
                         spawned, d -> {
                             d.setItemStack(iconStack(buildingId, pack));
                             d.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
@@ -354,12 +378,12 @@ public final class StationViews implements Listener, StationListener, SessionLis
                             d.setTransformation(new Transformation(new Vector3f(), new Quaternionf(),
                                     new Vector3f(is, is, is), new Quaternionf()));
                         });
-                TextDisplay text = spawn(world, frame.point(anchor, p.textOffset()), textYaw, TextDisplay.class, owner,
+                TextDisplay text = spawn(world, pf.point(anchor, p.textOffset()), textYaw, TextDisplay.class, owner,
                         spawned, t -> {
                             styleText(t, p, p.textScale(), p.color("unaffordable"));
                             t.setAlignment(TextDisplay.TextAlignment.LEFT);
                         });
-                double[] boxBottom = frame.point(anchor, p.hitboxOffset());
+                double[] boxBottom = pf.point(anchor, p.hitboxOffset());
                 Interaction box = spawn(world, boxBottom, 0, Interaction.class, owner, spawned, i -> {
                     i.setInteractionWidth(p.hitboxWidth());
                     i.setInteractionHeight(p.hitboxHeight());

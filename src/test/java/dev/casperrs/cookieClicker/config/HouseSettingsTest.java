@@ -27,11 +27,15 @@ class HouseSettingsTest {
         assertTrue(c.enabled());
         assertEquals(HouseSettings.Trigger.ENTER_PLOT, c.trigger());
         assertEquals(HouseSettings.KeepOut.HOLD, c.keepOut());
-        assertEquals(1.0, c.blocksPerTick(), 1e-9);
+        assertEquals(2.25, c.blocksPerTick(), 1e-9);
+        assertEquals(5, c.layerDelayTicks());
+        assertTrue(c.teleportToViewpoint());
         assertEquals(24, c.maxFallingDisplays());
         assertEquals(3, c.hammerEvery());
         assertTrue(s.chimney().smoke());
         assertEquals(6, s.chimney().crackleEvery());
+        assertEquals(new HouseSettings.Steam(true, 7), s.steam());
+        assertEquals(new HouseSettings.Ambient(true, 80, 24.0), s.ambient());
         assertTrue(problems.isEmpty());
     }
 

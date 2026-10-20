@@ -13,7 +13,7 @@
 #   max-display-entities-global      (150)  effect display entities alive on the server; new ones are dropped
 #   max-falling-blocks-per-player    (24)   effects.dropBlock displays falling at once per viewer; more land instantly
 #   max-falling-blocks-global        (240)  the same, server-wide
-#   max-loops-per-player             (4)    effects.loop loops per viewer; more are not started (logged once)
+#   max-loops-per-player             (8)    effects.loop loops per viewer; more are not started (logged once)
 #
 # Every preset: { layers: [...] } plus
 #   loop-every   (none)       ticks between plays when code runs it with effects.loop(id, loc, viewer); a preset
@@ -110,7 +110,7 @@ limits:
   max-display-entities-global: 150
   max-falling-blocks-per-player: 24
   max-falling-blocks-global: 240
-  max-loops-per-player: 4
+  max-loops-per-player: 8
 
 # Click on the giant cookie: a few cookie crumbs pop off the hit point and fall, and "+<amount>" floats up.
 # Spammable, so tiny: 8 particles + 1 text.
@@ -219,6 +219,28 @@ house_chimney_smoke:
     - { type: particle, particle: campfire_cosy_smoke, direction: up, speed: 0.05, origin: [0, 0.1, 0],
         force: true }
     - { type: particle, particle: smoke, count: 2, offset: 0.08, speed: 0.01, origin: [0, 0.25, 0], force: true }
+
+# ---- factory-makeover ------------------------------------------------------------------------------------------
+
+# Roof-vent steam, looped with effects.loop("factory_steam", ventTop, viewer) at every points.steam cell (location =
+# centre of the vent's top face, like chimneyTop). Short white puffs, not a column: a 37-tick cycle (prime, so it
+# never lines up with the 10-tick chimney smoke) with a big puff at 0, a small one at 5, a big one at 15 and a small
+# one at 24, then a pause; each puff sits a few cm off centre. Cloud puffs fade in ~1 s, white_smoke wisps linger a
+# little. Extended range (force) like the chimney. 8 particles per cycle = about 4.3 per second per vent.
+factory_steam:
+  loop-every: 37
+  layers:
+    - { type: particle, particle: cloud, direction: up, speed: 0.09, origin: [0, 0.15, 0], force: true }
+    - { type: particle, particle: white_smoke, count: 2, offset: 0.06, speed: 0.01, origin: [0, 0.3, 0],
+        force: true }
+    - { type: particle, particle: cloud, direction: up, speed: 0.06, origin: [0.07, 0.15, -0.04], force: true,
+        delay-ticks: 5 }
+    - { type: particle, particle: cloud, direction: up, speed: 0.11, origin: [-0.05, 0.15, 0.05], force: true,
+        delay-ticks: 15 }
+    - { type: particle, particle: white_smoke, count: 2, offset: 0.06, speed: 0.01, origin: [-0.05, 0.3, 0.05],
+        force: true, delay-ticks: 15 }
+    - { type: particle, particle: cloud, direction: up, speed: 0.05, origin: [0.03, 0.15, 0.06], force: true,
+        delay-ticks: 24 }
 
 # ---- admin tools (not seen by normal players) ----------------------------------------------------------------------
 # /bakery plot show: code plays one of these per outline point (up to ~120 points per region, redrawn every

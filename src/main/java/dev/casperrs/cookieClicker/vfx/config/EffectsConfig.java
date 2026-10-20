@@ -17,11 +17,11 @@ public record EffectsConfig(Limits limits, Map<String, Preset> presets, List<Str
      */
     public record Limits(int maxParticlesPerEffect, int maxDisplayEntitiesPerPlayer, int maxDisplayEntitiesGlobal,
                          int maxFallingBlocksPerPlayer, int maxFallingBlocksGlobal, int maxLoopsPerPlayer) {
-        public static final Limits DEFAULTS = new Limits(200, 8, 150, 24, 240, 4);
+        public static final Limits DEFAULTS = new Limits(200, 8, 150, 24, 240, 8);
 
         /** The original three caps; the falling-block and loop caps take their defaults. */
         public Limits(int maxParticlesPerEffect, int maxDisplayEntitiesPerPlayer, int maxDisplayEntitiesGlobal) {
-            this(maxParticlesPerEffect, maxDisplayEntitiesPerPlayer, maxDisplayEntitiesGlobal, 24, 240, 4);
+            this(maxParticlesPerEffect, maxDisplayEntitiesPerPlayer, maxDisplayEntitiesGlobal, 24, 240, 8);
         }
     }
 

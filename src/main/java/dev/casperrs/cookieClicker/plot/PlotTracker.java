@@ -82,7 +82,8 @@ public final class PlotTracker implements Listener {
     private void update(Player player, Location to) {
         World world = to.getWorld();
         Presence next = world == null ? Presence.NONE
-                : known(plots.regions().at(world, to.getBlockX(), to.getBlockY(), to.getBlockZ()));
+                : known(plots.regions().at(world, to.getBlockX(), to.getBlockY(), to.getBlockZ()),
+                        to.getBlockX(), to.getBlockY(), to.getBlockZ());
         Presence before = current.getOrDefault(player.getUniqueId(), Presence.NONE);
         if (next.equals(before)) {
             return;
@@ -96,9 +97,13 @@ public final class PlotTracker implements Listener {
     }
 
     /** Ignores flag values that name no plot in plots.yml. */
-    private Presence known(Presence p) {
+    private Presence known(Presence p, int x, int y, int z) {
         String plot = p.plot() != null && plots.has(p.plot()) ? p.plot() : null;
         String house = p.house() != null && plots.has(p.house()) ? p.house() : null;
+        Plot.Box box = plot == null ? null : plots.get(plot).map(Plot::house).orElse(null);
+        if (box != null) { // a set-up plot: its house box replaces the bakery-house region
+            house = box.contains(x, y, z) ? plot : null;
+        }
         return plot == null && house == null ? Presence.NONE : new Presence(plot, house);
     }
 

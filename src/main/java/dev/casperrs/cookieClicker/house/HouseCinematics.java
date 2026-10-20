@@ -134,7 +134,7 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
         this.messages = messages;
         this.settings = settings;
         this.keepOut = new KeepOut(plugin);
-        this.smoke = new ChimneySmoke(effects, sounds, () -> settings.get().chimney());
+        this.smoke = new ChimneySmoke(plugin, effects, sounds, settings);
     }
 
     /** Enable: listen to events and plot presence. Call before {@link PlotTracker#start()}. */
@@ -167,6 +167,20 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
             String plot = tracker.presence(p.getUniqueId()).plot();
             if (plot != null) {
                 startSmoke(p, plot);
+            }
+        }
+    }
+
+    /**
+     * {@code /bakery plot setup} (and its undo) changed a plot's house box or points: forget its cached shape and
+     * restart smoke/steam/hum for the players in it who aren't mid-cinematic.
+     */
+    public void plotChanged(String plotId) {
+        shapes.remove(plotId);
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            if (plotId.equals(tracker.presence(p.getUniqueId()).plot()) && !running.containsKey(p.getUniqueId())) {
+                smoke.stop(p.getUniqueId());
+                startSmoke(p, plotId);
             }
         }
     }
@@ -540,7 +554,9 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
         if (running.containsKey(p.getUniqueId())) {
             return; // mid-cinematic: smoke comes at the end
         }
-        plots.get(plotId).ifPresent(plot -> plots.world(plot).ifPresent(w -> smoke.start(p, plot, w)));
+        plots.get(plotId).ifPresent(plot -> plots.world(plot).ifPresent(w -> smoke.start(p, plot, w,
+                plots.houseShape(plotId).map(h -> new org.bukkit.Location(w, (h.minX() + h.maxX() + 1) / 2.0,
+                        (h.minY() + h.maxY() + 1) / 2.0, (h.minZ() + h.maxZ() + 1) / 2.0)).orElse(null))));
     }
 
     @EventHandler(priority = EventPriority.LOWEST)

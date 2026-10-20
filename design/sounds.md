@@ -43,6 +43,14 @@ The per-player build cinematic: dozens of landings and taps in 20-30 s, so these
 Scripts: `design/sound-scripts/house_hammer.py`, `house_block_land.py`, `house_fanfare.py`, `house_chimney_crackle.py`.
 New shared helpers in `design/sound-tools/synth.py`: `gain_to_lufs`, `soft_limit`, `fft_filter` (circular, for loops), `place_circular`.
 
+## factory-makeover
+
+| Event (sounds.yml) | Pack key | Files | Feel | Measured | Fallback | Config | Status |
+|---|---|---|---|---|---|---|---|
+| `factory_ambient` | `cookieclicker:factory.ambient` | `sounds/factory/ambient.ogg` | Low, warm, cosy hum of a little cookie factory: a soft harmonic G2 (98 Hz) oven/machine drone with a second voice 0.25 Hz higher (one slow swell per loop), a quiet low rumble, a gentle 60 bpm machine "breath" with a soft muffled chuff on each beat and a very quiet wooden tick on the off-beat, plus five faint dull oven crackles. Low-passed at 3 kHz. **Seamless 4.0 s loop** (80 ticks), built circularly; the bar line sits on the loop point (hum dips there, the accented first chuff follows 70 ms later) so a slightly early/late replay is masked. Fixed pitch so overlapping replays never phase. Sits under `house_chimney_crackle`: file 0.4 dB quieter, config volume 0.3 vs 0.5 (~-5 dB), and almost no energy above 3 kHz where the crackle lives. Played at the first `points.steam` (or the house centre). | 4000 ms, peak -9.5 dBFS, -19.5 LUFS; end-to-start jump -58.7 dBFS (median sample step -52.8) | `minecraft:block.furnace.fire_crackle` | vol 0.3, pitch 1.0 (fixed), `ambient` | placeholder (needs audition) |
+
+Script: `design/sound-scripts/factory_ambient.py`.
+
 ## Needs human review
 
 Nobody has listened to these yet; every sound needs an audition (`mise run review` builds a page with players).
@@ -56,6 +64,7 @@ Absolute paths in the main checkout (the starter-house files land there after th
 - `/home/casper-rs/Documents/GitHub/CookieClicker/resourcepack/assets/cookieclicker/sounds/house/block_land_1.ogg` (..`_4`)
 - `/home/casper-rs/Documents/GitHub/CookieClicker/resourcepack/assets/cookieclicker/sounds/house/fanfare.ogg`
 - `/home/casper-rs/Documents/GitHub/CookieClicker/resourcepack/assets/cookieclicker/sounds/house/chimney_crackle.ogg`
+- `/home/casper-rs/Documents/GitHub/CookieClicker/resourcepack/assets/cookieclicker/sounds/factory/ambient.ogg` (before the merge: worktree `factory-makeover/sound-designer`, `/home/casper-rs/Documents/GitHub/CookieClicker/.claude/worktrees/agent-a792ae8259bd6a8dd/resourcepack/assets/cookieclicker/sounds/factory/ambient.ogg`)
 
 What to listen for:
 - **cookie_click:** does it read as "crunchy cookie" rather than "static" or "wood block"? Spam-click 50 times: any variant that stands out or gets annoying? Is the crunch too loud relative to the tap?
@@ -70,3 +79,4 @@ What to listen for:
 - **house_fanfare:** cheerful and "bakery", not a victory jingle from another game; the final chord shouldn't feel too long next to the title.
 - **house_chimney_crackle:** cosy fire, not rain or static; loop it for a minute: any audible "seam" or recognisable repeating pop every 3 s? At volume 0.5 is it present but ignorable?
 - **Fallbacks:** `block.anvil.place` at volume 0.4 / pitch 1.15-1.35 may still be clangy; if so, `block.wood.hit` is the softer stand-in. `ui.toast.challenge_complete` is long and grand for a fanfare stand-in.
+- **factory_ambient:** a cosy oven/machine hum, not a fridge, transformer buzz or engine drone. Loop it for two minutes together with the chimney crackle: does the 1 Hz breath/chuff become a metronome, is the 4 s seam audible, and does it sit clearly under the crackle at 0.3 vs 0.5? On laptop speakers the hum should still be faintly there (its 200-800 Hz harmonics). The fallback `block.furnace.fire_crackle` at 0.3 is crackly rather than hummy; acceptable as a stand-in?

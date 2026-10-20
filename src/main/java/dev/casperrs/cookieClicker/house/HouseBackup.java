@@ -16,10 +16,26 @@ import java.util.Map;
  *
  * @param corner          minimum corner of the pasted box (world block coordinates)
  * @param size            size of that box
- * @param previousChimney the plot's chimney point before the paste (restored on undo), or null
+ * @param previousChimney the plot's first smoke point before the paste, or null
+ * @param previousSmoke   every smoke point of the plot before the paste (restored on undo)
+ * @param previousSteam   every steam point of the plot before the paste (restored on undo)
  */
 public record HouseBackup(String plotId, String design, String worldKey, long createdAt, int[] corner, int[] size,
-                          Plot.@Nullable Point previousChimney, List<Cell> cells) {
+                          Plot.@Nullable Point previousChimney, List<Cell> cells, List<Plot.Point> previousSmoke,
+                          List<Plot.Point> previousSteam) {
+
+    public HouseBackup {
+        cells = List.copyOf(cells);
+        previousSmoke = List.copyOf(previousSmoke);
+        previousSteam = List.copyOf(previousSteam);
+    }
+
+    /** A backup with at most one previous smoke point and no steam. */
+    public HouseBackup(String plotId, String design, String worldKey, long createdAt, int[] corner, int[] size,
+                       Plot.@Nullable Point previousChimney, List<Cell> cells) {
+        this(plotId, design, worldKey, createdAt, corner, size, previousChimney, cells,
+                previousChimney == null ? List.of() : List.of(previousChimney), List.of());
+    }
 
     /** One changed block and the block data it had before the paste. */
     public record Cell(int x, int y, int z, String oldData) {
@@ -43,6 +59,14 @@ public record HouseBackup(String plotId, String design, String worldKey, long cr
     public static HouseBackup capture(String plotId, String design, String worldKey, long createdAt, int[] corner,
                                       int[] size, Plot.@Nullable Point previousChimney, List<Change> changes,
                                       BlockAccess world) {
+        return capture(plotId, design, worldKey, createdAt, corner, size,
+                previousChimney == null ? List.of() : List.of(previousChimney), List.of(), changes, world);
+    }
+
+    /** As above, remembering every smoke and steam point the plot had before the paste. */
+    public static HouseBackup capture(String plotId, String design, String worldKey, long createdAt, int[] corner,
+                                      int[] size, List<Plot.Point> previousSmoke, List<Plot.Point> previousSteam,
+                                      List<Change> changes, BlockAccess world) {
         List<Cell> cells = new ArrayList<>();
         for (Change c : changes) {
             String old = world.get(c.x(), c.y(), c.z());
@@ -50,8 +74,8 @@ public record HouseBackup(String plotId, String design, String worldKey, long cr
                 cells.add(new Cell(c.x(), c.y(), c.z(), old));
             }
         }
-        return new HouseBackup(plotId, design, worldKey, createdAt, corner.clone(), size.clone(), previousChimney,
-                List.copyOf(cells));
+        return new HouseBackup(plotId, design, worldKey, createdAt, corner.clone(), size.clone(),
+                previousSmoke.isEmpty() ? null : previousSmoke.getFirst(), cells, previousSmoke, previousSteam);
     }
 
     /** Puts every recorded block back (block data only; tile contents come from the structure file). */
@@ -72,6 +96,12 @@ public record HouseBackup(String plotId, String design, String worldKey, long cr
         if (previousChimney != null) {
             m.put("previous-chimney", List.of(previousChimney.x(), previousChimney.y(), previousChimney.z()));
         }
+        if (previousSmoke.size() > 1) {
+            m.put("previous-smoke", triples(previousSmoke));
+        }
+        if (!previousSteam.isEmpty()) {
+            m.put("previous-steam", triples(previousSteam));
+        }
         List<String> out = new ArrayList<>(cells.size());
         for (Cell c : cells) {
             out.add(c.x() + " " + c.y() + " " + c.z() + " " + c.oldData());
@@ -90,11 +120,10 @@ public record HouseBackup(String plotId, String design, String worldKey, long cr
         }
         int[] corner = ints(m.get("corner"), "corner");
         int[] size = ints(m.get("size"), "size");
-        Plot.Point chimney = null;
-        if (m.get("previous-chimney") instanceof List<?> l && l.size() == 3
-                && l.get(0) instanceof Number x && l.get(1) instanceof Number y && l.get(2) instanceof Number z) {
-            chimney = new Plot.Point(x.doubleValue(), y.doubleValue(), z.doubleValue());
-        }
+        Plot.Point chimney = triple(m.get("previous-chimney"));
+        List<Plot.Point> smoke = m.get("previous-smoke") instanceof List<?> rawSmoke ? readTriples(rawSmoke)
+                : chimney == null ? List.of() : List.of(chimney);
+        List<Plot.Point> steam = m.get("previous-steam") instanceof List<?> rawSteam ? readTriples(rawSteam) : List.of();
         List<Cell> cells = new ArrayList<>();
         if (m.get("cells") instanceof List<?> raw) {
             for (Object o : raw) {
@@ -110,7 +139,34 @@ public record HouseBackup(String plotId, String design, String worldKey, long cr
                 }
             }
         }
-        return new HouseBackup(plot, design, world, created.longValue(), corner, size, chimney, List.copyOf(cells));
+        return new HouseBackup(plot, design, world, created.longValue(), corner, size, chimney, cells, smoke, steam);
+    }
+
+    private static List<List<Double>> triples(List<Plot.Point> points) {
+        List<List<Double>> out = new ArrayList<>();
+        for (Plot.Point p : points) {
+            out.add(List.of(p.x(), p.y(), p.z()));
+        }
+        return out;
+    }
+
+    private static List<Plot.Point> readTriples(List<?> raw) {
+        List<Plot.Point> out = new ArrayList<>();
+        for (Object o : raw) {
+            Plot.Point p = triple(o);
+            if (p != null) {
+                out.add(p);
+            }
+        }
+        return out;
+    }
+
+    private static Plot.@Nullable Point triple(@Nullable Object raw) {
+        if (raw instanceof List<?> l && l.size() == 3
+                && l.get(0) instanceof Number x && l.get(1) instanceof Number y && l.get(2) instanceof Number z) {
+            return new Plot.Point(x.doubleValue(), y.doubleValue(), z.doubleValue());
+        }
+        return null;
     }
 
     private static String string(Map<String, ?> m, String key) {

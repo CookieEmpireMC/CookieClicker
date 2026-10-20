@@ -28,8 +28,8 @@ public final class PlotFile {
     public static final String NAME = "plots.yml";
 
     private static final String HEADER = """
-            Bakery plots. Set points in game with /bakery plot setviewpoint|setpedestal|setchimney while standing in
-            the plot; edit by hand, then /bakery reload. The plot and house AREAS are WorldGuard regions:
+            Bakery plots. /bakery plot setup (standing anywhere in the plot) fills in every point from the house
+            design's layout; edit by hand, then /bakery reload. The plot and house AREAS are WorldGuard regions:
               /rg flag <plot region> bakery-plot <id>    and    /rg flag <house region> bakery-house <id>
             plot-region / house-region below are only a fallback for regions without those flags.
             world is the world KEY (e.g. minecraft:overworld), not its folder name.""";

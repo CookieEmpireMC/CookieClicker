@@ -25,7 +25,7 @@ copy, so new effects in an update work with an old file. Nothing is ever thrown 
 | `max-display-entities-global` | 150 | effect display entities alive server-wide; at the cap new display layers are dropped (particles still play) |
 | `max-falling-blocks-per-player` | 24 | `effects.dropBlock` displays falling at once for one viewer; at the cap a new drop **lands instantly** (see the API) |
 | `max-falling-blocks-global` | 240 | the same, server-wide |
-| `max-loops-per-player` | 4 | `effects.loop` loops per viewer; at the cap the new loop isn't started (logged once, `EffectHandle.NONE`) |
+| `max-loops-per-player` | 8 | `effects.loop` loops per viewer (raised from 4 in factory-makeover: the factory runs up to 3 smoke + 2 steam loops per viewer, plus headroom); at the cap the new loop isn't started (logged once, `EffectHandle.NONE`) |
 
 Falling blocks and loops don't count toward the display-entity caps, so a running house cinematic never evicts the
 player's click numbers.
@@ -150,12 +150,13 @@ updates, 1 particle packet (count 4) + `house_block_land` at the impact.
 | `house_sparkle` | 3 light-gold → gold sparks rise 0.7 off the top face of the new block (staggered), and 2 orange wax glints twinkle just above it. | every block, in `onLanded` (when the real block appears); location = block bottom centre | 20 particles | none |
 | `house_confetti` | Finale: a warm flash, 24 white firework sparks, a fountain of 24 totem confetti, and four dome shells of tinted leaves (gold, pink, mint, sky blue; radius 1.8 → 4.2, staggered by 1 tick) that hang around the roof and flutter down over the next seconds. | once when the roof is done; location = top centre of the house, about 1 block above the ridge | 153 particles | none |
 | `house_chimney_smoke` | `loop-every: 10`: each play sends one big campfire smoke puff drifting up (lingers ~5 s, so a column of ~10 puffs) and two small dark wisps; extended range (`force`). | `effects.loop("house_chimney_smoke", chimneyTop, viewer)` for every player in the plot who isn't mid-cinematic; location = centre of the chimney's top face | 3 particles per play = 6/s per viewer | none |
+| `factory_steam` | `loop-every: 37` (prime, never in step with the 10-tick smoke): short white roof-vent puffs at uneven gaps, a big puff at tick 0 (cloud launched up + 2 white_smoke wisps), a small one at 5, a big one at 15, a small one at 24, then a 13-tick pause; each puff a few cm off centre. Cloud fades in ~1 s, so it reads as separate puffs, not a column; white and short-lived vs the grey, lingering campfire column of `house_chimney_smoke`. Extended range (`force`). | `effects.loop("factory_steam", ventTop, viewer)` at every `points.steam` cell, same viewers/lifecycle as the chimney smoke; location = centre of the vent's top face (the steam cell's bottom centre, `(x + 0.5, y, z + 0.5)`) | 8 particles per cycle ≈ 4.3/s per vent per viewer; counts 1 toward `max-loops-per-player` | none |
 | `plot_outline` | **Admin-only tool.** One sky-blue (`#8ec5ff`) dust mote, size 1.5, extended range (`force`) so the outline shows from across the plot. | `/bakery plot show`: once per outline point of the **plot** region, viewer = the admin (`plot.show.plot-effect`) | 1 particle per play (≈120 per region redraw) | none |
 | `house_outline` | **Admin-only tool.** Same as `plot_outline` in cookie gold (`#f5c542`), so plot and house borders are told apart at a glance. | `/bakery plot show`: once per outline point of the **house** region (`plot.show.house-effect`) | 1 particle per play (≈120 per region redraw) | none |
 
 Previews: `design/vfx-previews/<id>.png` for every preset (pop shows the outline of a 1-block disc at the
 interpolated scale per tick, `house_block_drop` the edges of the falling block per tick, `house_chimney_smoke` three
-loop cycles).
+loop cycles, `factory_steam` too).
 
 Per-block budget during the cinematic, per block: drop 1 entity + ~3 packets for the impact, sparkle 20,
 foundation dust 28 (bottom layer only). At 2 blocks per tick that is about 50–100 particle packets per tick to one
@@ -302,6 +303,10 @@ Notes for the caller:
 15. `house_chimney_smoke`: a calm continuous column visible from the plot edge (`force`); the column isn't broken
     (gaps mean `loop-every` too long) or too thick. Stops when leaving the plot, on relog and after reload until
     the coder restarts it.
+16b. `factory_steam` (factory roof vent): reads as white steam puffs with an uneven rhythm, clearly different from the grey
+    smokestack columns; puffs not too small from the plot entrance (raise `speed`/add a `white_smoke` count if they
+    vanish), and two vents don't look identical (both loops start together; ask the coder to start the second a few
+    ticks later if they do).
 16. Quit, `/bakery reload` and a world change mid-cinematic: no BlockDisplay left floating (`/minecraft:kill
     @e[type=block_display,tag=cookieclicker]` should find nothing).
 17. `plot_outline` / `house_outline` (`/bakery plot show`): blue plot and gold house borders are easy to tell

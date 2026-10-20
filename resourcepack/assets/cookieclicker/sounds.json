@@ -55,5 +55,11 @@
     "sounds": [
       "cookieclicker:house/chimney_crackle"
     ]
+  },
+  "factory.ambient": {
+    "subtitle": "subtitles.cookieclicker.factory_ambient",
+    "sounds": [
+      "cookieclicker:factory/ambient"
+    ]
   }
 }
