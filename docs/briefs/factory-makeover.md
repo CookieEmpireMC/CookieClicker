@@ -93,7 +93,7 @@ none (decided below)
 |---|---|---|---|---|
 | model-designer | running | | | |
 | sound-designer | merged | `factory-makeover/sound-designer` | READY | `factory_ambient` 4.0 s loop done; replay every 80 ticks, fixed pitch |
-| vfx-designer | in review | `factory-makeover/vfx-designer` | | `factory_steam` done; contract change: `max-loops-per-player` 4 → 8 |
+| vfx-designer | merged | `factory-makeover/vfx-designer` | READY | `factory_steam` done; contract change: `max-loops-per-player` 4 → 8 |
 | plugin-coder | running | | | |
 
 ## Merge order
