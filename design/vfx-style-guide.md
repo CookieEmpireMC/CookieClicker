@@ -41,7 +41,7 @@ with the cookie item), so they always match the cookie's texture.
 | Purchase / upgrade | 40–120 | 0–1 | personal by default |
 | Milestone / global | ≤ 200 (hard cap `max-particles-per-effect`) | ≤ 6 | |
 | Per-block (played hundreds of times in a row) | ≤ 10 (impact), ≤ 30 (all layers of one block) | the drop itself | sum over blocks per tick matters more than one block |
-| Ambient loop | ≤ 5 per play, ≤ 10 per second | 0 | long-lived particles (campfire smoke) instead of many short ones |
+| Ambient loop | ≤ 5 per play (≤ 10 per cycle for multi-puff cycles ≥ 1.5 s), ≤ 10 per second | 0 | long-lived particles (campfire smoke) instead of many short ones; irregular rhythm = prime `loop-every` + delayed layers at uneven gaps |
 
 - Rings: about 24–30 points per block of radius. Fewer looks dotted, more turns into a solid line and costs more.
 - Growing rings/spheres redraw every tick (cost × ticks): keep them to 3 ticks.
