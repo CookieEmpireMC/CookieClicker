@@ -22,9 +22,11 @@ current branch, i.e. the feature branch the orchestrator is on):
 Exit code: 0 clean, 1 violations, 2 usage/git error.
 
 Authorship is self-declared (``git -c user.email=…``), so this guards against
-mistakes, not tampering. The map and matcher are read from
-``$CLAUDE_PROJECT_DIR``, else the main checkout, else this checkout (the first
-that has them); the source is printed. Standard library only.
+mistakes, not tampering. The map (``.claude/ownership.json``) and the matcher
+(``tools/ownership/ownership_lib.py``, a copy of the file the ``bakery-team``
+plugin ships for its hook) are read from ``$CLAUDE_PROJECT_DIR``, else the main
+checkout, else this checkout (the first that has both); the source is printed.
+Standard library only.
 """
 
 from __future__ import annotations
@@ -35,7 +37,7 @@ import os
 import subprocess
 import sys
 
-LIB_REL = os.path.join(".claude", "hooks", "ownership_lib.py")
+LIB_REL = os.path.join("tools", "ownership", "ownership_lib.py")
 MAP_REL = os.path.join(".claude", "ownership.json")
 
 
@@ -172,7 +174,7 @@ def report(result: dict, base: str, branch: str, root: str) -> int:
             print(f"    author: {commit['name']} <{commit['email']}> ({who})")
             print(f"    file:   {path}")
             print(f"    owner:  {owner_text}")
-        print("\nSend each violation back to the agent that made it (see docs/workflow.md).")
+        print("\nSend each violation back to the agent that made it (see the bakery-team plugin, skill bakery-context).")
         return 1
     print("\nOK: every commit stays inside its author's files.")
     return 0
