@@ -1,6 +1,6 @@
 # factory-makeover
 
-**Status:** in progress  <!-- planned | in progress | review | done -->
+**Status:** review  <!-- planned | in progress | review | done -->
 **Created:** 2026-10-20 · **Approved:** 2026-10-20 · **Depends on:** starter-house (merged, PR #5)
 
 ## Goal
@@ -15,7 +15,7 @@ I walk up to my plot through the gap in the wooden fence and watch my factory go
 - [ ] Reads as a factory from the front and from the plot entrance: at least 2 smokestacks of different heights, a visible oven (glowing blocks behind bars/grates), large windows or skylights, a roof vent, a sign "Cookie Works", a loading hatch/opening on the pedestal side where the conveyor belt will come out later (`points.belt_out`).
 - [ ] Style follows §2 and `design/style-guide.md`: warm palette (brick, terracotta, spruce/dark oak, copper accents), no grey industrial box. A front 3/4 preview + layer previews in `design/factory.md`, as for the cottage.
 - [ ] **Detail over size** (Decision 1): compact, no bigger than it needs to be to look detailed and good; Pixel Pat picks the size and justifies it in the spec. Depth in the walls (pillars, recessed windows, trim, buttresses), varied roofline, small props (barrels, crates, sacks of flour, lanterns, flower boxes) so it never reads flat.
-- [ ] **Front yard layout:** the spec includes a top-down plot layout (`design/factory.md`): factory, the belt path from `points.belt_out` to the recommended pedestal spot (straight, ≥ 4 blocks long), the shop panel spot beside the pedestal, and ≥ 5 blocks of free space to the fence elsewhere. It gives the recommended plot size and where the admin runs `setpedestal`.
+- [ ] **Front yard layout:** the spec includes a top-down plot layout (`design/factory.md`): factory, the belt path from `points.belt_out` to the recommended pedestal spot (straight, ≥ 4 blocks long), the shop panel spot beside the pedestal, and ≥ 5 blocks of free space to the fence elsewhere. It gives the recommended plot size; `/bakery plot setup` places everything from it (Decision 4).
 - [ ] Every validation the cottage generator runs also passes for the factory (block states, no gravity blocks, supported hanging blocks, panes connect, < `house.max-blocks`).
 
 **Fence & entrance** (Decision 2)
