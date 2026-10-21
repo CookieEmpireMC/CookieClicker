@@ -1,5 +1,6 @@
 package dev.casperrs.cookieClicker.view;
 
+import dev.casperrs.cookieClicker.config.StationVisualSettings.Offset;
 import dev.casperrs.cookieClicker.station.Station;
 import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Entity;
@@ -9,31 +10,118 @@ import org.bukkit.entity.TextDisplay;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
- * One owner's visuals at one station: pedestal, cookie + hitbox, panel header and rows. Every entity is
- * per-player (hidden by default, shown to {@link #owner} only), non-persistent and tagged. Main thread only.
+ * One owner's visuals at one station: pedestal, cookie + hitbox, the buildings and click upgrades panels (header,
+ * ×N toggle, rows) and the upgrade shelf. Every entity is per-player (hidden by default, shown to {@link #owner}
+ * only), non-persistent and tagged. Main thread only.
  */
 final class StationView {
 
-    /** One shop row: icon, text and its own hitbox. {@code last} is what is currently rendered. */
+    /**
+     * One panel row slot: icon, text and its own hitbox. Which item it shows ({@link #id}) can change (click
+     * upgrades move up when one is bought); an empty slot shows nothing and ignores clicks.
+     */
     static final class Row {
-        final String buildingId;
+        final int index;
         final ItemDisplay icon;
         final TextDisplay text;
         final Interaction hitbox;
         /** Centre of the row in world space (where the purchase effect plays). */
         final double[] centre;
-        @Nullable RowState last;
+        /** Icon centre in world space (where a bought upgrade's icon flies out from). */
+        final double[] iconAt;
+        /** The building / upgrade shown, or null for an empty slot. */
+        @Nullable String id;
+        /** The values the row shows (or rolls toward). */
+        @Nullable PanelRowState state;
+        PriceTween cost = PriceTween.fixed(0);
+        PriceTween gain = PriceTween.fixed(0);
+        /** A roll or pulse still needs text updates from the animation tick. */
+        boolean animating;
+        long lastTextTick = Long.MIN_VALUE;
+        long pulseStart = Long.MIN_VALUE;
+        /** What is rendered (template + formatted values); unchanged = nothing sent. */
+        @Nullable String renderedKey;
+        /** Estimated pixel width of the rendered text (for the left-edge shift). */
+        int renderedWidth;
+        float sentShift = Float.NaN;
+        float sentScale = Float.NaN;
+        int sentColor;
+        int sentLight = -1;
 
-        Row(String buildingId, ItemDisplay icon, TextDisplay text, Interaction hitbox, double[] centre) {
-            this.buildingId = buildingId;
+        Row(int index, ItemDisplay icon, TextDisplay text, Interaction hitbox, double[] centre, double[] iconAt) {
+            this.index = index;
             this.icon = icon;
             this.text = text;
             this.hitbox = hitbox;
             this.centre = centre;
+            this.iconAt = iconAt;
+        }
+    }
+
+    /** One hologram panel: header, ×1/×5/×10/Max toggle with its hitbox, and row slots. */
+    static final class Panel {
+        final PanelKind kind;
+        final StationFrame frame;
+        /** Header anchor in {@link #frame}. */
+        final Offset anchor;
+        final float iconYaw;
+        final TextDisplay header;
+        final TextDisplay toggle;
+        final Interaction toggleHitbox;
+        final List<Row> rows;
+        /** The mode the toggle currently shows. */
+        @Nullable BulkMode shownMode;
+
+        Panel(PanelKind kind, StationFrame frame, Offset anchor, float iconYaw, TextDisplay header, TextDisplay toggle,
+              Interaction toggleHitbox, List<Row> rows) {
+            this.kind = kind;
+            this.frame = frame;
+            this.anchor = anchor;
+            this.iconYaw = iconYaw;
+            this.header = header;
+            this.toggle = toggle;
+            this.toggleHitbox = toggleHitbox;
+            this.rows = List.copyOf(rows);
+        }
+
+        void addEntities(List<Entity> out) {
+            out.add(header);
+            out.add(toggle);
+            out.add(toggleHitbox);
+            for (Row r : rows) {
+                out.add(r.icon);
+                out.add(r.text);
+                out.add(r.hitbox);
+            }
+        }
+    }
+
+    /**
+     * One bought upgrade's icon on the shelf. While it flies in from its row it has no hitbox yet;
+     * {@code flightStart}/{@code landTick} are {@link Long#MIN_VALUE} once passed.
+     */
+    static final class ShelfIcon {
+        final String upgradeId;
+        final ItemDisplay icon;
+        @Nullable Interaction hitbox;
+        int slot;
+        long flightStart = Long.MIN_VALUE;
+        long landTick = Long.MIN_VALUE;
+
+        ShelfIcon(String upgradeId, ItemDisplay icon, int slot) {
+            this.upgradeId = upgradeId;
+            this.icon = icon;
+            this.slot = slot;
+        }
+
+        boolean flying() {
+            return landTick != Long.MIN_VALUE;
         }
     }
 
@@ -44,24 +132,28 @@ final class StationView {
     /** Cookie centre in world space (left clicks have no hit position). */
     final double[] cookieCentre;
     final @Nullable BlockDisplay pedestal;
-    final TextDisplay header;
-    final List<Row> rows;
-    /** Every entity of this view, built once (the set never changes; a broken view is respawned whole). */
-    private final List<Entity> entities;
+    final Panel buildings;
+    final Panel clicks;
+    /** Upgrade id → its shelf icon (entities added and removed as upgrades are bought). */
+    final Map<String, ShelfIcon> shelf = new LinkedHashMap<>();
+    /** The fixed entities (cookie, pedestal, panels); the shelf comes on top. */
+    private final List<Entity> fixed;
     boolean withPack;
-    /** Server tick of the last spin/bob segment sent for this cookie. */
-    long lastSegmentTick = Long.MIN_VALUE;
+    /** Server tick the cookie's current spin/bob target is for (sent by a segment or by a pop step). */
+    long motionTarget = Long.MIN_VALUE;
+    /** The current target came from a pop step: wait until the tick after it before the next segment. */
+    boolean motionFromPop;
 
     StationView(UUID owner, Station station, ItemDisplay cookie, Interaction cookieHitbox, double[] cookieCentre,
-                @Nullable BlockDisplay pedestal, TextDisplay header, List<Row> rows, boolean withPack) {
+                @Nullable BlockDisplay pedestal, Panel buildings, Panel clicks, boolean withPack) {
         this.owner = owner;
         this.station = station;
         this.cookie = cookie;
         this.cookieHitbox = cookieHitbox;
         this.cookieCentre = cookieCentre;
         this.pedestal = pedestal;
-        this.header = header;
-        this.rows = List.copyOf(rows);
+        this.buildings = buildings;
+        this.clicks = clicks;
         this.withPack = withPack;
         List<Entity> all = new ArrayList<>();
         all.add(cookie);
@@ -69,18 +161,33 @@ final class StationView {
         if (pedestal != null) {
             all.add(pedestal);
         }
-        all.add(header);
-        for (Row r : this.rows) {
-            all.add(r.icon);
-            all.add(r.text);
-            all.add(r.hitbox);
-        }
-        this.entities = List.copyOf(all);
+        buildings.addEntities(all);
+        clicks.addEntities(all);
+        this.fixed = List.copyOf(all);
     }
 
-    /** Immutable; same order as before: cookie, hitbox, pedestal, header, then icon/text/hitbox per row. */
+    Panel panel(PanelKind kind) {
+        return kind == PanelKind.BUILDINGS ? buildings : clicks;
+    }
+
+    List<Panel> panels() {
+        return List.of(buildings, clicks);
+    }
+
+    /** Every entity of this view: cookie, hitbox, pedestal, both panels, then the shelf icons and their hitboxes. */
     List<Entity> entities() {
-        return entities;
+        if (shelf.isEmpty()) {
+            return fixed;
+        }
+        List<Entity> all = new ArrayList<>(fixed.size() + 2 * shelf.size());
+        all.addAll(fixed);
+        for (ShelfIcon s : shelf.values()) {
+            all.add(s.icon);
+            if (s.hitbox != null) {
+                all.add(s.hitbox);
+            }
+        }
+        return all;
     }
 
     /** False once any entity is gone (chunk unload, another plugin, /kill): the whole view is then respawned. */
@@ -97,5 +204,6 @@ final class StationView {
         for (Entity e : entities()) {
             e.remove();
         }
+        shelf.clear();
     }
 }

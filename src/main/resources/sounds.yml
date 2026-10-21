@@ -115,3 +115,21 @@ belt_loop:
   pitch-min: 0.8                            # FIXED 0.8: the file is designed for it. At 0.8 it lasts
   pitch-max: 0.8                            # exactly 5.0 s = 100 ticks: replay every 100 ticks (belt.sound-every)
   source: ambient
+
+# --- upgrade-holograms ---
+
+upgrade_shelved:
+  key: "cookieclicker:ui.upgrade_shelved"
+  fallback: "minecraft:block.amethyst_block.chime"
+  volume: 0.6
+  pitch-min: 0.97
+  pitch-max: 1.05
+  source: ui
+
+bulk_toggle:
+  key: "cookieclicker:ui.bulk_toggle"
+  fallback: "minecraft:ui.button.click"
+  volume: 0.5
+  pitch-min: 0.97
+  pitch-max: 1.05
+  source: ui

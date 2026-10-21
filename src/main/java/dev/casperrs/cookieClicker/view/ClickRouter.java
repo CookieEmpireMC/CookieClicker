@@ -76,6 +76,7 @@ public final class ClickRouter implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onQuit(PlayerQuitEvent event) {
         lastClickTick.remove(event.getPlayer().getUniqueId());
+        interactions.forget(event.getPlayer().getUniqueId());
     }
 
     private void leftClick(Player player, Entity target, Cancellable event, String name) {
@@ -109,8 +110,18 @@ public final class ClickRouter implements Listener {
         switch (target.kind()) {
             case COOKIE -> interactions.clickCookie(player, view, hit);
             case ROW -> {
-                if (target.buildingId() != null) {
-                    interactions.clickRow(player, view, target.buildingId());
+                if (target.panel() != null) {
+                    interactions.clickRow(player, view, target.panel(), target.row());
+                }
+            }
+            case TOGGLE -> {
+                if (target.panel() != null) {
+                    interactions.clickToggle(player, view, target.panel());
+                }
+            }
+            case SHELF -> {
+                if (target.upgradeId() != null) {
+                    interactions.clickShelf(player, target.upgradeId());
                 }
             }
         }

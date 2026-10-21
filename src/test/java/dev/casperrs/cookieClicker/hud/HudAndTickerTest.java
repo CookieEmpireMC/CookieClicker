@@ -50,9 +50,11 @@ class HudAndTickerTest {
         CookiePouch pouch = CookiePouch.fromSnapshot(new PouchSnapshot(1_500_000, 2_000_000, Map.of("baker", 10), Set.of()));
         String withPack = PlainTextComponentSerializer.plainText().serialize(hud.render(pouch, true));
         String noPack = PlainTextComponentSerializer.plainText().serialize(hud.render(pouch, false));
-        assertTrue(withPack.contains("1.5 million") && withPack.contains("1"), withPack);
-        assertTrue(noPack.contains("1.5 million"), noPack);
-        assertTrue(withPack.contains("") || withPack.length() > noPack.length() - 1, "with-pack variant carries the glyph: " + withPack);
+        assertTrue(withPack.contains("1.5M") && withPack.contains("1"), withPack);
+        assertTrue(noPack.contains("1.5M"), noPack);
+        // the cookie glyph (U+E000, cookieclicker:hud font) is only in the with-pack line
+        assertTrue(withPack.indexOf('\uE000') >= 0, "with-pack variant carries the glyph: " + withPack);
+        assertTrue(noPack.indexOf('\uE000') < 0, "no-pack variant must not show a box: " + noPack);
     }
 
     @Test

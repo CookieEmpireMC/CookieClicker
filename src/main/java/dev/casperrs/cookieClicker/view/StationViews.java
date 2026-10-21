@@ -10,11 +10,9 @@ import dev.casperrs.cookieClicker.station.Station;
 import dev.casperrs.cookieClicker.station.StationListener;
 import dev.casperrs.cookieClicker.station.StationRegistry;
 import dev.casperrs.cookieClicker.text.Messages;
+import dev.casperrs.cookieClicker.vfx.PopMotion;
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import net.kyori.adventure.key.Key;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
-import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
@@ -55,18 +53,20 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
 
 /**
- * Spawns, updates and removes every player's station visuals (cookie, pedestal, panel) with a proximity lifecycle:
- * a task every {@code station.refresh-ticks} spawns a player's view when they are online, loaded and within
- * {@code station.view-distance} of a station, and removes it when they leave. Spawning always ends with
- * {@code showEntity}, so nothing depends on remembered visibility. Quit, world change, station removal, chunk
- * unload, reload and disable remove views right away; {@link #sweep(boolean)} removes leftovers. A second task drives the
- * cookie's spin/bob segments. Main thread only.
+ * Spawns, updates and removes every player's station visuals (cookie, pedestal, the buildings and click upgrades
+ * panels, the upgrade shelf) with a proximity lifecycle: a task every {@code station.refresh-ticks} spawns a player's
+ * view when they are online, loaded and within {@code station.view-distance} of a station, and removes it when they
+ * leave. Spawning always ends with {@code showEntity}, so nothing depends on remembered visibility. Quit, world
+ * change, station removal, chunk unload, reload and disable remove views right away; {@link #sweep(boolean)} removes
+ * leftovers. A second task runs every tick: the cookie's spin/bob segments, the panels' price rolls and the shelf
+ * icons' flights. Main thread only.
  */
 public final class StationViews implements Listener, StationListener, SessionListener {
 
@@ -74,7 +74,8 @@ public final class StationViews implements Listener, StationListener, SessionLis
     public static final String TAG = "cookieclicker";
 
     private static final Key COOKIE_MODEL = Key.key("cookieclicker", "cookie");
-    private static final PlainTextComponentSerializer PLAIN = PlainTextComponentSerializer.plainText();
+    /** Ticks between a buy and the start of its icon's flight (the {@code upgrade_bought} sparkle comes first). */
+    private static final int FLY_DELAY_TICKS = 2;
 
     private final Plugin plugin;
     private final Supplier<StationVisualSettings> settings;
@@ -85,15 +86,17 @@ public final class StationViews implements Listener, StationListener, SessionLis
     private final Predicate<Player> hasPack;
     private final Logger log;
     private final NamespacedKey entityKey;
+    private final BulkModes modes = new BulkModes();
+    private final PanelUpdater panels;
 
     private final Map<UUID, Map<String, StationView>> byOwner = new HashMap<>();
     private final Map<UUID, StationView> byEntity = new HashMap<>();
     private final Map<UUID, ClickTarget> targets = new HashMap<>();
     private final Set<String> warned = new HashSet<>();
     private @Nullable BukkitTask refreshTask;
-    private @Nullable BukkitTask motionTask;
+    private @Nullable BukkitTask animationTask;
     private CookieMotion motion;
-    private long lastMotionRun = Long.MIN_VALUE;
+    private BiConsumer<Player, Location> shelfLanding = (player, at) -> { };
     private boolean running;
 
     public StationViews(Plugin plugin, Supplier<StationVisualSettings> settings, StationRegistry stations,
@@ -108,6 +111,12 @@ public final class StationViews implements Listener, StationListener, SessionLis
         this.log = plugin.getLogger();
         this.entityKey = new NamespacedKey(plugin, "station");
         this.motion = CookieMotion.of(settings.get().cookie());
+        this.panels = new PanelUpdater(settings, economy, messages, modes, this::iconStack);
+    }
+
+    /** Called when a bought upgrade's icon lands on its shelf slot (effect + sound live with the interactions). */
+    public void setShelfLanding(BiConsumer<Player, Location> shelfLanding) {
+        this.shelfLanding = shelfLanding;
     }
 
     // ---- lifecycle ------------------------------------------------------------------------------------------
@@ -154,8 +163,7 @@ public final class StationViews implements Listener, StationListener, SessionLis
     private void startTasks() {
         StationVisualSettings s = settings.get();
         refreshTask = Bukkit.getScheduler().runTaskTimer(plugin, this::refresh, 1, s.refreshTicks());
-        int seg = s.cookie().segmentTicks();
-        motionTask = Bukkit.getScheduler().runTaskTimer(plugin, this::motionTick, seg, seg);
+        animationTask = Bukkit.getScheduler().runTaskTimer(plugin, this::animationTick, 1, 1);
     }
 
     private void cancelTasks() {
@@ -163,9 +171,9 @@ public final class StationViews implements Listener, StationListener, SessionLis
             refreshTask.cancel();
             refreshTask = null;
         }
-        if (motionTask != null) {
-            motionTask.cancel();
-            motionTask = null;
+        if (animationTask != null) {
+            animationTask.cancel();
+            animationTask = null;
         }
     }
 
@@ -193,7 +201,7 @@ public final class StationViews implements Listener, StationListener, SessionLis
         return removed;
     }
 
-    // ---- queries (click router) -----------------------------------------------------------------------------
+    // ---- queries (click router, interactions) ---------------------------------------------------------------
 
     public Optional<ClickTarget> target(UUID entityId) {
         return Optional.ofNullable(targets.get(entityId));
@@ -212,6 +220,16 @@ public final class StationViews implements Listener, StationListener, SessionLis
     /** Live view entities (for the tester / debug log). */
     public int trackedEntities() {
         return byEntity.size();
+    }
+
+    /** The player's bulk mode on a panel (session only, default ×1). */
+    BulkMode mode(UUID player, PanelKind panel) {
+        return modes.get(player, panel);
+    }
+
+    /** The toggle was clicked: next mode, then the panel rolls its prices to the new amounts. */
+    BulkMode cycleMode(Player player, PanelKind panel) {
+        return modes.cycle(player.getUniqueId(), panel);
     }
 
     // ---- refresh (proximity lifecycle) ----------------------------------------------------------------------
@@ -262,45 +280,90 @@ public final class StationViews implements Listener, StationListener, SessionLis
                 heal(player, view);
             }
             updatePack(player, view);
-            updateRows(view, pouch);
+            update(player, view, pouch, false);
         }
     }
 
     /**
-     * Refresh one player's panel rows now (after a click or purchase, and from the 1 Hz ticker right after
-     * production). Rows whose {@link RowState} didn't change send nothing.
+     * Refresh one player's panels and shelf now (from the 1 Hz ticker right after production, and after a cookie
+     * click). Rows whose values didn't change send nothing; changed prices roll.
      */
     public void refreshPanels(Player player, CookiePouch pouch) {
+        refreshPanels(player, pouch, false);
+    }
+
+    /** @param pulse a player action (purchase, toggle) changed the values: rolling rows also pulse */
+    void refreshPanels(Player player, CookiePouch pouch, boolean pulse) {
         Map<String, StationView> views = byOwner.get(player.getUniqueId());
         if (views != null) {
-            views.values().forEach(v -> updateRows(v, pouch));
+            for (StationView v : List.copyOf(views.values())) {
+                update(player, v, pouch, pulse);
+            }
         }
+    }
+
+    private void update(Player owner, StationView view, CookiePouch pouch, boolean pulse) {
+        long now = Bukkit.getCurrentTick();
+        syncShelf(owner, view, pouch);
+        panels.update(view, pouch, now, pulse);
     }
 
     private boolean chunksLoaded(World world, Station station, StationVisualSettings s) {
         StationFrame frame = StationFrame.of(station);
         return chunkLoaded(world, frame, Offset.ZERO) && chunkLoaded(world, frame, cookieOffset(station, s))
-                && chunkLoaded(world, panelFrame(station), panelOffset(station, s));
+                && chunkLoaded(world, panelFrame(station, PanelKind.BUILDINGS), panelOffset(station, PanelKind.BUILDINGS, s))
+                && chunkLoaded(world, panelFrame(station, PanelKind.CLICKS), panelOffset(station, PanelKind.CLICKS, s));
     }
 
-    // With a plot layout (station.shop() set) the cookie stands right on the station point and the panel on the shop
-    // point: only the "up" part of the station.cookie/pedestal/panel offsets is used. Without one, the offsets apply.
+    // With a plot layout (station.shop() set) the cookie stands right on the station point and the panels on the shop
+    // and clicks points: only the "up" part of the station.cookie/pedestal/panels offsets is used. Without one, the
+    // offsets apply.
 
     private static Offset cookieOffset(Station station, StationVisualSettings s) {
         return station.shop() == null ? s.cookie().offset() : upOnly(s.cookie().offset());
     }
 
-    private static Offset panelOffset(Station station, StationVisualSettings s) {
-        return station.shop() == null ? s.panel().offset() : upOnly(s.panel().offset());
+    private static Offset panelOffset(Station station, PanelKind kind, StationVisualSettings s) {
+        Offset o = (kind == PanelKind.BUILDINGS ? s.buildings() : s.clicks()).offset();
+        return anchor(station, kind) == null ? o : upOnly(o);
     }
 
-    private static StationFrame panelFrame(Station station) {
+    /**
+     * Where a panel stands with a plot layout: buildings on the shop spot, click upgrades on the clicks spot. A plot
+     * set up before the clicks spot existed mirrors the shop spot across the pedestal. Null without a layout.
+     */
+    private static Station.@Nullable Anchor anchor(Station station, PanelKind kind) {
         Station.Anchor shop = station.shop();
-        return shop == null ? StationFrame.of(station) : new StationFrame(shop.x(), shop.y(), shop.z(), shop.yaw());
+        if (kind == PanelKind.BUILDINGS) {
+            return shop;
+        }
+        if (station.clicks() != null) {
+            return station.clicks();
+        }
+        return mirroredClicks(station);
+    }
+
+    /**
+     * The clicks spot of a plot set up before it existed: the shop spot mirrored across the pedestal
+     * (2·station − shop on x and z, same height and yaw). Null when the station has no shop spot.
+     */
+    static Station.@Nullable Anchor mirroredClicks(Station station) {
+        Station.Anchor shop = station.shop();
+        return shop == null ? null
+                : new Station.Anchor(2 * station.x() - shop.x(), shop.y(), 2 * station.z() - shop.z(), shop.yaw());
+    }
+
+    private static StationFrame panelFrame(Station station, PanelKind kind) {
+        Station.Anchor a = anchor(station, kind);
+        return a == null ? StationFrame.of(station) : new StationFrame(a.x(), a.y(), a.z(), a.yaw());
     }
 
     private static Offset upOnly(Offset o) {
         return new Offset(0, o.up(), 0);
+    }
+
+    private static Offset plus(Offset a, Offset b) {
+        return new Offset(a.right() + b.right(), a.up() + b.up(), a.forward() + b.forward());
     }
 
     private static boolean chunkLoaded(World world, StationFrame frame, Offset o) {
@@ -328,15 +391,15 @@ public final class StationViews implements Listener, StationListener, SessionLis
             StationVisualSettings.Cookie c = s.cookie();
             double[] centre = frame.point(cookieOffset(station, s));
             float scale = c.scale();
+            long spawnTick = Bukkit.getCurrentTick();
             ItemDisplay cookie = spawn(world, centre, frame.facingViewers(0), ItemDisplay.class, owner, spawned, d -> {
                 d.setItemStack(cookieStack(pack));
                 d.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.NONE);
                 d.setBillboard(Display.Billboard.FIXED);
                 d.setViewRange(c.viewRange());
                 d.setBrightness(new Display.Brightness(c.brightness(), c.brightness()));
-                long now = Bukkit.getCurrentTick();
-                d.setTransformation(new Transformation(new Vector3f(0, (float) motion.bob(now), 0),
-                        new Quaternionf().rotationY((float) motion.angle(now)),
+                d.setTransformation(new Transformation(new Vector3f(0, (float) motion.bob(spawnTick), 0),
+                        new Quaternionf().rotationY((float) motion.angle(spawnTick)),
                         new Vector3f(scale, scale, scale), new Quaternionf()));
             });
             float boxWidth = (float) (scale + c.hitboxMargin());
@@ -353,57 +416,79 @@ public final class StationViews implements Listener, StationListener, SessionLis
                     : new StationVisualSettings.Pedestal(ped.enabled(), ped.block(), upOnly(ped.offset()), ped.width(),
                             ped.height()), owner, spawned);
 
-            StationVisualSettings.Panel p = s.panel();
-            StationFrame pf = panelFrame(station);
-            Offset po = panelOffset(station, s);
-            float textYaw = pf.facingViewers(p.textYawOffset());
-            float iconYaw = pf.facingViewers(p.iconYawOffset());
-            TextDisplay header = spawn(world, pf.point(po), textYaw, TextDisplay.class, owner, spawned, t -> {
-                styleText(t, p, p.headerScale(), p.color("header"));
-                t.setAlignment(TextDisplay.TextAlignment.CENTER);
-                t.text(messages.component("panel.header"));
-            });
-
-            List<StationView.Row> rows = new ArrayList<>();
-            int index = 0;
-            for (String buildingId : economy.config().buildings().keySet()) {
-                Offset anchor = new Offset(po.right(), po.up() - p.firstRowDrop() - index * p.rowPitch(), po.forward());
-                index++;
-                ItemDisplay icon = spawn(world, pf.point(anchor, p.iconOffset()), iconYaw, ItemDisplay.class, owner,
-                        spawned, d -> {
-                            d.setItemStack(iconStack(buildingId, pack));
-                            d.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
-                            d.setBillboard(Display.Billboard.FIXED);
-                            d.setViewRange(p.viewRange());
-                            float is = p.iconScale();
-                            d.setTransformation(new Transformation(new Vector3f(), new Quaternionf(),
-                                    new Vector3f(is, is, is), new Quaternionf()));
-                        });
-                TextDisplay text = spawn(world, pf.point(anchor, p.textOffset()), textYaw, TextDisplay.class, owner,
-                        spawned, t -> {
-                            styleText(t, p, p.textScale(), p.color("unaffordable"));
-                            t.setAlignment(TextDisplay.TextAlignment.LEFT);
-                        });
-                double[] boxBottom = pf.point(anchor, p.hitboxOffset());
-                Interaction box = spawn(world, boxBottom, 0, Interaction.class, owner, spawned, i -> {
-                    i.setInteractionWidth(p.hitboxWidth());
-                    i.setInteractionHeight(p.hitboxHeight());
-                    i.setResponsive(true);
-                });
-                double[] rowCentre = {boxBottom[0], boxBottom[1] + p.hitboxHeight() / 2, boxBottom[2]};
-                rows.add(new StationView.Row(buildingId, icon, text, box, rowCentre));
-            }
+            int buildingRows = Math.min(s.buildings().maxRows(), economy.config().buildings().size());
+            int clickRows = Math.min(s.clicks().maxRows(), economy.config().upgrades().size());
+            StationView.Panel buildings = spawnPanel(PanelKind.BUILDINGS, world, station, s, owner, spawned, buildingRows);
+            StationView.Panel clicks = spawnPanel(PanelKind.CLICKS, world, station, s, owner, spawned, clickRows);
 
             StationView view = new StationView(owner.getUniqueId(), station, cookie, cookieBox, centre, pedestal,
-                    header, rows, pack);
+                    buildings, clicks, pack);
+            view.motionTarget = spawnTick;
             register(view);
-            updateRows(view, pouch);
+            update(owner, view, pouch, false);
             return view;
         } catch (RuntimeException e) {
             spawned.forEach(Entity::remove);
             warnOnce("spawn", "Could not spawn the bakery view at " + station.id() + ": " + e);
             return null;
         }
+    }
+
+    /** One panel: header, ×N toggle (text + hitbox) and {@code rowCount} row slots (icon, text, hitbox). */
+    private StationView.Panel spawnPanel(PanelKind kind, World world, Station station, StationVisualSettings s,
+                                         Player owner, List<Entity> spawned, int rowCount) {
+        StationVisualSettings.Panel p = s.panel();
+        StationVisualSettings.Bulk b = s.bulk();
+        StationFrame pf = panelFrame(station, kind);
+        Offset po = panelOffset(station, kind, s);
+        float textYaw = pf.facingViewers(p.textYawOffset());
+        float iconYaw = pf.facingViewers(p.iconYawOffset());
+        TextDisplay header = spawn(world, pf.point(po), textYaw, TextDisplay.class, owner, spawned, t -> {
+            styleText(t, p, p.headerScale(), p.color("header"));
+            t.setAlignment(TextDisplay.TextAlignment.CENTER);
+            t.text(messages.component(kind == PanelKind.BUILDINGS ? "panel.buildings.header" : "panel.clicks.header"));
+        });
+        Offset toggleAnchor = plus(po, b.offset());
+        TextDisplay toggle = spawn(world, pf.point(toggleAnchor), textYaw, TextDisplay.class, owner, spawned, t -> {
+            styleText(t, p, b.scale(), p.color("toggle"));
+            t.setAlignment(TextDisplay.TextAlignment.CENTER);
+        });
+        Interaction toggleBox = spawn(world, pf.point(toggleAnchor, b.hitboxOffset()), 0, Interaction.class, owner,
+                spawned, i -> {
+                    i.setInteractionWidth(b.hitboxWidth());
+                    i.setInteractionHeight(b.hitboxHeight());
+                    i.setResponsive(true);
+                });
+
+        List<StationView.Row> rows = new ArrayList<>();
+        for (int index = 0; index < rowCount; index++) {
+            Offset anchor = new Offset(po.right(), po.up() - p.firstRowDrop() - b.rowsDrop() - index * p.rowPitch(),
+                    po.forward());
+            double[] iconAt = pf.point(anchor, p.iconOffset());
+            ItemDisplay icon = spawn(world, iconAt, iconYaw, ItemDisplay.class, owner, spawned, d -> {
+                d.setItemStack(ItemStack.empty());
+                d.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
+                d.setBillboard(Display.Billboard.FIXED);
+                d.setViewRange(p.viewRange());
+                float is = p.iconScale();
+                d.setTransformation(new Transformation(new Vector3f(), new Quaternionf(),
+                        new Vector3f(is, is, is), new Quaternionf()));
+            });
+            TextDisplay text = spawn(world, pf.point(anchor, p.textOffset()), textYaw, TextDisplay.class, owner,
+                    spawned, t -> {
+                        styleText(t, p, p.textScale(), 0);
+                        t.setAlignment(TextDisplay.TextAlignment.LEFT);
+                    });
+            double[] boxBottom = pf.point(anchor, p.hitboxOffset());
+            Interaction box = spawn(world, boxBottom, 0, Interaction.class, owner, spawned, i -> {
+                i.setInteractionWidth(p.hitboxWidth());
+                i.setInteractionHeight(p.hitboxHeight());
+                i.setResponsive(true);
+            });
+            double[] rowCentre = {boxBottom[0], boxBottom[1] + p.hitboxHeight() / 2, boxBottom[2]};
+            rows.add(new StationView.Row(index, icon, text, box, rowCentre, iconAt));
+        }
+        return new StationView.Panel(kind, pf, po, iconYaw, header, toggle, toggleBox, rows);
     }
 
     private @Nullable BlockDisplay spawnPedestal(World world, StationFrame frame, StationVisualSettings.Pedestal ped,
@@ -462,10 +547,13 @@ public final class StationViews implements Listener, StationListener, SessionLis
         for (Entity e : view.entities()) {
             byEntity.put(e.getUniqueId(), view);
         }
-        targets.put(view.cookieHitbox.getUniqueId(),
-                new ClickTarget(view.owner, view.station.id(), ClickTarget.Kind.COOKIE, null));
-        for (StationView.Row r : view.rows) {
-            targets.put(r.hitbox.getUniqueId(), new ClickTarget(view.owner, view.station.id(), ClickTarget.Kind.ROW, r.buildingId));
+        String id = view.station.id();
+        targets.put(view.cookieHitbox.getUniqueId(), ClickTarget.cookie(view.owner, id));
+        for (StationView.Panel panel : view.panels()) {
+            targets.put(panel.toggleHitbox.getUniqueId(), ClickTarget.toggle(view.owner, id, panel.kind));
+            for (StationView.Row r : panel.rows) {
+                targets.put(r.hitbox.getUniqueId(), ClickTarget.row(view.owner, id, panel.kind, r.index));
+            }
         }
     }
 
@@ -479,17 +567,21 @@ public final class StationViews implements Listener, StationListener, SessionLis
         return stack;
     }
 
-    private ItemStack iconStack(String buildingId, boolean withPack) {
-        String name = settings.get().panel().fallbackFor(buildingId);
+    /** Row / shelf icon: {@code cookieclicker:building/<id>} or {@code cookieclicker:upgrade/<id>} on the fallback. */
+    private ItemStack iconStack(PanelKind kind, String id, boolean withPack) {
+        StationVisualSettings s = settings.get();
+        boolean building = kind == PanelKind.BUILDINGS;
+        String name = building ? s.panel().fallbackFor(id) : s.upgradeFallbackFor(id);
         Material material = Material.matchMaterial(name);
         if (material == null || !material.isItem() || material.isAir()) {
-            warnOnce("icon:" + buildingId, "config.yml: station.panel.icons." + buildingId
-                    + ".fallback-material '" + name + "' is not an item; using COOKIE");
+            warnOnce("icon:" + kind + ":" + id, (building ? "config.yml: station.panel.icons." + id + ".fallback-material"
+                    : "config.yml: station.upgrade-fallback-items." + id) + " '" + name + "' is not an item; using COOKIE");
             material = Material.COOKIE;
         }
         ItemStack stack = ItemStack.of(material);
         if (withPack) {
-            stack.setData(DataComponentTypes.ITEM_MODEL, Key.key("cookieclicker", "building/" + buildingId));
+            stack.setData(DataComponentTypes.ITEM_MODEL,
+                    Key.key("cookieclicker", (building ? "building/" : "upgrade/") + id));
         }
         return stack;
     }
@@ -502,87 +594,231 @@ public final class StationViews implements Listener, StationListener, SessionLis
         }
         view.withPack = pack;
         view.cookie.setItemStack(cookieStack(pack));
-        for (StationView.Row r : view.rows) {
-            r.icon.setItemStack(iconStack(r.buildingId, pack));
+        for (StationView.Panel panel : view.panels()) {
+            for (StationView.Row r : panel.rows) {
+                if (r.id != null) {
+                    r.icon.setItemStack(iconStack(panel.kind, r.id, pack));
+                }
+            }
+        }
+        for (StationView.ShelfIcon s : view.shelf.values()) {
+            s.icon.setItemStack(iconStack(PanelKind.CLICKS, s.upgradeId, pack));
         }
     }
 
-    // ---- panel rows -----------------------------------------------------------------------------------------
+    // ---- upgrade shelf --------------------------------------------------------------------------------------
 
-    private void updateRows(StationView view, CookiePouch pouch) {
-        StationVisualSettings.Panel p = settings.get().panel();
-        for (StationView.Row row : view.rows) {
-            RowState state = RowState.of(economy, pouch, row.buildingId);
-            if (state.equals(row.last) || !row.text.isValid()) {
-                continue; // unchanged: no metadata packets
+    /** World position of shelf slot {@code slot} (under the click upgrades panel). */
+    private double[] slotAt(StationView view, int slot) {
+        StationView.Panel clicks = view.clicks;
+        return clicks.frame.point(clicks.anchor, settings.get().shelf().slot(slot));
+    }
+
+    /**
+     * Makes the shelf match the bought one-time upgrades: icons for upgrades no longer shown are removed, missing
+     * ones appear in place (no flight: a fresh view, or bought elsewhere), and icons whose slot changed glide there.
+     */
+    private void syncShelf(Player owner, StationView view, CookiePouch pouch) {
+        StationVisualSettings.Shelf s = settings.get().shelf();
+        List<String> wanted = PanelRows.shelf(economy.config(), pouch.upgradeLevelsView(), s.maxIcons());
+        for (StationView.ShelfIcon icon : List.copyOf(view.shelf.values())) {
+            if (!wanted.contains(icon.upgradeId)) {
+                removeShelfIcon(view, icon);
             }
-            row.last = state;
-            Component text = messages.component(state.style().messagePath(),
-                    Placeholder.unparsed("name", PLAIN.serialize(messages.buildingName(row.buildingId))),
-                    messages.number("owned", state.owned()),
-                    messages.number("cost", state.cost()),
-                    messages.number("cps", state.cps()),
-                    messages.number("needed", state.needed()));
-            row.text.text(text);
-            alignLeft(row.text, text, p);
-            row.text.setBackgroundColor(Color.fromARGB(p.color(state.style().key())));
-            int light = state.style() == RowState.Style.AFFORDABLE ? p.iconBrightAffordable() : p.iconBrightUnaffordable();
-            row.icon.setBrightness(new Display.Brightness(light, light));
+        }
+        for (int slot = 0; slot < wanted.size(); slot++) {
+            String id = wanted.get(slot);
+            StationView.ShelfIcon icon = view.shelf.get(id);
+            if (icon == null) {
+                icon = spawnShelfIcon(owner, view, id, slot, slotAt(view, slot), s.scale());
+                if (icon != null) {
+                    addShelfHitbox(owner, view, icon);
+                }
+            } else if (icon.slot != slot) {
+                moveShelfIcon(view, icon, slot);
+            }
         }
     }
 
     /**
-     * A text display is drawn centred on its position; shift it right by half its estimated rendered width so the
-     * left edge of its background sits on the row's text offset, whatever the text's length or wrapping.
+     * A one-time upgrade was just bought from {@code row}: its icon pops out of the row and, after a short delay,
+     * glides (one client-interpolated teleport plus a scale interpolation, no per-tick teleports) to its shelf slot,
+     * where it lands with the landing feedback. Nothing happens when its slot is past {@code station.shelf.max-icons}.
      */
-    private static void alignLeft(TextDisplay display, Component text, StationVisualSettings.Panel p) {
-        float shift = p.textLeftEdge() ? TextWidth.leftEdgeShift(TextWidth.width(text, p.lineWidth()), p.textScale()) : 0;
-        float scale = p.textScale();
-        display.setTransformation(new Transformation(new Vector3f(shift, 0, 0), new Quaternionf(),
-                new Vector3f(scale, scale, scale), new Quaternionf()));
+    void launchToShelf(Player owner, StationView view, StationView.Row row, String upgradeId, CookiePouch pouch) {
+        StationVisualSettings s = settings.get();
+        int slot = PanelRows.shelf(economy.config(), pouch.upgradeLevelsView(), s.shelf().maxIcons()).indexOf(upgradeId);
+        if (slot < 0 || view.shelf.containsKey(upgradeId)) {
+            return;
+        }
+        StationView.ShelfIcon icon = spawnShelfIcon(owner, view, upgradeId, slot, row.iconAt, s.panel().iconScale());
+        if (icon != null) {
+            long now = Bukkit.getCurrentTick();
+            icon.flightStart = now + FLY_DELAY_TICKS;
+            icon.landTick = icon.flightStart + s.shelf().flyTicks();
+        }
     }
 
-    // ---- cookie motion --------------------------------------------------------------------------------------
+    private StationView.@Nullable ShelfIcon spawnShelfIcon(Player owner, StationView view, String id, int slot,
+                                                           double[] at, float scale) {
+        StationVisualSettings s = settings.get();
+        List<Entity> spawned = new ArrayList<>(1);
+        try {
+            ItemDisplay d = spawn(owner.getWorld(), at, view.clicks.iconYaw, ItemDisplay.class, owner, spawned,
+                    e -> {
+                        e.setItemStack(iconStack(PanelKind.CLICKS, id, view.withPack));
+                        e.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
+                        e.setBillboard(Display.Billboard.FIXED);
+                        e.setViewRange(s.panel().viewRange());
+                        e.setBrightness(new Display.Brightness(15, 15));
+                        // every move of a shelf icon (its flight, a slot change) is one interpolated teleport
+                        e.setTeleportDuration(s.shelf().flyTicks());
+                        e.setTransformation(new Transformation(new Vector3f(), new Quaternionf(),
+                                new Vector3f(scale, scale, scale), new Quaternionf()));
+                    });
+            StationView.ShelfIcon icon = new StationView.ShelfIcon(id, d, slot);
+            view.shelf.put(id, icon);
+            byEntity.put(d.getUniqueId(), view);
+            return icon;
+        } catch (RuntimeException e) {
+            spawned.forEach(Entity::remove); // spawned but not tracked yet: don't leave it behind
+            warnOnce("shelf", "Could not spawn a shelf icon: " + e);
+            return null;
+        }
+    }
 
-    private void motionTick() {
-        long now = Bukkit.getCurrentTick();
-        lastMotionRun = now;
-        for (Map<String, StationView> views : byOwner.values()) {
-            for (StationView v : views.values()) {
-                if (v.lastSegmentTick < now - 1) { // a click may have sent this segment early
-                    segment(v, now);
+    private void addShelfHitbox(Player owner, StationView view, StationView.ShelfIcon icon) {
+        float size = settings.get().shelf().hitboxSize();
+        double[] at = slotAt(view, icon.slot);
+        List<Entity> spawned = new ArrayList<>(1);
+        try {
+            Interaction box = spawn(owner.getWorld(), new double[] {at[0], at[1] - size / 2, at[2]}, 0,
+                    Interaction.class, owner, spawned, i -> {
+                        i.setInteractionWidth(size);
+                        i.setInteractionHeight(size);
+                        i.setResponsive(true);
+                    });
+            icon.hitbox = box;
+            byEntity.put(box.getUniqueId(), view);
+            targets.put(box.getUniqueId(), ClickTarget.shelf(view.owner, view.station.id(), icon.upgradeId));
+        } catch (RuntimeException e) {
+            spawned.forEach(Entity::remove);
+            warnOnce("shelf", "Could not spawn a shelf icon hitbox: " + e);
+        }
+    }
+
+    private void moveShelfIcon(StationView view, StationView.ShelfIcon icon, int slot) {
+        icon.slot = slot;
+        if (icon.flightStart != Long.MIN_VALUE) {
+            return; // not launched yet: it takes off toward its current slot
+        }
+        double[] at = slotAt(view, slot);
+        World world = icon.icon.getWorld();
+        icon.icon.teleport(new Location(world, at[0], at[1], at[2], view.clicks.iconYaw, 0));
+        if (icon.hitbox != null) {
+            float size = settings.get().shelf().hitboxSize();
+            icon.hitbox.teleport(new Location(world, at[0], at[1] - size / 2, at[2]));
+        }
+    }
+
+    private void removeShelfIcon(StationView view, StationView.ShelfIcon icon) {
+        view.shelf.remove(icon.upgradeId);
+        byEntity.remove(icon.icon.getUniqueId());
+        icon.icon.remove();
+        if (icon.hitbox != null) {
+            byEntity.remove(icon.hitbox.getUniqueId());
+            targets.remove(icon.hitbox.getUniqueId());
+            icon.hitbox.remove();
+        }
+    }
+
+    /** Animation tick for the shelf: start due flights, land finished ones (hitbox + landing feedback). */
+    private void animateShelf(StationView view, long now) {
+        if (view.shelf.isEmpty()) {
+            return;
+        }
+        StationVisualSettings.Shelf s = settings.get().shelf();
+        // no copy: nothing below adds or removes shelf icons (landing only adds a hitbox and plays feedback)
+        for (StationView.ShelfIcon icon : view.shelf.values()) {
+            if (!icon.flying() || !icon.icon.isValid()) {
+                continue;
+            }
+            if (icon.flightStart != Long.MIN_VALUE && now >= icon.flightStart) {
+                icon.flightStart = Long.MIN_VALUE;
+                double[] at = slotAt(view, icon.slot);
+                icon.icon.teleport(new Location(icon.icon.getWorld(), at[0], at[1], at[2], view.clicks.iconYaw, 0));
+                icon.icon.setInterpolationDelay(0);
+                icon.icon.setInterpolationDuration(s.flyTicks());
+                float sc = s.scale();
+                icon.icon.setTransformation(new Transformation(new Vector3f(), new Quaternionf(),
+                        new Vector3f(sc, sc, sc), new Quaternionf()));
+            } else if (icon.flightStart == Long.MIN_VALUE && now >= icon.landTick) {
+                icon.landTick = Long.MIN_VALUE;
+                Player owner = Bukkit.getPlayer(view.owner);
+                if (owner != null) {
+                    addShelfHitbox(owner, view, icon);
+                    double[] at = slotAt(view, icon.slot);
+                    shelfLanding.accept(owner, new Location(owner.getWorld(), at[0], at[1], at[2]));
                 }
             }
         }
     }
 
+    // ---- per-tick animation: cookie motion, price rolls, shelf flights --------------------------------------
+
+    private void animationTick() {
+        long now = Bukkit.getCurrentTick();
+        // no copies: segments, roll steps and shelf flights never add or remove views
+        for (Map<String, StationView> views : byOwner.values()) {
+            for (StationView v : views.values()) {
+                // a pop owns the cookie's interpolation until its last step's tick; the next segment starts the tick
+                // after it, so it can never overwrite a pop step sent in the same tick
+                if (v.motionFromPop ? now > v.motionTarget : now >= v.motionTarget) {
+                    segment(v, now);
+                }
+                panels.animate(v, now);
+                animateShelf(v, now);
+            }
+        }
+    }
+
     /**
-     * Before a pop on {@code view}'s cookie: if the motion task is about to send its segment (this tick or the
-     * next, which would land in the same metadata packet), send it now so the pop's {@code setTransformation}
-     * is the last one and wins.
+     * Before a pop on {@code view}'s cookie: if a spin segment is due this tick and not sent yet, send it now so the
+     * pop's {@code setTransformation} is the last one this tick and wins.
      */
     void beforePop(StationView view) {
         long now = Bukkit.getCurrentTick();
-        long due = lastMotionRun == Long.MIN_VALUE ? Long.MIN_VALUE : lastMotionRun + settings.get().cookie().segmentTicks();
-        if ((due == now || due == now + 1) && view.lastSegmentTick < now - 1) {
+        if (!view.motionFromPop && now >= view.motionTarget) {
             segment(view, now);
         }
     }
 
+    /**
+     * The cookie's spin/bob for {@code Effects.pop}: each pop step carries the motion at its end tick, and marks the
+     * cookie as owned by the pop until that tick.
+     */
+    PopMotion popMotion(StationView view) {
+        return new CookiePopMotion(motion, Bukkit::getCurrentTick, target -> {
+            view.motionTarget = target;
+            view.motionFromPop = true;
+        });
+    }
+
     /** One interpolated segment toward the motion at {@code now + segment}; keeps the current scale (pop rule). */
     private void segment(StationView v, long now) {
+        int seg = settings.get().cookie().segmentTicks();
+        long target = now + seg;
+        v.motionTarget = target;
+        v.motionFromPop = false;
         if (!v.cookie.isValid()) {
             return;
         }
-        int seg = settings.get().cookie().segmentTicks();
-        long target = now + seg;
         Transformation current = v.cookie.getTransformation();
         v.cookie.setInterpolationDelay(0);
         v.cookie.setInterpolationDuration(seg);
         v.cookie.setTransformation(new Transformation(new Vector3f(0, (float) motion.bob(target), 0),
                 new Quaternionf().rotationY((float) motion.angle(target)),
                 new Vector3f(current.getScale()), new Quaternionf(current.getRightRotation())));
-        v.lastSegmentTick = now;
     }
 
     // ---- removal --------------------------------------------------------------------------------------------
@@ -659,6 +895,7 @@ public final class StationViews implements Listener, StationListener, SessionLis
     @EventHandler(priority = EventPriority.MONITOR)
     public void onQuit(PlayerQuitEvent event) {
         removeOwner(event.getPlayer().getUniqueId());
+        modes.forget(event.getPlayer().getUniqueId());
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

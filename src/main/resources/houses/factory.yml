@@ -108,6 +108,7 @@ layout:                  # plot cells from the plot's min corner (see design/fac
   house-at: [6, 0, 10]
   pedestal: {at: [18, 0, 6], yaw: 180}
   shop: {at: [20, 0, 6], yaw: 180}
+  clicks: {at: [16, 0, 6], yaw: 180}
   viewpoint: {at: [15, 0, 2], yaw: 0, pitch: -14}
   entrance: [15, 0]
   belt: {from: [18, 0, 11], to: [18, 0, 7]}

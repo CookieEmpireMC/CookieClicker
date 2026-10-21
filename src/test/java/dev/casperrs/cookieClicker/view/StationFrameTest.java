@@ -1,6 +1,7 @@
 package dev.casperrs.cookieClicker.view;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.casperrs.cookieClicker.config.StationVisualSettings.Offset;
@@ -70,5 +71,20 @@ class StationFrameTest {
         assertEquals(-180f, at(0).facingViewers(0), 1e-4);
         assertEquals(0f, at(180).facingViewers(0), 1e-4);
         assertEquals(-170f, at(0).facingViewers(10), 1e-4);
+    }
+
+    @Test
+    void aPlotWithoutAClicksSpotMirrorsTheShopSpotAcrossThePedestal() {
+        Station station = new Station("s", "minecraft:overworld", 10, 64, 20, 0f, new Station.Anchor(12, 65, 18, 90f));
+        Station.Anchor mirrored = StationViews.mirroredClicks(station);
+        assertEquals(8, mirrored.x(), EPS);     // 2 * 10 - 12
+        assertEquals(65, mirrored.y(), EPS);    // same height as the shop spot
+        assertEquals(22, mirrored.z(), EPS);    // 2 * 20 - 18
+        assertEquals(90f, mirrored.yaw(), EPS); // same yaw as the shop spot
+    }
+
+    @Test
+    void noShopSpotMeansNoMirroredClicksSpot() {
+        assertNull(StationViews.mirroredClicks(new Station("s", "minecraft:overworld", 10, 64, 20, 0f)));
     }
 }

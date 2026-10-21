@@ -46,3 +46,7 @@ First built in feature bakery-core (2026-10-18, branch bakery-core/vfx-designer)
 - EffectTicker buffers jobs started during its own run (`pending`) so callback-started jobs aren't stepped twice.
 
 Related: [[reference-paper263-vfx-api]]
+
+- upgrade-holograms (2026-10-21): `Effects.pop(display, viewer, presetId, @Nullable PopMotion)` + `vfx/PopMotion` (JOML only;
+  `frame()` is the pure keyframe builder, tested in `PopMotionTest`); presets `upgrade_bought` (60 particles), `upgrade_shelved` (10).
+  Cookie-spin cause verified in `PopJob.setScale` (re-sent current target rotation with a 2-3 tick duration).

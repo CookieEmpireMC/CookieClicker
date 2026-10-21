@@ -1,4 +1,15 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(mise run pr-open:*)"
+    ]
+  },
+  "worktree": {
+    "baseRef": "head"
+  },
+  "enabledPlugins": {
+    "bakery-team@cookie-memory": true
+  },
   "extraKnownMarketplaces": {
     "cookie-memory": {
       "source": {
@@ -7,16 +18,5 @@
       },
       "autoUpdate": true
     }
-  },
-  "enabledPlugins": {
-    "bakery-team@cookie-memory": true
-  },
-  "worktree": {
-    "baseRef": "head"
-  },
-  "permissions": {
-    "allow": [
-      "Bash(mise run pr-open:*)"
-    ]
   }
 }

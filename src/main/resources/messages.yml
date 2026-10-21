@@ -12,53 +12,57 @@ hud:
   # Same for players without the resource pack (the glyph would show as a box)
   action-bar-no-pack: "<gold><b><cookies></b></gold> <gray>cookies</gray> <dark_gray>·</dark_gray> <yellow><cps></yellow> <gray>per second</gray>"
 
-# How big numbers are written. Values are cut off (never rounded up).
+# How big numbers are written: "999", then "1K", "1.5K", "2.3M", "4.1B", ... Values are cut off (never rounded up),
+# so 999,999 shows as "999.9K", never "1M".
 numbers:
-  # Decimals for big numbers: "1.2 million"
+  # Decimals from 1,000 up: "1.5K"
   decimals: 1
   # Decimals below 1,000: "0.1", "12.5"
   small-decimals: 1
-  grouping-separator: ","
   decimal-separator: "."
-  # {value} = the number, {suffix} = a word from the list below
-  large-format: "{value} {suffix}"
-  # Past the last suffix: {value} and {exponent}, e.g. "1.2e309"
+  # {value} = the number, {suffix} = an entry from the list below
+  large-format: "{value}{suffix}"
+  # Past the last suffix: {value} and {exponent}, e.g. "1.2e102"
   scientific-format: "{value}e{exponent}"
   infinity: "infinity"
-  # One word per power of 1,000, starting at a million (10^6, 10^9, 10^12, ...)
+  # One suffix per power of 1,000, starting at a thousand (10^3, 10^6, 10^9, ...).
+  # K thousand, M million, B billion, T trillion, Qa quadrillion, Qi quintillion, Sx sextillion, Sp septillion,
+  # Oc octillion, No nonillion, Dc decillion (10^33), U/D/T/Qa/Qi/Sx/Sp/Oc/No + Dc (10^36 .. 10^60),
+  # Vg vigintillion (10^63), U..No + Vg (10^66 .. 10^90), Tg trigintillion (10^93), UTg, DTg (10^99).
   suffixes:
-    - million
-    - billion
-    - trillion
-    - quadrillion
-    - quintillion
-    - sextillion
-    - septillion
-    - octillion
-    - nonillion
-    - decillion
-    - undecillion
-    - duodecillion
-    - tredecillion
-    - quattuordecillion
-    - quindecillion
-    - sexdecillion
-    - septendecillion
-    - octodecillion
-    - novemdecillion
-    - vigintillion
-    - unvigintillion
-    - duovigintillion
-    - tresvigintillion
-    - quattuorvigintillion
-    - quinvigintillion
-    - sexvigintillion
-    - septenvigintillion
-    - octovigintillion
-    - novemvigintillion
-    - trigintillion
-    - untrigintillion
-    - duotrigintillion
+    - K
+    - M
+    - B
+    - T
+    - Qa
+    - Qi
+    - Sx
+    - Sp
+    - Oc
+    - No
+    - Dc
+    - UDc
+    - DDc
+    - TDc
+    - QaDc
+    - QiDc
+    - SxDc
+    - SpDc
+    - OcDc
+    - NoDc
+    - Vg
+    - UVg
+    - DVg
+    - TVg
+    - QaVg
+    - QiVg
+    - SxVg
+    - SpVg
+    - OcVg
+    - NoVg
+    - Tg
+    - UTg
+    - DTg
 
 # Display names per building ID from buildings.yml
 buildings:
@@ -67,17 +71,91 @@ buildings:
   wheat_farm:
     name: "<#d9c45a>Wheat Farm"
 
-# The floating shop panel next to the cookie. Each row is redrawn only when it changes.
-# <name> = building name as plain text (buildings.<id>.name without its colours, so the row colours apply),
-# <owned>, <cost>, <cps> (what one more adds), <needed> (baked cookies to unlock) = formatted numbers.
+# Display text per upgrade ID from upgrades.yml (the click upgrades panel and the upgrade shelf).
+# name: shown as plain text in panel rows (colours are stripped there, like building names).
+# effect: what ONE level does. Placeholders (filled by the plugin from upgrades.yml, so numbers never live here):
+#   <value> = the effect value per level, formatted (click-cps-fraction as a percentage: 0.01 -> "1")
+#   <level> = the player's current level (repeatable upgrades)
+upgrades:
+  bakers_strength:
+    name: "<#e07a4a>Baker's Strength"
+    effect: "+<value> cookies per click, per level"
+  wooden_spatula:
+    name: "<#c8a06a>Wooden Spatula"
+    effect: "+<value> cookies per click"
+  stone_rolling_pin:
+    name: "<#9a9a9a>Stone Rolling Pin"
+    effect: "+<value> cookies per click"
+  iron_rolling_pin:
+    name: "<#d8d8d8>Iron Rolling Pin"
+    effect: "+<value> cookies per click"
+  golden_glove:
+    name: "<#f2c94c>Golden Glove"
+    effect: "+<value> cookies per click"
+  diamond_fingers:
+    name: "<#5fd9e0>Diamond Fingers"
+    effect: "+<value> cookies per click"
+  netherite_hands:
+    name: "<#6b5a5a>Netherite Hands"
+    effect: "+<value> cookies per click"
+  handy_fingers_1:
+    name: "<#f0a0c0>Handy Fingers I"
+    effect: "Each click also gives <value>% of your CPS"
+  handy_fingers_2:
+    name: "<#f08ab0>Handy Fingers II"
+    effect: "Each click also gives another <value>% of your CPS"
+  handy_fingers_3:
+    name: "<#e070a0>Handy Fingers III"
+    effect: "Each click also gives another <value>% of your CPS"
+
+# The two floating panels next to the cookie: Buildings (shop spot) and Click upgrades (clicks spot). Each row is
+# redrawn only when it changes; while a price rolls to a new value it is redrawn every few ticks.
 # Keep every row two lines, so rows line up. Background colours: config.yml station.panel.colors.
 # (The floating "+N" click numbers are in effects.yml.)
 panel:
-  header: "<gradient:#e0a060:#a0622d><b>Bakery Shop</b></gradient>"
+  buildings:
+    header: "<gradient:#e0a060:#a0622d><b>Bakery Shop</b></gradient>"
+  # Buildings panel rows. <name> = building name as plain text (buildings.<id>.name without its colours, so the row
+  # colours apply), <owned>, <cost> (for the chosen amount), <cps> (what that amount adds), <needed> (baked cookies to
+  # unlock) = formatted numbers, <amount> = panel.bulk.amount (empty on x1).
   row:
-    affordable: "<white><b><name></b></white> <gray>×<owned></gray><newline><green><cost></green> <gray>· +<cps>/s</gray>"
-    unaffordable: "<gray><name></gray> <dark_gray>×<owned></dark_gray><newline><red><cost></red> <dark_gray>· +<cps>/s</dark_gray>"
+    affordable: "<white><b><name></b></white> <gray>×<owned></gray><newline><amount><green><cost></green> <gray>· +<cps>/s</gray>"
+    unaffordable: "<gray><name></gray> <dark_gray>×<owned></dark_gray><newline><amount><red><cost></red> <dark_gray>· +<cps>/s</dark_gray>"
     locked: "<dark_gray>???</dark_gray><newline><dark_gray><i>bake <needed> cookies to unlock</i></dark_gray>"
+  clicks:
+    header: "<gradient:#f5c542:#e07a4a><b>Click Upgrades</b></gradient>"
+    # Repeatable upgrades (pinned on top). <name> (plain), <level>, <cost> (for the chosen amount), <cpc> (cookies per
+    # click those levels add), <amount> = panel.bulk.amount, <requirement> = need-baked / need-building.
+    repeatable:
+      affordable: "<white><b><name></b></white> <gray>Lv <level></gray><newline><amount><green><cost></green> <gray>· +<cpc>/click</gray>"
+      unaffordable: "<gray><name></gray> <dark_gray>Lv <level></dark_gray><newline><amount><red><cost></red> <dark_gray>· +<cpc>/click</dark_gray>"
+      locked: "<dark_gray><name> Lv <level></dark_gray><newline><dark_gray><i><requirement></i></dark_gray>"
+      maxed: "<gold><name></gold> <gray>Lv <level></gray><newline><gold>maxed out</gold>"
+    # One-time upgrades (the cheapest ones not bought yet). <name>, <cost>, <effect> = upgrades.<id>.effect,
+    # <requirement> = need-baked / need-building. Bought upgrades leave the list and fly to the shelf.
+    one-time:
+      affordable: "<white><b><name></b></white><newline><green><cost></green> <gray>· <effect></gray>"
+      unaffordable: "<gray><name></gray><newline><red><cost></red> <dark_gray>· <effect></dark_gray>"
+      locked: "<dark_gray>???</dark_gray><newline><dark_gray><i><requirement></i></dark_gray>"
+    need-baked: "bake <needed> cookies to unlock"
+    # <owned> = how many, <building> = building name (plain)
+    need-building: "own <owned> <building> to unlock"
+  # The ×1 ×5 ×10 Max toggle under each header. <one> <five> <ten> <max> = each label in the selected or unselected
+  # style; clicking the toggle picks the next one.
+  bulk:
+    toggle: "<one>  <five>  <ten>  <max>"
+    selected: "<gold><b>[<label>]</b></gold>"
+    unselected: "<gray><label></gray>"
+    labels:
+      one: "×1"
+      five: "×5"
+      ten: "×10"
+      max: "Max"
+    # In front of the cost on every mode but ×1: how many a click buys. <count> = the number.
+    amount: "<yellow>×<count></yellow> "
+  # Action bar when you click an icon on the upgrade shelf. <name> = upgrades.<id>.name, <effect> = upgrades.<id>.effect
+  shelf:
+    tooltip: "<name> <dark_gray>·</dark_gray> <gray><effect></gray>"
 
 resource-pack:
   prompt: "<gold>Cookie Empire</gold> <gray>uses a resource pack for the giant cookie, icons and sounds.</gray>"

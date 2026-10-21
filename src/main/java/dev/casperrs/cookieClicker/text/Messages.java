@@ -47,7 +47,7 @@ public final class Messages {
         return numbers;
     }
 
-    /** Formatted cookie amount, e.g. {@code 1.2 million}. Plain text. */
+    /** Formatted cookie amount, e.g. {@code 1.2M}. Plain text. */
     public String number(double value) {
         return numbers.format(value);
     }
@@ -92,10 +92,29 @@ public final class Messages {
         return yaml.isString(path) ? MM.deserialize(yaml.getString(path)) : Component.text(buildingId);
     }
 
+    /** Display name of an upgrade from {@code upgrades.<id>.name}; the id when not configured. */
+    public Component upgradeName(String upgradeId) {
+        String path = "upgrades." + upgradeId + ".name";
+        return yaml.isString(path) ? MM.deserialize(yaml.getString(path)) : Component.text(upgradeId);
+    }
+
+    /**
+     * What one level of an upgrade does, from {@code upgrades.<id>.effect} with {@code <value>} (formatted) and
+     * {@code <level>}; empty when not configured.
+     */
+    public Component upgradeEffect(String upgradeId, double value, int level) {
+        String path = "upgrades." + upgradeId + ".effect";
+        if (!yaml.isString(path)) {
+            return Component.empty();
+        }
+        return MM.deserialize(yaml.getString(path), number("value", value),
+                Placeholder.unparsed("level", Integer.toString(level)));
+    }
+
     static NumberFormatter.Settings numberSettings(ConfigurationSection m) {
         List<String> suffixes = m.getStringList("numbers.suffixes");
         return new NumberFormatter.Settings(suffixes,
-                m.getString("numbers.large-format", "{value} {suffix}"),
+                m.getString("numbers.large-format", "{value}{suffix}"),
                 m.getString("numbers.scientific-format", "{value}e{exponent}"),
                 m.getInt("numbers.decimals", 1),
                 m.getInt("numbers.small-decimals", 1),

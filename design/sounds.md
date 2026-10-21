@@ -59,6 +59,19 @@ Script: `design/sound-scripts/factory_ambient.py`.
 
 Script: `design/sound-scripts/factory_belt_loop.py` (design at 5.0 s, FFT-resampled to the 4.0 s file; `PLAY_PITCH` at the top).
 
+## upgrade-holograms
+
+`purchase` is reused for upgrade buys, unchanged.
+
+| Event (sounds.yml) | Pack key | Files | Feel | Measured | Fallback | Config | Status |
+|---|---|---|---|---|---|---|---|
+| `upgrade_shelved` | `cookieclicker:ui.upgrade_shelved` | `sounds/ui/upgrade_shelved.ogg` | Soft "clink" as the icon lands on the shelf: a tiny wooden "tok" (the landing) and a short, low-passed (5.5 kHz) bell, E6 then a quiet B6 a few ms later. Cosy, not shrill. | 300 ms, peak -2.7 dBFS, RMS -18.1 dBFS | `minecraft:block.amethyst_block.chime` | vol 0.6, pitch 0.97-1.05, `ui` | placeholder (needs audition) |
+| `bulk_toggle` | `cookieclicker:ui.bulk_toggle` | `sounds/ui/bulk_toggle_1..3.ogg` | Tiny dry wooden tick for cycling x1/x5/x10/Max: a short pitch-dropping pop with a faint crumb grain. 3 variants (pitch -8 %, 0, +8 %) so repeats don't machine-gun. | 90 ms each, peak -5.2..-5.4 dBFS, RMS -17.7..-17.8 dBFS | `minecraft:ui.button.click` | vol 0.5, pitch 0.97-1.05, `ui` | placeholder (needs audition) |
+
+Scripts: `design/sound-scripts/upgrade_shelved.py`, `bulk_toggle.py`.
+
+Review: is `upgrade_shelved` clearly a "clink", not a second purchase ding (it should be quieter and shorter than `purchase`)? Is `bulk_toggle` unobtrusive after 50 clicks, not clicky or shrill?
+
 ## Needs human review
 
 Nobody has listened to these yet; every sound needs an audition (`mise run review` builds a page with players).

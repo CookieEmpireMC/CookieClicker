@@ -28,8 +28,11 @@ public final class EconomyConfigParser {
             String where = "buildings.yml: buildings." + id;
             Map<String, ?> spec = asMap(e.getValue(), where);
             Map<String, ?> unlock = optionalMap(spec.get("unlock"), where + ".unlock");
-            buildings.put(id, new BuildingDef(id,
-                    number(spec.get("base-cost"), where + ".base-cost"),
+            double baseCost = number(spec.get("base-cost"), where + ".base-cost");
+            if (baseCost <= 0) {
+                throw new EconomyConfigException(where + ".base-cost must be > 0");
+            }
+            buildings.put(id, new BuildingDef(id, baseCost,
                     number(spec.get("base-cps"), where + ".base-cps"),
                     unlock.containsKey("baked") ? number(unlock.get("baked"), where + ".unlock.baked") : 0));
         }
@@ -58,8 +61,31 @@ public final class EconomyConfigParser {
             }
             int unlockOwned = unlock.containsKey("owned") ? (int) number(unlock.get("owned"), where + ".unlock.owned") : 0;
             double unlockBaked = unlock.containsKey("baked") ? number(unlock.get("baked"), where + ".unlock.baked") : 0;
-            upgrades.put(id, new UpgradeDef(id, number(spec.get("cost"), where + ".cost"), type,
-                    number(effect.get("value"), where + ".effect.value"), target, unlockBuilding, unlockOwned, unlockBaked));
+            double costGrowth = 0;
+            if (spec.get("cost-growth") != null) {
+                costGrowth = number(spec.get("cost-growth"), where + ".cost-growth");
+                if (costGrowth < 1) {
+                    throw new EconomyConfigException(where + ".cost-growth must be >= 1, got " + costGrowth);
+                }
+            }
+            int maxLevel = costGrowth > 0 ? Integer.MAX_VALUE : 1;
+            Object rawMax = spec.get("max-level");
+            if (rawMax != null) {
+                if (costGrowth == 0) {
+                    throw new EconomyConfigException(where + ".max-level needs cost-growth (only repeatable upgrades have levels)");
+                }
+                if (!(rawMax instanceof Integer || rawMax instanceof Long) || ((Number) rawMax).longValue() < 1
+                        || ((Number) rawMax).longValue() > Integer.MAX_VALUE) {
+                    throw new EconomyConfigException(where + ".max-level must be an integer >= 1, got " + rawMax);
+                }
+                maxLevel = ((Number) rawMax).intValue();
+            }
+            double cost = number(spec.get("cost"), where + ".cost");
+            if (cost <= 0) {
+                throw new EconomyConfigException(where + ".cost must be > 0");
+            }
+            upgrades.put(id, new UpgradeDef(id, cost, type, number(effect.get("value"), where + ".effect.value"),
+                    target, unlockBuilding, unlockOwned, unlockBaked, costGrowth, maxLevel));
         }
 
         double growth = number(buildingsYaml.get("cost-growth"), "buildings.yml: cost-growth");

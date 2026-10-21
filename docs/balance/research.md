@@ -2,7 +2,7 @@
 
 My notes on how incremental games are balanced, in my own words, and how they apply to Cookie Empire. Sources are at the bottom. I took the techniques from them, not their tables, names or numbers.
 
-Last updated: 2026-10-18 (bakery-core)
+Last updated: 2026-10-21 (upgrade-holograms)
 
 ---
 
@@ -10,7 +10,7 @@ Last updated: 2026-10-18 (bakery-core)
 An idle economy is a race between **production**, which grows roughly linearly with what you own (times occasional multipliers), and **prices**, which grow exponentially with what you own. Early on, production wins and purchases come fast. Later, prices catch up and the time between purchases grows. Balancing means deciding *when* the price curve wins and what the player gets to do about it: a new tier, an upgrade, or eventually prestige. Exponential always beats linear in the end, so walls can't be avoided. You can only place them, and give the player a way over each one.
 
 - Next price: `base × growth^owned`. Production: `owned × base_cps × multipliers`.
-- Buying k at once is a geometric series, `base × growth^owned × (growth^k − 1)/(growth − 1)`. Our contract rounds each single price up and sums them, so the Java code must use the sum, not the closed form.
+- Buying k at once is a geometric series, `base × growth^owned × (growth^k − 1)/(growth − 1)`. Since 2026-10-21 our contract rounds this sum up **once** (it used to sum separately rounded prices). That makes bulk cost O(1) and lets "Max" invert it: `k = floor(log(1 + pouch × (growth − 1) / next_price) / log(growth))`. Floating point makes that estimate off by one at exact boundaries, so the contract defines Max as "largest k whose bulk cost fits" and the log only as a starting point with a ±1 fix-up (never off by more than 1 in 200,000 random cases).
 
 ## 2. Cost growth per purchase (1.07–1.15)
 - **Low growth (~1.07)** makes buying many copies of one generator cheap, so you get long "buy 25/50/100" runs. That only works with milestone multipliers that make piles of one building worth it.
@@ -33,6 +33,11 @@ An idle economy is a race between **production**, which grows roughly linearly w
 ## 5. Upgrade timing (for later slices)
 - Commonly land shortly after a building unlocks (first copy), then at milestones (e.g. 1/5/25/50… owned), each a clear multiplier (×2) so the jump is perceptible. People judge gains relative to what they already have, so +5 % feels like nothing.
 - Price upgrades so their payback is about the same as the buildings on offer at that moment. They should compete with the buildings, not always win.
+
+### Click upgrades and repeatables (2026-10-21)
+- Flat `+CPC` tools are worth `clicks/s × crit factor` cookies/s per +1, so for an active player (8/s × 1.45 = 11.6/s per +1) a +1 click upgrade is worth ~23 Villager Bakers. In a building-light slice, an optimal active player therefore spends most early money on clicks. That is the genre norm (clicking is the engine before buildings take over); the buildings still win for idle players, who never buy click upgrades.
+- A **repeatable** +1 CPC with growth per level is a steady "always something to buy" sink: it fills the gaps between big one-time tools. Its payback grows by the growth factor each level while its gain stays flat, so it fades by itself as the run goes on. A `max-level` keeps its list row from becoming a wall of absurd prices.
+- Unlocking each one-time tool at about half its price makes the next row visible before it's affordable (§7).
 
 ## 6. Dead zones and walls
 - **Dead zone** (our metric): stretches where *nothing* is affordable. These are what feel like "stuck". A long wait for the *best* item while a cheaper one is affordable is a choice, not a dead zone.
