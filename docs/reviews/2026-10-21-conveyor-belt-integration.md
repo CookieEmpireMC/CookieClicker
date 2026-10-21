@@ -38,12 +38,17 @@ No `playSound` outside `sound/`, no `spawnParticle` outside `vfx/` (Architecture
 - Panel left edge: `TextWidth`, left-edge shift and defaults tested.
 
 ## Bugs
-None blocking. Open LOWs from the coder review, unchanged:
-1. `CinematicCamera.complete()`: `camera.exit` is unguarded; a throw there would skip later steps. The join and disable nets still restore the player.
-2. `onLost` ignores `abort() == false`.
-3. Missing return world on restore is not handled specially.
-4. `ConveyorBelts.plotChanged/removeAll` copy the key list (rare paths, fine). The earlier per-tick `List.copyOf` in `tick()` is gone: the tick now iterates directly.
-5. Surfaces are built for plots with a `belt` only. Plots whose setup predates the belt show nothing until `/bakery plot setup` is re-run (expected).
+None blocking. Fixed since the coder review (all in a669ed6, re-reviewed READY):
+1. FIXED: `complete()` and `cameraLost` end the camera through `guarded("end camera", ...)` (`HouseCinematics.java:144-155`, `:532`).
+2. FIXED: when `abort` returns false, `cameraLost` exits the camera itself (a camera without a run).
+3. FIXED: `CinematicCamera.location()` falls back to the main world's spawn when the return world is gone (`:314-317`).
+4. FIXED: no per-tick `List.copyOf` in `ConveyorBelts.tick`.
+
+Open (expected): plots set up before this feature get no belt until `/bakery plot setup` is re-run.
+
+Open follow-ups from the panel branch re-review (LOW, not blocking):
+- The shop panel's Interaction box is 1.7 blocks deep.
+- Diagonal corner overlap of panel rows.
 
 ## Performance
 Hot paths:
