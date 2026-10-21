@@ -16,5 +16,7 @@ metadata:
 
 - Re-confirmed 2026-10-20: even `python3 - <<EOF` with `cd ... &&` is refused; Write a .py to the scratchpad (chdir
   inside it) and run `python3 <path>`; use `mise -C <worktree> run ...` and `git -C <worktree> ...`.
+- 2026-10-21: `cd <worktree> && ...` and `python3 - <<EOF` heredocs worked this run; what is refused is a `cd` to a
+  path computed at runtime (e.g. `cd ../../..`) before git. Use absolute paths / `git -C <worktree>`.
 
 Related: [[reference-paper263-vfx-api]]

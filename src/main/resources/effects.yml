@@ -18,6 +18,9 @@
 # Every preset: { layers: [...] } plus
 #   loop-every   (none)       ticks between plays when code runs it with effects.loop(id, loc, viewer); a preset
 #                             without it loops every 20 ticks. play() ignores it.
+#   min-interval-ticks (0)    rate cap: play() shows this preset at most once per n ticks per viewer (shared for
+#                             viewer = null); plays in between are dropped. 0 = no cap. For effects fired very
+#                             often (belt_arrive). Loops ignore it.
 #
 # Every layer: { type: <type>, ... } plus
 #   delay-ticks  (0)          start this many ticks after play
@@ -241,6 +244,21 @@ factory_steam:
         force: true, delay-ticks: 15 }
     - { type: particle, particle: cloud, direction: up, speed: 0.05, origin: [0.03, 0.15, 0.06], force: true,
         delay-ticks: 24 }
+
+# ---- conveyor-belt ---------------------------------------------------------------------------------------------
+
+# A belt cookie lands on the pedestal: a tiny spray of cookie crumbs hops up and falls, and a small warm-white ring
+# pops open around it (0.08 -> 0.22 over 2 ticks). Location = where the belt cookie vanishes (its centre at the
+# pedestal end of the belt); viewer = the belt's owner. Fired once per arriving cookie, so it is capped per viewer
+# with min-interval-ticks: at most 5 plays per second, extra arrivals land silently. 17 particles per play,
+# no entities = at most 85 particles per second per viewer, only sent to that viewer.
+belt_arrive:
+  min-interval-ticks: 4
+  layers:
+    - { type: particle, particle: item, item: cookie, item-model: "cookieclicker:cookie", shape: burst,
+        points: 5, radius: 0.06, up-bias: 0.55, speed: 0.1 }
+    - { type: particle, particle: dust, color: "#fff2a8", size: 0.5, shape: ring, points: 6, radius-start: 0.08,
+        radius: 0.22, duration-ticks: 2, start-angle: 30, origin: [0, 0.05, 0] }
 
 # ---- admin tools (not seen by normal players) ----------------------------------------------------------------------
 # /bakery plot show: code plays one of these per outline point (up to ~120 points per region, redrawn every
