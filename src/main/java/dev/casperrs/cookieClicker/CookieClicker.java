@@ -1,5 +1,6 @@
 package dev.casperrs.cookieClicker;
 
+import dev.casperrs.cookieClicker.belt.ConveyorBelts;
 import dev.casperrs.cookieClicker.command.BakeryCommand;
 import dev.casperrs.cookieClicker.config.PluginSettings;
 import dev.casperrs.cookieClicker.economy.Economy;
@@ -78,6 +79,7 @@ public final class CookieClicker extends JavaPlugin {
     private PlotSetup setup;
     private HouseSeen houseSeen;
     private HouseCinematics cinematics;
+    private ConveyorBelts belts;
     private SessionManager sessions;
     private Hud hud;
     private BakeryTicker ticker;
@@ -190,6 +192,10 @@ public final class CookieClicker extends JavaPlugin {
                 () -> settings.house());
         cinematics.start(); // before the tracker: its first resync fires onEnterPlot for players already online
         plotTracker.start();
+        belts = new ConveyorBelts(this, plotRegistry, plotTracker, sessions, economy, effects, sounds,
+                resourcePacks::hasPack, cinematics::isRunning, () -> settings.belt(),
+                () -> settings.house().ambient().radius());
+        belts.start();
         outlines = new PlotOutlines(this, effects, () -> settings.plot().show());
         pedestalPrivacy = new PedestalPrivacy(this, () -> settings.plot().hideOthers(), stations::all);
         pedestalPrivacy.restart();
@@ -199,6 +205,7 @@ public final class CookieClicker extends JavaPlugin {
                 plot -> {
                     plots.update(plot, problem -> getLogger().warning(problem));
                     cinematics.plotChanged(plot.id());
+                    belts.plotChanged(plot.id());
                 }, messages, io, mainThread,
                 () -> settings.house().maxBlocks());
 
@@ -259,7 +266,10 @@ public final class CookieClicker extends JavaPlugin {
         }
         // a throw here must never skip the session flush below
         if (cinematics != null) {
-            safely("the house cinematics", cinematics::shutdown); // restores every hidden house first
+            safely("the house cinematics", cinematics::shutdown); // restores every hidden house and game mode first
+        }
+        if (belts != null) {
+            safely("the conveyor belts", belts::shutdown);
         }
         safely("plot tracking", () -> {
             if (plotTracker != null) {
@@ -321,7 +331,8 @@ public final class CookieClicker extends JavaPlugin {
         loader.loadBalance(economy, messages, problems);
         loader.loadSounds(sounds, problems);
         outlines.stopAll();
-        cinematics.abortAll(); // restores hidden houses before effects and regions change
+        cinematics.abortAll(); // restores hidden houses (and camera game modes) before effects and regions change
+        belts.restart();
         houses.reset();
         setup.reset();
         loader.loadPlots(plots, problems);

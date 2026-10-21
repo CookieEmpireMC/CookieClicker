@@ -9,12 +9,13 @@ import java.util.function.Consumer;
 /** Everything in {@code config.yml}. Reloadable except {@code database}, which needs a restart. */
 public record PluginSettings(DatabaseSettings database, int autosaveSeconds, int shutdownSaveTimeoutSeconds,
                              Hud hud, StationSettings station, ResourcePack resourcePack,
-                             StationVisualSettings visuals, PlotSettings plot, HouseSettings house) {
+                             StationVisualSettings visuals, PlotSettings plot, HouseSettings house,
+                             BeltSettings belt) {
 
     /** Same settings with another database block (reload keeps the running database until a restart). */
     public PluginSettings withDatabase(DatabaseSettings db) {
         return new PluginSettings(db, autosaveSeconds, shutdownSaveTimeoutSeconds, hud, station, resourcePack, visuals,
-                plot, house);
+                plot, house, belt);
     }
 
     /** @param refreshSeconds how often the action bar is re-sent (production always ticks once per second) */
@@ -72,7 +73,8 @@ public record PluginSettings(DatabaseSettings database, int autosaveSeconds, int
                 resourcePack(c, problems),
                 StationVisualSettings.from(c, problems),
                 PlotSettings.from(c, problems),
-                HouseSettings.from(c, problems));
+                HouseSettings.from(c, problems),
+                BeltSettings.from(c, problems));
     }
 
     private static ResourcePack resourcePack(ConfigurationSection c, Consumer<String> problems) {
