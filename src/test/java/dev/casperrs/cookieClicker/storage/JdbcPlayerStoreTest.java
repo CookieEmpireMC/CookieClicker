@@ -248,6 +248,31 @@ class JdbcPlayerStoreTest {
     }
 
     @Test
+    void aVersionTwoDatabaseThatAlreadyHasTheLevelColumnStillReachesVersionThree() throws Exception {
+        // a v2 -> v3 run that crashed after its ALTER but before the version write: the column exists, the version is 2
+        String rerunUrl = "jdbc:h2:mem:rerun" + COUNTER.incrementAndGet() + ";DB_CLOSE_DELAY=-1";
+        UUID old = UUID.randomUUID();
+        try (Connection c = DriverManager.getConnection(rerunUrl); Statement st = c.createStatement()) {
+            st.execute("CREATE TABLE zz_players (uuid VARCHAR(36) NOT NULL PRIMARY KEY, pouch DOUBLE NOT NULL, baked DOUBLE NOT NULL, last_seen BIGINT NOT NULL, prestige DOUBLE NOT NULL DEFAULT 0)");
+            st.execute("CREATE TABLE zz_buildings (uuid VARCHAR(36) NOT NULL, building_id VARCHAR(64) NOT NULL, owned INT NOT NULL, PRIMARY KEY (uuid, building_id))");
+            st.execute("CREATE TABLE zz_upgrades (uuid VARCHAR(36) NOT NULL, upgrade_id VARCHAR(64) NOT NULL, upgrade_level INT DEFAULT 1 NOT NULL, PRIMARY KEY (uuid, upgrade_id))");
+            st.execute("CREATE TABLE zz_house_seen (uuid VARCHAR(36) NOT NULL, plot_id VARCHAR(64) NOT NULL, seen_at BIGINT NOT NULL, PRIMARY KEY (uuid, plot_id))");
+            st.execute("CREATE TABLE zz_schema_version (id INT NOT NULL PRIMARY KEY, version INT NOT NULL)");
+            st.execute("INSERT INTO zz_schema_version VALUES (1, 2)");
+            st.execute("INSERT INTO zz_players VALUES ('" + old + "', 42, 100, 1, 0)");
+            st.execute("INSERT INTO zz_upgrades VALUES ('" + old + "', 'mitts', 1)");
+        }
+        JdbcPlayerStore rerun = new JdbcPlayerStore(() -> DriverManager.getConnection(rerunUrl), "zz_", () -> 99L);
+        rerun.init();
+        assertEquals(JdbcPlayerStore.SCHEMA_VERSION, rerun.schemaVersion());
+        assertEquals(Map.of("mitts", 1), rerun.load(old).orElseThrow().snapshot().upgradeLevels());
+        rerun.close();
+        try (Connection c = DriverManager.getConnection(rerunUrl); Statement st = c.createStatement()) {
+            st.execute("SHUTDOWN");
+        }
+    }
+
+    @Test
     void houseSeenIsPerPlayerPerPlotAndIdempotent() throws Exception {
         UUID other = UUID.randomUUID();
         assertFalse(store.isHouseSeen(player, "main"));
