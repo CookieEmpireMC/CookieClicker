@@ -2,6 +2,7 @@ package dev.casperrs.cookieClicker.view;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.casperrs.cookieClicker.economy.CookiePouch;
 import dev.casperrs.cookieClicker.economy.Economy;
@@ -99,5 +100,43 @@ class RowStateTest {
         assertEquals("locked", RowState.Style.LOCKED.key());
         assertEquals("panel.row.unaffordable", RowState.Style.UNAFFORDABLE.messagePath());
         assertEquals("panel.row.locked", RowState.Style.LOCKED.messagePath());
+    }
+
+    @Test
+    void bulkTimesBuysExactlyNOrShowsUnaffordable() throws Exception {
+        Economy e = economy();
+        double five = e.buildingBulkCost(pouch(0, 0, Map.of()), "baker", 5);
+        RowState enough = RowState.of(e, pouch(five, five, Map.of()), "baker", BulkMode.FIVE);
+        assertEquals(RowState.Style.AFFORDABLE, enough.style());
+        assertEquals(5, enough.count());
+        assertEquals(five, enough.cost(), 0.0);
+        RowState short5 = RowState.of(e, pouch(five - 0.01, five, Map.of()), "baker", BulkMode.FIVE);
+        assertEquals(RowState.Style.UNAFFORDABLE, short5.style(), "not even 4 are bought: no partial buys");
+        assertEquals(5, short5.count());
+        assertEquals(five, short5.cost(), 0.0, "the row still shows the cost of the 5 it would buy");
+    }
+
+    @Test
+    void maxCountsWhatIsAffordableWithTheCountAndItsTotal() throws Exception {
+        Economy e = economy();
+        double three = e.buildingBulkCost(pouch(0, 0, Map.of()), "baker", 3);
+        RowState max = RowState.of(e, pouch(three, three, Map.of()), "baker", BulkMode.MAX);
+        assertEquals(RowState.Style.AFFORDABLE, max.style());
+        assertEquals(3, max.count());
+        assertEquals(three, max.cost(), 0.0);
+        assertEquals(2, RowState.of(e, pouch(three - 1e-9, three, Map.of()), "baker", BulkMode.MAX).count(),
+                "one cookie short of 3: Max buys 2");
+        assertEquals(e.buildingCpsGain(pouch(three, three, Map.of()), "baker", 3), max.cps(), 1e-12);
+    }
+
+    @Test
+    void maxWithNothingAffordableShowsTheCostOfOneInTheUnaffordableLook() throws Exception {
+        Economy e = economy();
+        CookiePouch broke = pouch(0, 0, Map.of());
+        RowState s = RowState.of(e, broke, "baker", BulkMode.MAX);
+        assertEquals(RowState.Style.UNAFFORDABLE, s.style());
+        assertEquals(1, s.count());
+        assertEquals(e.buildingBulkCost(broke, "baker", 1), s.cost(), 0.0);
+        assertTrue(s.rolls(), "the price still rolls, so it reads as a price, not a lock");
     }
 }

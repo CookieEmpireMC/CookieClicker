@@ -9,6 +9,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Predicate;
 
 /**
@@ -25,6 +26,8 @@ public final class Hud {
     private boolean enabled = true;
     /** messages.yml path -> the template compiled from its current text (recompiled when a reload changes it). */
     private final Map<String, Compiled> compiled = new HashMap<>();
+    /** Players whose action bar shows something else (a shelf tooltip) until this time (ms): the 1 Hz HUD waits. */
+    private final Map<UUID, Long> heldUntil = new HashMap<>();
 
     private record Compiled(String raw, @Nullable HudTemplate template) {
     }
@@ -60,10 +63,37 @@ public final class Hud {
         return c.template().render(cookies, cps);
     }
 
-    /** Sends the HUD now (the ticker does this every second; pass 2 also calls it right after a click/purchase). */
+    /** Sends the HUD now (after a click or purchase); ends a tooltip that is still showing. */
     public void refresh(Player player, CookiePouch pouch) {
+        heldUntil.remove(player.getUniqueId());
         if (enabled) {
             player.sendActionBar(render(pouch, hasPack.test(player)));
         }
+    }
+
+    /** The ticker's once-a-second HUD: skipped while a tooltip is showing in the action bar. */
+    public void refreshScheduled(Player player, CookiePouch pouch) {
+        Long until = heldUntil.get(player.getUniqueId());
+        if (until != null) {
+            if (System.currentTimeMillis() < until) {
+                return;
+            }
+            heldUntil.remove(player.getUniqueId());
+        }
+        refresh(player, pouch);
+    }
+
+    /**
+     * Shows {@code text} in the action bar for about {@code seconds} (e.g. a shelf icon's name and effect); the
+     * 1 Hz HUD waits that long, a click or purchase brings it back at once.
+     */
+    public void showTooltip(Player player, Component text, int seconds) {
+        heldUntil.put(player.getUniqueId(), System.currentTimeMillis() + seconds * 1000L);
+        player.sendActionBar(text);
+    }
+
+    /** Forget a player (quit). */
+    public void forget(UUID player) {
+        heldUntil.remove(player);
     }
 }

@@ -351,6 +351,7 @@ public final class PlotSetup {
         // points
         Plot.Pedestal pedestal = spot(layout.pedestal(), ax, y0, az);
         Plot.Pedestal shop = spot(layout.shop(), ax, y0, az);
+        Plot.Pedestal clicks = layout.clicks() == null ? null : spot(layout.clicks(), ax, y0, az);
         double[] v = layout.viewpoint().at();
         Plot.Viewpoint viewpoint = new Plot.Viewpoint(ax + v[0] + 0.5, y0 + v[1], az + v[2] + 0.5,
                 layout.viewpoint().yaw(), layout.viewpoint().pitch());
@@ -360,7 +361,8 @@ public final class PlotSetup {
         Plot.Viewpoint camera = cam == null ? null : new Plot.Viewpoint(ax + cam.at()[0] + 0.5, y0 + cam.at()[1],
                 az + cam.at()[2] + 0.5, cam.yaw(), cam.pitch());
         Plot updated = before.withLayout(viewpoint, pedestal, HousePlacer.cellCentres(design, houseAt, design.smoke()),
-                HousePlacer.cellCentres(design, houseAt, design.steam()), entrance, shop, houseBox, belt, camera);
+                HousePlacer.cellCentres(design, houseAt, design.steam()), entrance, shop, houseBox, belt, camera,
+                clicks);
 
         SetupBackup backup = new SetupBackup(plotId, design.name(), before.worldKey(), System.currentTimeMillis(),
                 corner, size, cells, before);

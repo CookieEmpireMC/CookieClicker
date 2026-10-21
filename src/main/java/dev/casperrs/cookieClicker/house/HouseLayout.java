@@ -15,6 +15,7 @@ import java.util.Map;
  *   house-at: [5, 0, 3]              # where the design's origin cell goes
  *   pedestal: { at: [11, 0, 18], yaw: 180 }     # the cookie spot; yaw = the way it faces (180 = north, to visitors)
  *   shop: { at: [14, 0, 18], yaw: 180 }         # the shop panel spot, same yaw meaning
+ *   clicks: { at: [8, 0, 18], yaw: 180 }        # optional: the click upgrades panel spot, same yaw meaning
  *   viewpoint: { at: [11, 0, 2], yaw: 0, pitch: -14 }   # player view of the build cinematic (yaw 0 = south)
  *   entrance: [11, 0]                # x, z of the gate centre (on the outer ring)
  *   belt: { from: [11, 0, 12], to: [11, 0, 19] }          # optional: conveyor path; to = the last belt cell
@@ -25,7 +26,7 @@ import java.util.Map;
  */
 public record HouseLayout(int sizeX, int sizeZ, int[] houseAt, Spot pedestal, Spot shop, View viewpoint,
                           int[] entrance, int @Nullable [] beltFrom, int @Nullable [] beltTo,
-                          @Nullable View camera) {
+                          @Nullable View camera, @Nullable Spot clicks) {
 
     public static final int MAX_SIZE = 256;
     public static final int MAX_BELT = 64;
@@ -56,6 +57,7 @@ public record HouseLayout(int sizeX, int sizeZ, int[] houseAt, Spot pedestal, Sp
         }
         Spot pedestal = spot(m.get("pedestal"), "pedestal", size, problems);
         Spot shop = spot(m.get("shop"), "shop", size, problems);
+        Spot clicks = m.get("clicks") == null ? null : spot(m.get("clicks"), "clicks", size, problems);
         View viewpoint = null;
         if (m.get("viewpoint") instanceof Map<?, ?> v) {
             double[] at = cell(v.get("at"), "viewpoint", size, problems);
@@ -97,7 +99,7 @@ public record HouseLayout(int sizeX, int sizeZ, int[] houseAt, Spot pedestal, Sp
             return null;
         }
         return new HouseLayout(size[0], size[1], houseAt, pedestal, shop, viewpoint, entrance, beltFrom, beltTo,
-                camera);
+                camera, clicks);
     }
 
     /** {@code camera}: any numbers within {@link #MAX_SIZE} of the layout corner (outside the plot is fine). */

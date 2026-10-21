@@ -12,15 +12,22 @@ import org.jspecify.annotations.Nullable;
  *                 pass 2 decides how the cookie/panel are laid out relative to it
  * @param shop     with a plot layout: where the shop panel stands (and its facing); the cookie then stands right on
  *                 this station's position. Null: cookie and panel use the {@code station.*} offsets from here
+ * @param clicks   with a plot layout: where the click upgrades panel stands; null = the
+ *                 {@code station.panels.clicks} offset from here
  */
-public record Station(String id, String worldKey, double x, double y, double z, float yaw, @Nullable Anchor shop) {
+public record Station(String id, String worldKey, double x, double y, double z, float yaw, @Nullable Anchor shop,
+                      @Nullable Anchor clicks) {
 
     /** A position with a facing (same yaw meaning as {@link Station#yaw}). */
     public record Anchor(double x, double y, double z, float yaw) {
     }
 
     public Station(String id, String worldKey, double x, double y, double z, float yaw) {
-        this(id, worldKey, x, y, z, yaw, null);
+        this(id, worldKey, x, y, z, yaw, null, null);
+    }
+
+    public Station(String id, String worldKey, double x, double y, double z, float yaw, @Nullable Anchor shop) {
+        this(id, worldKey, x, y, z, yaw, shop, null);
     }
 
     public double distanceSquared(String world, double ox, double oy, double oz) {
