@@ -100,4 +100,37 @@ class PlotCodecSetupKeysTest {
         spec.put("shop", pt(1, 2, 3));
         assertEquals(new Plot.Pedestal(1, 2, 3, 0f), PlotCodec.fromMap(root(spec), s -> { }).getFirst().shop());
     }
+
+    @Test
+    void clicksSpotRoundTripsAndFeedsTheStation() {
+        Plot withClicks = new Plot("main", "minecraft:overworld", null, null, null, new Plot.Pedestal(3.5, 64, 4.5, 0f),
+                List.of(), List.of(), null, new Plot.Pedestal(2.5, 64, 4.5, 90f), null, null, null,
+                new Plot.Pedestal(4.5, 64, 6.5, 270f));
+        YamlConfiguration out = new YamlConfiguration();
+        PlotCodec.toMap(List.of(withClicks)).forEach(out::set);
+        YamlConfiguration in = new YamlConfiguration();
+        try {
+            in.loadFromString(out.saveToString());
+        } catch (Exception e) {
+            throw new AssertionError(e);
+        }
+        List<String> problems = new ArrayList<>();
+        Plot back = PlotCodec.fromMap(dev.casperrs.cookieClicker.config.YamlFiles.toMap(in), problems::add).getFirst();
+        assertTrue(problems.isEmpty(), problems.toString());
+        assertEquals(new Plot.Pedestal(4.5, 64, 6.5, 270f), back.clicks());
+        assertEquals(new Plot.Pedestal(4.5, 64, 6.5, 270f).yaw(),
+                back.station().orElseThrow().clicks().yaw(), "the station's clicks anchor comes from the spot");
+    }
+
+    @Test
+    void aBadClicksSpotIsReportedAndDroppedWithoutLosingThePlot() {
+        Map<String, Object> spec = new LinkedHashMap<>();
+        spec.put("pedestal", pt(1, 2, 3));
+        spec.put("clicks", "north");
+        List<String> problems = new ArrayList<>();
+        Plot plot = PlotCodec.fromMap(root(spec), problems::add).getFirst();
+        assertNull(plot.clicks());
+        assertEquals(new Plot.Pedestal(1, 2, 3, 0f), plot.pedestal());
+        assertTrue(problems.stream().anyMatch(p -> p.contains("clicks")), problems.toString());
+    }
 }

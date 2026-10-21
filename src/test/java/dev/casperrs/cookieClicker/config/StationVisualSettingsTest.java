@@ -71,6 +71,15 @@ class StationVisualSettingsTest {
     }
 
     @Test
+    void anOldPanelOffsetStillPlacesTheBuildingsPanelAndTheClicksPanelHasItsOwnDefault() {
+        List<String> problems = new ArrayList<>();
+        StationVisualSettings s = parse("station:\n  panel:\n    offset: [1, 2.5, -3]\n", problems);
+        assertEquals(new Offset(1, 2.5, -3), s.buildings().offset());
+        assertEquals(new Offset(-1.9, 3.2, 2.5), s.clicks().offset());
+        assertTrue(problems.isEmpty(), problems.toString());
+    }
+
+    @Test
     void goodOffsetIsRead() {
         StationVisualSettings s = parse("station:\n  cookie:\n    offset: [1, 2.5, -3]\n", new ArrayList<>());
         assertEquals(new Offset(1, 2.5, -3), s.cookie().offset());
