@@ -25,16 +25,27 @@ import java.util.regex.Pattern;
  *                    the pedestal (plots without a layout)
  * @param house       the house box placed by {@code /bakery plot setup}; when set it replaces the
  *                    {@code bakery-house} region, or null
+ * @param belt        the conveyor belt placed by {@code /bakery plot setup}, or null
+ * @param camera      the raised camera of the build cinematic ({@code layout.camera}), or null
  */
 public record Plot(String id, String worldKey, @Nullable String plotRegion, @Nullable String houseRegion,
                    @Nullable Viewpoint viewpoint, @Nullable Pedestal pedestal, List<Point> smoke, List<Point> steam,
-                   @Nullable Point entrance, @Nullable Pedestal shop, @Nullable Box house) {
+                   @Nullable Point entrance, @Nullable Pedestal shop, @Nullable Box house, @Nullable Belt belt,
+                   @Nullable Viewpoint camera) {
 
     public static final Pattern ID = Pattern.compile("[a-z0-9_-]{1,64}");
 
     public Plot {
         smoke = List.copyOf(smoke);
         steam = List.copyOf(steam);
+    }
+
+    /** A plot without belt and camera (the factory-makeover shape). */
+    public Plot(String id, String worldKey, @Nullable String plotRegion, @Nullable String houseRegion,
+                @Nullable Viewpoint viewpoint, @Nullable Pedestal pedestal, List<Point> smoke, List<Point> steam,
+                @Nullable Point entrance, @Nullable Pedestal shop, @Nullable Box house) {
+        this(id, worldKey, plotRegion, houseRegion, viewpoint, pedestal, smoke, steam, entrance, shop, house, null,
+                null);
     }
 
     /** A plot with at most one smoke point (the starter-house shape), no steam and no entrance. */
@@ -61,6 +72,25 @@ public record Plot(String id, String worldKey, @Nullable String plotRegion, @Nul
     public record Pedestal(double x, double y, double z, float yaw) {
     }
 
+    /** A block cell. */
+    public record Cell(int x, int y, int z) {
+    }
+
+    /**
+     * A straight conveyor belt.
+     *
+     * @param cells  the belt cells in order, from the factory hatch to the cell before the pedestal (at least one)
+     * @param height the belt surface height above each cell's bottom (blocks)
+     */
+    public record Belt(List<Cell> cells, double height) {
+        public Belt {
+            cells = List.copyOf(cells);
+            if (cells.isEmpty()) {
+                throw new IllegalArgumentException("a belt needs at least one cell");
+            }
+        }
+    }
+
     /** A block box, inclusive. */
     public record Box(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
         public boolean contains(int x, int y, int z) {
@@ -75,15 +105,15 @@ public record Plot(String id, String worldKey, @Nullable String plotRegion, @Nul
 
     public Plot withWorld(String world) {
         return world.equals(worldKey) ? this
-                : new Plot(id, world, plotRegion, houseRegion, null, null, List.of(), List.of(), null, null, null);
+                : new Plot(id, world, plotRegion, houseRegion, null, null, List.of(), List.of(), null, null, null, null, null);
     }
 
     public Plot withViewpoint(@Nullable Viewpoint v) {
-        return new Plot(id, worldKey, plotRegion, houseRegion, v, pedestal, smoke, steam, entrance, shop, house);
+        return new Plot(id, worldKey, plotRegion, houseRegion, v, pedestal, smoke, steam, entrance, shop, house, belt, camera);
     }
 
     public Plot withPedestal(@Nullable Pedestal p) {
-        return new Plot(id, worldKey, plotRegion, houseRegion, viewpoint, p, smoke, steam, entrance, shop, house);
+        return new Plot(id, worldKey, plotRegion, houseRegion, viewpoint, p, smoke, steam, entrance, shop, house, belt, camera);
     }
 
     /** Replaces every smoke point with this one (null = no smoke). */
@@ -92,21 +122,28 @@ public record Plot(String id, String worldKey, @Nullable String plotRegion, @Nul
     }
 
     public Plot withSmoke(List<Point> points) {
-        return new Plot(id, worldKey, plotRegion, houseRegion, viewpoint, pedestal, points, steam, entrance, shop, house);
+        return new Plot(id, worldKey, plotRegion, houseRegion, viewpoint, pedestal, points, steam, entrance, shop, house, belt, camera);
     }
 
     public Plot withSteam(List<Point> points) {
-        return new Plot(id, worldKey, plotRegion, houseRegion, viewpoint, pedestal, smoke, points, entrance, shop, house);
+        return new Plot(id, worldKey, plotRegion, houseRegion, viewpoint, pedestal, smoke, points, entrance, shop, house, belt, camera);
     }
 
     public Plot withEntrance(@Nullable Point e) {
-        return new Plot(id, worldKey, plotRegion, houseRegion, viewpoint, pedestal, smoke, steam, e, shop, house);
+        return new Plot(id, worldKey, plotRegion, houseRegion, viewpoint, pedestal, smoke, steam, e, shop, house, belt, camera);
     }
 
     /** Every layout point of a {@code /bakery plot setup} at once. */
     public Plot withLayout(@Nullable Viewpoint v, @Nullable Pedestal p, List<Point> smokePoints, List<Point> steamPoints,
                            @Nullable Point e, @Nullable Pedestal s, @Nullable Box h) {
-        return new Plot(id, worldKey, plotRegion, houseRegion, v, p, smokePoints, steamPoints, e, s, h);
+        return new Plot(id, worldKey, plotRegion, houseRegion, v, p, smokePoints, steamPoints, e, s, h, belt, camera);
+    }
+
+    /** Every layout point of a {@code /bakery plot setup} at once, with the belt and the camera. */
+    public Plot withLayout(@Nullable Viewpoint v, @Nullable Pedestal p, List<Point> smokePoints, List<Point> steamPoints,
+                           @Nullable Point e, @Nullable Pedestal s, @Nullable Box h, @Nullable Belt b,
+                           @Nullable Viewpoint c) {
+        return new Plot(id, worldKey, plotRegion, houseRegion, v, p, smokePoints, steamPoints, e, s, h, b, c);
     }
 
     /** The station the per-player cookie/panel views anchor on: id = plot id, position = pedestal. */

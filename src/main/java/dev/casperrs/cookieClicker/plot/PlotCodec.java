@@ -27,6 +27,8 @@ import java.util.regex.Pattern;
  *     entrance: { x: 3.5, y: 64.0, z: -9.5 }         # optional: fence gate centre (/bakery plot setup)
  *     shop: { x: 14.5, y: 64.0, z: -3.5, yaw: 90.0 } # optional: shop panel spot (/bakery plot setup)
  *     house-box: { min: [10, 64, -8], max: [22, 78, 2] }   # optional: the house placed by /bakery plot setup
+ *     belt: { height: 0.5, cells: [[18, 64, 11], [18, 64, 10], ...] }   # optional: conveyor, hatch -> pedestal
+ *     camera: { x: 15.5, y: 73.0, z: -8.5, yaw: 0.0, pitch: 30.0 }      # optional: raised cinematic camera
  * </pre>
  * Bad entries are reported and skipped; a bad optional point is reported and left out. Pure Java.
  */
@@ -110,8 +112,24 @@ public final class PlotCodec {
                     problems.accept(where + ".house-box needs min: [x, y, z] and max: [x, y, z]; ignored");
                 }
             }
+            Plot.Belt belt = null;
+            if (spec.get("belt") != null) {
+                belt = belt(spec.get("belt"));
+                if (belt == null) {
+                    problems.accept(where + ".belt needs height and cells: [[x, y, z], ...] (at least one); ignored");
+                }
+            }
+            Plot.Viewpoint camera = null;
+            if (spec.get("camera") != null) {
+                double[] v = numbers(spec.get("camera"), "x", "y", "z", "yaw", "pitch");
+                if (v == null) {
+                    problems.accept(where + ".camera needs numeric x, y, z (yaw, pitch optional); ignored");
+                } else {
+                    camera = new Plot.Viewpoint(v[0], v[1], v[2], (float) v[3], (float) v[4]);
+                }
+            }
             out.add(new Plot(id, w, regionId(spec.get("plot-region")), regionId(spec.get("house-region")),
-                    viewpoint, pedestal, smoke, steam, entrance, shop, house));
+                    viewpoint, pedestal, smoke, steam, entrance, shop, house, belt, camera));
         }
         return out;
     }
@@ -159,6 +177,20 @@ public final class PlotCodec {
                 box.put("max", List.of(b.maxX(), b.maxY(), b.maxZ()));
                 spec.put("house-box", box);
             }
+            if (p.belt() != null) {
+                Map<String, Object> belt = new LinkedHashMap<>();
+                belt.put("height", p.belt().height());
+                List<Object> cells = new ArrayList<>();
+                for (Plot.Cell c : p.belt().cells()) {
+                    cells.add(List.of(c.x(), c.y(), c.z()));
+                }
+                belt.put("cells", cells);
+                spec.put("belt", belt);
+            }
+            if (p.camera() != null) {
+                Plot.Viewpoint v = p.camera();
+                spec.put("camera", point(v.x(), v.y(), v.z(), "yaw", v.yaw(), "pitch", v.pitch()));
+            }
             all.put(p.id(), spec);
         }
         Map<String, Object> root = new LinkedHashMap<>();
@@ -195,6 +227,22 @@ public final class PlotCodec {
         }
         return new Plot.Box(Math.min(v[0], v[3]), Math.min(v[1], v[4]), Math.min(v[2], v[5]),
                 Math.max(v[0], v[3]), Math.max(v[1], v[4]), Math.max(v[2], v[5]));
+    }
+
+    private static Plot.@Nullable Belt belt(Object raw) {
+        if (!(raw instanceof Map<?, ?> m) || !(m.get("cells") instanceof List<?> list) || list.isEmpty()
+                || !(m.get("height") instanceof Number h) || !Double.isFinite(h.doubleValue())) {
+            return null;
+        }
+        List<Plot.Cell> cells = new ArrayList<>();
+        for (Object o : list) {
+            if (!(o instanceof List<?> c) || c.size() != 3 || !(c.get(0) instanceof Number x)
+                    || !(c.get(1) instanceof Number y) || !(c.get(2) instanceof Number z)) {
+                return null;
+            }
+            cells.add(new Plot.Cell(x.intValue(), y.intValue(), z.intValue()));
+        }
+        return new Plot.Belt(cells, h.doubleValue());
     }
 
     private static List<Object> pointList(List<Plot.Point> points) {
