@@ -48,12 +48,15 @@ public record StationVisualSettings(double viewDistance, int refreshTicks, doubl
      * @param iconYawOffset degrees added to the icon yaw (calibration for the FIXED item transform)
      * @param firstRowDrop  first row's text anchor sits this far below the header anchor
      * @param rowPitch      distance between row anchors
-     * @param textOffset    row text anchor relative to the row anchor
+     * @param textOffset    row text anchor relative to the row anchor: the left edge of the text background when
+     *                      {@code textLeftEdge}, else the centre of the text block
      * @param iconOffset    row icon centre relative to the row anchor
      * @param hitboxOffset  bottom centre of the row's Interaction relative to the row anchor
      * @param colors        background colours as {@code #AARRGGBB}: header, affordable, unaffordable, locked
      * @param iconFallbacks building id -> vanilla material name shown to players without the pack
      * @param textBrightness block and sky light of the header and row texts (0-15)
+     * @param textLeftEdge  shift each row text right by half its estimated rendered width so every row starts at
+     *                      {@code textOffset} (a text display is otherwise centred on its position)
      */
     public record Panel(Offset offset, float textYawOffset, float iconYawOffset, float headerScale, float textScale,
                         int lineWidth, double firstRowDrop, double rowPitch, Offset textOffset, Offset iconOffset,
@@ -61,7 +64,7 @@ public record StationVisualSettings(double viewDistance, int refreshTicks, doubl
                         Map<String, Integer> colors, int iconBrightAffordable, int iconBrightUnaffordable,
                         float viewRange, Map<String, String> iconFallbacks, String defaultFallback,
                         int textBrightness, boolean textShadowed, boolean textSeeThrough,
-                        boolean textDefaultBackground) {
+                        boolean textDefaultBackground, boolean textLeftEdge) {
 
         public int color(String state) {
             return colors.getOrDefault(state, 0x40000000);
@@ -123,11 +126,11 @@ public record StationVisualSettings(double viewDistance, int refreshTicks, doubl
                 (int) r.positive("station.panel.line-width", 120),
                 Math.max(0, c.getDouble("station.panel.first-row-drop", 0.45)),
                 r.positive("station.panel.row-pitch", 0.4),
-                r.offset("station.panel.row.text-offset", new Offset(0.15, 0, 0)),
+                r.offset("station.panel.row.text-offset", new Offset(-0.3, 0, 0)),
                 r.offset("station.panel.row.icon-offset", new Offset(-0.5, 0.13, -0.02)),
                 (float) r.positive("station.panel.row.icon-scale", 0.3),
-                r.offset("station.panel.row.hitbox-offset", new Offset(0, -0.02, 0)),
-                (float) r.positive("station.panel.row.hitbox-width", 1.3),
+                r.offset("station.panel.row.hitbox-offset", new Offset(0.25, -0.02, 0)),
+                (float) r.positive("station.panel.row.hitbox-width", 1.7),
                 (float) r.positive("station.panel.row.hitbox-height", 0.34),
                 Map.copyOf(colors),
                 Math.clamp(c.getInt("station.panel.icon-brightness.affordable", 15), 0, 15),
@@ -138,7 +141,8 @@ public record StationVisualSettings(double viewDistance, int refreshTicks, doubl
                 Math.clamp(c.getInt("station.panel.text-brightness", 15), 0, 15),
                 c.getBoolean("station.panel.text-shadow", true),
                 c.getBoolean("station.panel.text-see-through", false),
-                c.getBoolean("station.panel.text-default-background", false));
+                c.getBoolean("station.panel.text-default-background", false),
+                c.getBoolean("station.panel.row.text-left-edge", true));
 
         return new StationVisualSettings(
                 r.positive("station.view-distance", 24),
