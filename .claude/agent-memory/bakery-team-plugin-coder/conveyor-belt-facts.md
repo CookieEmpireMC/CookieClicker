@@ -21,3 +21,4 @@ display at (cell+0.5, y0+h, cell+0.5), NONE, model bottom at origin; cookies rid
 feet cell (eye +1.62), may be outside the plot.
 Ownership: plugin-coder may NOT write src/test (tester-owned) even when asked for unit tests; smoke-test pure classes
 in the scratchpad (javac -d out + java @argfile; argfile paths must be absolute) and list tests for Gandalf.
+- javac (Java 25) refuses a final field used inside a lambda in the constructor that assigns it, even as this.field: pass a method ref (this::m) instead. Verified 2026-10-21 (HouseCinematics.cameraLost).

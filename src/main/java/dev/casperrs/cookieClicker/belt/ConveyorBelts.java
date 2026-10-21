@@ -123,6 +123,28 @@ public final class ConveyorBelts implements Listener {
         double cps;
         boolean withPack;
         long nextSound;
+        /** What {@link #cps} was computed from: buildings and upgrades only grow, so their totals show a purchase. */
+        private @Nullable CookiePouch cpsPouch;
+        private @Nullable Object cpsConfig;
+        private long cpsOwned = -1;
+        private int cpsUpgrades = -1;
+
+        /** Whether the pouch or the balance changed since {@link #cps} was computed (and remembers the new state). */
+        boolean cpsChanged(CookiePouch pouch, Object config) {
+            long owned = 0;
+            for (int n : pouch.ownedView().values()) {
+                owned += n;
+            }
+            int upgrades = pouch.upgradesView().size();
+            if (pouch == cpsPouch && config == cpsConfig && owned == cpsOwned && upgrades == cpsUpgrades) {
+                return false;
+            }
+            cpsPouch = pouch;
+            cpsConfig = config;
+            cpsOwned = owned;
+            cpsUpgrades = upgrades;
+            return true;
+        }
 
         Rider(String plotId, World world, BeltPath path) {
             this.plotId = plotId;
@@ -224,10 +246,13 @@ public final class ConveyorBelts implements Listener {
             if (tick % REFRESH_TICKS == 1) {
                 refresh();
             }
-            for (Map.Entry<UUID, Rider> e : List.copyOf(riders.entrySet())) {
+            // ride() never changes the riders map, so no copy per tick
+            for (Iterator<Map.Entry<UUID, Rider>> it = riders.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<UUID, Rider> e = it.next();
                 Player p = Bukkit.getPlayer(e.getKey());
                 if (p == null) {
-                    stopRider(e.getKey());
+                    clearRides(e.getValue());
+                    it.remove();
                 } else {
                     ride(p, e.getValue());
                 }
@@ -244,6 +269,10 @@ public final class ConveyorBelts implements Listener {
         if (!s.enabled()) {
             removeAll();
             return;
+        }
+        Map<UUID, Boolean> packs = new HashMap<>(); // hasPack once per player per refresh
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            packs.put(p.getUniqueId(), hasPack.test(p));
         }
         // surfaces
         for (Plot plot : plots.all()) {
@@ -271,7 +300,7 @@ public final class ConveyorBelts implements Listener {
                 surfaces.put(plot.id(), surface);
             }
             for (Player p : world.getPlayers()) {
-                boolean pack = hasPack.test(p);
+                boolean pack = packs.getOrDefault(p.getUniqueId(), false);
                 Boolean before = surface.shown.put(p.getUniqueId(), pack);
                 if (before == null || before != pack) {
                     (pack ? surface.withPack : surface.vanilla).forEach(e -> p.showEntity(plugin, e));
@@ -311,8 +340,10 @@ public final class ConveyorBelts implements Listener {
                 rider.nextSound = tick;
                 riders.put(id, rider);
             }
-            rider.cps = economy.totalCps(pouch);
-            rider.withPack = hasPack.test(p);
+            if (rider.cpsChanged(pouch, economy.config())) { // CPS only changes with a purchase or a reload
+                rider.cps = economy.totalCps(pouch);
+            }
+            rider.withPack = packs.getOrDefault(id, false);
         }
     }
 
@@ -363,9 +394,13 @@ public final class ConveyorBelts implements Listener {
     private void stopRider(UUID id) {
         Rider r = riders.remove(id);
         if (r != null) {
-            r.rides.forEach(ride -> ride.entity.remove());
-            r.rides.clear();
+            clearRides(r);
         }
+    }
+
+    private static void clearRides(Rider r) {
+        r.rides.forEach(ride -> ride.entity.remove());
+        r.rides.clear();
     }
 
     // ---- spawning --------------------------------------------------------------------------------------------

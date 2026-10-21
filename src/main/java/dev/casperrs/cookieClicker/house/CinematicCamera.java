@@ -181,11 +181,8 @@ public final class CinematicCamera implements Listener {
         }
         setMode(player, mode(back));
         if (teleport) {
-            Location to = location(back);
-            if (to != null) {
-                player.setFallDistance(0f);
-                teleport(player, to);
-            }
+            player.setFallDistance(0f);
+            teleport(player, location(back));
         }
         player.getPersistentDataContainer().remove(key);
     }
@@ -314,9 +311,11 @@ public final class CinematicCamera implements Listener {
         }
     }
 
-    private static @Nullable Location location(CameraReturn back) {
+    /** The return spot; when its world is gone, the main world's spawn (never left hanging at the camera point). */
+    private static Location location(CameraReturn back) {
         World world = PlotService.worldByKey(back.worldKey()).orElse(null);
-        return world == null ? null : new Location(world, back.x(), back.y(), back.z(), back.yaw(), back.pitch());
+        return world == null ? Bukkit.getWorlds().getFirst().getSpawnLocation()
+                : new Location(world, back.x(), back.y(), back.z(), back.yaw(), back.pitch());
     }
 
     /** Camera entities alive (for the tester / debug). */

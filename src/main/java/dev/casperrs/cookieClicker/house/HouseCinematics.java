@@ -141,11 +141,19 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
         this.settings = settings;
         this.keepOut = new KeepOut(plugin);
         this.smoke = new ChimneySmoke(plugin, effects, sounds, settings);
-        this.camera = new CinematicCamera(plugin, selfTeleport, id -> {
-            if (abort(id, true)) {
-                resumeSmokeLater(id);
-            }
-        });
+        this.camera = new CinematicCamera(plugin, selfTeleport, this::cameraLost);
+    }
+
+    /** The camera was lost from outside (another game mode, entity gone): end the run, or the camera on its own. */
+    private void cameraLost(UUID id) {
+        if (abort(id, true)) {
+            resumeSmokeLater(id);
+            return;
+        }
+        Player p = Bukkit.getPlayer(id); // a camera without a run
+        if (p != null) {
+            guarded("end camera", () -> camera.exit(p, true, true));
+        }
     }
 
     /** Enable: listen to events and plot presence. Call before {@link PlotTracker#start()}. */
@@ -360,12 +368,21 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
             }
         }
 
-        smoke.stop(id);
-        if (!filmed) {
-            keepOut.apply(player, c.keepOut(), c.slowAmount());
-        }
         Run run = new Run(id, plotId, world, box, plan, tiles);
         run.camera = filmed;
+        try {
+            smoke.stop(id);
+            if (!filmed) {
+                keepOut.apply(player, c.keepOut(), c.slowAmount());
+            }
+        } catch (RuntimeException e) { // no run yet: nothing else would end the camera or the keep-out
+            plugin.getLogger().log(Level.SEVERE, "House cinematic of " + player.getName() + " failed to start", e);
+            guarded("clear keep-out", () -> keepOut.clear(player));
+            if (filmed) {
+                guarded("end camera", () -> camera.exit(player, true, true));
+            }
+            return Result.NOTHING_TO_BUILD;
+        }
         running.put(id, run);
         ensureTask();
         try {
@@ -512,7 +529,7 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
         keepOut.clear(p);
         seen.markSeen(run.player, run.plotId); // before the camera's teleport back into the plot
         if (run.camera) {
-            camera.exit(p, true, true);
+            guarded("end camera", () -> camera.exit(p, true, true));
         }
         HouseBox box = run.box;
         Location top = new Location(run.world, box.centreX(), box.maxY() + settings.get().cinematic().confettiHeight(),
