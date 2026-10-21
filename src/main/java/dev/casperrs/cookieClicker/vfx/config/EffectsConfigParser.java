@@ -38,6 +38,8 @@ public final class EffectsConfigParser {
     public static final String LIMITS = "limits";
     /** Preset-level field: ticks between plays of {@code Effects.loop}. */
     public static final String LOOP_EVERY = "loop-every";
+    /** Preset-level field: least ticks between two plays for one viewer (a per-viewer rate cap). */
+    public static final String MIN_INTERVAL = "min-interval-ticks";
     private static final Pattern ID = Pattern.compile("[a-z0-9_]+");
     private static final double[] ZERO = {0, 0, 0};
     private static final String TYPES = "particle, floating-text, item-crumbs, scale-pop or block-drop";
@@ -95,11 +97,12 @@ public final class EffectsConfigParser {
                 continue;
             }
             for (String key : s.getKeys(false)) {
-                if (!key.equals("layers") && !key.equals(LOOP_EVERY)) {
+                if (!key.equals("layers") && !key.equals(LOOP_EVERY) && !key.equals(MIN_INTERVAL)) {
                     problems.add(id + ": unknown field '" + key + "' ignored");
                 }
             }
             int loopEvery = loopEvery(id, s.get(LOOP_EVERY), problems);
+            int minInterval = minInterval(id, s.get(MIN_INTERVAL), problems);
             List<LayerSpec> layers = new ArrayList<>();
             List<Map<?, ?>> raw = s.getMapList("layers");
             if (raw.size() != s.getList("layers", List.of()).size()) {
@@ -122,7 +125,7 @@ public final class EffectsConfigParser {
                 problems.add(id + ": no valid layers - effect skipped");
                 continue;
             }
-            out.put(id, new Preset(id, List.copyOf(layers), loopEvery));
+            out.put(id, new Preset(id, List.copyOf(layers), loopEvery, minInterval));
         }
         return out;
     }
@@ -138,6 +141,20 @@ public final class EffectsConfigParser {
         }
         problems.add(id + ": 'loop-every' must be a whole number of ticks 1..1200, got '" + raw
                 + "'; loops of this effect use " + DEFAULT_LOOP_EVERY);
+        return 0;
+    }
+
+    /** {@code min-interval-ticks}: whole ticks 0..1200, or absent (0 = no cap). Bad values are logged, no cap. */
+    private static int minInterval(String id, @Nullable Object raw, List<String> problems) {
+        if (raw == null) {
+            return 0;
+        }
+        if ((raw instanceof Integer || raw instanceof Long) && ((Number) raw).longValue() >= 0
+                && ((Number) raw).longValue() <= 1200) {
+            return ((Number) raw).intValue();
+        }
+        problems.add(id + ": 'min-interval-ticks' must be a whole number of ticks 0..1200, got '" + raw
+                + "'; this effect plays uncapped");
         return 0;
     }
 

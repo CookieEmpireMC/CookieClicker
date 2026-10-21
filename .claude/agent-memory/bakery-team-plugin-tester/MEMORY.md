@@ -5,3 +5,4 @@
 - [Ledger: coder pass 1](ledger-coder-pass1.md) — starter-house plot/house/worldguard review at 57df6ec; open Outline hang; Proxy World trick
 - [Ledger: coder pass 2](ledger-coder-pass2.md) — cinematic + starter-house integration at b03c8e3; open LOWs; Sound#key() replacement; ownership-check --base tip
 - [Ledger: factory-makeover coder](ledger-factory-makeover-coder.md) — PlotSetup/fence/layout review at 55dbac1; fixtures; integration must un-skip shipped-file test
+- [Ledger: conveyor-belt coder](ledger-conveyor-belt-coder.md) — review at 8da4215 READY; open LOWs, integration to-dos, cross-branch asset test recipe

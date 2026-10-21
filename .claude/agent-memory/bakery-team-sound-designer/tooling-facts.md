@@ -26,3 +26,9 @@ Verified 2026-10-20 (factory-makeover), stable unless tools/sound_check.py chang
 - Fresh worktree: `mise exec -- python` has no numpy until `mise run assets-deps` runs once (mise run sound-check etc. depend on it; plain mise exec doesn't).
 - Seam window for loops (tools/sound_check.py): last 2 ms must be < -30 dBFS AND first audible sample (> -40 dBFS) within 5 ms. Tonal loop: Gaussian loop dip 85 % / 80 ms passed; 55 % and 95 % failed.
 - config.yml (bakery-core/starter-house): chimney smoke puffs every 10 ticks, crackle sound every 6th puff (= 60 ticks).
+
+Verified 2026-10-21 (conveyor-belt), stable unless SoundService/sound_check change:
+- SoundService.java (src/main/java/dev/casperrs/cookieClicker/sound/) still uses one volume+pitch for key and fallback (lines ~105-113).
+- `scipy.signal.resample` (FFT) keeps a circular loop seamless when changing its length (used to author a loop for pitch 0.8).
+- sound-check loudness warn band is -16 ±4 LUFS: a -20.0 generator target encodes to -20.1 and warns; use -19.8.
+- Worktree guard also refuses `sed -i ... $var` (unquoted variable as sed arg); spell the path out.

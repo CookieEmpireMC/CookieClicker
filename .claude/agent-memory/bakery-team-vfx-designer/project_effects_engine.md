@@ -38,6 +38,11 @@ First built in feature bakery-core (2026-10-18, branch bakery-core/vfx-designer)
 - factory-makeover (2026-10-20): preset `factory_steam` (loop-every 37, 8 particles/cycle, cloud + white_smoke, force);
   `max-loops-per-player` default raised 4 -> 8 in both effects.yml and `Limits.DEFAULTS` (keep them equal). Pinned
   in `HouseEffectsConfigTest.factorySteamIsACheapIrregularLoop`.
+- conveyor-belt (2026-10-21): preset-level `min-interval-ticks` (0..1200, per viewer per preset, `Throttle`,
+  tick from `Server#getCurrentTick`; only `play()`, loops ignore it; cleared on load/shutdown/quit). Record
+  `Preset(id, layers, loopEvery, minIntervalTicks)` keeps the 2/3-arg constructors. Preset `belt_arrive` =
+  17 particles, interval 4. Pinned in `BeltEffectsTest`. **How to apply:** use it for any per-event effect whose
+  rate scales with player progress.
 - EffectTicker buffers jobs started during its own run (`pending`) so callback-started jobs aren't stepped twice.
 
 Related: [[reference-paper263-vfx-api]]

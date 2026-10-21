@@ -12,6 +12,7 @@ import dev.casperrs.cookieClicker.station.StationRegistry;
 import dev.casperrs.cookieClicker.text.Messages;
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import net.kyori.adventure.key.Key;
+import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
@@ -516,16 +517,29 @@ public final class StationViews implements Listener, StationListener, SessionLis
                 continue; // unchanged: no metadata packets
             }
             row.last = state;
-            row.text.text(messages.component(state.style().messagePath(),
+            Component text = messages.component(state.style().messagePath(),
                     Placeholder.unparsed("name", PLAIN.serialize(messages.buildingName(row.buildingId))),
                     messages.number("owned", state.owned()),
                     messages.number("cost", state.cost()),
                     messages.number("cps", state.cps()),
-                    messages.number("needed", state.needed())));
+                    messages.number("needed", state.needed()));
+            row.text.text(text);
+            alignLeft(row.text, text, p);
             row.text.setBackgroundColor(Color.fromARGB(p.color(state.style().key())));
             int light = state.style() == RowState.Style.AFFORDABLE ? p.iconBrightAffordable() : p.iconBrightUnaffordable();
             row.icon.setBrightness(new Display.Brightness(light, light));
         }
+    }
+
+    /**
+     * A text display is drawn centred on its position; shift it right by half its estimated rendered width so the
+     * left edge of its background sits on the row's text offset, whatever the text's length or wrapping.
+     */
+    private static void alignLeft(TextDisplay display, Component text, StationVisualSettings.Panel p) {
+        float shift = p.textLeftEdge() ? TextWidth.leftEdgeShift(TextWidth.width(text, p.lineWidth()), p.textScale()) : 0;
+        float scale = p.textScale();
+        display.setTransformation(new Transformation(new Vector3f(shift, 0, 0), new Quaternionf(),
+                new Vector3f(scale, scale, scale), new Quaternionf()));
     }
 
     // ---- cookie motion --------------------------------------------------------------------------------------

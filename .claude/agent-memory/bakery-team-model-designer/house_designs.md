@@ -13,5 +13,9 @@ metadata:
 - 26.3 block ids verified in paper-api 26.3 sources `org/bukkit/Material.java` (2026-10-20, stable): `waxed_copper_bars` (Fence states), `waxed_copper_lantern` (Lantern), `waxed_copper_bulb`, `waxed_copper_grate`, `waxed_copper_trapdoor`, `waxed_cut_copper(_slab)`, `waxed_lightning_rod` (facing/powered/waterlogged), `iron_chain` (old `chain` is gone), campfire, barrel, composter (Levelled). Check others with `unzip -p <sources jar> org/bukkit/Material.java | grep`.
 - Block facts used (vanilla knowledge, not yet confirmed in game): door `facing=north` puts the plate on the south side of its cell; wall sign `facing=north` hangs on the block to its south; hanging lantern/sign survive under a bottom-half stair or slab.
 
+- conveyor-belt (2026-10-21, stable while the contract holds): `houses/belt.yml` from `design/scripts/belt_style.py` (one frame column per belt cell, surface-height 1); `layout.camera` in factory.yml = feet cell [23,12,-13], yaw 20, pitch 24, validated in `house_factory.py` (imports `belt_style`, `fence_style`) against 4:3 FOV 70. Spec `design/conveyor-belt.md`.
+- `lib/voxel_render.py` has `render_perspective(boxes, eye, yaw, pitch, fov, size)` + `project(...)` with Minecraft yaw/pitch (yaw 0 = south, 90 = west, pitch + = down); `lib/model_render.py` uses frame 0 of animated (`.png.mcmeta`) strips.
+- Item display with transform NONE: whether the model is turned 180° about Y is NOT verified (belt spec asks for an in-game check).
+
 **Why:** avoids re-deriving the format, ownership workaround and block ids next time.
 **How to apply:** new designs (e.g. bakery-growth tiers) import `house_lib` and copy the `house_factory.py` structure (block-data grid, auto connections, auto chars). See [[pack-facts-26-3]].

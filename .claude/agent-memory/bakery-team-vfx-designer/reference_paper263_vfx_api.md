@@ -28,5 +28,6 @@ Verified 2026-10-18 against `~/.m2/repository/io/papermc/paper/paper-api/26.3.bu
   with speedX=Y=Z=speed and `RandomizationType.DEFAULT`; `World` has the same `force` overload.
 - Works in plain JUnit (no server): Particle enum, `Material.matchMaterial`, `YamlConfiguration.loadFromString`,
   `Color`, `NamespacedKey.fromString`. Needs a server: `ItemStack.of`, `Material#createBlockData`, `Bukkit.*`.
+- (2026-10-21, same jar, stable) `Server#getCurrentTick()` / `Bukkit.getCurrentTick()` return int, not deprecated.
 
 Related: [[project-effects-engine]]

@@ -61,5 +61,11 @@
     "sounds": [
       "cookieclicker:factory/ambient"
     ]
+  },
+  "factory.belt_loop": {
+    "subtitle": "subtitles.cookieclicker.factory_belt_loop",
+    "sounds": [
+      "cookieclicker:factory/belt_loop"
+    ]
   }
 }

@@ -1,3 +1,3 @@
 - [Sandbox Bash limits](sandbox_bash.md) — no shell vars/loops in Bash; use literal paths, Edit/Write, scratch Python scripts
 - [Pack facts 26.3](project_pack_facts.md) — pack format 97.1, cookie model setup, asset tooling and spec locations
-- [House designs](house_designs.md) — houses/*.yml (cottage, factory, fence), lib/house_lib.py, layout section, verified 26.3 copper block ids
+- [House designs](house_designs.md) — houses/*.yml (cottage, factory, fence, belt), layout incl. camera, perspective renderer, verified 26.3 copper block ids

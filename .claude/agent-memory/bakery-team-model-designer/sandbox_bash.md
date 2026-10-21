@@ -7,6 +7,8 @@ metadata:
 
 The worktree-isolation hook refuses Bash commands it can't prove stay inside the worktree: commands using shell variables (`S=...; python $S/x.py`), `for` loops with `$var`, and heredocs/inline text containing the word for the VCS tool. Verified 2026-10-18 (bakery-core).
 
+Also refused (2026-10-21): `cat > scratch.py <<'EOF' ... EOF && python scratch.py` in one command (write the scratch script with the Write tool instead). Plain `cat >> design/x.md <<'EOF'` still works.
+
 Also refused (2026-10-20): a `python3 - <<'EOF'` heredoc doing multi-line string replacement. Plain `cat >> file <<'EOF'` appends worked.
 
 **Why:** the hook checks every command for operations outside the worktree and gives up on anything computed at runtime.

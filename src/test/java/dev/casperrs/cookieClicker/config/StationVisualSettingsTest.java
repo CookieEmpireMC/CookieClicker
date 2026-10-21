@@ -132,4 +132,27 @@ class StationVisualSettingsTest {
         assertEquals(0, parse("station:\n  cookie:\n    spin-seconds-per-revolution: 0\n", new ArrayList<>())
                 .cookie().spinStepRadians());
     }
+
+    @Test
+    void textLeftEdgeDefaultsToTrueAndParsesFalse() {
+        assertTrue(parse("", new ArrayList<>()).panel().textLeftEdge());
+        assertFalse(parse("station:\n  panel:\n    row:\n      text-left-edge: false\n", new ArrayList<>())
+                .panel().textLeftEdge());
+        assertTrue(parse("station:\n  panel:\n    row:\n      text-left-edge: true\n", new ArrayList<>())
+                .panel().textLeftEdge());
+    }
+
+    @Test
+    void panelRowDefaultsMatchShippedFile() {
+        YamlConfiguration shipped = YamlConfiguration.loadConfiguration(new File("src/main/resources/config.yml"));
+        StationVisualSettings.Panel file = StationVisualSettings.from(shipped, m -> { }).panel();
+        StationVisualSettings.Panel code = parse("", new ArrayList<>()).panel();
+        assertEquals(code.textOffset(), file.textOffset());
+        assertEquals(code.hitboxOffset(), file.hitboxOffset());
+        assertEquals(code.hitboxWidth(), file.hitboxWidth());
+        assertEquals(code.textLeftEdge(), file.textLeftEdge());
+        assertEquals(new Offset(-0.3, 0, 0), code.textOffset());
+        assertEquals(new Offset(0.25, -0.02, 0), code.hitboxOffset());
+        assertEquals(1.7f, code.hitboxWidth());
+    }
 }
