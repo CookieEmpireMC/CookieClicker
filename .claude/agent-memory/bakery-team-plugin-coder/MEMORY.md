@@ -2,3 +2,4 @@
 - [Paper 26.3 API facts](paper-263-api-facts.md) — verified Brigadier/world key/Adventure 5 sound+pack/display/click APIs, javap path, guard quirks, test-pinned keys
 - [factory-makeover facts](factory-makeover-facts.md) — layout yaw convention, compat ctors for test-built records, smoke-testing other branches' files, pinned-test build
 - [Repo tooling facts](repo-tooling-facts.md) — ownership matcher copy in tools/ownership, repo CookieEmpireMC/CookieClicker, worktree Bash guard quirks
+- [conveyor-belt facts](conveyor-belt-facts.md) — spectator camera + display interpolation APIs, Pat's belt.yml/camera format, no src/test for coder
