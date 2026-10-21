@@ -35,6 +35,7 @@ player's click numbers.
 |---|---|---|
 | `layers` | required | list of layers (below) |
 | `loop-every` | none | ticks between plays when code runs the preset with `effects.loop(...)`; without it a loop plays every 20 ticks (logged once). `play` ignores it |
+| `min-interval-ticks` | 0 | rate cap: `play` shows the preset at most once per n ticks **per viewer** (one shared budget for `viewer == null`); plays in between are dropped silently, so code can call it once per event at any rate. 0 = no cap; 0–1200. Loops ignore it. The budget resets on reload and when the viewer quits |
 
 ### Every layer
 | Field | Default | Meaning |
@@ -151,6 +152,7 @@ updates, 1 particle packet (count 4) + `house_block_land` at the impact.
 | `house_confetti` | Finale: a warm flash, 24 white firework sparks, a fountain of 24 totem confetti, and four dome shells of tinted leaves (gold, pink, mint, sky blue; radius 1.8 → 4.2, staggered by 1 tick) that hang around the roof and flutter down over the next seconds. | once when the roof is done; location = top centre of the house, about 1 block above the ridge | 153 particles | none |
 | `house_chimney_smoke` | `loop-every: 10`: each play sends one big campfire smoke puff drifting up (lingers ~5 s, so a column of ~10 puffs) and two small dark wisps; extended range (`force`). | `effects.loop("house_chimney_smoke", chimneyTop, viewer)` for every player in the plot who isn't mid-cinematic; location = centre of the chimney's top face | 3 particles per play = 6/s per viewer | none |
 | `factory_steam` | `loop-every: 37` (prime, never in step with the 10-tick smoke): short white roof-vent puffs at uneven gaps, a big puff at tick 0 (cloud launched up + 2 white_smoke wisps), a small one at 5, a big one at 15, a small one at 24, then a 13-tick pause; each puff a few cm off centre. Cloud fades in ~1 s, so it reads as separate puffs, not a column; white and short-lived vs the grey, lingering campfire column of `house_chimney_smoke`. Extended range (`force`). | `effects.loop("factory_steam", ventTop, viewer)` at every `points.steam` cell, same viewers/lifecycle as the chimney smoke; location = centre of the vent's top face (the steam cell's bottom centre, `(x + 0.5, y, z + 0.5)`) | 8 particles per cycle ≈ 4.3/s per vent per viewer; counts 1 toward `max-loops-per-player` | none |
+| `belt_arrive` | A belt cookie lands on the pedestal: 5 cookie crumbs (`item` particle, our model with the pack) hop up ~0.2 in a tight up-biased spray and fall back (~0.5 wide), and a small warm-white (`#fff2a8`, size 0.5) ring of 6 dust motes pops open 0.08 → 0.22 over 2 ticks just above the landing point. Reads as a soft "plip", not a celebration: it repeats several times a second. | once per belt cookie as it reaches the pedestal end and vanishes; location = the cookie's centre at that moment; viewer = the belt's owner (never null: it's their own CPS) | 17 particles, 0 entities. `min-interval-ticks: 4` → at most 5 plays/s = **85 particles/s per viewer**; extra arrivals in the same 4 ticks land without an effect | none |
 | `plot_outline` | **Admin-only tool.** One sky-blue (`#8ec5ff`) dust mote, size 1.5, extended range (`force`) so the outline shows from across the plot. | `/bakery plot show`: once per outline point of the **plot** region, viewer = the admin (`plot.show.plot-effect`) | 1 particle per play (≈120 per region redraw) | none |
 | `house_outline` | **Admin-only tool.** Same as `plot_outline` in cookie gold (`#f5c542`), so plot and house borders are told apart at a glance. | `/bakery plot show`: once per outline point of the **house** region (`plot.show.house-effect`) | 1 particle per play (≈120 per region redraw) | none |
 
@@ -239,6 +241,18 @@ unknown ID, an offline/other-world viewer, or at `max-loops-per-player`.
 and loops, and the engine's own listener handles quit. Debug counters: `activeFallingBlocks()`, `activeLoops()`.
 Constant `Effects.BLOCK_DROP` = `"house_block_drop"`.
 
+### Conveyor belt (conveyor-belt)
+
+```java
+// a belt cookie reached the pedestal end: remove its ItemDisplay, then
+effects.play("belt_arrive", cookieCentre, owner);   // owner = the player whose CPS drives this belt
+```
+
+Call it for **every** arriving cookie; don't throttle in code. The preset's `min-interval-ticks: 4` drops plays
+that come within 4 ticks of the last one for the same viewer (at most 5 per second), so the cost is bounded no
+matter how high the CPS curve goes. No entities, so it never evicts click numbers from the display caps. Nothing to
+wire: same instance, the budget resets on reload and quit.
+
 ### Other public methods
 
 Other public methods: `play(id, loc, viewer)` (no placeholders), `pop(display, viewer, presetId)`, `has(id)`,
@@ -313,3 +327,7 @@ Notes for the caller:
     apart and visible from the far side of the plot. Dust motes live a random, short time on the client, so with a
     20-tick redraw the line may flicker or show gaps; if it does, raise `size` (longer-lived, fatter motes) or ask
     the coder for a shorter redraw interval rather than adding particles per point.
+18. `belt_arrive` at low CPS (one cookie now and then) and at max belt speed: the crumb hop and tiny ring read as
+    a soft landing on the pedestal, not a burst; at high CPS the effect doesn't strobe (5/s cap) and the arrival
+    point isn't hidden inside the pedestal cookie (if it is, ask the coder to play it ~0.1 above the belt surface,
+    or raise `origin` y). Crumbs with the pack show our cookie texture.
