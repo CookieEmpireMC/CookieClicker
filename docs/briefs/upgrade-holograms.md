@@ -108,7 +108,7 @@ None. Decided 2026-10-21: ×1/×5/×10/**Max**; smooth price tweens; cookie spin
 | Agent | Status | Branch | Verdict | Notes |
 |---|---|---|---|---|
 | balance-designer | in progress | `upgrade-holograms/balance-designer` | | launched 2026-10-21 |
-| model-designer | in progress | `upgrade-holograms/model-designer` | | launched 2026-10-21 |
+| model-designer | merged | `upgrade-holograms/model-designer` | asset-only (checks) | f606b10; 10 icons placeholder; `layout.clicks` at [16,0,6] |
 | sound-designer | merged | `upgrade-holograms/sound-designer` | asset-only (checks) | 72df49a; sounds placeholder until listened to |
 | vfx-designer | in progress | `upgrade-holograms/vfx-designer` | | launched 2026-10-21 |
 | plugin-coder (economy) | planned | | | waits for balance |
