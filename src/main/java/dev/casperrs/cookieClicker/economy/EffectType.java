@@ -17,6 +17,11 @@ public enum EffectType {
         this.configName = configName;
     }
 
+    /** Multiplier types compound per level ({@code value ^ L}); the others add up ({@code value × L}). */
+    public boolean multiplier() {
+        return this == CLICK_MULTIPLIER || this == BUILDING_MULTIPLIER || this == GLOBAL_MULTIPLIER;
+    }
+
     public String configName() {
         return configName;
     }

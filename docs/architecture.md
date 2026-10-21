@@ -8,7 +8,7 @@ Maintained by the plugin-tester. Last updated: 2026-10-21 (conveyor-belt plugin-
 | Package | Role | Threading |
 |---|---|---|
 | (root) `CookieClicker`, `BakeryConfigLoader` | wiring and lifecycle (enable, reload, disable), config loading | main |
-| `economy` | pure-Java model from `docs/balance/model.md`: `Economy`, `CookiePouch`, `EconomyConfigParser`, crit with injected RNG | main (pouch not thread-safe; snapshots cross threads) |
+| `economy` | pure-Java model from `docs/balance/model.md`: `Economy` (costs, bulk buys, upgrade levels, derived CPS/CPC), `BulkMath` (geometric bulk cost and closed-form Max, shared by buildings and repeatable upgrades), `CookiePouch` (ids → levels), `EconomyConfigParser`, crit with injected RNG | main (pouch not thread-safe; snapshots cross threads) |
 | `format` | `NumberFormatter` (pure, immutable) | any |
 | `storage` | `PlayerStore`, `HouseSeenStore`, `JdbcPlayerStore` (H2/MariaDB, schema **v2**: v1 + `house_seen(uuid, plot_id, seen_at)`), `DatabaseSettings` | single IO thread only |
 | `session` | `SessionManager`: online pouches, async load/save, load tokens, autosave, flush on disable | main API, IO behind it |
