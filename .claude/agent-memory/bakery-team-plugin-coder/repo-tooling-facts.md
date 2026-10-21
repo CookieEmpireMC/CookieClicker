@@ -10,3 +10,4 @@ metadata:
 - `.claude/hooks/`, `.claude/agents/`, `docs/workflow.md`, `docs/game-design.md` move to the `bakery-team` plugin (skills bakery-context, game-design; command /bakery-team:feature). Don't make tooling depend on them.
 - Worktree guard rejects Bash with `{ ...; } >`, shell variables in sed/cp args, or `&&`-chains mixing python heredocs: use plain commands with literal absolute paths, or Edit.
 - Quick self-check: `CLAUDE_PROJECT_DIR=<worktree> mise exec -- python tools/ownership/check.py <branch> --base <sha>`.
+- 2026-10-21 (stable): `mise run check-quiet` prints only test totals/BUILD result/<=40 [ERROR] lines, full log in .check.log; pass extra mvn flags via `MAVEN_ARGS` env (Maven 3.9 reads it). Bash guard also refuses python heredocs whose text mentions .gitignore; use Edit instead.
