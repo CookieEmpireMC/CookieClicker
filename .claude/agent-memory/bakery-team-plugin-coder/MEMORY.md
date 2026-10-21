@@ -3,5 +3,5 @@
 - [factory-makeover facts](factory-makeover-facts.md) — layout yaw convention, compat ctors for test-built records, smoke-testing other branches' files, pinned-test build
 - [Repo tooling facts](repo-tooling-facts.md) — ownership matcher copy in tools/ownership, repo CookieEmpireMC/CookieClicker, worktree Bash guard quirks
 - [conveyor-belt facts](conveyor-belt-facts.md) — spectator camera + display interpolation APIs, Pat's belt.yml/camera format, no src/test for coder
-- [Economy levels facts](economy-levels-facts.md) — BulkMath/BulkPurchase API, schema v3 SQL, short suffixes, golden smoke recipe, guard quirks
+- [Economy levels facts](economy-levels-facts.md) — BulkMath/BulkPurchase API, schema v3 SQL + MySQL-safe addColumn, short suffixes, golden smoke recipe, guard quirks
 - [upgrade-panels facts](upgrade-panels-facts.md) — panels/shelf/spin-fix structure, PopJob sync first step, pinned tests, shelf teleport rule

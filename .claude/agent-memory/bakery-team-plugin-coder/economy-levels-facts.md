@@ -13,6 +13,11 @@ Verified 2026-10-21 (branch upgrade-holograms/plugin-coder-economy, commits a3d9
   `UpgradeDef` has costGrowth (0 = one-time) + maxLevel (1 / max-level / Integer.MAX_VALUE) + 8-arg one-time ctor.
 - Storage schema v3: `ALTER TABLE <p>upgrades ADD COLUMN upgrade_level INT DEFAULT 1 NOT NULL` works on H2 2.2.224
   (DEFAULT must come before NOT NULL in H2). Smoke-tested v2 -> v3 keeps rows as level 1.
+- 2026-10-21 cleanup (1e998bd): DB type "mysql" maps to the MariaDB driver, so the server may be real MySQL: don't use
+  `ADD COLUMN IF NOT EXISTS`. Migrations are `Step`s; `addColumn` checks DatabaseMetaData (case via
+  storesUpper/LowerCaseIdentifiers; '_' is a pattern wildcard, compare names). H2 smoke: `mise exec -- java -cp
+  target/classes:<h2-2.5.252.jar> Smoke.java`. `Row.lastTextTick` starts at Long.MIN_VALUE (`now - MIN` overflows).
+- Guard refuses heredoc + sed in one Bash call, and `git add <dir>` chained after file writes; use Edit + plain git.
 - Golden check without touching src/test: single-file java in scratchpad, run from the worktree with
   `mise exec -- java -cp target/classes:<gson 2.11.0 jar>:<snakeyaml 2.2 jar> <abs path>.java` (jars in ~/.m2). 304 values matched.
 - Guard quirk: a Bash command that cd's into the scratchpad and builds a classpath with `$(ls ...)` is refused
