@@ -96,12 +96,18 @@ station:
     row-pitch: 0.4
     row:
       # Relative to the row's anchor: [right, up, forward]
-      text-offset: [0.15, 0, 0]
+      # text-offset is the LEFT EDGE of the row's text background when text-left-edge is true (keep it just right of
+      # the icon: icon centre + icon-scale / 2 + a small gap), else the centre of the text block.
+      text-offset: [-0.3, 0, 0]
+      # true = every row's text starts at text-offset, however long or wrapped it is (the plugin estimates the
+      # rendered width from the default font and shifts the text right by half of it); false = text centred
+      text-left-edge: true
       icon-offset: [-0.5, 0.13, -0.02]
       icon-scale: 0.3
-      # Bottom centre of the row's click box; keep it clear of the cookie's box
-      hitbox-offset: [0, -0.02, 0]
-      hitbox-width: 1.3
+      # Bottom centre of the row's click box; keep it clear of the cookie's box. It should cover the icon and the
+      # text: from about icon-offset - icon-scale / 2 to text-offset + line-width * text-scale / 40
+      hitbox-offset: [0.25, -0.02, 0]
+      hitbox-width: 1.7
       hitbox-height: 0.34
     # Text background colours, "#AARRGGBB" (alpha below 1A is invisible)
     colors:
