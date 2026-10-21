@@ -70,7 +70,9 @@ final class PanelUpdater {
         List<String> ids = panel.kind == PanelKind.BUILDINGS
                 ? PanelRows.buildings(economy.config(), panel.rows.size())
                 : PanelRows.clicks(economy.config(), pouch.upgradeLevelsView(), panel.rows.size());
-        int ticks = settings.get().tween().ticks();
+        StationVisualSettings.Tween tween = settings.get().tween();
+        int ticks = tween.ticks();
+        int step = tween.stepTicks();
         for (StationView.Row row : panel.rows) {
             if (!row.text.isValid()) {
                 continue;
@@ -112,9 +114,18 @@ final class PanelUpdater {
                 row.cost = PriceTween.fixed(state.cost());
                 row.gain = PriceTween.fixed(state.gain());
             }
+            // rate-limited like every roll step: inside the current step window animate() renders it when the
+            // window ends (or at once when settled), so value churn (Max) never sends text faster than step-ticks
             row.animating = true;
-            render(panel, row, now);
+            if (stepDue(row, now, step)) {
+                render(panel, row, now);
+            }
         }
+    }
+
+    /** A new text step may be sent: the row never rendered, or the last text is at least one step old. */
+    private static boolean stepDue(StationView.Row row, long now, int step) {
+        return row.lastTextTick == Long.MIN_VALUE || now - row.lastTextTick >= step;
     }
 
     private @Nullable PanelRowState state(PanelKind kind, CookiePouch pouch, String id, BulkMode mode) {
@@ -137,7 +148,7 @@ final class PanelUpdater {
                     continue;
                 }
                 boolean settled = row.cost.done(now) && row.gain.done(now) && now >= row.pulseStart + step;
-                if (settled || now - row.lastTextTick >= step) {
+                if (settled || stepDue(row, now, step)) {
                     render(panel, row, now);
                     if (settled) {
                         row.animating = false;
