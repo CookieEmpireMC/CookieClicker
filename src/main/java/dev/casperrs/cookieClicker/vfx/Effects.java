@@ -294,6 +294,16 @@ public final class Effects {
      * @param presetId an effect ID with a {@code scale-pop} layer
      */
     public void pop(Display display, @Nullable Player viewer, String presetId) {
+        pop(display, viewer, presetId, null);
+    }
+
+    /**
+     * Like {@link #pop(Display, Player, String)}, but every step (and the rest step) also sets translation and left
+     * rotation from {@code motion} at the step's end tick, scale from the preset, so the caller's spin and bob keep
+     * running inside the same interpolation instead of freezing or jumping. {@code null} = the old behaviour.
+     * A pop during a pop switches to the new motion.
+     */
+    public void pop(Display display, @Nullable Player viewer, String presetId, @Nullable PopMotion motion) {
         if (!ready("pop('" + presetId + "')")) {
             return;
         }
@@ -307,7 +317,7 @@ public final class Effects {
             if (running != null) {
                 running.handOver();
             }
-            PopJob job = new PopJob(display, base, sequence, ended -> pops.remove(ended.display().getUniqueId(), ended));
+            PopJob job = new PopJob(display, base, sequence, motion, ended -> pops.remove(ended.display().getUniqueId(), ended));
             pops.put(display.getUniqueId(), job);
             ticker.start(job);
         } catch (RuntimeException e) {
