@@ -123,14 +123,15 @@ class JdbcPlayerStoreTest {
         sql("INSERT INTO cc_buildings VALUES ('" + player + "', 'negative', -2)");
         sql("INSERT INTO cc_buildings VALUES ('" + player + "', 'zero', 0)");
         sql("INSERT INTO cc_buildings VALUES ('" + player + "', ' ', 5)");
-        sql("INSERT INTO cc_upgrades VALUES ('" + player + "', ' ')");
-        sql("INSERT INTO cc_upgrades VALUES ('" + player + "', 'fine')");
+        sql("INSERT INTO cc_upgrades (uuid, upgrade_id, upgrade_level) VALUES ('" + player + "', ' ', 1)");
+        sql("INSERT INTO cc_upgrades (uuid, upgrade_id, upgrade_level) VALUES ('" + player + "', 'fine', 3)");
+        sql("INSERT INTO cc_upgrades (uuid, upgrade_id, upgrade_level) VALUES ('" + player + "', 'zero_level', 0)");
         LoadedPouch loaded = store.load(player).orElseThrow();
         PouchSnapshot s = loaded.snapshot();
         assertEquals(0, s.pouch());
         assertEquals(0, s.baked());
         assertEquals(Map.of("good", 4), s.owned());
-        assertEquals(Set.of("fine"), s.upgrades());
+        assertEquals(Map.of("fine", 3, "zero_level", 1), s.upgradeLevels()); // a level below 1 is repaired to 1
         assertFalse(loaded.problems().isEmpty());
         assertTrue(loaded.problems().stream().anyMatch(p -> p.contains("pouch")));
         assertTrue(loaded.problems().stream().anyMatch(p -> p.contains("negative")));
@@ -178,7 +179,7 @@ class JdbcPlayerStoreTest {
     @Test
     void freshDatabaseStartsAtTheCurrentSchemaVersion() throws Exception {
         assertEquals(JdbcPlayerStore.SCHEMA_VERSION, store.schemaVersion());
-        assertEquals(2, JdbcPlayerStore.SCHEMA_VERSION, "starter-house is schema v2; bump this test with the next migration");
+        assertEquals(3, JdbcPlayerStore.SCHEMA_VERSION, "upgrade-holograms is schema v3; bump this test with the next migration");
     }
 
     @Test
@@ -199,20 +200,49 @@ class JdbcPlayerStoreTest {
         JdbcPlayerStore migrating = new JdbcPlayerStore(() -> DriverManager.getConnection(v1url), "zz_", () -> 99L);
         assertEquals(1, migrating.schemaVersion());
         migrating.init();
-        assertEquals(2, migrating.schemaVersion());
+        assertEquals(JdbcPlayerStore.SCHEMA_VERSION, migrating.schemaVersion());
         PouchSnapshot s = migrating.load(old).orElseThrow().snapshot();
         assertEquals(42, s.pouch());
         assertEquals(Map.of("baker", 7), s.owned());
-        assertEquals(Set.of("mitts"), s.upgrades());
+        assertEquals(Map.of("mitts", 1), s.upgradeLevels()); // a v1 set of bought upgrades loads as level 1
         // the new table works
         assertFalse(migrating.isHouseSeen(old, "main"));
         migrating.markHouseSeen(old, "main");
         assertTrue(migrating.isHouseSeen(old, "main"));
         migrating.init(); // second start: nothing to do, nothing lost
-        assertEquals(2, migrating.schemaVersion());
+        assertEquals(JdbcPlayerStore.SCHEMA_VERSION, migrating.schemaVersion());
         assertTrue(migrating.isHouseSeen(old, "main"));
         migrating.close();
         try (Connection c = DriverManager.getConnection(v1url); Statement st = c.createStatement()) {
+            st.execute("SHUTDOWN");
+        }
+    }
+
+    @Test
+    void migratesAVersionTwoDatabaseAndKeepsEveryUpgradeAsLevelOne() throws Exception {
+        String v2url = "jdbc:h2:mem:v2db" + COUNTER.incrementAndGet() + ";DB_CLOSE_DELAY=-1";
+        UUID old = UUID.randomUUID();
+        try (Connection c = DriverManager.getConnection(v2url); Statement st = c.createStatement()) {
+            // exactly what a v2 plugin left behind: upgrades are a set of IDs (no level column), house_seen exists
+            st.execute("CREATE TABLE zz_players (uuid VARCHAR(36) NOT NULL PRIMARY KEY, pouch DOUBLE NOT NULL, baked DOUBLE NOT NULL, last_seen BIGINT NOT NULL, prestige DOUBLE NOT NULL DEFAULT 0)");
+            st.execute("CREATE TABLE zz_buildings (uuid VARCHAR(36) NOT NULL, building_id VARCHAR(64) NOT NULL, owned INT NOT NULL, PRIMARY KEY (uuid, building_id))");
+            st.execute("CREATE TABLE zz_upgrades (uuid VARCHAR(36) NOT NULL, upgrade_id VARCHAR(64) NOT NULL, PRIMARY KEY (uuid, upgrade_id))");
+            st.execute("CREATE TABLE zz_house_seen (uuid VARCHAR(36) NOT NULL, plot_id VARCHAR(64) NOT NULL, seen_at BIGINT NOT NULL, PRIMARY KEY (uuid, plot_id))");
+            st.execute("CREATE TABLE zz_schema_version (id INT NOT NULL PRIMARY KEY, version INT NOT NULL)");
+            st.execute("INSERT INTO zz_schema_version VALUES (1, 2)");
+            st.execute("INSERT INTO zz_players VALUES ('" + old + "', 42, 100, 1, 0)");
+            st.execute("INSERT INTO zz_upgrades VALUES ('" + old + "', 'mitts')");
+            st.execute("INSERT INTO zz_upgrades VALUES ('" + old + "', 'strength')");
+        }
+        JdbcPlayerStore migrating = new JdbcPlayerStore(() -> DriverManager.getConnection(v2url), "zz_", () -> 99L);
+        migrating.init();
+        assertEquals(JdbcPlayerStore.SCHEMA_VERSION, migrating.schemaVersion());
+        assertEquals(Map.of("mitts", 1, "strength", 1), migrating.load(old).orElseThrow().snapshot().upgradeLevels());
+        // from now on the levels themselves are saved and loaded
+        migrating.save(old, new PouchSnapshot(42, 100, Map.of(), Map.of("strength", 4, "mitts", 1)));
+        assertEquals(Map.of("strength", 4, "mitts", 1), migrating.load(old).orElseThrow().snapshot().upgradeLevels());
+        migrating.close();
+        try (Connection c = DriverManager.getConnection(v2url); Statement st = c.createStatement()) {
             st.execute("SHUTDOWN");
         }
     }

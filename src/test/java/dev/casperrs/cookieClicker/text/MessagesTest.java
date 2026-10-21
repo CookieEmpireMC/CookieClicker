@@ -74,7 +74,8 @@ class MessagesTest {
     @Test
     void numberSettingsListsAreStringsAndNotEmpty() {
         assertFalse(yaml.getStringList("numbers.suffixes").isEmpty());
-        assertEquals(32, yaml.getStringList("numbers.suffixes").size());
+        assertEquals(33, yaml.getStringList("numbers.suffixes").size()); // K … Tg, UTg, DTg (10^3 … 10^99)
+        assertEquals("DTg", yaml.getStringList("numbers.suffixes").get(32));
     }
 
     @Test
@@ -151,7 +152,7 @@ class MessagesTest {
     void numbersAreInsertedUnparsed() {
         Component c = messages.component("hud.action-bar-no-pack", messages.number("cookies", 1_234_567), messages.number("cps", 0.1));
         String text = PLAIN.serialize(c);
-        assertTrue(text.contains("1.2 million"), text);
+        assertTrue(text.contains("1.2M"), text);
         assertTrue(text.contains("0.1"), text);
     }
 
