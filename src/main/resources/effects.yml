@@ -260,6 +260,25 @@ belt_arrive:
     - { type: particle, particle: dust, color: "#fff2a8", size: 0.5, shape: ring, points: 6, radius-start: 0.08,
         radius: 0.22, duration-ticks: 2, start-angle: 30, origin: [0, 0.05, 0] }
 
+# Bought a one-time upgrade: the icon pops out of the panel row. A bright gold-to-white ring snaps open facing the
+# buyer, 4 white-gold sparkle trails rise, and 8 firework sparks burst. About 60 particles, 0 entities, buyer only.
+# Placeholders are accepted and unused (like the others).
+upgrade_bought:
+  layers:
+    - { type: particle, particle: dust_color_transition, color: "#ffffff", to-color: "#f5c542", size: 1.0,
+        shape: ring, plane: facing, points: 12, radius-start: 0.15, radius: 0.5, duration-ticks: 3 }
+    - { type: particle, particle: dust_color_transition, color: "#fff2a8", to-color: "#f5c542", size: 0.6,
+        shape: sparkles, points: 4, radius: 0.35, height: 0.8, duration-ticks: 8, stagger-ticks: 3,
+        emit-every: 2, delay-ticks: 1 }
+    - { type: particle, particle: firework, shape: burst, points: 8, radius: 0.08, speed: 0.12 }
+
+# The upgrade icon lands on the shelf: a tiny glint (end_rod flecks and a small warm ring). 10 particles, 0 entities.
+upgrade_shelved:
+  layers:
+    - { type: particle, particle: end_rod, shape: burst, points: 4, radius: 0.05, speed: 0.03 }
+    - { type: particle, particle: dust, color: "#fff2a8", size: 0.5, shape: ring, plane: facing, points: 6,
+        radius-start: 0.05, radius: 0.16, duration-ticks: 2 }
+
 # ---- admin tools (not seen by normal players) ----------------------------------------------------------------------
 # /bakery plot show: code plays one of these per outline point (up to ~120 points per region, redrawn every
 # 20 ticks), viewer = the admin. One fat dust mote per play, sent in the extended range so the whole outline shows
