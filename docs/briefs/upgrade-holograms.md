@@ -110,7 +110,7 @@ None. Decided 2026-10-21: ×1/×5/×10/**Max**; smooth price tweens; cookie spin
 | balance-designer | in progress | `upgrade-holograms/balance-designer` | | launched 2026-10-21 |
 | model-designer | merged | `upgrade-holograms/model-designer` | asset-only (checks) | f606b10; 10 icons placeholder; `layout.clicks` at [16,0,6] |
 | sound-designer | merged | `upgrade-holograms/sound-designer` | asset-only (checks) | 72df49a; sounds placeholder until listened to |
-| vfx-designer | in progress | `upgrade-holograms/vfx-designer` | | launched 2026-10-21 |
+| vfx-designer | merged | `upgrade-holograms/vfx-designer` | READY (Gandalf) | a648c97 + tests 8067d28; LOW: upgrade_shelved cost doc says 10, is 16 |
 | plugin-coder (economy) | planned | | | waits for balance |
 | plugin-coder (panels) | planned | | | waits for economy + vfx |
 | plugin-tester | planned | | | |
