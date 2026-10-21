@@ -44,3 +44,10 @@ Rules every texture and model in this project follows. Change a rule only when a
 - Factory/workshop buildings: brick walls on a stone brick plinth, white terracotta + spruce timber gables, dark oak roofs, **waxed** copper accents (never unwaxed copper: it oxidises in the world). Warm light sources (campfire, shroomlight, magma, lanterns) for anything that should glow.
 - Every house generator uses `lib/house_lib.py` (validation, YAML writer, previews); connection states (panes, bars, fences) are computed from the neighbours, never hand-written.
 - Plot layouts (`layout:` in the design file) are validated in the generator: inside the fence ring, free cells, margins.
+
+## Animated textures
+- Scrolling surfaces (belts): one period of the pattern = frame count × 1 texel, built once and rolled per frame; `frametime` 2, `interpolate` false. Write the direction rule (which texture edge faces which world direction) in the spec.
+
+## Cameras and viewpoints
+- Every fixed camera point gets a perspective preview (`lib/voxel_render.render_perspective`) and a generator assert that the plot's extreme points stay inside 95% of a **4:3** frame at FOV 70.
+- Prefer a raised 3/4 view over a straight-on one: it shows depth and keeps the foreground (gate) from hiding the pedestal.
