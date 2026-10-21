@@ -10,11 +10,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.function.LongSupplier;
 
@@ -27,14 +25,15 @@ import java.util.function.LongSupplier;
  *   <li>{@code players(uuid, pouch, baked, last_seen, prestige)} — {@code last_seen} (epoch ms) and
  *       {@code prestige} are reserved for offline earnings / prestige</li>
  *   <li>{@code buildings(uuid, building_id, owned)}</li>
- *   <li>{@code upgrades(uuid, upgrade_id)}</li>
+ *   <li>{@code upgrades(uuid, upgrade_id, upgrade_level)} — {@code upgrade_level} (v3) defaults to 1, so a
+ *       v2 save (a set of bought IDs) loads every upgrade as level 1</li>
  *   <li>{@code house_seen(uuid, plot_id, seen_at)} (v2) — first completed house cinematic per plot</li>
  * </ul>
  */
 public final class JdbcPlayerStore implements PlayerStore, HouseSeenStore {
 
     /** Bump when adding a migration below. */
-    public static final int SCHEMA_VERSION = 2;
+    public static final int SCHEMA_VERSION = 3;
     static final int MAX_ID_LENGTH = 64;
 
     private final ConnectionFactory connections;
@@ -80,7 +79,11 @@ public final class JdbcPlayerStore implements PlayerStore, HouseSeenStore {
                                 + "uuid VARCHAR(36) NOT NULL, "
                                 + "plot_id VARCHAR(" + MAX_ID_LENGTH + ") NOT NULL, "
                                 + "seen_at BIGINT NOT NULL, "
-                                + "PRIMARY KEY (uuid, plot_id))"));
+                                + "PRIMARY KEY (uuid, plot_id))"),
+                // v2 -> v3 (upgrade-holograms): upgrades have levels; existing rows (bought once) become level 1.
+                // DEFAULT before NOT NULL: the column order both H2 and MariaDB accept.
+                List.of(
+                        "ALTER TABLE " + p + "upgrades ADD COLUMN upgrade_level INT DEFAULT 1 NOT NULL"));
     }
 
     @Override
@@ -184,16 +187,21 @@ public final class JdbcPlayerStore implements PlayerStore, HouseSeenStore {
                 }
             }
 
-            Set<String> upgrades = new HashSet<>();
-            try (PreparedStatement st = c.prepareStatement("SELECT upgrade_id FROM " + p + "upgrades WHERE uuid = ?")) {
+            Map<String, Integer> upgrades = new HashMap<>();
+            try (PreparedStatement st = c.prepareStatement("SELECT upgrade_id, upgrade_level FROM " + p + "upgrades WHERE uuid = ?")) {
                 st.setString(1, id);
                 try (ResultSet rs = st.executeQuery()) {
                     while (rs.next()) {
                         String upgrade = rs.getString(1);
+                        int level = rs.getInt(2);
                         if (upgrade == null || upgrade.isBlank()) {
                             problems.add("skipped blank upgrade row");
+                        } else if (rs.wasNull() || level < 1) {
+                            // a row only exists for a bought upgrade, so never lose it: repair to level 1
+                            problems.add("upgrade '" + upgrade + "' had level " + (rs.wasNull() ? "NULL" : level) + "; repaired to 1");
+                            upgrades.put(upgrade, 1);
                         } else {
-                            upgrades.add(upgrade);
+                            upgrades.put(upgrade, level);
                         }
                     }
                 }
@@ -240,7 +248,7 @@ public final class JdbcPlayerStore implements PlayerStore, HouseSeenStore {
                     }
                 }
                 replaceBuildings(c, id, snapshot.owned());
-                replaceUpgrades(c, id, snapshot.upgrades());
+                replaceUpgrades(c, id, snapshot.upgradeLevels());
                 c.commit();
             } catch (SQLException e) {
                 c.rollback();
@@ -281,16 +289,17 @@ public final class JdbcPlayerStore implements PlayerStore, HouseSeenStore {
         }
     }
 
-    private void replaceUpgrades(Connection c, String id, Set<String> upgrades) throws SQLException {
+    private void replaceUpgrades(Connection c, String id, Map<String, Integer> levels) throws SQLException {
         deleteRows(c, "upgrades", id);
-        try (PreparedStatement ins = c.prepareStatement("INSERT INTO " + p + "upgrades (uuid, upgrade_id) VALUES (?, ?)")) {
+        try (PreparedStatement ins = c.prepareStatement("INSERT INTO " + p + "upgrades (uuid, upgrade_id, upgrade_level) VALUES (?, ?, ?)")) {
             int rows = 0;
-            for (String upgrade : upgrades) {
-                if (!validId(upgrade)) {
+            for (Map.Entry<String, Integer> e : levels.entrySet()) {
+                if (e.getValue() <= 0 || !validId(e.getKey())) {
                     continue;
                 }
                 ins.setString(1, id);
-                ins.setString(2, upgrade);
+                ins.setString(2, e.getKey());
+                ins.setInt(3, e.getValue());
                 ins.addBatch();
                 rows++;
             }
