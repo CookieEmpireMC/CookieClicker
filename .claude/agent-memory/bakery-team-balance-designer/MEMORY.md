@@ -1,2 +1,3 @@
 - [Balance tooling facts](balance_tooling_facts.md): tests are the tester's, isolation-safe commands, sweep script, report notes after the final run
 - [bakery-core balance](bakery_core_balance.md): 2-building slice numbers, targets and the most sensitive levers
+- [upgrade-holograms balance](upgrade_holograms_balance.md): click tools + bakers_strength numbers, bulk/Max contract (round once, ±1 fix-up), levers
