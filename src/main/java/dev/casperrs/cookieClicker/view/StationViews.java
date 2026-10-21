@@ -340,6 +340,15 @@ public final class StationViews implements Listener, StationListener, SessionLis
         if (station.clicks() != null) {
             return station.clicks();
         }
+        return mirroredClicks(station);
+    }
+
+    /**
+     * The clicks spot of a plot set up before it existed: the shop spot mirrored across the pedestal
+     * (2·station − shop on x and z, same height and yaw). Null when the station has no shop spot.
+     */
+    static Station.@Nullable Anchor mirroredClicks(Station station) {
+        Station.Anchor shop = station.shop();
         return shop == null ? null
                 : new Station.Anchor(2 * station.x() - shop.x(), shop.y(), 2 * station.z() - shop.z(), shop.yaw());
     }
@@ -653,8 +662,9 @@ public final class StationViews implements Listener, StationListener, SessionLis
     private StationView.@Nullable ShelfIcon spawnShelfIcon(Player owner, StationView view, String id, int slot,
                                                            double[] at, float scale) {
         StationVisualSettings s = settings.get();
+        List<Entity> spawned = new ArrayList<>(1);
         try {
-            ItemDisplay d = spawn(owner.getWorld(), at, view.clicks.iconYaw, ItemDisplay.class, owner, new ArrayList<>(),
+            ItemDisplay d = spawn(owner.getWorld(), at, view.clicks.iconYaw, ItemDisplay.class, owner, spawned,
                     e -> {
                         e.setItemStack(iconStack(PanelKind.CLICKS, id, view.withPack));
                         e.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
@@ -671,6 +681,7 @@ public final class StationViews implements Listener, StationListener, SessionLis
             byEntity.put(d.getUniqueId(), view);
             return icon;
         } catch (RuntimeException e) {
+            spawned.forEach(Entity::remove); // spawned but not tracked yet: don't leave it behind
             warnOnce("shelf", "Could not spawn a shelf icon: " + e);
             return null;
         }
@@ -679,9 +690,10 @@ public final class StationViews implements Listener, StationListener, SessionLis
     private void addShelfHitbox(Player owner, StationView view, StationView.ShelfIcon icon) {
         float size = settings.get().shelf().hitboxSize();
         double[] at = slotAt(view, icon.slot);
+        List<Entity> spawned = new ArrayList<>(1);
         try {
             Interaction box = spawn(owner.getWorld(), new double[] {at[0], at[1] - size / 2, at[2]}, 0,
-                    Interaction.class, owner, new ArrayList<>(), i -> {
+                    Interaction.class, owner, spawned, i -> {
                         i.setInteractionWidth(size);
                         i.setInteractionHeight(size);
                         i.setResponsive(true);
@@ -690,6 +702,7 @@ public final class StationViews implements Listener, StationListener, SessionLis
             byEntity.put(box.getUniqueId(), view);
             targets.put(box.getUniqueId(), ClickTarget.shelf(view.owner, view.station.id(), icon.upgradeId));
         } catch (RuntimeException e) {
+            spawned.forEach(Entity::remove);
             warnOnce("shelf", "Could not spawn a shelf icon hitbox: " + e);
         }
     }
@@ -725,7 +738,8 @@ public final class StationViews implements Listener, StationListener, SessionLis
             return;
         }
         StationVisualSettings.Shelf s = settings.get().shelf();
-        for (StationView.ShelfIcon icon : List.copyOf(view.shelf.values())) {
+        // no copy: nothing below adds or removes shelf icons (landing only adds a hitbox and plays feedback)
+        for (StationView.ShelfIcon icon : view.shelf.values()) {
             if (!icon.flying() || !icon.icon.isValid()) {
                 continue;
             }
@@ -754,8 +768,9 @@ public final class StationViews implements Listener, StationListener, SessionLis
 
     private void animationTick() {
         long now = Bukkit.getCurrentTick();
-        for (Map<String, StationView> views : List.copyOf(byOwner.values())) {
-            for (StationView v : List.copyOf(views.values())) {
+        // no copies: segments, roll steps and shelf flights never add or remove views
+        for (Map<String, StationView> views : byOwner.values()) {
+            for (StationView v : views.values()) {
                 // a pop owns the cookie's interpolation until its last step's tick; the next segment starts the tick
                 // after it, so it can never overwrite a pop step sent in the same tick
                 if (v.motionFromPop ? now > v.motionTarget : now >= v.motionTarget) {
