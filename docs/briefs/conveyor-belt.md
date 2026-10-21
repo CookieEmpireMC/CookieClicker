@@ -28,6 +28,9 @@ I walk in through the gate for the first time. My view lifts into the air in fro
 - [ ] **Safety:** the original game mode is stored on the player (PDC). Quit, death, kick, `/bakery reload`, disable or a crash mid-cinematic never leave a player stuck in spectator mode. On the next join, a player still marked as in the camera is restored. All the existing abort paths of the cinematic also end the camera.
 - [ ] With `camera: false`, or with a layout without `camera` (the `default` cottage), the cinematic works exactly as today.
 
+**Shop panel fix (added 2026-10-21, user request)**
+- [ ] Row icons never overlap their text. Today every row's TextDisplay is centred on `text-offset`, so a wide row ("Villager Baker ×0", the wrapped "Bake 100 cookies to unlock") spreads left over the icon. Every row's text (and its background) starts at the same left edge, just right of the icon, whatever its length or wrapping, with or without the pack.
+
 **Quality**
 - [ ] Tests: belt layout/style parsing, CPS → speed/interval curve, the max-cookies cap, camera point parsing, and game mode restore on every abort path.
 - [ ] All checks green, and `ownership-check` passes on every branch.
@@ -75,6 +78,7 @@ None.
 | sound-designer | `belt_loop` .ogg + `sounds.json` + subtitle + `sounds.yml` | contract | `conveyor-belt/sound-designer` |
 | vfx-designer | `belt_arrive` preset in `effects.yml` (+ any engine support needed for cheap repeat use) | contract | `conveyor-belt/vfx-designer` |
 | plugin-coder | belt placement in setup/undo/backup; belt surface displays; per-player belt cookies driven by CPS; `belt_loop` + `belt_arrive` wiring; `layout.camera` + `plots.yml`; spectator camera with safe restore; config keys | contract | `conveyor-belt/plugin-coder` |
+| plugin-coder (2nd run) | shop panel: left-align each row's text to a fixed edge right of the icon (no overlap) | contract | `conveyor-belt/plugin-coder-panel` |
 | plugin-tester | review each branch, then integration (incl. performance) | owner DONE | (reviewed branch) |
 
 ## Status
