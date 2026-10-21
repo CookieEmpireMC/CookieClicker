@@ -53,6 +53,24 @@ final class EconomyTestSupport {
                         "global", map("cost", 900, "effect", map("type", "global-multiplier", "value", 1.5))));
     }
 
+    /** Like {@link #upgradesYaml()} plus repeatable upgrades: strength (+1 CPC/level, max 3), focus (×2/level, max 5). */
+    static EconomyConfig repeatableConfig() {
+        Map<String, Object> upgrades = map("click", map("base-power", 1, "crit-chance", 0.05, "crit-multiplier", 10),
+                "upgrades", map(
+                        "mitts", map("cost", 100, "effect", map("type", "click-multiplier", "value", 2),
+                                "unlock", map("building", "baker", "owned", 1)),
+                        "strength", map("cost", 200, "cost-growth", 1.25, "max-level", 3,
+                                "effect", map("type", "click-add", "value", 1),
+                                "unlock", map("building", "baker", "owned", 1)),
+                        "focus", map("cost", 1000, "cost-growth", 2, "max-level", 5,
+                                "effect", map("type", "click-multiplier", "value", 2))));
+        try {
+            return EconomyConfigParser.parse(buildingsYaml(), upgrades).config();
+        } catch (EconomyConfigException e) {
+            throw new AssertionError(e);
+        }
+    }
+
     static EconomyConfig config() {
         try {
             return EconomyConfigParser.parse(buildingsYaml(), upgradesYaml()).config();
