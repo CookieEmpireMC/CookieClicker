@@ -1,6 +1,6 @@
 # upgrade-holograms
 
-**Status:** in progress  <!-- planned | in progress | review | done -->
+**Status:** done  <!-- planned | in progress | review | done -->
 **Created:** 2026-10-21 · **Approved:** 2026-10-21 · **Depends on:** conveyor-belt (merged, PR #8)
 
 ## Goal
@@ -113,8 +113,8 @@ None. Decided 2026-10-21: ×1/×5/×10/**Max**; smooth price tweens; cookie spin
 | vfx-designer | merged | `upgrade-holograms/vfx-designer` | READY (Gandalf) | a648c97 + tests 8067d28; LOW: upgrade_shelved cost doc says 10, is 16 |
 | plugin-coder (economy) | merged | `upgrade-holograms/plugin-coder-economy` | READY (Gandalf) | all checks green again; review `docs/reviews/2026-10-21-upgrade-holograms-economy.md`; LOWs: v2→v3 ALTER not idempotent (use IF NOT EXISTS), unused groupingSeparator |
 | plugin-coder (panels) | merged | `upgrade-holograms/plugin-coder-panels` | READY (Gandalf) | 623 tests; perf estimate ~0.1 ms/tick worst case; LOWs to cleanup / follow-ups |
-| plugin-coder (cleanup) | in progress | `upgrade-holograms/plugin-coder-cleanup` | | behaviour-preserving pass on Gandalf's LOW/PERF-LOW findings |
-| plugin-tester | planned | | | |
+| plugin-coder (cleanup) | merged | `upgrade-holograms/plugin-coder-cleanup` | READY (Gandalf) | no per-tick copies, roll rate limit, shelf spawn cleanup, mirroredClicks seam, re-runnable v3 migration; 627 tests |
+| plugin-tester (integration) | done | feature branch | READY | `docs/reviews/2026-10-21-upgrade-holograms.md` |
 
 ## Merge order
 1. model-designer
