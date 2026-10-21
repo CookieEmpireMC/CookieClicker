@@ -2,7 +2,7 @@
 from dataclasses import dataclass, field
 
 from model import (Economy, State, building_cost, building_unlocked, expected_click, total_cps,
-                   upgrade_unlocked)
+                   upgrade_cost, upgrade_unlocked)
 
 
 @dataclass
@@ -45,7 +45,8 @@ def candidates(eco: Economy, state: State) -> list[tuple[str, str, float]]:
     """(kind, id, cost) for everything unlocked and not yet maxed out."""
     items = [("building", bid, building_cost(eco, state, bid)) for bid in eco.buildings
              if building_unlocked(eco, state, bid)]
-    items += [("upgrade", uid, eco.upgrades[uid].cost) for uid in eco.upgrades if upgrade_unlocked(eco, state, uid)]
+    items += [("upgrade", uid, upgrade_cost(eco, state, uid)) for uid in eco.upgrades
+              if upgrade_unlocked(eco, state, uid)]
     return items
 
 
@@ -54,7 +55,7 @@ def apply(state: State, kind: str, item_id: str) -> State:
     if kind == "building":
         after.owned[item_id] = after.owned.get(item_id, 0) + 1
     else:
-        after.upgrades.add(item_id)
+        after.upgrades[item_id] = after.level(item_id) + 1
     return after
 
 
@@ -90,7 +91,7 @@ def simulate(eco: Economy, profile: Profile, horizon_seconds: int, sample_every:
             _, cost, kind, item_id = choice
             state.pouch -= cost
             state = apply(state, kind, item_id)
-            owned = state.owned.get(item_id, 1) if kind == "building" else 1
+            owned = state.owned.get(item_id, 1) if kind == "building" else state.level(item_id)
             result.purchases.append(Purchase(t, kind, item_id, owned, cost))
             dirty, clicks = True, clicks_now(profile, state)
 

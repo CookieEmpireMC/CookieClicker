@@ -10,5 +10,7 @@ metadata:
 - The worktree isolation guard rejects compound bash (shell functions, `&&` chains with git + heredocs). Run git commits as plain separate commands. For lever sweeps, write a Python script in the scratchpad that copies the configs, edits one value and runs `main.py check --config-dir <dir>` (writes nothing).
 - `main.py report` overwrites `report-<date>.md`. Add hand-written notes *after* the final run, then commit without rerunning.
 - As of 2026-10-18, `longest-dead-zone` accepts `window-minutes`, and the report has an early (first 15 min) gaps plot.
+- (2026-10-21) The guard also refuses `for` loops over a script and heredocs written into `.claude/` paths; run each sweep as its own plain command and write memory with the Write/Edit tools.
+- (2026-10-21) `test_balance.py::test_empty_upgrades_map_is_valid` asserts the shipped upgrades.yml is empty; it breaks once real upgrades ship (ask the tester to update it).
 
 Related: [[bakery-core-balance]]

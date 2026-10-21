@@ -18,14 +18,15 @@ from pathlib import Path
 import yaml
 
 sys.path.insert(0, str(Path(__file__).parent))
-from model import (ConfigError, Economy, State, bulk_cost, click_power, click_value, crit_factor,  # noqa: E402
-                   expected_click, load, total_cps)
+from model import (ConfigError, Economy, State, building_max, bulk_cost, click_power, click_value,  # noqa: E402
+                   crit_factor, expected_click, load, total_cps, upgrade_bulk_cost, upgrade_max)
 from sim import Profile, Result, simulate  # noqa: E402
 
 TARGETS = Path("docs/balance/targets.md")
 BALANCE_DIR = Path("docs/balance")
 DEFAULT_CONFIG_DIR = Path("src/main/resources")
 MILESTONES = [1, 10, 25, 50, 100]
+from model import MAX_BULK  # noqa: E402
 
 
 def load_targets(path: Path) -> dict:
@@ -97,9 +98,38 @@ def fmt_time(seconds: float | None) -> str:
 def golden_values(eco: Economy, results: dict[str, Result]) -> dict:
     """Deterministic expected values the Java economy must reproduce exactly."""
     costs = {bid: {"single": [bulk_cost(eco, bid, n, 1) for n in range(0, 101)],
-                   "buy-10-from": {str(n): bulk_cost(eco, bid, n, 10) for n in (0, 10, 50)}}
+                   "buy-10-from": {str(n): bulk_cost(eco, bid, n, 10) for n in (0, 10, 50)},
+                   "bulk": [{"owned": n, "count": k, "cost": bulk_cost(eco, bid, n, k)}
+                            for n in (0, 1, 10, 50, 100) for k in (1, 5, 10, 100)]}
              for bid in eco.buildings}
-    sample = State(owned={}, upgrades=set())
+    max_cases = []
+    for bid in eco.buildings:
+        cost = lambda n, k, b=bid: bulk_cost(eco, b, n, k)  # noqa: E731
+        maxf = lambda n, p, b=bid: building_max(eco, b, n, p)  # noqa: E731
+        max_cases += _max_cases("building", bid, cost, maxf, (0, 7, 50), None)
+    upgrades = {}
+    for uid, u in eco.upgrades.items():
+        entry = {"cost": u.cost, "repeatable": u.repeatable, "cost-growth": u.cost_growth, "max-level": u.max_level,
+                 "type": u.type, "value": u.value}
+        if u.repeatable:
+            top = min(u.level_cap, 100)
+            entry["single"] = [upgrade_bulk_cost(eco, uid, lv, 1) for lv in range(top)]
+            entry["bulk"] = [{"level": lv, "count": k, "cost": upgrade_bulk_cost(eco, uid, lv, k)}
+                             for lv in (0, 1, 10) for k in (1, 5, 10) if lv < u.level_cap]
+            cost = lambda n, k, i=uid: upgrade_bulk_cost(eco, i, n, k)  # noqa: E731
+            maxf = lambda n, p, i=uid: upgrade_max(eco, i, n, p)  # noqa: E731
+            levels = sorted({0, 3, max(u.level_cap - 3, 0)} if u.max_level is not None else {0, 3, 20})
+            max_cases += _max_cases("upgrade", uid, cost, maxf, levels, u.max_level)
+            if u.max_level is not None:
+                max_cases.append({"kind": "upgrade", "id": uid, "owned": u.max_level, "pouch": 1e30,
+                                  "max": upgrade_max(eco, uid, u.max_level, 1e30), "case": "at max-level"})
+        else:
+            max_cases += [{"kind": "upgrade", "id": uid, "owned": lv, "pouch": p, "max": upgrade_max(eco, uid, lv, p),
+                           "case": c} for lv, p, c in ((0, u.cost, "exact"), (0, u.cost - 1, "one short"),
+                                                       (0, u.cost * 1000, "rich, one-time"),
+                                                       (1, u.cost * 1000, "already bought"))]
+        upgrades[uid] = entry
+    sample = State(owned={}, upgrades={})
     click = {"base-power": eco.base_click, "crit-chance": eco.crit_chance, "crit-multiplier": eco.crit_multiplier,
              "expected-factor": crit_factor(eco), "base-state": {
                  "click-power": click_power(eco, sample), "normal-click": click_value(eco, sample, False),
@@ -108,20 +138,44 @@ def golden_values(eco: Economy, results: dict[str, Result]) -> dict:
     for name, result in results.items():
         # replay the purchases to get the state at a few checkpoints
         for t in (60, 600, 1800, 3600, 7200):
-            snap = State(owned={}, upgrades=set())
+            snap = State(owned={}, upgrades={})
             for p in result.purchases:
                 if p.time > t:
                     break
                 if p.kind == "building":
                     snap.owned[p.id] = p.owned_after
                 else:
-                    snap.upgrades.add(p.id)
+                    snap.upgrades[p.id] = p.owned_after
             states.append({"profile": name, "time": t, "owned": dict(sorted(snap.owned.items())),
-                           "upgrades": sorted(snap.upgrades), "total-cps": total_cps(eco, snap),
+                           "upgrades": dict(sorted(snap.upgrades.items())), "total-cps": total_cps(eco, snap),
                            "click-power": click_power(eco, snap),
                            "normal-click": click_value(eco, snap, False), "crit-click": click_value(eco, snap, True),
                            "expected-click": expected_click(eco, snap)})
-    return {"cost-growth": eco.cost_growth, "click": click, "costs": costs, "states": states}
+    return {"cost-growth": eco.cost_growth, "max-bulk": MAX_BULK, "click": click, "costs": costs,
+            "upgrades": upgrades, "max-affordable": max_cases, "states": states}
+
+
+def _max_cases(kind: str, item_id: str, cost, maxf, owned_list, max_level: int | None) -> list[dict]:
+    """Max-affordable cases around the boundaries: exactly N, one cookie short of N, nothing, cap."""
+    cases = []
+    for n in owned_list:
+        def add(pouch, label):
+            cases.append({"kind": kind, "id": item_id, "owned": n, "pouch": pouch, "max": maxf(n, pouch),
+                          "case": label})
+        add(0, "empty pouch")
+        add(cost(n, 1) - 1, "one short of 1")
+        for k in (1, 2, 5, 10, 37):
+            if max_level is not None and n + k > max_level:
+                continue
+            exact = cost(n, k)
+            add(exact, f"exactly {k}")
+            add(exact - 1, f"one short of {k}")
+            add(exact + 0.5, f"just over {k}")
+        if max_level is not None:
+            add(cost(n, max_level - n) * 10, "capped by max-level")
+        else:
+            add(1e30, "huge pouch")
+    return cases
 
 
 def plot(results: dict[str, Result], img_dir: Path, stamp: str) -> list[str]:
@@ -184,7 +238,13 @@ def write_report(eco: Economy, targets: dict, results: dict[str, Result], rows: 
         out.append(f"| {bid} | " + " | ".join(cells) + " |")
     out += ["", "## Upgrades", "", "| Upgrade | " + " | ".join(results) + " |", "|---|" + "---|" * len(results)]
     for uid in eco.upgrades:
-        out.append(f"| {uid} | " + " | ".join(fmt_time(_upgrade(r, uid)) for r in results.values()) + " |")
+        cells = []
+        for r in results.values():
+            cell = fmt_time(_upgrade(r, uid))
+            if eco.upgrades[uid].repeatable:
+                cell += f" (level {r.final.level(uid)} at end)"
+            cells.append(cell)
+        out.append(f"| {uid} | " + " | ".join(cells) + " |")
     out += ["", "## Per profile", "", "| Profile | Purchases | Longest dead zone (first 15 min) | Longest dead zone | "
             "Longest gap between purchases | Final CPS |", "|---|---|---|---|---|---|"]
     for name, r in results.items():

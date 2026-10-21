@@ -10,6 +10,9 @@ from pathlib import Path
 import yaml
 
 EFFECT_TYPES = {"click-multiplier", "click-add", "click-cps-fraction", "building-multiplier", "global-multiplier"}
+MULTIPLIER_TYPES = {"click-multiplier", "building-multiplier", "global-multiplier"}
+MAX_BULK = 10_000           # hard upper bound for any bulk / Max count (model.md)
+UNLIMITED_LEVEL = 2_147_483_647   # level cap of a repeatable upgrade without max-level (Java int max)
 
 
 class ConfigError(Exception):
@@ -34,6 +37,19 @@ class Upgrade:
     unlock_building: str | None
     unlock_owned: int
     unlock_baked: float
+    cost_growth: float | None = None    # set = repeatable; cost of the next level grows by this
+    max_level: int | None = None        # repeatable only; None = unlimited
+
+    @property
+    def repeatable(self) -> bool:
+        return self.cost_growth is not None
+
+    @property
+    def level_cap(self) -> int:
+        """Highest level this upgrade can reach (one-time = 1)."""
+        if not self.repeatable:
+            return 1
+        return self.max_level if self.max_level is not None else UNLIMITED_LEVEL
 
 
 @dataclass(frozen=True)
@@ -51,10 +67,17 @@ class State:
     pouch: float = 0.0
     baked: float = 0.0
     owned: dict[str, int] = field(default_factory=dict)
-    upgrades: set[str] = field(default_factory=set)
+    upgrades: dict[str, int] = field(default_factory=dict)   # upgrade id -> level (one-time = 1)
+
+    def __post_init__(self):
+        if isinstance(self.upgrades, (set, frozenset, list, tuple)):   # old form: a set of bought ids
+            self.upgrades = {uid: 1 for uid in self.upgrades}
+
+    def level(self, uid: str) -> int:
+        return self.upgrades.get(uid, 0)
 
     def copy(self) -> "State":
-        return State(self.pouch, self.baked, dict(self.owned), set(self.upgrades))
+        return State(self.pouch, self.baked, dict(self.owned), dict(self.upgrades))
 
 
 def _number(raw, where: str) -> float:
@@ -77,6 +100,8 @@ def load(config_dir: Path) -> Economy | None:
     for bid, spec in (b_raw.get("buildings") or {}).items():
         where = f"buildings.yml: {bid}"
         unlock = (spec or {}).get("unlock") or {}
+        if _number(spec.get("base-cost"), f"{where}.base-cost") <= 0:
+            raise ConfigError(f"{where}.base-cost must be > 0")
         buildings[bid] = Building(bid, _number(spec.get("base-cost"), f"{where}.base-cost"),
                                   _number(spec.get("base-cps"), f"{where}.base-cps"),
                                   _number(unlock.get("baked", 0), f"{where}.unlock.baked"))
@@ -95,10 +120,23 @@ def load(config_dir: Path) -> Economy | None:
         unlock_building = unlock.get("building")
         if unlock_building is not None and unlock_building not in buildings:
             raise ConfigError(f"{where}.unlock.building '{unlock_building}' is not a building")
-        upgrades[uid] = Upgrade(uid, _number(spec.get("cost"), f"{where}.cost"), effect["type"],
+        growth, max_level = spec.get("cost-growth"), spec.get("max-level")
+        if growth is not None:
+            growth = _number(growth, f"{where}.cost-growth")
+            if growth < 1:
+                raise ConfigError(f"{where}.cost-growth must be >= 1")
+        if max_level is not None:
+            if growth is None:
+                raise ConfigError(f"{where}.max-level needs cost-growth (only repeatable upgrades have levels)")
+            if not isinstance(max_level, int) or isinstance(max_level, bool) or max_level < 1:
+                raise ConfigError(f"{where}.max-level must be an integer >= 1, got {max_level!r}")
+        cost = _number(spec.get("cost"), f"{where}.cost")
+        if cost <= 0:
+            raise ConfigError(f"{where}.cost must be > 0")
+        upgrades[uid] = Upgrade(uid, cost, effect["type"],
                                 _number(effect.get("value"), f"{where}.effect.value"), target,
                                 unlock_building, int(unlock.get("owned", 0)),
-                                _number(unlock.get("baked", 0), f"{where}.unlock.baked"))
+                                _number(unlock.get("baked", 0), f"{where}.unlock.baked"), growth, max_level)
 
     growth = _number(b_raw.get("cost-growth", 1.15), "buildings.yml: cost-growth")
     if growth < 1:
@@ -114,28 +152,79 @@ def load(config_dir: Path) -> Economy | None:
     return Economy(growth, base_click, buildings, upgrades, crit_chance, crit_multiplier)
 
 
+def series_cost(base: float, growth: float, owned: int, count: int) -> float:
+    """Cost of the next `count` items when `owned` are owned (model.md "Bulk cost"): rounded up once."""
+    if count <= 0:
+        return 0
+    first = base * growth ** owned
+    ratio = float(count) if growth == 1 else (growth ** count - 1) / (growth - 1)
+    return math.ceil(first * ratio)
+
+
+def series_max(base: float, growth: float, owned: int, cap: int, pouch: float) -> int:
+    """Largest k in [0, cap] with series_cost(k) <= pouch (model.md "Max affordable")."""
+    cap = min(cap, MAX_BULK)
+    if cap <= 0 or not pouch >= series_cost(base, growth, owned, 1):
+        return 0
+    first = base * growth ** owned
+    if growth == 1:
+        estimate = pouch / first
+    else:
+        estimate = math.log(1 + pouch * (growth - 1) / first) / math.log(growth)
+    k = int(min(max(math.floor(estimate), 1), cap)) if math.isfinite(estimate) else cap
+    while k > 1 and series_cost(base, growth, owned, k) > pouch:
+        k -= 1
+    while k < cap and series_cost(base, growth, owned, k + 1) <= pouch:
+        k += 1
+    return k
+
+
 def building_cost(eco: Economy, state: State, bid: str) -> float:
-    b = eco.buildings[bid]
-    return math.ceil(b.base_cost * eco.cost_growth ** state.owned.get(bid, 0))
+    return bulk_cost(eco, bid, state.owned.get(bid, 0), 1)
 
 
 def bulk_cost(eco: Economy, bid: str, owned: int, count: int) -> float:
-    b = eco.buildings[bid]
-    return sum(math.ceil(b.base_cost * eco.cost_growth ** (owned + i)) for i in range(count))
+    return series_cost(eco.buildings[bid].base_cost, eco.cost_growth, owned, count)
+
+
+def building_max(eco: Economy, bid: str, owned: int, pouch: float) -> int:
+    return series_max(eco.buildings[bid].base_cost, eco.cost_growth, owned, MAX_BULK, pouch)
+
+
+def upgrade_bulk_cost(eco: Economy, uid: str, level: int, count: int) -> float:
+    """Cost of the next `count` levels from `level`; one-time upgrades cost `cost` (count 1 only)."""
+    u = eco.upgrades[uid]
+    count = min(count, u.level_cap - level)
+    if count <= 0:
+        return math.inf
+    if not u.repeatable:
+        return u.cost
+    return series_cost(u.cost, u.cost_growth, level, count)
+
+
+def upgrade_cost(eco: Economy, state: State, uid: str) -> float:
+    return upgrade_bulk_cost(eco, uid, state.level(uid), 1)
+
+
+def upgrade_max(eco: Economy, uid: str, level: int, pouch: float) -> int:
+    u = eco.upgrades[uid]
+    if not u.repeatable:
+        return 1 if level < 1 and pouch >= u.cost else 0
+    return series_max(u.cost, u.cost_growth, level, u.level_cap - level, pouch)
 
 
 def total_cps(eco: Economy, state: State) -> float:
     total = 0.0
     for bid, n in state.owned.items():
-        mult = math.prod(u.value for u in _bought(eco, state, "building-multiplier") if u.building == bid)
+        mult = math.prod(_effect(u, lv) for u, lv in _bought(eco, state, "building-multiplier") if u.building == bid)
         total += n * eco.buildings[bid].base_cps * mult
-    return total * math.prod(u.value for u in _bought(eco, state, "global-multiplier"))
+    return total * math.prod(_effect(u, lv) for u, lv in _bought(eco, state, "global-multiplier"))
 
 
 def click_power(eco: Economy, state: State) -> float:
-    base = eco.base_click + sum(u.value for u in _bought(eco, state, "click-add"))
-    power = base * math.prod(u.value for u in _bought(eco, state, "click-multiplier"))
-    fraction = sum(u.value for u in _bought(eco, state, "click-cps-fraction"))
+    base = eco.base_click + sum(_effect(u, lv) for u, lv in _bought(eco, state, "click-add"))
+    power = base * math.prod(_effect(u, lv) for u, lv in _bought(eco, state, "click-multiplier"))
+    fraction = sum(_effect(u, lv) for u, lv in _bought(eco, state, "click-cps-fraction"))
     return power + (fraction * total_cps(eco, state) if fraction else 0.0)
 
 
@@ -160,10 +249,16 @@ def building_unlocked(eco: Economy, state: State, bid: str) -> bool:
 
 def upgrade_unlocked(eco: Economy, state: State, uid: str) -> bool:
     u = eco.upgrades[uid]
-    if uid in state.upgrades or state.baked < u.unlock_baked:
+    if state.level(uid) >= u.level_cap or state.baked < u.unlock_baked:
         return False
     return u.unlock_building is None or state.owned.get(u.unlock_building, 0) >= u.unlock_owned
 
 
+def _effect(u: Upgrade, level: int) -> float:
+    """An upgrade's effect at `level`: additive types × level, multiplier types ^ level."""
+    return u.value ** level if u.type in MULTIPLIER_TYPES else u.value * level
+
+
 def _bought(eco: Economy, state: State, kind: str):
-    return (eco.upgrades[uid] for uid in state.upgrades if eco.upgrades[uid].type == kind)
+    return ((eco.upgrades[uid], lv) for uid, lv in state.upgrades.items()
+            if lv > 0 and uid in eco.upgrades and eco.upgrades[uid].type == kind)
