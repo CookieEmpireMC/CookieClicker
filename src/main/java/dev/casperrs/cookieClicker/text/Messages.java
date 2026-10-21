@@ -47,7 +47,7 @@ public final class Messages {
         return numbers;
     }
 
-    /** Formatted cookie amount, e.g. {@code 1.2 million}. Plain text. */
+    /** Formatted cookie amount, e.g. {@code 1.2M}. Plain text. */
     public String number(double value) {
         return numbers.format(value);
     }
@@ -95,7 +95,7 @@ public final class Messages {
     static NumberFormatter.Settings numberSettings(ConfigurationSection m) {
         List<String> suffixes = m.getStringList("numbers.suffixes");
         return new NumberFormatter.Settings(suffixes,
-                m.getString("numbers.large-format", "{value} {suffix}"),
+                m.getString("numbers.large-format", "{value}{suffix}"),
                 m.getString("numbers.scientific-format", "{value}e{exponent}"),
                 m.getInt("numbers.decimals", 1),
                 m.getInt("numbers.small-decimals", 1),

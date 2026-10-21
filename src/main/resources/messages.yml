@@ -12,53 +12,57 @@ hud:
   # Same for players without the resource pack (the glyph would show as a box)
   action-bar-no-pack: "<gold><b><cookies></b></gold> <gray>cookies</gray> <dark_gray>·</dark_gray> <yellow><cps></yellow> <gray>per second</gray>"
 
-# How big numbers are written. Values are cut off (never rounded up).
+# How big numbers are written: "999", then "1K", "1.5K", "2.3M", "4.1B", ... Values are cut off (never rounded up),
+# so 999,999 shows as "999.9K", never "1M".
 numbers:
-  # Decimals for big numbers: "1.2 million"
+  # Decimals from 1,000 up: "1.5K"
   decimals: 1
   # Decimals below 1,000: "0.1", "12.5"
   small-decimals: 1
-  grouping-separator: ","
   decimal-separator: "."
-  # {value} = the number, {suffix} = a word from the list below
-  large-format: "{value} {suffix}"
-  # Past the last suffix: {value} and {exponent}, e.g. "1.2e309"
+  # {value} = the number, {suffix} = an entry from the list below
+  large-format: "{value}{suffix}"
+  # Past the last suffix: {value} and {exponent}, e.g. "1.2e102"
   scientific-format: "{value}e{exponent}"
   infinity: "infinity"
-  # One word per power of 1,000, starting at a million (10^6, 10^9, 10^12, ...)
+  # One suffix per power of 1,000, starting at a thousand (10^3, 10^6, 10^9, ...).
+  # K thousand, M million, B billion, T trillion, Qa quadrillion, Qi quintillion, Sx sextillion, Sp septillion,
+  # Oc octillion, No nonillion, Dc decillion (10^33), U/D/T/Qa/Qi/Sx/Sp/Oc/No + Dc (10^36 .. 10^60),
+  # Vg vigintillion (10^63), U..No + Vg (10^66 .. 10^90), Tg trigintillion (10^93), UTg, DTg (10^99).
   suffixes:
-    - million
-    - billion
-    - trillion
-    - quadrillion
-    - quintillion
-    - sextillion
-    - septillion
-    - octillion
-    - nonillion
-    - decillion
-    - undecillion
-    - duodecillion
-    - tredecillion
-    - quattuordecillion
-    - quindecillion
-    - sexdecillion
-    - septendecillion
-    - octodecillion
-    - novemdecillion
-    - vigintillion
-    - unvigintillion
-    - duovigintillion
-    - tresvigintillion
-    - quattuorvigintillion
-    - quinvigintillion
-    - sexvigintillion
-    - septenvigintillion
-    - octovigintillion
-    - novemvigintillion
-    - trigintillion
-    - untrigintillion
-    - duotrigintillion
+    - K
+    - M
+    - B
+    - T
+    - Qa
+    - Qi
+    - Sx
+    - Sp
+    - Oc
+    - No
+    - Dc
+    - UDc
+    - DDc
+    - TDc
+    - QaDc
+    - QiDc
+    - SxDc
+    - SpDc
+    - OcDc
+    - NoDc
+    - Vg
+    - UVg
+    - DVg
+    - TVg
+    - QaVg
+    - QiVg
+    - SxVg
+    - SpVg
+    - OcVg
+    - NoVg
+    - Tg
+    - UTg
+    - DTg
 
 # Display names per building ID from buildings.yml
 buildings:
@@ -66,6 +70,43 @@ buildings:
     name: "<#e8b46a>Villager Baker"
   wheat_farm:
     name: "<#d9c45a>Wheat Farm"
+
+# Display text per upgrade ID from upgrades.yml (the click upgrades panel and the upgrade shelf).
+# name: shown as plain text in panel rows (colours are stripped there, like building names).
+# effect: what ONE level does. Placeholders (filled by the plugin from upgrades.yml, so numbers never live here):
+#   <value> = the effect value per level, formatted (click-cps-fraction as a percentage: 0.01 -> "1")
+#   <level> = the player's current level (repeatable upgrades)
+upgrades:
+  bakers_strength:
+    name: "<#e07a4a>Baker's Strength"
+    effect: "+<value> cookies per click, per level"
+  wooden_spatula:
+    name: "<#c8a06a>Wooden Spatula"
+    effect: "+<value> cookies per click"
+  stone_rolling_pin:
+    name: "<#9a9a9a>Stone Rolling Pin"
+    effect: "+<value> cookies per click"
+  iron_rolling_pin:
+    name: "<#d8d8d8>Iron Rolling Pin"
+    effect: "+<value> cookies per click"
+  golden_glove:
+    name: "<#f2c94c>Golden Glove"
+    effect: "+<value> cookies per click"
+  diamond_fingers:
+    name: "<#5fd9e0>Diamond Fingers"
+    effect: "+<value> cookies per click"
+  netherite_hands:
+    name: "<#6b5a5a>Netherite Hands"
+    effect: "+<value> cookies per click"
+  handy_fingers_1:
+    name: "<#f0a0c0>Handy Fingers I"
+    effect: "Each click also gives <value>% of your CPS"
+  handy_fingers_2:
+    name: "<#f08ab0>Handy Fingers II"
+    effect: "Each click also gives another <value>% of your CPS"
+  handy_fingers_3:
+    name: "<#e070a0>Handy Fingers III"
+    effect: "Each click also gives another <value>% of your CPS"
 
 # The floating shop panel next to the cookie. Each row is redrawn only when it changes.
 # <name> = building name as plain text (buildings.<id>.name without its colours, so the row colours apply),
