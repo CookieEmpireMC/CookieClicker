@@ -4,6 +4,7 @@ Run with `mise run tools-test` (unittest discover -s tools).
 """
 import json
 import math
+import random
 import shutil
 import subprocess
 import sys
@@ -84,7 +85,38 @@ class CritMathTest(TempDirCase):
         self.assertEqual(model.crit_factor(eco), 1.0)
 
     def test_empty_upgrades_map_is_valid(self):
-        self.assertEqual(model.load(CONFIGS).upgrades, {})
+        d = write_config(self.tmp())  # upgrades: {} (the shipped file now has upgrades)
+        self.assertEqual(model.load(d).upgrades, {})
+
+
+class SeriesMathTest(TempDirCase):
+    """model.md "Bulk cost and Max": series_cost / series_max (the simulator side of the Java BulkMath)."""
+
+    def test_k1_is_the_single_cost_and_the_batch_is_rounded_once(self):
+        for base, growth in [(15, 1.15), (50, 1.15), (1, 1.25), (10, 1.0)]:
+            for owned in range(0, 101, 10):
+                self.assertEqual(model.series_cost(base, growth, owned, 1), math.ceil(base * growth ** owned))
+        # 15 × (1.15¹⁰ − 1) / 0.15 = 304.56 → 305 (ten singles rounded separately would be 306)
+        self.assertEqual(model.series_cost(15, 1.15, 0, 10), 305)
+        self.assertEqual(model.series_cost(15, 1.15, 0, 0), 0)
+
+    def test_series_max_matches_a_brute_force_count(self):
+        rnd = random.Random(20261021)
+        for _ in range(1500):
+            base = 1 + rnd.randrange(100_000)
+            growth = rnd.choice([1.0, 1.05, 1.15, 1.25, 2.0])
+            owned = rnd.randrange(80)
+            cap = rnd.randrange(300)
+            pouch = 10 ** (rnd.random() * 12)
+            expected = next((k for k in range(min(cap, model.MAX_BULK), 0, -1)
+                             if model.series_cost(base, growth, owned, k) <= pouch), 0)
+            got = model.series_max(base, growth, owned, cap, pouch)
+            self.assertEqual(got, expected, (base, growth, owned, cap, pouch))
+
+    def test_series_max_stops_at_the_cap(self):
+        self.assertEqual(model.series_max(10, 1.15, 0, 3, 1e18), 3)
+        self.assertEqual(model.series_max(10, 1.15, 0, 0, 1e18), 0)  # at max-level
+        self.assertEqual(model.series_max(1, 1.0, 0, 10**9, 1e300), model.MAX_BULK)  # hard cap, linear costs
 
 
 class DeadZoneTest(unittest.TestCase):
