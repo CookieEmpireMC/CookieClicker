@@ -26,6 +26,20 @@
       "cookieclicker:ui/cant_afford"
     ]
   },
+  "ui.upgrade_shelved": {
+    "subtitle": "subtitles.cookieclicker.upgrade_shelved",
+    "sounds": [
+      "cookieclicker:ui/upgrade_shelved"
+    ]
+  },
+  "ui.bulk_toggle": {
+    "subtitle": "subtitles.cookieclicker.bulk_toggle",
+    "sounds": [
+      "cookieclicker:ui/bulk_toggle_1",
+      "cookieclicker:ui/bulk_toggle_2",
+      "cookieclicker:ui/bulk_toggle_3"
+    ]
+  },
   "house.hammer": {
     "subtitle": "subtitles.cookieclicker.house_hammer",
     "sounds": [
