@@ -1,0 +1,6 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "cookieclicker:item/upgrade/bakers_strength"
+  }
+}

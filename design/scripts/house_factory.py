@@ -393,6 +393,7 @@ BELT_FROM = to_plot(POINTS["belt_out"])
 BELT_TO = (BELT_FROM[0], BELT_FROM[1], BELT_FROM[2] - (BELT_LEN - 1))   # last belt cell, next to the pedestal
 PEDESTAL = (BELT_TO[0], 0, BELT_TO[2] - 1)
 SHOP = (PEDESTAL[0] + 2, 0, PEDESTAL[2])
+CLICKS = (PEDESTAL[0] - 2, 0, PEDESTAL[2])        # click upgrades panel: mirror of the shop, 2 west
 VIEWPOINT = (15, 0, 2)
 # build-cinematic camera: a feet cell like the viewpoint (eye = cell bottom centre + 1.62), outside the plot in
 # front of the plot, north-east of the gate and raised, looking south-south-west and down: a 3/4 view of the facade
@@ -408,6 +409,7 @@ LAYOUT = {
     "house-at": list(HOUSE_AT),
     "pedestal": {"at": list(PEDESTAL), "yaw": 180},
     "shop": {"at": list(SHOP), "yaw": 180},
+    "clicks": {"at": list(CLICKS), "yaw": 180},
     "viewpoint": {"at": list(VIEWPOINT), "yaw": 0, "pitch": -14},
     "entrance": list(ENTRANCE),
     "belt": {"from": list(BELT_FROM), "to": list(BELT_TO)},
@@ -425,6 +427,7 @@ def layout_yaml() -> list[str]:
         f"  house-at: {v(L['house-at'])}",
         f"  pedestal: {{at: {v(L['pedestal']['at'])}, yaw: {L['pedestal']['yaw']}}}",
         f"  shop: {{at: {v(L['shop']['at'])}, yaw: {L['shop']['yaw']}}}",
+        f"  clicks: {{at: {v(L['clicks']['at'])}, yaw: {L['clicks']['yaw']}}}",
         f"  viewpoint: {{at: {v(L['viewpoint']['at'])}, yaw: {L['viewpoint']['yaw']}, "
         f"pitch: {L['viewpoint']['pitch']}}}",
         f"  entrance: {v(L['entrance'])}",
@@ -459,7 +462,7 @@ def validate_layout(chars: dict, palette: dict) -> None:
     for x, z in BELT:
         assert inner(x, z) and (x, z) not in Occupied((0,)), f"belt cell {(x, z)} is not free"
     assert (PEDESTAL[0], PEDESTAL[2] + 1) == (BELT_TO[0], BELT_TO[2]), "belt must end next to the pedestal"
-    for name, (x, y, z) in (("pedestal", PEDESTAL), ("shop", SHOP), ("viewpoint", VIEWPOINT)):
+    for name, (x, y, z) in (("pedestal", PEDESTAL), ("shop", SHOP), ("clicks", CLICKS), ("viewpoint", VIEWPOINT)):
         assert y == 0 and inner(x, z) and (x, z) not in occupied and (x, z) not in BELT, f"{name} not free"
         assert not in_box(x, z), f"{name} must be outside the house footprint"
     assert PEDESTAL[2] - 1 >= MARGIN, "room in front of the pedestal"
@@ -515,6 +518,8 @@ def plot_boxes():
             ((px + .25, 1.1, pz + .45), (px + .75, 1.6, pz + .55), (196, 140, 70))]
     sx, sz = SHOP[0] - hx, SHOP[2] - hz
     out.append(((sx + .3, 0, sz + .3), (sx + .7, 1.8, sz + .7), (90, 60, 160)))
+    cx, cz = CLICKS[0] - hx, CLICKS[2] - hz
+    out.append(((cx + .3, 0, cz + .3), (cx + .7, 1.8, cz + .7), (60, 150, 160)))
     return out
 
 
@@ -617,6 +622,8 @@ def plot_sheet(chars: dict, palette: dict) -> Image.Image:
                 rgb = (240, 220, 120)
             if (gx, gz) == (SHOP[0], SHOP[2]):
                 rgb = (120, 90, 200)
+            if (gx, gz) == (CLICKS[0], CLICKS[2]):
+                rgb = (60, 150, 160)
             if (gx, gz) == (VIEWPOINT[0], VIEWPOINT[2]):
                 rgb = (230, 80, 80)
             d.rectangle([px, py, px + cell - 1, py + cell - 1], fill=rgb, outline=(30, 34, 30))
@@ -627,6 +634,7 @@ def plot_sheet(chars: dict, palette: dict) -> Image.Image:
     legend = [((40, 40, 44), f"belt {list(BELT_FROM)} -> {list(BELT_TO)} (5 cells)"),
               ((240, 220, 120), f"pedestal {list(PEDESTAL)}, yaw 180"),
               ((120, 90, 200), f"shop {list(SHOP)}, yaw 180"),
+              ((60, 150, 160), f"clicks {list(CLICKS)}, yaw 180"),
               ((230, 80, 80), f"viewpoint {list(VIEWPOINT)}, yaw 0, pitch -14"),
               ((115, 85, 52), "fence: outer ring of plot-size"),
               ((200, 170, 110), f"entrance (3-wide gate) centre {list(ENTRANCE)}"),
