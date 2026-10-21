@@ -15,7 +15,60 @@ import java.util.function.Consumer;
  * it (forward = the way they were facing).
  */
 public record StationVisualSettings(double viewDistance, int refreshTicks, double clickDistance, boolean debugClicks,
-                                    Cookie cookie, Pedestal pedestal, Panel panel) {
+                                    Cookie cookie, Pedestal pedestal, Panel panel, PanelSpot buildings,
+                                    PanelSpot clicks, Bulk bulk, Tween tween, Shelf shelf,
+                                    Map<String, String> upgradeFallbacks) {
+
+    /**
+     * Where one hologram panel ({@code station.panels.<panel>}) stands: {@code offset} is its header's bottom centre
+     * from the pedestal (with a plot layout only its "up" part counts: the panel stands on the layout spot), and it
+     * shows at most {@code maxRows} rows.
+     */
+    public record PanelSpot(Offset offset, int maxRows) {
+    }
+
+    /**
+     * The ×1/×5/×10/Max toggle row under each panel header ({@code station.panel.bulk.*}).
+     *
+     * @param offset       centre of the toggle text, relative to the header anchor
+     * @param hitboxOffset bottom centre of its click box, relative to the toggle text
+     * @param rowsDrop     the panel rows sit this much lower than without a toggle row
+     */
+    public record Bulk(Offset offset, float scale, Offset hitboxOffset, float hitboxWidth, float hitboxHeight,
+                       double rowsDrop) {
+    }
+
+    /**
+     * Price roll on the panels ({@code station.panel.tween.*}): values roll over {@code ticks}, the row text is
+     * re-sent at most every {@code stepTicks}, and the row text briefly grows to {@code pulseScale} × its size.
+     */
+    public record Tween(int ticks, int stepTicks, float pulseScale) {
+    }
+
+    /**
+     * The upgrade shelf under the click upgrades panel ({@code station.shelf.*}).
+     *
+     * @param offset         centre of the first (top left) icon, relative to the click panel's header anchor
+     * @param spacing        distance between icon centres, right and down
+     * @param hitboxSize     width and height of each icon's click box
+     * @param flyTicks       how long a bought upgrade's icon glides from its row to its slot (1-59)
+     * @param tooltipSeconds how long the action bar shows an icon's name and effect before the HUD returns
+     */
+    public record Shelf(Offset offset, int columns, double spacing, float scale, int maxIcons, float hitboxSize,
+                        int flyTicks, int tooltipSeconds) {
+
+        /** Centre of icon {@code index} (row by row, left to right), relative to the click panel's header anchor. */
+        public Offset slot(int index) {
+            int row = index / columns;
+            int col = index % columns;
+            return new Offset(offset.right() + col * spacing, offset.up() - row * spacing, offset.forward());
+        }
+    }
+
+    /** Vanilla item shown for an upgrade icon to players without the pack ({@code station.upgrade-fallback-items}). */
+    public String upgradeFallbackFor(String upgradeId) {
+        return upgradeFallbacks.getOrDefault(upgradeId, panel.defaultFallback());
+    }
 
     /** A position in the station frame, in blocks. */
     public record Offset(double right, double up, double forward) {
@@ -99,11 +152,12 @@ public record StationVisualSettings(double viewDistance, int refreshTicks, doubl
                 r.positive("station.pedestal.height", 0.95));
 
         Map<String, Integer> colors = new LinkedHashMap<>();
-        for (String state : List.of("header", "affordable", "unaffordable", "locked")) {
+        for (String state : List.of("header", "affordable", "unaffordable", "locked", "maxed", "toggle")) {
             colors.put(state, r.argb("station.panel.colors." + state, switch (state) {
                 case "header" -> 0xC0301A0C;
                 case "affordable" -> 0xB03A2A10;
-                case "locked" -> 0x90181818;
+                case "locked", "maxed" -> 0x90181818;
+                case "toggle" -> 0xA0201810;
                 default -> 0xB0202020;
             }));
         }
@@ -144,12 +198,47 @@ public record StationVisualSettings(double viewDistance, int refreshTicks, doubl
                 c.getBoolean("station.panel.text-default-background", false),
                 c.getBoolean("station.panel.row.text-left-edge", true));
 
+        PanelSpot buildings = new PanelSpot(r.offset("station.panels.buildings.offset", panel.offset()),
+                r.rows("station.panels.buildings.max-rows", 8));
+        PanelSpot clicks = new PanelSpot(r.offset("station.panels.clicks.offset", new Offset(-1.9, 3.2, 2.5)),
+                r.rows("station.panels.clicks.max-rows", 4));
+        Bulk bulk = new Bulk(
+                r.offset("station.panel.bulk.offset", new Offset(0, -0.32, 0)),
+                (float) r.positive("station.panel.bulk.scale", 0.45),
+                r.offset("station.panel.bulk.hitbox-offset", new Offset(0, -0.02, 0)),
+                (float) r.positive("station.panel.bulk.hitbox-width", 1.7),
+                (float) r.positive("station.panel.bulk.hitbox-height", 0.24),
+                Math.max(0, c.getDouble("station.panel.bulk.rows-drop", 0.3)));
+        Tween tween = new Tween(
+                (int) Math.clamp(r.positive("station.panel.tween.ticks", 8), 1, 100),
+                (int) Math.clamp(r.positive("station.panel.tween.step-ticks", 2), 1, 20),
+                (float) Math.clamp(r.positive("station.panel.tween.pulse-scale", 1.08), 1, 2));
+        Shelf shelf = new Shelf(
+                r.offset("station.shelf.offset", new Offset(-0.28, -2.4, 0)),
+                (int) Math.clamp(r.positive("station.shelf.columns", 6), 1, 32),
+                r.positive("station.shelf.spacing", 0.22),
+                (float) r.positive("station.shelf.scale", 0.18),
+                (int) Math.clamp(c.getInt("station.shelf.max-icons", 24), 0, 64),
+                (float) r.positive("station.shelf.hitbox-size", 0.2),
+                (int) Math.clamp(r.positive("station.shelf.fly-ticks", 14), 1, 59),
+                (int) Math.clamp(r.positive("station.shelf.tooltip-seconds", 3), 1, 30));
+        Map<String, String> upgradeFallbacks = new LinkedHashMap<>();
+        ConfigurationSection items = c.getConfigurationSection("station.upgrade-fallback-items");
+        if (items != null) {
+            for (String id : items.getKeys(false)) {
+                String m = items.getString(id);
+                if (m != null && !m.isBlank()) {
+                    upgradeFallbacks.put(id, m.trim());
+                }
+            }
+        }
+
         return new StationVisualSettings(
                 r.positive("station.view-distance", 24),
                 (int) r.positive("station.refresh-ticks", 20),
                 r.positive("station.click-distance", 6),
                 c.getBoolean("debug.log-click-events", false),
-                cookie, pedestal, panel);
+                cookie, pedestal, panel, buildings, clicks, bulk, tween, shelf, Map.copyOf(upgradeFallbacks));
     }
 
     /** Reads with defaults and reports bad values. */
@@ -162,6 +251,10 @@ public record StationVisualSettings(double viewDistance, int refreshTicks, doubl
                 return fallback;
             }
             return v;
+        }
+
+        int rows(String path, int fallback) {
+            return (int) Math.clamp(positive(path, fallback), 1, 20);
         }
 
         Offset offset(String path, Offset fallback) {

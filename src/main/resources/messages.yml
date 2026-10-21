@@ -108,17 +108,54 @@ upgrades:
     name: "<#e070a0>Handy Fingers III"
     effect: "Each click also gives another <value>% of your CPS"
 
-# The floating shop panel next to the cookie. Each row is redrawn only when it changes.
-# <name> = building name as plain text (buildings.<id>.name without its colours, so the row colours apply),
-# <owned>, <cost>, <cps> (what one more adds), <needed> (baked cookies to unlock) = formatted numbers.
+# The two floating panels next to the cookie: Buildings (shop spot) and Click upgrades (clicks spot). Each row is
+# redrawn only when it changes; while a price rolls to a new value it is redrawn every few ticks.
 # Keep every row two lines, so rows line up. Background colours: config.yml station.panel.colors.
 # (The floating "+N" click numbers are in effects.yml.)
 panel:
-  header: "<gradient:#e0a060:#a0622d><b>Bakery Shop</b></gradient>"
+  buildings:
+    header: "<gradient:#e0a060:#a0622d><b>Bakery Shop</b></gradient>"
+  # Buildings panel rows. <name> = building name as plain text (buildings.<id>.name without its colours, so the row
+  # colours apply), <owned>, <cost> (for the chosen amount), <cps> (what that amount adds), <needed> (baked cookies to
+  # unlock) = formatted numbers, <amount> = panel.bulk.amount (empty on x1).
   row:
-    affordable: "<white><b><name></b></white> <gray>×<owned></gray><newline><green><cost></green> <gray>· +<cps>/s</gray>"
-    unaffordable: "<gray><name></gray> <dark_gray>×<owned></dark_gray><newline><red><cost></red> <dark_gray>· +<cps>/s</dark_gray>"
+    affordable: "<white><b><name></b></white> <gray>×<owned></gray><newline><amount><green><cost></green> <gray>· +<cps>/s</gray>"
+    unaffordable: "<gray><name></gray> <dark_gray>×<owned></dark_gray><newline><amount><red><cost></red> <dark_gray>· +<cps>/s</dark_gray>"
     locked: "<dark_gray>???</dark_gray><newline><dark_gray><i>bake <needed> cookies to unlock</i></dark_gray>"
+  clicks:
+    header: "<gradient:#f5c542:#e07a4a><b>Click Upgrades</b></gradient>"
+    # Repeatable upgrades (pinned on top). <name> (plain), <level>, <cost> (for the chosen amount), <cpc> (cookies per
+    # click those levels add), <amount> = panel.bulk.amount, <requirement> = need-baked / need-building.
+    repeatable:
+      affordable: "<white><b><name></b></white> <gray>Lv <level></gray><newline><amount><green><cost></green> <gray>· +<cpc>/click</gray>"
+      unaffordable: "<gray><name></gray> <dark_gray>Lv <level></dark_gray><newline><amount><red><cost></red> <dark_gray>· +<cpc>/click</dark_gray>"
+      locked: "<dark_gray><name> Lv <level></dark_gray><newline><dark_gray><i><requirement></i></dark_gray>"
+      maxed: "<gold><name></gold> <gray>Lv <level></gray><newline><gold>maxed out</gold>"
+    # One-time upgrades (the cheapest ones not bought yet). <name>, <cost>, <effect> = upgrades.<id>.effect,
+    # <requirement> = need-baked / need-building. Bought upgrades leave the list and fly to the shelf.
+    one-time:
+      affordable: "<white><b><name></b></white><newline><green><cost></green> <gray>· <effect></gray>"
+      unaffordable: "<gray><name></gray><newline><red><cost></red> <dark_gray>· <effect></dark_gray>"
+      locked: "<dark_gray>???</dark_gray><newline><dark_gray><i><requirement></i></dark_gray>"
+    need-baked: "bake <needed> cookies to unlock"
+    # <owned> = how many, <building> = building name (plain)
+    need-building: "own <owned> <building> to unlock"
+  # The ×1 ×5 ×10 Max toggle under each header. <one> <five> <ten> <max> = each label in the selected or unselected
+  # style; clicking the toggle picks the next one.
+  bulk:
+    toggle: "<one>  <five>  <ten>  <max>"
+    selected: "<gold><b>[<label>]</b></gold>"
+    unselected: "<gray><label></gray>"
+    labels:
+      one: "×1"
+      five: "×5"
+      ten: "×10"
+      max: "Max"
+    # In front of the cost on every mode but ×1: how many a click buys. <count> = the number.
+    amount: "<yellow>×<count></yellow> "
+  # Action bar when you click an icon on the upgrade shelf. <name> = upgrades.<id>.name, <effect> = upgrades.<id>.effect
+  shelf:
+    tooltip: "<name> <dark_gray>·</dark_gray> <gray><effect></gray>"
 
 resource-pack:
   prompt: "<gold>Cookie Empire</gold> <gray>uses a resource pack for the giant cookie, icons and sounds.</gray>"

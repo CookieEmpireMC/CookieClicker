@@ -92,6 +92,25 @@ public final class Messages {
         return yaml.isString(path) ? MM.deserialize(yaml.getString(path)) : Component.text(buildingId);
     }
 
+    /** Display name of an upgrade from {@code upgrades.<id>.name}; the id when not configured. */
+    public Component upgradeName(String upgradeId) {
+        String path = "upgrades." + upgradeId + ".name";
+        return yaml.isString(path) ? MM.deserialize(yaml.getString(path)) : Component.text(upgradeId);
+    }
+
+    /**
+     * What one level of an upgrade does, from {@code upgrades.<id>.effect} with {@code <value>} (formatted) and
+     * {@code <level>}; empty when not configured.
+     */
+    public Component upgradeEffect(String upgradeId, double value, int level) {
+        String path = "upgrades." + upgradeId + ".effect";
+        if (!yaml.isString(path)) {
+            return Component.empty();
+        }
+        return MM.deserialize(yaml.getString(path), number("value", value),
+                Placeholder.unparsed("level", Integer.toString(level)));
+    }
+
     static NumberFormatter.Settings numberSettings(ConfigurationSection m) {
         List<String> suffixes = m.getStringList("numbers.suffixes");
         return new NumberFormatter.Settings(suffixes,

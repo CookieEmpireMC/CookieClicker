@@ -56,7 +56,7 @@ public final class BakeryTicker implements Runnable {
             Player player = onlinePlayer.apply(id);
             if (player != null) {
                 if (refreshHud) {
-                    hud.refresh(player, pouch);
+                    hud.refreshScheduled(player, pouch);
                 }
                 afterProduce.accept(player, pouch);
             }

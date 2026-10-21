@@ -75,9 +75,19 @@ station:
     offset: [0, 0, 2.5]
     width: 0.9
     height: 0.95
+  # The two hologram panels. offset = bottom centre of the header text (rows go down from there), from the
+  # pedestal. With a plot layout (/bakery plot setup) a panel stands on its layout spot (buildings: layout.shop,
+  # clicks: layout.clicks) and only the "up" part of offset counts. max-rows = most rows shown.
+  panels:
+    buildings:
+      offset: [1.9, 2.55, 2.5]
+      max-rows: 8
+    clicks:
+      offset: [-1.9, 3.2, 2.5]
+      # The repeatable upgrade(s) on top, then the cheapest one-time upgrades you haven't bought
+      max-rows: 4
+  # Looks shared by both panels
   panel:
-    # Bottom centre of the header text; rows go down from there
-    offset: [1.9, 2.55, 2.5]
     # Degrees added to the text / icon facing, in case they show mirrored or edge-on in game
     text-yaw-offset: 0
     icon-yaw-offset: 0
@@ -94,6 +104,23 @@ station:
     # First row sits this far below the header, each further row this much lower
     first-row-drop: 0.45
     row-pitch: 0.4
+    # The x1 / x5 / x10 / Max toggle under each header (texts in messages.yml panel.bulk)
+    bulk:
+      # Centre of the toggle text, relative to the header; the rows move down by rows-drop to make room
+      offset: [0, -0.32, 0]
+      scale: 0.45
+      rows-drop: 0.3
+      # Bottom centre of its click box relative to the toggle text, and its size
+      hitbox-offset: [0, -0.02, 0]
+      hitbox-width: 1.7
+      hitbox-height: 0.24
+    # Price roll when you switch the amount or buy something: the numbers roll to their new value over `ticks`
+    # (eased, even from 1K to 1M), the row text is re-sent at most every `step-ticks`, and briefly grows to
+    # pulse-scale x its size
+    tween:
+      ticks: 8
+      step-ticks: 2
+      pulse-scale: 1.08
     row:
       # Relative to the row's anchor: [right, up, forward]
       # text-offset is the LEFT EDGE of the row's text background when text-left-edge is true (keep it just right of
@@ -115,6 +142,9 @@ station:
       affordable: "#B03A2A10"
       unaffordable: "#B0202020"
       locked: "#90181818"
+      # repeatable upgrade at its max level, and the toggle row
+      maxed: "#90181818"
+      toggle: "#A0201810"
     # Icon light level 0-15: bright when affordable, dimmed otherwise
     icon-brightness:
       affordable: 15
@@ -127,8 +157,38 @@ station:
         fallback-material: BREAD
       wheat_farm:
         fallback-material: WHEAT
-    # For buildings not listed above
+    # For buildings and upgrades not listed
     default-fallback-material: COOKIE
+  # Vanilla item shown as an upgrade icon (click upgrades panel and shelf) to players without our resource pack
+  # (with the pack they see cookieclicker:upgrade/<id>)
+  upgrade-fallback-items:
+    bakers_strength: COOKIE
+    wooden_spatula: WOODEN_SHOVEL
+    stone_rolling_pin: STONE_SHOVEL
+    iron_rolling_pin: IRON_INGOT
+    golden_glove: GOLDEN_CARROT
+    diamond_fingers: DIAMOND
+    netherite_hands: NETHERITE_INGOT
+    handy_fingers_1: STICK
+    handy_fingers_2: BLAZE_ROD
+    handy_fingers_3: AMETHYST_SHARD
+  # The upgrade shelf under the click upgrades panel: one small icon per one-time upgrade you bought. Clicking an
+  # icon shows its name and effect in the action bar.
+  shelf:
+    # Centre of the first (top left) icon, relative to the click upgrades panel header: [right, up, forward]
+    offset: [-0.28, -2.4, 0]
+    columns: 6
+    # Distance between icon centres (right and down) and the icon size
+    spacing: 0.22
+    scale: 0.18
+    # At most this many icons (each costs 2 entities per player)
+    max-icons: 24
+    # Size of each icon's click box
+    hitbox-size: 0.2
+    # A bought upgrade's icon glides from its row to the shelf in this many ticks (1-59)
+    fly-ticks: 14
+    # How long the action bar shows an icon's name and effect
+    tooltip-seconds: 3
 
 # Our resource pack (3D cookie, icons, HUD glyph, sounds). Sent on join next to other plugins' packs
 # (e.g. ItemsAdder's); vanilla fallbacks are used when a player declines it.
