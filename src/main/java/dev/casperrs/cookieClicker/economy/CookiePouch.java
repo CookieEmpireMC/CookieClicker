@@ -2,7 +2,6 @@ package dev.casperrs.cookieClicker.economy;
 
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -17,7 +16,8 @@ public final class CookiePouch {
     private double pouch;
     private double baked;
     private final Map<String, Integer> owned = new HashMap<>();
-    private final Set<String> upgrades = new HashSet<>();
+    /** Upgrade ID → level; only levels {@code >= 1} are stored. */
+    private final Map<String, Integer> upgrades = new HashMap<>();
 
     public CookiePouch() {
     }
@@ -31,7 +31,7 @@ public final class CookiePouch {
                 p.owned.put(id, n);
             }
         });
-        p.upgrades.addAll(snapshot.upgrades());
+        p.upgrades.putAll(snapshot.upgradeLevels());
         return p;
     }
 
@@ -57,12 +57,24 @@ public final class CookiePouch {
         return Collections.unmodifiableMap(owned);
     }
 
+    /** Level 1 or more. */
     public boolean hasUpgrade(String upgradeId) {
-        return upgrades.contains(upgradeId);
+        return upgrades.containsKey(upgradeId);
     }
 
+    /** The upgrade's level: 0 = not bought, one-time upgrades are 0 or 1. */
+    public int upgradeLevel(String upgradeId) {
+        return upgrades.getOrDefault(upgradeId, 0);
+    }
+
+    /** IDs of every upgrade with level {@code >= 1} (read-only, live). */
     public Set<String> upgradesView() {
-        return Collections.unmodifiableSet(upgrades);
+        return Collections.unmodifiableSet(upgrades.keySet());
+    }
+
+    /** Upgrade ID → level, only levels {@code >= 1} (read-only, live). */
+    public Map<String, Integer> upgradeLevelsView() {
+        return Collections.unmodifiableMap(upgrades);
     }
 
     /** Adds to both pouch and baked (clicks, production). Negative or non-finite amounts are ignored. */
@@ -83,7 +95,7 @@ public final class CookiePouch {
         owned.merge(buildingId, count, (a, b) -> (int) Math.min(Integer.MAX_VALUE, (long) a + b));
     }
 
-    void addUpgrade(String upgradeId) {
-        upgrades.add(upgradeId);
+    void addUpgradeLevels(String upgradeId, int levels) {
+        upgrades.merge(upgradeId, levels, (a, b) -> (int) Math.min(Integer.MAX_VALUE, (long) a + b));
     }
 }
