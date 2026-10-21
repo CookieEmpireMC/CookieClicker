@@ -111,8 +111,8 @@ None. Decided 2026-10-21: ×1/×5/×10/**Max**; smooth price tweens; cookie spin
 | model-designer | merged | `upgrade-holograms/model-designer` | asset-only (checks) | f606b10; 10 icons placeholder; `layout.clicks` at [16,0,6] |
 | sound-designer | merged | `upgrade-holograms/sound-designer` | asset-only (checks) | 72df49a; sounds placeholder until listened to |
 | vfx-designer | merged | `upgrade-holograms/vfx-designer` | READY (Gandalf) | a648c97 + tests 8067d28; LOW: upgrade_shelved cost doc says 10, is 16 |
-| plugin-coder (economy) | in progress | `upgrade-holograms/plugin-coder-economy` | | launched 2026-10-21 |
-| plugin-coder (panels) | planned | | | waits for economy + vfx |
+| plugin-coder (economy) | merged | `upgrade-holograms/plugin-coder-economy` | READY (Gandalf) | all checks green again; review `docs/reviews/2026-10-21-upgrade-holograms-economy.md`; LOWs: v2→v3 ALTER not idempotent (use IF NOT EXISTS), unused groupingSeparator |
+| plugin-coder (panels) | in progress | `upgrade-holograms/plugin-coder-panels` | | launched 2026-10-21 |
 | plugin-tester | planned | | | |
 
 ## Merge order
