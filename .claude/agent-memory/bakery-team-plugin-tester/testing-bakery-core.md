@@ -20,3 +20,6 @@ metadata:
 - Python one-offs that need PyYAML: use `.venv/bin/python -I` (system python3 has no yaml).
 - `mise run pack` is reproducible (same SHA-1 twice); bakery-core pack = 23 files, 39321 bytes at integration (2026-10-18). Wheat Farm unlocks at 100 baked.
 - Integration baseline 2026-10-18: 238 tests (233 + 5), validate-assets 12 files, sound-check 7 sounds, balance-check 6/6, tools-test 133.
+- (2026-10-21) view tests cannot use economy's `EconomyTestSupport` (package-private, other package): copy the small `map()` + `economy()` helpers (RowStateTest/UpgradeRowStateTest/PanelRowsTest pattern). `PouchSnapshot(pouch, baked, owned, Map<String,Integer> levels)` takes levels; `(…, Set<String>)` gives level 1.
+- (2026-10-21, measured on this machine, warm JVM) MiniMessage `deserialize` of a 6-placeholder row template ≈ 5.5 µs; `PlainTextComponentSerializer` ≈ 0.15 µs. Use for panel perf estimates; probe via a temp test class, then delete it (never commit probes).
+- `mvn -Dtest=X -Dsurefire.failIfNoSpecifiedTests=false test` via `mise exec --` runs one test class (verified 2026-10-21).
