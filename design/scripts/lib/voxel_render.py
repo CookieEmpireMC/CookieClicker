@@ -5,6 +5,8 @@ Minecraft: +X east, +Y up, +Z south. Faces get Minecraft-style directional shadi
 dark edge so single blocks stay readable. Z-buffered, opaque only.
 
 Library: render(boxes, yaw, pitch, px_per_unit) -> PIL.Image (cropped to content)
+         render_perspective(boxes, eye, yaw, pitch, fov, size) -> PIL.Image (a player's view,
+         Minecraft yaw/pitch, vertical FOV like the game setting); project(...) for framing checks
 Camera: yaw 0 looks from the south (+Z) towards north; yaw 90 looks from the east;
 yaw 180 from the north. Positive pitch looks down from above.
 """
@@ -100,4 +102,83 @@ def render(boxes, yaw: float = 35, pitch: float = 30, px_per_unit: int = 40,
                 sub_c[..., ch][ok] = (rgb[ch] * shade)[ok]
             sub_c[..., 3][ok] = 255
             sub_d[ok] = z[ok]
+    return Image.fromarray(np.clip(color, 0, 255).astype(np.uint8), "RGBA")
+
+
+# --- perspective camera (what a player sees from a point) -------------------------------------
+def camera_basis(yaw: float, pitch: float):
+    """Minecraft angles: yaw 0 looks south (+Z), 90 west (-X), 180 north; pitch > 0 looks down.
+    Returns (forward, right, up) unit vectors."""
+    y, p = math.radians(yaw), math.radians(pitch)
+    f = np.array([-math.sin(y) * math.cos(p), -math.sin(p), math.cos(y) * math.cos(p)])
+    r = np.array([-math.cos(y), 0.0, -math.sin(y)])
+    return f, r, np.cross(r, f)
+
+
+def project(points, eye, yaw: float, pitch: float, fov: float = 70.0, aspect: float = 16 / 9):
+    """Normalised screen coords (-1..1 = frame edge; x right, y up) and depth for world points."""
+    f, r, u = camera_basis(yaw, pitch)
+    d = np.asarray(points, float) - np.asarray(eye, float)
+    z = d @ f
+    t = math.tan(math.radians(fov) / 2)
+    return (d @ r) / z / (t * aspect), (d @ u) / z / t, z
+
+
+def render_perspective(boxes, eye, yaw: float, pitch: float, fov: float = 70.0, size=(960, 540),
+                       sky=(150, 190, 235, 255), edge_px: float = 1.0) -> Image.Image:
+    """Ray-cast coloured boxes from `eye` (world block units) with a vertical `fov` like the game's FOV setting.
+    Faces get the same directional shade as render(); a thin dark edge marks block borders."""
+    W, H = size
+    f, r, u = camera_basis(yaw, pitch)
+    focal = (H / 2) / math.tan(math.radians(fov) / 2)
+    eye = np.asarray(eye, float)
+    color = np.zeros((H, W, 4), np.float32)
+    color[:] = sky
+    depth = np.full((H, W), np.inf, np.float32)
+    for fr, to, rgb in boxes:
+        lo, hi = np.array(fr, float), np.array(to, float)
+        for direction, n in NORMALS.items():
+            axis = int(np.flatnonzero(n)[0])
+            plane = hi[axis] if n[axis] > 0 else lo[axis]
+            if (eye[axis] - plane) * n[axis] <= 1e-9:          # back face
+                continue
+            others = [a for a in range(3) if a != axis]
+            corners = []
+            for a0 in (lo[others[0]], hi[others[0]]):
+                for a1 in (lo[others[1]], hi[others[1]]):
+                    c = np.zeros(3)
+                    c[axis], c[others[0]], c[others[1]] = plane, a0, a1
+                    corners.append(c)
+            d = np.array(corners) - eye
+            zc = d @ f
+            if (zc <= 0.05).any():
+                x0, x1, y0, y1 = 0, W, 0, H
+            else:
+                sx = W / 2 + (d @ r) / zc * focal
+                sy = H / 2 - (d @ u) / zc * focal
+                x0, x1 = max(int(sx.min()), 0), min(int(sx.max()) + 2, W)
+                y0, y1 = max(int(sy.min()), 0), min(int(sy.max()) + 2, H)
+            if x0 >= x1 or y0 >= y1:
+                continue
+            ys, xs = np.mgrid[y0:y1, x0:x1] + 0.5
+            ray = (f[None, None, :] + ((xs - W / 2) / focal)[..., None] * r[None, None, :]
+                   - ((ys - H / 2) / focal)[..., None] * u[None, None, :])
+            with np.errstate(divide="ignore", invalid="ignore"):
+                t = (plane - eye[axis]) / ray[..., axis]
+            hit = eye[None, None, :] + t[..., None] * ray
+            a = hit[..., others[0]]
+            b = hit[..., others[1]]
+            inside = (t > 0) & (a >= lo[others[0]]) & (a <= hi[others[0]]) & (b >= lo[others[1]]) & (b <= hi[others[1]])
+            if not inside.any():
+                continue
+            ew = edge_px * t / focal                            # world size of one pixel at that depth
+            border = ((np.minimum(a - lo[others[0]], hi[others[0]] - a) < ew)
+                      | (np.minimum(b - lo[others[1]], hi[others[1]] - b) < ew))
+            shade = np.where(border, SHADE[direction] * 0.62, SHADE[direction])
+            ok = inside & (t < depth[y0:y1, x0:x1])
+            sub_c = color[y0:y1, x0:x1]
+            for ch in range(3):
+                sub_c[..., ch][ok] = (rgb[ch] * shade)[ok]
+            sub_c[..., 3][ok] = 255
+            depth[y0:y1, x0:x1][ok] = t[ok]
     return Image.fromarray(np.clip(color, 0, 255).astype(np.uint8), "RGBA")

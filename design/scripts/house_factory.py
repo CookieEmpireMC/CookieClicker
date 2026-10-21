@@ -5,6 +5,7 @@ Outputs:
   design/scripts/previews/house_factory_layers.png (top view of every layer)
   design/scripts/previews/house_factory_iso.png    (orthographic 3/4 views, front and back, front elevation)
   design/scripts/previews/house_factory_plot.png   (top-down plot layout: belt, pedestal, shop, fence margin)
+  design/scripts/previews/house_factory_camera.png (the build cinematic's view from `layout.camera`, 16:9, FOV 70)
 Run with `mise run assets` (or `python design/scripts/house_factory.py` from the repo root).
 Deterministic. Spec: design/factory.md (format: design/house-default.md + list points).
 
@@ -23,7 +24,11 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
 import house_lib  # noqa: E402
 from house_lib import KEEP, parse_block_data  # noqa: E402
-from voxel_render import render  # noqa: E402
+from voxel_render import project, render, render_perspective  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import belt_style  # noqa: E402
+import fence_style  # noqa: E402
 
 OUT_YML = ROOT / "src/main/resources/houses/factory.yml"
 OUT_DIR = ROOT / "design/scripts/previews"
@@ -389,6 +394,14 @@ BELT_TO = (BELT_FROM[0], BELT_FROM[1], BELT_FROM[2] - (BELT_LEN - 1))   # last b
 PEDESTAL = (BELT_TO[0], 0, BELT_TO[2] - 1)
 SHOP = (PEDESTAL[0] + 2, 0, PEDESTAL[2])
 VIEWPOINT = (15, 0, 2)
+# build-cinematic camera: a feet cell like the viewpoint (eye = cell bottom centre + 1.62), outside the plot in
+# front of the plot, north-east of the gate and raised, looking south-south-west and down: a 3/4 view of the facade
+# with the belt and pedestal in clear view (see design/conveyor-belt.md). Checked against a 4:3 screen (the
+# narrowest common one) at the default FOV 70, keeping 5% from the frame edge.
+CAMERA = (23, 12, -13)
+CAMERA_YAW, CAMERA_PITCH = 20, 24
+CAMERA_FOV, CAMERA_ASPECT, CAMERA_MARGIN = 70, 4 / 3, 0.95
+EYE_HEIGHT = 1.62
 ENTRANCE = (15, 0)                                   # gate centre on the front (north) ring, 3 wide
 LAYOUT = {
     "plot-size": [PLOT_X, PLOT_Z],
@@ -398,6 +411,7 @@ LAYOUT = {
     "viewpoint": {"at": list(VIEWPOINT), "yaw": 0, "pitch": -14},
     "entrance": list(ENTRANCE),
     "belt": {"from": list(BELT_FROM), "to": list(BELT_TO)},
+    "camera": {"at": list(CAMERA), "yaw": CAMERA_YAW, "pitch": CAMERA_PITCH},
 }
 BELT = [(BELT_FROM[0], z) for z in range(BELT_FROM[2], BELT_TO[2] - 1, -1)]   # plot (x, z) cells
 
@@ -415,6 +429,8 @@ def layout_yaml() -> list[str]:
         f"pitch: {L['viewpoint']['pitch']}}}",
         f"  entrance: {v(L['entrance'])}",
         f"  belt: {{from: {v(L['belt']['from'])}, to: {v(L['belt']['to'])}}}",
+        f"  camera: {{at: {v(L['camera']['at'])}, yaw: {L['camera']['yaw']}, pitch: {L['camera']['pitch']}}}"
+        "   # build cinematic eye point (feet cell, may lie outside the plot)",
     ]
 
 
@@ -453,6 +469,36 @@ def validate_layout(chars: dict, palette: dict) -> None:
         assert (gx, 1) not in occupied
     bx, by, bz = POINTS["belt_out"]
     assert parse_block_data(palette[chars[(bx, by, bz + 1)]])[0] == "air", "hatch behind belt_out is open"
+    # the belt frame (houses/belt.yml) fills y 0 .. surface-height-1 of the belt cells; the surface display and
+    # the cookies need the cell above (a closed top-half trapdoor awning is fine, anything else is not)
+    for x, z in BELT:
+        y = belt_style.STYLE["surface-height"]
+        if (x, y, z) in solid3:
+            d = (x - HOUSE_AT[0], y, z - HOUSE_AT[2])
+            b, pr = parse_block_data(palette[chars[d]])
+            assert b.endswith("_trapdoor") and pr["half"] == "top" and pr["open"] == "false", f"belt clearance {d}"
+    # camera: above ground, outside the house, in the air, and it frames everything
+    cx, cy, cz = CAMERA
+    assert cy >= 1 and not in_box(cx, cz), "camera: raised and outside the design box"
+    assert (cx, cy, cz) not in solid3 and (cx, cy + 1, cz) not in solid3
+    sx, sy, depth = project(framing_points(), camera_eye(), CAMERA_YAW, CAMERA_PITCH, CAMERA_FOV, CAMERA_ASPECT)
+    assert (depth > 1).all() and abs(sx).max() <= CAMERA_MARGIN and abs(sy).max() <= CAMERA_MARGIN, \
+        f"camera framing: x {sx.min():.2f}..{sx.max():.2f}, y {sy.min():.2f}..{sy.max():.2f}"
+
+
+def camera_eye():
+    """Camera eye in plot block coordinates (bottom centre of the feet cell + eye height)."""
+    return (CAMERA[0] + 0.5, CAMERA[1] + EYE_HEIGHT, CAMERA[2] + 0.5)
+
+
+def framing_points():
+    """What the camera must show: the fence ring (with the gate arch), the whole design box and the pedestal."""
+    pts = [(x, y, z) for x in (0, PLOT_X) for z in (0, PLOT_Z) for y in (0, 2.5)]
+    pts += [(ENTRANCE[0] + dx, 5, 0) for dx in (-2, 3)]
+    pts += [(x, y, z) for x in (HOUSE_AT[0], HOUSE_AT[0] + SX) for z in (HOUSE_AT[2], HOUSE_AT[2] + SZ)
+            for y in (0, SY)]
+    pts += [(PEDESTAL[0] + .5, 2.5, PEDESTAL[2] + .5)]
+    return pts
 
 
 def ground_boxes():
@@ -463,13 +509,80 @@ def ground_boxes():
 def plot_boxes():
     """Belt, pedestal, shop and fence-ring markers for the preview (not part of the design)."""
     hx, hz = HOUSE_AT[0], HOUSE_AT[2]
-    out = [((x - hx + .1, 0, z - hz), (x - hx + .9, .25, z - hz + 1), (40, 40, 44)) for x, z in BELT]
+    out = belt_style.belt_boxes(belt_style.STYLE, BELT, ox=-hx, oz=-hz)
     px, pz = PEDESTAL[0] - hx, PEDESTAL[2] - hz
     out += [((px + .2, 0, pz + .2), (px + .8, .9, pz + .8), (230, 225, 210)),
             ((px + .25, 1.1, pz + .45), (px + .75, 1.6, pz + .55), (196, 140, 70))]
     sx, sz = SHOP[0] - hx, SHOP[2] - hz
     out.append(((sx + .3, 0, sz + .3), (sx + .7, 1.8, sz + .7), (90, 60, 160)))
     return out
+
+
+def fence_boxes():
+    """The plot fence ring from houses/fence.yml (approximate shapes), in design coordinates."""
+    st, s = fence_style.STYLE, 1 / 16
+    col = {"spruce_fence": (115, 85, 52), "spruce_log": (62, 44, 26), "stone_bricks": (122, 121, 122),
+           "bricks": (150, 82, 66), "chiseled_stone_bricks": (118, 117, 118), "lantern": (236, 178, 72),
+           "waxed_copper_lantern": (120, 200, 120), "dark_oak_planks": (66, 44, 22), "dark_oak_slab": (78, 52, 28)}
+    hx, hz = HOUSE_AT[0], HOUSE_AT[2]
+    out = []
+
+    def column(x, z, datas):
+        for y, data in enumerate(datas):
+            if data is None:
+                continue
+            b = parse_block_data(data)[0]
+            x0, z0 = x - hx, z - hz
+            if b.endswith("lantern"):
+                out.append(((x0 + 5 * s, y, z0 + 5 * s), (x0 + 11 * s, y + 7 * s, z0 + 11 * s), col[b]))
+            else:
+                out.append(((x0, y, z0), (x0 + 1, y + (.5 if b.endswith("_slab") else 1), z0 + 1), col[b]))
+
+    def rail(x, z, along_x):
+        x0, z0, c = x - hx, z - hz, col["spruce_fence"]
+        out.append(((x0 + 6 * s, 0, z0 + 6 * s), (x0 + 10 * s, 1, z0 + 10 * s), c))
+        for y1, y2 in ((6 * s, 9 * s), (12 * s, 15 * s)):
+            if along_x:
+                out.append(((x0, y1, z0 + 7 * s), (x0 + 1, y2, z0 + 9 * s), c))
+            else:
+                out.append(((x0 + 7 * s, y1, z0), (x0 + 9 * s, y2, z0 + 1), c))
+
+    g, ex = st["gate"], ENTRANCE[0]
+    ring = [(x, 0) for x in range(PLOT_X)] + [(x, PLOT_Z - 1) for x in range(PLOT_X)]
+    ring += [(0, z) for z in range(1, PLOT_Z - 1)] + [(PLOT_X - 1, z) for z in range(1, PLOT_Z - 1)]
+    for x, z in ring:
+        corner = x in (0, PLOT_X - 1) and z in (0, PLOT_Z - 1)
+        along_x = z in (0, PLOT_Z - 1)
+        k = x if along_x else z
+        if corner:
+            column(x, z, st["corner"] + [st["topper"]])
+        elif z == 0 and x in (ex - 2, ex + 2):
+            column(x, z, g["left"] if x < ex else g["right"])
+        elif z == 0 and abs(x - ex) <= 1:
+            column(x, z, g["arch"])
+        elif k % st["post-every"] == 0 and not (z == 0 and abs(x - ex) <= 3) and 1 < k < (PLOT_X if along_x
+                                                                                             else PLOT_Z) - 2:
+            column(x, z, st["post"] + ([st["topper"]] if (k // st["post-every"]) % st["topper-every"] == 0 else []))
+        else:
+            rail(x, z, along_x)
+    return out
+
+
+def camera_view(boxes) -> Image.Image:
+    """What the player sees from layout.camera (16:9, FOV 70), with the 4:3 crop marked."""
+    hx, hz = HOUSE_AT[0], HOUSE_AT[2]
+    ex, ey, ez = camera_eye()
+    world = [((-40 - hx, -1, -40 - hz), (PLOT_X + 40 - hx, 0, PLOT_Z + 40 - hz), (88, 128, 58)),
+             ((-hx, -1, -hz), (PLOT_X - hx, -0.02, PLOT_Z - hz), (100, 146, 64))] + boxes + fence_boxes()
+    img = render_perspective(world, (ex - hx, ey, ez - hz), CAMERA_YAW, CAMERA_PITCH, CAMERA_FOV, (1280, 720))
+    d = ImageDraw.Draw(img)
+    w43 = int(720 * 4 / 3)
+    x0 = (1280 - w43) // 2
+    d.rectangle([x0, 0, x0 + w43 - 1, 719], outline=(255, 255, 255, 160), width=2)
+    f = house_lib.font(16)
+    d.text((10, 8), f"layout.camera {list(CAMERA)}, yaw {CAMERA_YAW}, pitch {CAMERA_PITCH}; 16:9, FOV {CAMERA_FOV}; "
+           "white box = 4:3 screen", fill=(20, 20, 30), font=f)
+    return img
 
 
 def plot_sheet(chars: dict, palette: dict) -> Image.Image:
@@ -558,6 +671,7 @@ def main() -> int:
     near = [((-1, -1, -1), (SX + 1, 0, SZ + 1), (96, 140, 62))] + [bx_ for bx_ in boxes[1:]]
     render(near, yaw=200, pitch=22, px_per_unit=40).save(OUT_DIR / "house_factory_front.png")
     plot_sheet(chars, palette).save(OUT_DIR / "house_factory_plot.png")
+    camera_view(boxes[1:]).save(OUT_DIR / "house_factory_camera.png")
     print(f"{OUT_YML.relative_to(ROOT)}: {blocks} blocks, {len(palette)} palette entries")
     print(f"previews in {OUT_DIR.relative_to(ROOT)}")
     return 0

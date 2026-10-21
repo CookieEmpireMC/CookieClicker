@@ -51,6 +51,14 @@ New shared helpers in `design/sound-tools/synth.py`: `gain_to_lufs`, `soft_limit
 
 Script: `design/sound-scripts/factory_ambient.py`.
 
+## conveyor-belt
+
+| Event (sounds.yml) | Pack key | Files | Feel | Measured | Fallback | Config | Status |
+|---|---|---|---|---|---|---|---|
+| `belt_loop` | `cookieclicker:factory.belt_loop` | `sounds/factory/belt_loop.ogg` | Soft, cosy conveyor belt under the oven hum, not a drill: a thin motor hum on ~D2 (73.6 Hz, a fourth under the oven's G2, so the drones agree) with a second voice 0.2 Hz higher (one slow swell per loop), a quiet rubber-belt whir (noise 250-1100 Hz, gently pulsed per slat), and a light rattle of slats over the end roller, 5 per second, each a dull low thump + short muffled tick, every 4th a little stronger (a belt joint), with small timing/level jitter. Two faint low roller "tok"s per loop. Low-passed at 3 kHz (in game). **Authored for pitch 0.8** (shared with the fallback, which needs a low pitch): the 4.0 s file is the design sped up 1.25x, so at 0.8 it plays as a **seamless 5.0 s loop = 100 ticks**. Built circularly; no slat within 100 ms of the loop point, bed dips there. | 4000 ms file (5000 ms in game), peak -4.2 dBFS, -19.9 LUFS; end-to-start jump -63 dBFS (median sample step -44) | `minecraft:block.beehive.work` (pitch 0.8) | vol 0.2, pitch 0.8 (fixed), `ambient`; replay every 100 ticks (`belt.sound-every: 100`) | placeholder (needs audition) |
+
+Script: `design/sound-scripts/factory_belt_loop.py` (design at 5.0 s, FFT-resampled to the 4.0 s file; `PLAY_PITCH` at the top).
+
 ## Needs human review
 
 Nobody has listened to these yet; every sound needs an audition (`mise run review` builds a page with players).
@@ -64,6 +72,7 @@ Absolute paths in the main checkout (the starter-house files land there after th
 - `/home/casper-rs/Documents/GitHub/CookieClicker/resourcepack/assets/cookieclicker/sounds/house/block_land_1.ogg` (..`_4`)
 - `/home/casper-rs/Documents/GitHub/CookieClicker/resourcepack/assets/cookieclicker/sounds/house/fanfare.ogg`
 - `/home/casper-rs/Documents/GitHub/CookieClicker/resourcepack/assets/cookieclicker/sounds/house/chimney_crackle.ogg`
+- `/home/casper-rs/Documents/GitHub/CookieClicker/resourcepack/assets/cookieclicker/sounds/factory/belt_loop.ogg` (before the merge: worktree `conveyor-belt/sound-designer`, `/home/casper-rs/Documents/GitHub/CookieClicker/.claude/worktrees/agent-a59158238e0ba9aaa/resourcepack/assets/cookieclicker/sounds/factory/belt_loop.ogg`)
 - `/home/casper-rs/Documents/GitHub/CookieClicker/resourcepack/assets/cookieclicker/sounds/factory/ambient.ogg` (before the merge: worktree `factory-makeover/sound-designer`, `/home/casper-rs/Documents/GitHub/CookieClicker/.claude/worktrees/agent-a792ae8259bd6a8dd/resourcepack/assets/cookieclicker/sounds/factory/ambient.ogg`)
 
 What to listen for:
@@ -80,3 +89,4 @@ What to listen for:
 - **house_chimney_crackle:** cosy fire, not rain or static; loop it for a minute: any audible "seam" or recognisable repeating pop every 3 s? At volume 0.5 is it present but ignorable?
 - **Fallbacks:** `block.anvil.place` at volume 0.4 / pitch 1.15-1.35 may still be clangy; if so, `block.wood.hit` is the softer stand-in. `ui.toast.challenge_complete` is long and grand for a fanfare stand-in.
 - **factory_ambient:** a cosy oven/machine hum, not a fridge, transformer buzz or engine drone. Loop it for two minutes together with the chimney crackle: does the 1 Hz breath/chuff become a metronome, is the 4 s seam audible, and does it sit clearly under the crackle at 0.3 vs 0.5? On laptop speakers the hum should still be faintly there (its 200-800 Hz harmonics). The fallback `block.furnace.fire_crackle` at 0.3 is crackly rather than hummy; acceptable as a stand-in?
+- **belt_loop:** a soft, cosy belt (gentle hum + light slat rattle), not a drill, sewing machine or helicopter. Loop it at pitch 0.8 every 100 ticks together with `factory_ambient` (0.3): does it sit clearly under the oven hum at 0.2, is the 5 s seam or the stronger every-4th slat audible as a repeat, and does the 5-per-second rattle get tiring? Fallback `block.beehive.work` at pitch 0.8 / volume 0.2: belt-like enough, or too buzzy/beelike?

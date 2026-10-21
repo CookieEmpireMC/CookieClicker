@@ -82,6 +82,7 @@ public final class Effects {
     private final ViewerJobs<DropJob> drops = new ViewerJobs<>();
     private final ViewerJobs<LoopJob> loops = new ViewerJobs<>();
     private final Set<UUID> dropEntities = new HashSet<>();
+    private final Throttle throttle = new Throttle();
     private EffectsConfig.Limits limits = EffectsConfig.Limits.DEFAULTS;
     private final Set<String> warned = new HashSet<>();
     private Map<String, Compiled> presets = Map.of();
@@ -121,6 +122,7 @@ public final class Effects {
     public void load() {
         ticker.cancelAll();
         pops.clear();
+        throttle.clear();
         warned.clear();
         EffectsConfig config = readConfig();
         for (String problem : config.problems()) {
@@ -161,6 +163,7 @@ public final class Effects {
     public void shutdown() {
         ticker.cancelAll();
         pops.clear();
+        throttle.clear();
         if (listening) {
             HandlerList.unregisterAll(listener);
             listening = false;
@@ -220,6 +223,9 @@ public final class Effects {
      * @param viewer       the only player who sees it, or {@code null} to show it to everyone nearby
      * @param placeholders values for floating-text tags, e.g. {@code Map.of("amount", "15")}; always inserted as
      *                     unparsed text, so player-influenced values are safe
+     *
+     * <p>A preset with {@code min-interval-ticks} plays at most once per that many ticks per viewer (shared for
+     * {@code viewer == null}); plays in between are silently dropped, so code may call it as often as it likes.
      */
     public void play(String effectId, Location loc, @Nullable Player viewer, Map<String, String> placeholders) {
         if (!ready("play('" + effectId + "')")) {
@@ -228,6 +234,11 @@ public final class Effects {
         Compiled compiled = presets.get(effectId);
         if (compiled == null) {
             warnOnce("unknown:" + effectId, "Unknown effect ID '" + effectId + "' (not in effects.yml); skipped");
+            return;
+        }
+        int interval = compiled.preset().minIntervalTicks();
+        if (interval > 0 && !throttle.allow(viewer == null ? null : viewer.getUniqueId(), effectId,
+                plugin.getServer().getCurrentTick(), interval)) {
             return;
         }
         playLayers(compiled, loc, viewer, placeholders);
@@ -512,6 +523,7 @@ public final class Effects {
 
     /** The viewer quit: everything shown to them goes (no drop callbacks). */
     private void viewerGone(UUID viewer) {
+        throttle.forget(viewer);
         registry.cancelViewer(viewer);
         drops.cancelViewer(viewer);
         loops.cancelViewer(viewer);
