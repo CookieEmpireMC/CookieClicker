@@ -112,7 +112,8 @@ None. Decided 2026-10-21: ×1/×5/×10/**Max**; smooth price tweens; cookie spin
 | sound-designer | merged | `upgrade-holograms/sound-designer` | asset-only (checks) | 72df49a; sounds placeholder until listened to |
 | vfx-designer | merged | `upgrade-holograms/vfx-designer` | READY (Gandalf) | a648c97 + tests 8067d28; LOW: upgrade_shelved cost doc says 10, is 16 |
 | plugin-coder (economy) | merged | `upgrade-holograms/plugin-coder-economy` | READY (Gandalf) | all checks green again; review `docs/reviews/2026-10-21-upgrade-holograms-economy.md`; LOWs: v2→v3 ALTER not idempotent (use IF NOT EXISTS), unused groupingSeparator |
-| plugin-coder (panels) | in progress | `upgrade-holograms/plugin-coder-panels` | | launched 2026-10-21 |
+| plugin-coder (panels) | merged | `upgrade-holograms/plugin-coder-panels` | READY (Gandalf) | 623 tests; perf estimate ~0.1 ms/tick worst case; LOWs to cleanup / follow-ups |
+| plugin-coder (cleanup) | in progress | `upgrade-holograms/plugin-coder-cleanup` | | behaviour-preserving pass on Gandalf's LOW/PERF-LOW findings |
 | plugin-tester | planned | | | |
 
 ## Merge order
