@@ -19,6 +19,25 @@ run = "mvn -B test"
 description = "Full clean build, as the tester runs it"
 run = "mvn -B clean verify"
 
+[tasks.check-quiet]
+description = "Full clean build like check, but prints only the result and failures (for agents; saves tokens)"
+quiet = true
+# Extra Maven flags go through MAVEN_ARGS (read by Maven 3.9 itself), e.g. MAVEN_ARGS="-Dtest=FooTest".
+# The log lives outside target/ because clean deletes target/.
+run = """
+#!/usr/bin/env bash
+log="$PWD/.check.log"
+mvn -B clean verify > "$log" 2>&1
+code=$?
+grep -E '^\\[(INFO|WARNING|ERROR)\\] Tests run: ' "$log" | grep -v 'Time elapsed' | tail -n 1
+grep -E '^\\[(INFO|ERROR)\\] BUILD (SUCCESS|FAILURE)' "$log" | tail -n 1
+if [ "$code" -ne 0 ]; then
+  grep -E '^\\[ERROR\\] ' "$log" | grep -vE '^\\[ERROR\\] *$|^\\[ERROR\\] \\[Help|Re-run Maven|full stack trace|re-run Maven|For more information' | head -n 40
+fi
+echo "Full log: $log"
+exit $code
+"""
+
 [tasks.assets-deps]
 description = "Install the Python packages for the asset scripts into .venv"
 sources = ["design/requirements.txt"]
