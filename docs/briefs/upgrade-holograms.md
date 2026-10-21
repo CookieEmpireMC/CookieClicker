@@ -107,11 +107,11 @@ None. Decided 2026-10-21: ×1/×5/×10/**Max**; smooth price tweens; cookie spin
 ## Status
 | Agent | Status | Branch | Verdict | Notes |
 |---|---|---|---|---|
-| balance-designer | in progress | `upgrade-holograms/balance-designer` | | launched 2026-10-21 |
+| balance-designer | merged | `upgrade-holograms/balance-designer` | checks (balance-check 6/6) | contract changes: bulk cost rounded once per batch, upgrades saved as id → level, costs > 0. Known red until the economy part: GoldenValuesTest, test_empty_upgrades_map_is_valid |
 | model-designer | merged | `upgrade-holograms/model-designer` | asset-only (checks) | f606b10; 10 icons placeholder; `layout.clicks` at [16,0,6] |
 | sound-designer | merged | `upgrade-holograms/sound-designer` | asset-only (checks) | 72df49a; sounds placeholder until listened to |
 | vfx-designer | merged | `upgrade-holograms/vfx-designer` | READY (Gandalf) | a648c97 + tests 8067d28; LOW: upgrade_shelved cost doc says 10, is 16 |
-| plugin-coder (economy) | planned | | | waits for balance |
+| plugin-coder (economy) | in progress | `upgrade-holograms/plugin-coder-economy` | | launched 2026-10-21 |
 | plugin-coder (panels) | planned | | | waits for economy + vfx |
 | plugin-tester | planned | | | |
 
