@@ -61,6 +61,7 @@ layout:
   house-at: [6, 0, 10]                                # design cell [0,0,0] lands here
   pedestal: {at: [18, 0, 6], yaw: 180}                # cookie/pedestal point (bottom centre of the cell)
   shop: {at: [20, 0, 6], yaw: 180}                    # shop panel, 2 east of the pedestal
+  clicks: {at: [16, 0, 6], yaw: 180}                  # click upgrades panel + shelf, 2 west of the pedestal (upgrade-holograms)
   viewpoint: {at: [15, 0, 2], yaw: 0, pitch: -14}     # where the player watches the build
   entrance: [15, 0]                                   # centre of the 3-wide gate, front (north) ring
   belt: {from: [18, 0, 11], to: [18, 0, 7]}           # belt cells, from belt_out to the cell before the pedestal
@@ -69,6 +70,7 @@ layout:
 - **Plot size 31 × 30:** design box 19 × 14 at `house-at`, 5 free blocks between it and the fence on the west, east and south; in front 9 rows hold the belt end, the pedestal, the shop and 5 free rows in front of the pedestal for players clicking it.
 - **Belt:** 5 cells, straight north, `from` = `points.belt_out` in plot cells (`house-at + [12, 0, 1]`), `to` = the last belt cell, the one right south of the pedestal (pedestal = `to` − 1 in z). Inclusive both ends.
 - **Pedestal / shop:** yaw 180 = facing north, towards the entrance and the players. The shop stands 2 east of the pedestal so it never blocks the belt or the click area.
+- **Clicks:** `clicks` mirrors the shop, 2 west of the pedestal (x 16, belt is x 18, so it is 2 clear of the belt and the cookie). The panel hangs above the cell, the upgrade shelf (a small icon grid) goes under it; the cells west of x 16 up to the fence (x 1) are free, so the shelf can grow sideways. Validated like the shop (free at feet and head height, outside the design box, not on the belt).
 - **Viewpoint:** 2 blocks inside the gate, centred on the building (design box x 6..24, centre 15.5), looking south (yaw 0) and up 14° (pitch −14). With the default 70° vertical FOV the frame runs from about −21° to +49°: the facade base (−9° at 10 blocks), the front ridge (+48°) and the tall stack top (+37° at ~20 blocks) are all inside; horizontally the 19-wide box spans ±44° (16:9 gives ±51°). Yaw follows Minecraft: 0 = south, 180 = north, pitch negative = up.
 - **Viewpoint vs camera:** the viewpoint is where the player stands *after* the build. `camera` (optional, added by `conveyor-belt`) is where the raised build-cinematic camera sits *during* it: a feet cell like the viewpoint (eye = bottom centre + 1.62), all ints, and it **may lie outside the plot** (negative z) and above the ground. The factory's camera is 13 blocks north of the front fence and 12 up, a 3/4 view (yaw 20, pitch 24) that frames the whole factory, belt, pedestal and fence on a 4:3 screen at FOV 70. Details, the framing check and the preview: `design/conveyor-belt.md`. Layouts without `camera` (the cottage) keep the old cinematic.
 - **Belt frame:** the belt cells get the frame style `houses/belt.yml` (frame column from y 0 up to `surface-height` − 1, the `cookieclicker:conveyor_belt` surface display on top); format in `design/conveyor-belt.md`.
