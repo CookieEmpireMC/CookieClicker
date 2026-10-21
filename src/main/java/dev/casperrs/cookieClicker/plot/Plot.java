@@ -27,17 +27,28 @@ import java.util.regex.Pattern;
  *                    {@code bakery-house} region, or null
  * @param belt        the conveyor belt placed by {@code /bakery plot setup}, or null
  * @param camera      the raised camera of the build cinematic ({@code layout.camera}), or null
+ * @param clicks      where the click upgrades panel stands ({@code layout.clicks}); null = the
+ *                    {@code station.panels.clicks} offset from the pedestal
  */
 public record Plot(String id, String worldKey, @Nullable String plotRegion, @Nullable String houseRegion,
                    @Nullable Viewpoint viewpoint, @Nullable Pedestal pedestal, List<Point> smoke, List<Point> steam,
                    @Nullable Point entrance, @Nullable Pedestal shop, @Nullable Box house, @Nullable Belt belt,
-                   @Nullable Viewpoint camera) {
+                   @Nullable Viewpoint camera, @Nullable Pedestal clicks) {
 
     public static final Pattern ID = Pattern.compile("[a-z0-9_-]{1,64}");
 
     public Plot {
         smoke = List.copyOf(smoke);
         steam = List.copyOf(steam);
+    }
+
+    /** A plot without the click upgrades panel spot (the conveyor-belt shape). */
+    public Plot(String id, String worldKey, @Nullable String plotRegion, @Nullable String houseRegion,
+                @Nullable Viewpoint viewpoint, @Nullable Pedestal pedestal, List<Point> smoke, List<Point> steam,
+                @Nullable Point entrance, @Nullable Pedestal shop, @Nullable Box house, @Nullable Belt belt,
+                @Nullable Viewpoint camera) {
+        this(id, worldKey, plotRegion, houseRegion, viewpoint, pedestal, smoke, steam, entrance, shop, house, belt,
+                camera, null);
     }
 
     /** A plot without belt and camera (the factory-makeover shape). */
@@ -105,15 +116,15 @@ public record Plot(String id, String worldKey, @Nullable String plotRegion, @Nul
 
     public Plot withWorld(String world) {
         return world.equals(worldKey) ? this
-                : new Plot(id, world, plotRegion, houseRegion, null, null, List.of(), List.of(), null, null, null, null, null);
+                : new Plot(id, world, plotRegion, houseRegion, null, null, List.of(), List.of(), null, null, null, null, null, null);
     }
 
     public Plot withViewpoint(@Nullable Viewpoint v) {
-        return new Plot(id, worldKey, plotRegion, houseRegion, v, pedestal, smoke, steam, entrance, shop, house, belt, camera);
+        return new Plot(id, worldKey, plotRegion, houseRegion, v, pedestal, smoke, steam, entrance, shop, house, belt, camera, clicks);
     }
 
     public Plot withPedestal(@Nullable Pedestal p) {
-        return new Plot(id, worldKey, plotRegion, houseRegion, viewpoint, p, smoke, steam, entrance, shop, house, belt, camera);
+        return new Plot(id, worldKey, plotRegion, houseRegion, viewpoint, p, smoke, steam, entrance, shop, house, belt, camera, clicks);
     }
 
     /** Replaces every smoke point with this one (null = no smoke). */
@@ -122,34 +133,46 @@ public record Plot(String id, String worldKey, @Nullable String plotRegion, @Nul
     }
 
     public Plot withSmoke(List<Point> points) {
-        return new Plot(id, worldKey, plotRegion, houseRegion, viewpoint, pedestal, points, steam, entrance, shop, house, belt, camera);
+        return new Plot(id, worldKey, plotRegion, houseRegion, viewpoint, pedestal, points, steam, entrance, shop, house, belt, camera, clicks);
     }
 
     public Plot withSteam(List<Point> points) {
-        return new Plot(id, worldKey, plotRegion, houseRegion, viewpoint, pedestal, smoke, points, entrance, shop, house, belt, camera);
+        return new Plot(id, worldKey, plotRegion, houseRegion, viewpoint, pedestal, smoke, points, entrance, shop, house, belt, camera, clicks);
     }
 
     public Plot withEntrance(@Nullable Point e) {
-        return new Plot(id, worldKey, plotRegion, houseRegion, viewpoint, pedestal, smoke, steam, e, shop, house, belt, camera);
+        return new Plot(id, worldKey, plotRegion, houseRegion, viewpoint, pedestal, smoke, steam, e, shop, house, belt, camera, clicks);
     }
 
     /** Every layout point of a {@code /bakery plot setup} at once. */
     public Plot withLayout(@Nullable Viewpoint v, @Nullable Pedestal p, List<Point> smokePoints, List<Point> steamPoints,
                            @Nullable Point e, @Nullable Pedestal s, @Nullable Box h) {
-        return new Plot(id, worldKey, plotRegion, houseRegion, v, p, smokePoints, steamPoints, e, s, h, belt, camera);
+        return new Plot(id, worldKey, plotRegion, houseRegion, v, p, smokePoints, steamPoints, e, s, h, belt, camera,
+                clicks);
     }
 
     /** Every layout point of a {@code /bakery plot setup} at once, with the belt and the camera. */
     public Plot withLayout(@Nullable Viewpoint v, @Nullable Pedestal p, List<Point> smokePoints, List<Point> steamPoints,
                            @Nullable Point e, @Nullable Pedestal s, @Nullable Box h, @Nullable Belt b,
                            @Nullable Viewpoint c) {
-        return new Plot(id, worldKey, plotRegion, houseRegion, v, p, smokePoints, steamPoints, e, s, h, b, c);
+        return new Plot(id, worldKey, plotRegion, houseRegion, v, p, smokePoints, steamPoints, e, s, h, b, c, clicks);
+    }
+
+    /** Every layout point of a {@code /bakery plot setup} at once, with the belt, camera and click panel spot. */
+    public Plot withLayout(@Nullable Viewpoint v, @Nullable Pedestal p, List<Point> smokePoints, List<Point> steamPoints,
+                           @Nullable Point e, @Nullable Pedestal s, @Nullable Box h, @Nullable Belt b,
+                           @Nullable Viewpoint c, @Nullable Pedestal k) {
+        return new Plot(id, worldKey, plotRegion, houseRegion, v, p, smokePoints, steamPoints, e, s, h, b, c, k);
     }
 
     /** The station the per-player cookie/panel views anchor on: id = plot id, position = pedestal. */
     public Optional<Station> station() {
         return pedestal == null ? Optional.empty()
                 : Optional.of(new Station(id, worldKey, pedestal.x(), pedestal.y(), pedestal.z(), pedestal.yaw(),
-                        shop == null ? null : new Station.Anchor(shop.x(), shop.y(), shop.z(), shop.yaw())));
+                        anchor(shop), anchor(clicks)));
+    }
+
+    private static Station.@Nullable Anchor anchor(@Nullable Pedestal p) {
+        return p == null ? null : new Station.Anchor(p.x(), p.y(), p.z(), p.yaw());
     }
 }

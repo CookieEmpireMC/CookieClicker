@@ -26,6 +26,7 @@ import java.util.regex.Pattern;
  *     steam: [ { x: 18.5, y: 70.0, z: 2.5 }, ... ]   # optional: factory_steam vents
  *     entrance: { x: 3.5, y: 64.0, z: -9.5 }         # optional: fence gate centre (/bakery plot setup)
  *     shop: { x: 14.5, y: 64.0, z: -3.5, yaw: 90.0 } # optional: shop panel spot (/bakery plot setup)
+ *     clicks: { x: 10.5, y: 64.0, z: -3.5, yaw: 90.0 } # optional: click upgrades panel spot (/bakery plot setup)
  *     house-box: { min: [10, 64, -8], max: [22, 78, 2] }   # optional: the house placed by /bakery plot setup
  *     belt: { height: 0.5, cells: [[18, 64, 11], [18, 64, 10], ...] }   # optional: conveyor, hatch -> pedestal
  *     camera: { x: 15.5, y: 73.0, z: -8.5, yaw: 0.0, pitch: 30.0 }      # optional: raised cinematic camera
@@ -105,6 +106,15 @@ public final class PlotCodec {
                     shop = new Plot.Pedestal(v[0], v[1], v[2], (float) v[3]);
                 }
             }
+            Plot.Pedestal clicks = null;
+            if (spec.get("clicks") != null) {
+                double[] v = numbers(spec.get("clicks"), "x", "y", "z", "yaw");
+                if (v == null) {
+                    problems.accept(where + ".clicks needs numeric x, y, z (yaw optional); ignored");
+                } else {
+                    clicks = new Plot.Pedestal(v[0], v[1], v[2], (float) v[3]);
+                }
+            }
             Plot.Box house = null;
             if (spec.get("house-box") != null) {
                 house = box(spec.get("house-box"));
@@ -129,7 +139,7 @@ public final class PlotCodec {
                 }
             }
             out.add(new Plot(id, w, regionId(spec.get("plot-region")), regionId(spec.get("house-region")),
-                    viewpoint, pedestal, smoke, steam, entrance, shop, house, belt, camera));
+                    viewpoint, pedestal, smoke, steam, entrance, shop, house, belt, camera, clicks));
         }
         return out;
     }
@@ -169,6 +179,10 @@ public final class PlotCodec {
             if (p.shop() != null) {
                 Plot.Pedestal v = p.shop();
                 spec.put("shop", point(v.x(), v.y(), v.z(), "yaw", v.yaw(), null, 0));
+            }
+            if (p.clicks() != null) {
+                Plot.Pedestal v = p.clicks();
+                spec.put("clicks", point(v.x(), v.y(), v.z(), "yaw", v.yaw(), null, 0));
             }
             if (p.house() != null) {
                 Plot.Box b = p.house();
