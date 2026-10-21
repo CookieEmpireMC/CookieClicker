@@ -124,6 +124,6 @@ None. Decided 2026-10-21: ×1/×5/×10/**Max**; smooth price tweens; cookie spin
 6. plugin-coder (panels), launched once 3 and 5 are merged
 
 ## Needs human review
-- [ ] Balance: the click upgrade prices and the `bakers_strength` curve (balance report before/after).
+- [x] Balance: the click upgrade prices and the `bakers_strength` curve (balance report before/after). Approved by the user on 2026-10-21 on the condition that more buildings follow. If the roster stays at 2 buildings, the late click upgrades (Diamond Fingers, Netherite Hands, Handy Fingers) need retuning, because their saves run up to about 1.5 h. This goes into the PR's follow-ups.
 - [ ] Listen: `upgrade_shelved`, `bulk_toggle`.
 - [ ] Check in game: both panels with and without the pack, the ×1/×5/×10/Max toggle and how smooth the price roll looks, the cookie spin while clicking fast, the fly-out to the shelf, shelf tooltips, and number formatting in the HUD and panels.
