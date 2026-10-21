@@ -38,7 +38,11 @@ def resolve_texture(ref: str, textures: dict, assets: Path) -> Image.Image:
     while ref.startswith("#"):
         ref = textures[ref[1:]]
     ns, _, path = ref.partition(":") if ":" in ref else ("minecraft", "", ref)
-    return Image.open(assets / ns / "textures" / f"{path}.png").convert("RGBA")
+    png = assets / ns / "textures" / f"{path}.png"
+    img = Image.open(png).convert("RGBA")
+    if png.with_suffix(".png.mcmeta").exists() and img.height > img.width:   # animated strip: first frame
+        img = img.crop((0, 0, img.width, img.width))
+    return img
 
 
 def face_frame(direction: str, f, t):
