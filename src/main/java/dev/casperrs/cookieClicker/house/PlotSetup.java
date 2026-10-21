@@ -1,5 +1,6 @@
 package dev.casperrs.cookieClicker.house;
 
+import dev.casperrs.cookieClicker.belt.BeltPath;
 import dev.casperrs.cookieClicker.config.YamlFiles;
 import dev.casperrs.cookieClicker.plot.Plot;
 import dev.casperrs.cookieClicker.plot.PlotRegistry;
@@ -65,6 +66,7 @@ public final class PlotSetup {
     public static final String BACKUP_DIR = "setup-backups";
     public static final String DEFAULT_DESIGN = "factory";
     public static final String FENCE_STYLE = "fence.yml";
+    public static final String BELT_STYLE = "belt.yml";
     public static final int MAX_GROUND_SPREAD = 2;
     /** The fence follows the ground per column, but never more than this far from the layout's ground. */
     private static final int FENCE_GROUND_SLACK = 3;
@@ -97,7 +99,7 @@ public final class PlotSetup {
     }
 
     /** What the IO thread read for a setup. */
-    private record Inputs(@Nullable String design, @Nullable String style, @Nullable Path oldYml,
+    private record Inputs(@Nullable String design, @Nullable String style, @Nullable String belt, @Nullable Path oldYml,
                           @Nullable String oldText, byte @Nullable [] oldNbt) {
     }
 
@@ -124,7 +126,7 @@ public final class PlotSetup {
             try {
                 Path oldYml = newest(dir);
                 Path oldNbt = oldYml == null ? null : sibling(oldYml, ".nbt");
-                in = new Inputs(read(data, designName + ".yml"), read(data, FENCE_STYLE), oldYml,
+                in = new Inputs(read(data, designName + ".yml"), read(data, FENCE_STYLE), read(data, BELT_STYLE), oldYml,
                         oldYml == null ? null : Files.readString(oldYml, StandardCharsets.UTF_8),
                         oldNbt != null && Files.isRegularFile(oldNbt) ? Files.readAllBytes(oldNbt) : null);
             } catch (IOException e) {
@@ -332,6 +334,20 @@ public final class PlotSetup {
                     changes);
         }
 
+        // conveyor belt frame along layout.belt (houses/belt.yml; missing or broken = no frame, a warning)
+        Plot.Belt belt = null;
+        if (layout.beltFrom() != null && layout.beltTo() != null) {
+            int[] f = layout.beltFrom();
+            int[] t = layout.beltTo();
+            List<Plot.Cell> beltCells = BeltPath.cells(new int[] {ax + f[0], y0 + f[1], az + f[2]},
+                    new int[] {ax + t[0], y0 + t[1], az + t[2]});
+            if (beltCells != null) {
+                BeltStyle beltStyle = beltStyle(in.belt(), known);
+                belt = new Plot.Belt(beltCells, beltStyle.surface());
+                placeBelt(world, beltCells, beltStyle, known, cells, changes);
+            }
+        }
+
         // points
         Plot.Pedestal pedestal = spot(layout.pedestal(), ax, y0, az);
         Plot.Pedestal shop = spot(layout.shop(), ax, y0, az);
@@ -340,8 +356,11 @@ public final class PlotSetup {
                 layout.viewpoint().yaw(), layout.viewpoint().pitch());
         int[] e = fence.entrance();
         Plot.Point entrance = e == null ? null : new Plot.Point(e[0] + 0.5, e[1], e[2] + 0.5);
+        HouseLayout.View cam = layout.camera();
+        Plot.Viewpoint camera = cam == null ? null : new Plot.Viewpoint(ax + cam.at()[0] + 0.5, y0 + cam.at()[1],
+                az + cam.at()[2] + 0.5, cam.yaw(), cam.pitch());
         Plot updated = before.withLayout(viewpoint, pedestal, HousePlacer.cellCentres(design, houseAt, design.smoke()),
-                HousePlacer.cellCentres(design, houseAt, design.steam()), entrance, shop, houseBox);
+                HousePlacer.cellCentres(design, houseAt, design.steam()), entrance, shop, houseBox, belt, camera);
 
         SetupBackup backup = new SetupBackup(plotId, design.name(), before.worldKey(), System.currentTimeMillis(),
                 corner, size, cells, before);
@@ -436,6 +455,52 @@ public final class PlotSetup {
         }
     }
 
+    /** Parses houses/belt.yml; every problem is a warning and means "no frame" (the belt surface still runs). */
+    private BeltStyle beltStyle(@Nullable String text, Map<String, BlockData> known) {
+        if (text == null) {
+            plugin.getLogger().warning("houses/" + BELT_STYLE + " not found; the belt gets no frame blocks");
+            return BeltStyle.none();
+        }
+        BeltStyle.Result r;
+        try {
+            r = BeltStyle.parse(yaml(text));
+        } catch (InvalidConfigurationException e) {
+            r = new BeltStyle.Result(null, List.of("not valid YAML: " + e.getMessage()));
+        }
+        if (r.style() == null) {
+            plugin.getLogger().warning("houses/" + BELT_STYLE + ": " + String.join("; ", r.problems())
+                    + "; the belt gets no frame blocks");
+            return BeltStyle.none();
+        }
+        for (String s : r.style().allBlockData()) {
+            try {
+                known.computeIfAbsent(s, Bukkit::createBlockData);
+            } catch (IllegalArgumentException e) {
+                plugin.getLogger().warning("houses/" + BELT_STYLE + ": '" + s
+                        + "' is not valid block data; the belt gets no frame blocks");
+                return BeltStyle.none(r.style().surfaceHeight());
+            }
+        }
+        return r.style();
+    }
+
+    /** The frame column of every belt cell, from y 0 up (only the belt cells); tile entities are never replaced. */
+    private static void placeBelt(World world, List<Plot.Cell> beltCells, BeltStyle style, Map<String, BlockData> known,
+                                  List<HouseBackup.Cell> cells, List<HouseBackup.Change> changes) {
+        for (int i = 0; i < beltCells.size(); i++) {
+            Plot.Cell c = beltCells.get(i);
+            List<String> column = style.column(i, beltCells.size());
+            for (int k = 0; k < column.size(); k++) {
+                int y = c.y() + k;
+                if (y < world.getMinHeight() || y >= world.getMaxHeight()
+                        || world.getBlockAt(c.x(), y, c.z()).getState(false) instanceof TileState) {
+                    continue;
+                }
+                change(world, c.x(), y, c.z(), known.get(column.get(k)).getAsString(), cells, changes);
+            }
+        }
+    }
+
     /**
      * A layout spot's yaw is the way it faces (toward the visitors); a station's yaw is the opposite (the facing of
      * someone looking at it, like the admin who placed a pedestal by hand).
@@ -495,7 +560,7 @@ public final class PlotSetup {
                     return;
                 }
                 Path nbt = sibling(yml, ".nbt");
-                in = new Inputs(null, null, yml, Files.readString(yml, StandardCharsets.UTF_8),
+                in = new Inputs(null, null, null, yml, Files.readString(yml, StandardCharsets.UTF_8),
                         Files.isRegularFile(nbt) ? Files.readAllBytes(nbt) : null);
             } catch (IOException e) {
                 plugin.getLogger().log(Level.SEVERE, "Could not read the setup backups of plot " + plotId, e);

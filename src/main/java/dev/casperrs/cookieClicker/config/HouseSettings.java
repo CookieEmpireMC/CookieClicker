@@ -33,11 +33,13 @@ public record HouseSettings(int maxBlocks, Cinematic cinematic, Chimney chimney,
      * @param hammerEvery         play {@code house_hammer} on every n-th landing (0 = never)
      * @param viewpointRadius     {@code trigger: viewpoint}: how close (blocks) to the viewpoint a teleport must end
      * @param confettiHeight      blocks above the top of the house region where the confetti bursts
+     * @param camera              watch the build in spectator mode from the plot's raised camera point (when the
+     *                            plot has one); the player gets their game mode back at the viewpoint afterwards
      */
     public record Cinematic(boolean enabled, Trigger trigger, boolean teleportToViewpoint, double blocksPerTick,
                             int maxFallingDisplays, int layerDelayTicks, KeepOut keepOut, double slowAmount,
                             int fakeAirPerTick, int refreshHiddenTicks, int reassertRadius, int hammerEvery,
-                            double viewpointRadius, double confettiHeight) {
+                            double viewpointRadius, double confettiHeight, boolean camera) {
     }
 
     /**
@@ -78,7 +80,8 @@ public record HouseSettings(int maxBlocks, Cinematic cinematic, Chimney chimney,
                 Math.clamp(c.getInt(p + "reassert-radius", 2), 0, 16),
                 Math.clamp(c.getInt(p + "hammer-every", 3), 0, 1000),
                 Math.clamp(c.getDouble(p + "viewpoint-radius", 2.0), 0.5, 16.0),
-                Math.clamp(c.getDouble(p + "confetti-height", 1.0), -16.0, 16.0));
+                Math.clamp(c.getDouble(p + "confetti-height", 1.0), -16.0, 16.0),
+                c.getBoolean(p + "camera", true));
         Chimney chimney = new Chimney(
                 c.getBoolean("house.chimney.smoke", true),
                 Math.clamp(c.getInt("house.chimney.crackle-every", 6), 0, 1000));

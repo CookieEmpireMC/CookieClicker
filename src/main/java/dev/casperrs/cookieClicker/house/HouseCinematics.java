@@ -60,6 +60,10 @@ import java.util.logging.Level;
  * {@link #abort}: {@code effects.cancelFor(player)} first, then every still-hidden block is sent real again right
  * away (when the player is still online), the keep-out modifiers are removed, and the house is not marked seen.
  * "Seen" is stored only on completion. Main thread only; one cinematic per player.
+ *
+ * <p>Camera (conveyor-belt): with {@code house.cinematic.camera} and a plot camera point, the build is watched in
+ * spectator mode from that point ({@link CinematicCamera}); every end of the run (completion and every abort) ends
+ * the camera too, giving back the game mode at the viewpoint.
  */
 public final class HouseCinematics implements Listener, PlotPresenceListener {
 
@@ -89,6 +93,7 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
         final long[] sendBuffer;
         int impacts;
         boolean alive = true;
+        boolean camera;
 
         Run(UUID player, String plotId, World world, HouseBox box, RevealPlan plan, Set<Long> tiles) {
             this.player = player;
@@ -112,6 +117,7 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
     private final FakeBlocks fakeBlocks = new FakeBlocks();
     private final KeepOut keepOut;
     private final ChimneySmoke smoke;
+    private final CinematicCamera camera;
 
     private final Map<UUID, Run> running = new HashMap<>();
     /** Players waiting for their {@code house_seen} answer, with the generation they asked in. */
@@ -135,12 +141,18 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
         this.settings = settings;
         this.keepOut = new KeepOut(plugin);
         this.smoke = new ChimneySmoke(plugin, effects, sounds, settings);
+        this.camera = new CinematicCamera(plugin, selfTeleport, id -> {
+            if (abort(id, true)) {
+                resumeSmokeLater(id);
+            }
+        });
     }
 
     /** Enable: listen to events and plot presence. Call before {@link PlotTracker#start()}. */
     public void start() {
         if (!registered) {
             plugin.getServer().getPluginManager().registerEvents(this, plugin);
+            plugin.getServer().getPluginManager().registerEvents(camera, plugin);
             tracker.addListener(this);
             registered = true;
         }
@@ -188,9 +200,11 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
     /** Disable: everything off, every house restored. */
     public void shutdown() {
         abortAll();
+        camera.exitAll();
         stopTask();
         if (registered) {
             HandlerList.unregisterAll(this);
+            HandlerList.unregisterAll(camera);
             tracker.removeListener(this);
             registered = false;
         }
@@ -201,7 +215,8 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
     @Override
     public void onEnterPlot(Player player, String plotId) {
         HouseSettings.Cinematic c = settings.get().cinematic();
-        if (c.enabled() && c.trigger() == HouseSettings.Trigger.ENTER_PLOT) {
+        if (c.enabled() && c.trigger() == HouseSettings.Trigger.ENTER_PLOT
+                && !selfTeleport.contains(player.getUniqueId())) { // back from our own camera: no new run
             request(player, plotId);
         } else {
             startSmoke(player, plotId);
@@ -213,7 +228,7 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
         UUID id = player.getUniqueId();
         pending.remove(id);
         Run run = running.get(id);
-        if (run != null && run.plotId.equals(plotId)) {
+        if (run != null && run.plotId.equals(plotId) && !run.camera) { // the camera point may lie outside the plot
             abort(id, true);
         }
         smoke.stop(id);
@@ -323,14 +338,17 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
         RevealPlan plan = new RevealPlan(RevealOrder.of(Arrays.copyOf(blocks, n)), new RevealPlan.Pace(
                 c.blocksPerTick(), c.maxFallingDisplays(), c.layerDelayTicks(), c.fakeAirPerTick(),
                 c.refreshHiddenTicks()));
-        Plot.Viewpoint v = c.teleportToViewpoint() ? plot.viewpoint() : null;
+        Plot.Viewpoint cam = c.camera() ? plot.camera() : null;
+        Plot.Viewpoint v = c.teleportToViewpoint() || cam != null ? plot.viewpoint() : null;
         Location feet = v != null ? new Location(world, v.x(), v.y(), v.z(), v.yaw(), v.pitch()) : player.getLocation();
         // checked where they will stand, before any teleport: inside hidden blocks, or on one (they'd fall)
         if (HouseBox.bodyOverlaps(feet.getX(), feet.getY(), feet.getZ(), plan::isHidden)
                 || HouseBox.bodyOverlaps(feet.getX(), feet.getY() - 0.5, feet.getZ(), plan::isHidden)) {
             return Result.INSIDE;
         }
-        if (v != null) {
+        boolean filmed = cam != null && camera.enter(player,
+                new Location(world, cam.x(), cam.y(), cam.z(), cam.yaw(), cam.pitch()), feet);
+        if (v != null && !filmed) {
             selfTeleport.add(id);
             try {
                 player.teleport(feet);
@@ -343,8 +361,11 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
         }
 
         smoke.stop(id);
-        keepOut.apply(player, c.keepOut(), c.slowAmount());
+        if (!filmed) {
+            keepOut.apply(player, c.keepOut(), c.slowAmount());
+        }
         Run run = new Run(id, plotId, world, box, plan, tiles);
+        run.camera = filmed;
         running.put(id, run);
         ensureTask();
         try {
@@ -489,6 +510,10 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
         run.alive = false;
         running.remove(run.player, run);
         keepOut.clear(p);
+        seen.markSeen(run.player, run.plotId); // before the camera's teleport back into the plot
+        if (run.camera) {
+            camera.exit(p, true, true);
+        }
         HouseBox box = run.box;
         Location top = new Location(run.world, box.centreX(), box.maxY() + settings.get().cinematic().confettiHeight(),
                 box.centreZ());
@@ -496,7 +521,6 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
         sounds.play(p, SOUND_FANFARE);
         p.showTitle(Title.title(messages.component("house.cinematic.title"),
                 messages.component("house.cinematic.subtitle")));
-        seen.markSeen(run.player, run.plotId);
         if (tracker.presence(run.player).inPlot(run.plotId)) {
             startSmoke(p, run.plotId);
         }
@@ -511,6 +535,11 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
      * @return whether a cinematic was running
      */
     public boolean abort(UUID id, boolean online) {
+        return abort(id, online, online);
+    }
+
+    /** @param goBack a camera run puts the player back at the viewpoint (false: they are being teleported away) */
+    private boolean abort(UUID id, boolean online, boolean goBack) {
         Run run = running.remove(id);
         if (run == null) {
             return false;
@@ -525,6 +554,9 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
                 guarded("restore blocks", () -> fakeBlocks.sendReal(p, run.world, hidden, hidden.length, run.tiles));
             }
             guarded("clear keep-out", () -> keepOut.clear(p));
+            if (run.camera) {
+                guarded("end camera", () -> camera.exit(p, online, goBack));
+            }
         }
         return true;
     }
@@ -592,6 +624,11 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
         UUID id = event.getPlayer().getUniqueId();
         Run run = running.get(id);
         Location to = event.getTo();
+        if (run != null && !selfTeleport.contains(id) && run.camera
+                && event.getCause() == PlayerTeleportEvent.TeleportCause.SPECTATE) {
+            event.setCancelled(true); // locked to the camera: no spectator menu teleports
+            return;
+        }
         if (run != null && !selfTeleport.contains(id) && run.world.equals(to.getWorld())
                 && HouseBox.bodyOverlaps(to.getX(), to.getY(), to.getZ(), run.plan::isHidden)) {
             event.setCancelled(true);
@@ -610,7 +647,7 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
         if (from.getWorld() != null && from.getWorld().equals(to.getWorld()) && from.distanceSquared(to) < 1.0) {
             return;
         }
-        abort(id, true);
+        abort(id, true, false); // they go where this teleport takes them, in their own game mode
         resumeSmokeLater(id);
     }
 

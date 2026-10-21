@@ -18,13 +18,17 @@ import java.util.Map;
  *   viewpoint: { at: [11, 0, 2], yaw: 0, pitch: -14 }   # player view of the build cinematic (yaw 0 = south)
  *   entrance: [11, 0]                # x, z of the gate centre (on the outer ring)
  *   belt: { from: [11, 0, 12], to: [11, 0, 19] }          # optional: conveyor path; to = the last belt cell
+ *   camera: { at: [15, 9, -8], yaw: 0, pitch: 30 }        # optional: raised cinematic camera, may be outside the plot
  * </pre>
+ * The belt must be straight (same y, and the same x or z), at most {@link #MAX_BELT} cells.
  * Cell positions become block centres in x/z ({@code + 0.5}); y stays the cell's bottom.
  */
 public record HouseLayout(int sizeX, int sizeZ, int[] houseAt, Spot pedestal, Spot shop, View viewpoint,
-                          int[] entrance, int @Nullable [] beltFrom, int @Nullable [] beltTo) {
+                          int[] entrance, int @Nullable [] beltFrom, int @Nullable [] beltTo,
+                          @Nullable View camera) {
 
     public static final int MAX_SIZE = 256;
+    public static final int MAX_BELT = 64;
 
     /** A layout cell with a yaw. */
     public record Spot(double[] at, float yaw) {
@@ -79,12 +83,41 @@ public record HouseLayout(int sizeX, int sizeZ, int[] houseAt, Spot pedestal, Sp
             }
             if (beltFrom == null || beltTo == null) {
                 problems.add("layout.belt must be { from: [x, y, z], to: [x, y, z] }");
+            } else if (beltFrom[1] != beltTo[1] || (beltFrom[0] != beltTo[0] && beltFrom[2] != beltTo[2])
+                    || Math.abs(beltFrom[0] - beltTo[0]) + Math.abs(beltFrom[2] - beltTo[2]) >= MAX_BELT) {
+                problems.add("layout.belt must be a straight line (same y, same x or z) of at most " + MAX_BELT
+                        + " cells");
             }
+        }
+        View camera = null;
+        if (m.get("camera") != null) {
+            camera = camera(m.get("camera"), problems);
         }
         if (problems.size() > before) {
             return null;
         }
-        return new HouseLayout(size[0], size[1], houseAt, pedestal, shop, viewpoint, entrance, beltFrom, beltTo);
+        return new HouseLayout(size[0], size[1], houseAt, pedestal, shop, viewpoint, entrance, beltFrom, beltTo,
+                camera);
+    }
+
+    /** {@code camera}: any numbers within {@link #MAX_SIZE} of the layout corner (outside the plot is fine). */
+    private static @Nullable View camera(Object raw, List<String> problems) {
+        if (raw instanceof Map<?, ?> c && c.get("at") instanceof List<?> l && l.size() == 3
+                && l.get(0) instanceof Number x && l.get(1) instanceof Number y && l.get(2) instanceof Number z) {
+            double[] at = {x.doubleValue(), y.doubleValue(), z.doubleValue()};
+            Float yaw = c.get("yaw") == null ? Float.valueOf(0f) : number(c.get("yaw"));
+            Float pitch = c.get("pitch") == null ? Float.valueOf(0f) : number(c.get("pitch"));
+            boolean near = true;
+            for (double v : at) {
+                near &= Double.isFinite(v) && Math.abs(v) <= MAX_SIZE;
+            }
+            if (yaw != null && pitch != null && near) {
+                return new View(at, yaw, Math.clamp(pitch, -90f, 90f));
+            }
+        }
+        problems.add("layout.camera must be { at: [x, y, z], yaw, pitch } with numbers within " + MAX_SIZE
+                + " of the layout corner");
+        return null;
     }
 
     private static @Nullable Spot spot(Object raw, String key, int[] size, List<String> problems) {
