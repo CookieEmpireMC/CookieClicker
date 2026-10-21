@@ -109,7 +109,7 @@ None. Decided 2026-10-21: ×1/×5/×10/**Max**; smooth price tweens; cookie spin
 |---|---|---|---|---|
 | balance-designer | in progress | `upgrade-holograms/balance-designer` | | launched 2026-10-21 |
 | model-designer | in progress | `upgrade-holograms/model-designer` | | launched 2026-10-21 |
-| sound-designer | in progress | `upgrade-holograms/sound-designer` | | launched 2026-10-21 |
+| sound-designer | merged | `upgrade-holograms/sound-designer` | asset-only (checks) | 72df49a; sounds placeholder until listened to |
 | vfx-designer | in progress | `upgrade-holograms/vfx-designer` | | launched 2026-10-21 |
 | plugin-coder (economy) | planned | | | waits for balance |
 | plugin-coder (panels) | planned | | | waits for economy + vfx |
