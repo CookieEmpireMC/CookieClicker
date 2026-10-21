@@ -100,7 +100,8 @@ None. Decided 2026-10-21: ×1/×5/×10/**Max**; smooth price tweens; cookie spin
 | model-designer | upgrade icons; `layout.clicks`; spec | contract | `upgrade-holograms/model-designer` |
 | sound-designer | `upgrade_shelved`, `bulk_toggle` | contract | `upgrade-holograms/sound-designer` |
 | vfx-designer | `upgrade_bought`, `upgrade_shelved` presets; `PopMotion` + motion-aware `Effects.pop` overload (+ tests) | contract | `upgrade-holograms/vfx-designer` |
-| plugin-coder | economy: repeatable upgrades and bulk buying (from model.md); storage levels + migration; two panels, ×1/×5/×10/Max toggle with price tweens, shelf and fly-out; short number format; cookie spin fix; config and messages | balance-designer and vfx-designer merged (model.md, upgrades.yml, `PopMotion` API) | `upgrade-holograms/plugin-coder` |
+| plugin-coder (economy) | `economy/`: repeatable upgrades, bulk cost and Max count (exactly as model.md); `storage/`: upgrade levels + migration from the id set; `format/NumberFormatter` short suffixes + `messages.yml: numbers`; keeps today's panel compiling (×1 behaviour) | balance-designer merged | `upgrade-holograms/plugin-coder-economy` |
+| plugin-coder (panels) | `view/`, `hud/`, `config.yml: station.*`, `messages.yml: panel.*, upgrades.*`: two panels, ×1/×5/×10/Max toggle with price tweens, shelf and fly-out, `bulk_toggle`/`upgrade_*` wiring; cookie spin fix with `PopMotion` | economy part and vfx-designer merged | `upgrade-holograms/plugin-coder-panels` |
 | plugin-tester | review each branch, then integration (incl. performance) | owner DONE | (reviewed branch) |
 
 ## Status
@@ -110,7 +111,8 @@ None. Decided 2026-10-21: ×1/×5/×10/**Max**; smooth price tweens; cookie spin
 | model-designer | in progress | `upgrade-holograms/model-designer` | | launched 2026-10-21 |
 | sound-designer | in progress | `upgrade-holograms/sound-designer` | | launched 2026-10-21 |
 | vfx-designer | in progress | `upgrade-holograms/vfx-designer` | | launched 2026-10-21 |
-| plugin-coder | planned | | | |
+| plugin-coder (economy) | planned | | | waits for balance |
+| plugin-coder (panels) | planned | | | waits for economy + vfx |
 | plugin-tester | planned | | | |
 
 ## Merge order
@@ -118,7 +120,8 @@ None. Decided 2026-10-21: ×1/×5/×10/**Max**; smooth price tweens; cookie spin
 2. sound-designer
 3. vfx-designer
 4. balance-designer
-5. plugin-coder (launched once 3 and 4 are merged)
+5. plugin-coder (economy), launched once 4 is merged
+6. plugin-coder (panels), launched once 3 and 5 are merged
 
 ## Needs human review
 - [ ] Balance: the click upgrade prices and the `bakers_strength` curve (balance report before/after).
