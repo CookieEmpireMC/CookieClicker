@@ -34,8 +34,10 @@ class PanelCookieOverlapTest {
         PanelLayout layout = PanelLayout.of(S, 2);
         int total = 0;
         int stolen = 0;
-        for (double wx = panelWorldX - 1.0; wx <= panelWorldX + 1.0; wx += 0.02) {
-            for (double wy = anchorUp - 1.4; wy <= anchorUp + 0.2; wy += 0.02) {
+        // sample the whole click box (icons hang left of the text, so it is off-centre on the anchor)
+        double left = panelWorldX + layout.boxBottom().right() - layout.boxWidth() / 2;
+        for (double wx = left; wx <= left + layout.boxWidth(); wx += 0.02) {
+            for (double wy = anchorUp + layout.boxBottom().up(); wy <= anchorUp + layout.headerHeight(); wy += 0.02) {
                 Vector dir = new Vector(wx, wy, 0).subtract(eye).normalize();
                 Offset e = frame.local(eye.getX(), eye.getY(), eye.getZ(), anchor);
                 Offset d = frame.direction(dir.getX(), dir.getY(), dir.getZ());
