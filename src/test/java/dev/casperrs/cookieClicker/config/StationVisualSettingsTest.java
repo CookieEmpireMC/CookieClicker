@@ -167,4 +167,25 @@ class StationVisualSettingsTest {
         assertEquals(new Offset(-0.3, 0, 0), code.textOffset());
         assertEquals(0.03, code.clickMargin(), 1e-9);
     }
+
+    @Test
+    void basketInTheShippedConfigMatchesTheCodeDefaultsAndTheDesignHeights() {
+        YamlConfiguration shipped = YamlConfiguration.loadConfiguration(new File("src/main/resources/config.yml"));
+        List<String> problems = new ArrayList<>();
+        BasketSettings fromFile = StationVisualSettings.from(shipped, problems::add).basket();
+        assertEquals(List.of(), problems);
+        assertEquals(BasketSettings.defaults(), fromFile, "config.yml and the in-code basket defaults drifted apart");
+        // design/basket.md top heights; golden fill 0-1 is raised to 0.69 so the cookie clears its corner posts
+        assertEquals(List.of(0.281, 0.313, 0.406, 0.5, 0.594), fromFile.heights().get("wicker"));
+        assertEquals(List.of(0.484, 0.5, 0.594, 0.688, 0.781), fromFile.heights().get("bushel"));
+        assertEquals(List.of(0.69, 0.69, 0.781, 0.969, 1.188), fromFile.heights().get("golden"));
+    }
+
+    @Test
+    void basketTierStartsThatDoNotIncreaseFallBackWithOneProblem() {
+        List<String> problems = new ArrayList<>();
+        BasketSettings b = parse("station:\n  basket:\n    tier-starts: [1, 5, 3, 10]\n", problems).basket();
+        assertEquals(1, problems.size());
+        assertEquals(BasketSettings.defaults().tierStarts(), b.tierStarts());
+    }
 }
