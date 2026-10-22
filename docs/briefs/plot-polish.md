@@ -47,6 +47,9 @@ lamps and small bakery props that make it feel lived in.
       stays clickable: cookie centre never higher than eye level + 0.6 from the ground in front of the pedestal,
       and the click hitbox follows it.
 - [ ] Without our resource pack the old pedestal block is shown (vanilla fallback).
+- [ ] When the basket reaches a **higher tier** (wicker -> bushel, bushel -> golden), the owner hears `basket_tier_up` and sees the
+      `basket_tier_up` sparkle at the basket (only on a real tier-up while watching, not on join/spawn/reload or when
+      the tier drops). The look switches at the peak of the effect.
 ### Panels (texts)
 - [ ] Every row is at most two lines at `line-width` 120: a locked row is `???` + one short line, e.g.
       `Bake 250M to unlock` / `Own 10 Wheat Farm to unlock`; the buildings panel's locked row uses the same style.
@@ -77,8 +80,9 @@ lamps and small bakery props that make it feel lived in.
 |---|---|---|
 | model / texture / glyph | `cookieclicker:cookie_basket`: 3 tiers x 5 fill steps, spec + heights in `design/basket.md` | model-designer |
 | model / texture / glyph | `houses/decor.yml` + generator script + spec `design/decor.md` | model-designer |
+| sound | `basket_tier_up`: short rewarding chime/whoosh (~1.2 s), richer than `upgrade_shelved` | sound-designer |
 | sound | check the three loops are seamless at their fixed pitch; fix files or `sounds.yml` (crackle: fixed pitch) | sound-designer |
-| effect | none | — |
+| effect | `basket_tier_up`: golden sparkle burst + rising ring around the basket, ~1.5 s | vfx-designer |
 
 ## Balance impact
 none
@@ -93,6 +97,8 @@ none
 | Kind | ID | Owner | Notes |
 |---|---|---|---|
 | item model | `cookieclicker:cookie_basket` | model-designer | one item model definition, `select` on `custom_model_data` strings[0] = `<tier>_<fill>`: tiers `wicker`, `bushel`, `golden`, fill `0`..`4` (e.g. `golden_4`); origin = bottom centre at the item display position (transform NONE, scale 1); `design/basket.md` lists each look's top height and width |
+| sound event | `basket_tier_up` | sound-designer | key `cookieclicker:ui.basket_tier_up`, fallback `minecraft:entity.player.levelup` |
+| effect | `basket_tier_up` | vfx-designer | played at the basket's bottom centre; vanilla particles only |
 | config key | `config.yml: station.basket.*` (tier/fill thresholds, cookie gap, hysteresis) | plugin-coder | |
 | house design file | `src/main/resources/houses/decor.yml` | model-designer | format in `design/decor.md`: `blocks:` list of `{at: [x, y, z], block: "<block data>"}` in plot cells from the plot's min corner (same frame as `layout:` in factory.yml), y 0 = first air layer above the ground |
 | message key | `upgrades.<id>.short` | plugin-coder | `+<value>/click`, `+<value>% CPS/click` |
@@ -118,11 +124,12 @@ Both coder parts touch `config.yml` in different sections only (panels: `station
 | | planned | | | |
 
 ## Merge order
-1. model-designer, 2. sound-designer, 3. plugin-coder (plot), 4. plugin-coder (panels), 5. model-designer (basket), 6. plugin-coder (basket)
+1. model-designer, 2. sound-designer, 3. plugin-coder (plot), 4. plugin-coder (panels), 5. model-designer (basket), sound-designer (basket), vfx-designer (basket), 6. plugin-coder (basket)
 
 ## Needs human review
 - [ ] In game: click every row and each toggle label at an angle and from 2–5 blocks; nothing hits a neighbour
 - [ ] In game: belt slats and cookies move toward the pedestal, cookies lie flat
 - [ ] Listen: stand by the factory for a minute; no stutter in the hum, crackle or belt
+- [ ] Listen/look: the tier-up chime and sparkle feel rewarding
 - [ ] In game: the basket fills and changes tier, the cookie floats above it and stays clickable, it looks in scale
 - [ ] In game: `/bakery plot setup` on a fresh plot; the decoration looks good and `undo` removes it
