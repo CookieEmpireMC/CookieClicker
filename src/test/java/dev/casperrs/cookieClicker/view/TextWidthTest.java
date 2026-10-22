@@ -131,16 +131,14 @@ class TextWidthTest {
     }
 
     @Test
-    void defaultRowBoxesClearNeighboursAndCookieWhenAxisAligned() {
-        var d = dev.casperrs.cookieClicker.config.StationVisualSettings.from(
-                new org.bukkit.configuration.file.YamlConfiguration(), m -> { });
-        var p = d.panel();
-        var c = d.cookie();
-        assertTrue(p.rowPitch() > p.hitboxHeight(), "rows overlap vertically");
-        // no-layout geometry: row box centre vs cookie centre, sideways in the frame (same forward)
-        double rowCentre = p.offset().right() + p.hitboxOffset().right();
-        double cookieCentre = c.offset().right();
-        double gap = Math.abs(rowCentre - cookieCentre) - p.hitboxWidth() / 2 - (c.scale() + c.hitboxMargin()) / 2;
-        assertTrue(gap > 0, "row box overlaps the cookie box at an axis-aligned yaw, gap " + gap);
+    void paddingNeverWrapsALineOrAddsOne() {
+        // the padded row must stay in its line width: the client would otherwise wrap the padding onto a new line
+        for (String s : List.of("Hello", "Bake 250M to unlock", "aaaa bbbb cccc dddd eeee", "中文字")) {
+            Component text = Component.text(s);
+            List<Integer> before = TextWidth.lineWidths(TextWidth.runs(text), 120);
+            List<Integer> after = TextWidth.lineWidths(TextWidth.runs(TextPadding.right(text, 1, 116, 120)), 120);
+            assertEquals(before.size(), after.size(), s);
+            assertTrue(after.stream().allMatch(w -> w <= 120), s + " " + after);
+        }
     }
 }

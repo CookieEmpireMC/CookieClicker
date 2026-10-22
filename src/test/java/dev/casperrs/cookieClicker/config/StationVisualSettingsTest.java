@@ -157,11 +157,14 @@ class StationVisualSettingsTest {
         StationVisualSettings.Panel file = StationVisualSettings.from(shipped, m -> { }).panel();
         StationVisualSettings.Panel code = parse("", new ArrayList<>()).panel();
         assertEquals(code.textOffset(), file.textOffset());
-        assertEquals(code.hitboxOffset(), file.hitboxOffset());
-        assertEquals(code.hitboxWidth(), file.hitboxWidth());
         assertEquals(code.textLeftEdge(), file.textLeftEdge());
+        assertEquals(code.textPadding(), file.textPadding());
+        assertEquals(code.sameWidth(), file.sameWidth());
+        assertEquals(code.headerGap(), file.headerGap());
+        assertEquals(code.toggleGap(), file.toggleGap());
+        assertEquals(code.rowGap(), file.rowGap());
+        assertEquals(code.clickMargin(), file.clickMargin());
         assertEquals(new Offset(-0.3, 0, 0), code.textOffset());
-        assertEquals(new Offset(0.25, -0.02, 0), code.hitboxOffset());
-        assertEquals(1.7f, code.hitboxWidth());
+        assertEquals(0.03, code.clickMargin(), 1e-9);
     }
 }
