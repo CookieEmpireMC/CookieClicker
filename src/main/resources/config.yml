@@ -116,7 +116,7 @@ station:
     # clicks land on the wrong row.
     text-yaw-offset: 0
     icon-yaw-offset: 0
-    header-scale: 0.6
+    header-scale: 0.72
     text-scale: 0.5
     # Header and row text look: light level 0-15, drop shadow, visible through blocks, and the client's
     # default (chat-style) background instead of the colours below
@@ -127,14 +127,15 @@ station:
     # Row text wraps after this many pixels (the panel texts are written to fit two lines; 150 fits the longest
     # building names with ×1000 and big costs)
     line-width: 150
-    # Layout: header, x1/x5/x10/Max toggle and rows (icon + text) are centred on one column under the header.
+    # Layout: one text column per panel (as wide as a row background): header, x1/x5/x10/Max toggle and row texts
+    # share its left edge and width, header and toggle centred in it, row icons hang left of it.
     # Spaces of padding inside every text background, left and right
     text-padding: 1
     # true = header, toggle and every row background get the same width (a tidy column); false = they hug the text
     same-width: true
     # Air (blocks) between the header and the toggle, the toggle and the first row, and two rows
-    gap-after-header: 0.2
-    gap-after-toggle: 0.25
+    gap-after-header: 0.22
+    gap-after-toggle: 0.28
     row-gap: 0.17
     # Clicks pick the row or toggle label under your crosshair by where its text is drawn; a click this close
     # (blocks) outside a line's text still counts. Between lines nothing happens. Clicking a toggle label picks that
@@ -142,7 +143,7 @@ station:
     click-margin: 0.03
     # The x1 / x5 / x10 / Max toggle under each header (texts in messages.yml panel.bulk)
     bulk:
-      scale: 0.45
+      scale: 0.5
     # Price roll when you switch the amount or buy something: the numbers roll to their new value over `ticks`
     # (eased, even from 1K to 1M), the row text is re-sent at most every `step-ticks`, and briefly grows to
     # pulse-scale x its size

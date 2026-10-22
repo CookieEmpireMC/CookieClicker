@@ -173,7 +173,7 @@ panel:
   # The ×1 ×5 ×10 Max toggle under each header. <one> <five> <ten> <max> = each label in the selected or unselected
   # style; clicking a label picks that amount, clicking between labels picks the next one.
   bulk:
-    toggle: "<one>  <five>  <ten>  <max>"
+    toggle: "<one>   <five>   <ten>   <max>"
     selected: "<gold><b>[<label>]</b></gold>"
     unselected: "<gray><label></gray>"
     labels:
@@ -187,7 +187,7 @@ panel:
   # becomes "line" with <toggle> = the ×1 ×5 ×10 Max labels and <up> / <down> = the arrows, each in the enabled style
   # (click scrolls one row) or the disabled one (already at that end). Without paging the toggle stays as above.
   page:
-    line: "<up>  <toggle>  <down>"
+    line: "<up> <toggle> <down>"
     up: "▲"
     down: "▼"
     enabled: "<white><b><label></b></white>"

@@ -188,7 +188,7 @@ public record StationVisualSettings(double viewDistance, int refreshTicks, doubl
                 r.offset("station.panel.offset", new Offset(1.9, 2.55, 2.5)),
                 (float) c.getDouble("station.panel.text-yaw-offset", 0),
                 (float) c.getDouble("station.panel.icon-yaw-offset", 0),
-                (float) r.positive("station.panel.header-scale", 0.6),
+                (float) r.positive("station.panel.header-scale", 0.72),
                 (float) r.positive("station.panel.text-scale", 0.5),
                 (int) r.positive("station.panel.line-width", 150),
                 r.offset("station.panel.row.text-offset", new Offset(-0.3, 0, 0)),
@@ -207,8 +207,8 @@ public record StationVisualSettings(double viewDistance, int refreshTicks, doubl
                 c.getBoolean("station.panel.row.text-left-edge", true),
                 (int) Math.clamp(c.getInt("station.panel.text-padding", 1), 0, 8),
                 c.getBoolean("station.panel.same-width", true),
-                Math.max(0, c.getDouble("station.panel.gap-after-header", 0.2)),
-                Math.max(0, c.getDouble("station.panel.gap-after-toggle", 0.25)),
+                Math.max(0, c.getDouble("station.panel.gap-after-header", 0.22)),
+                Math.max(0, c.getDouble("station.panel.gap-after-toggle", 0.28)),
                 Math.max(0, c.getDouble("station.panel.row-gap", 0.17)),
                 Math.clamp(c.getDouble("station.panel.click-margin", 0.03), 0, 0.5));
 
@@ -216,7 +216,7 @@ public record StationVisualSettings(double viewDistance, int refreshTicks, doubl
                 r.rows("station.panels.buildings.max-rows", 8));
         PanelSpot clicks = new PanelSpot(r.offset("station.panels.clicks.offset", new Offset(-1.9, 3.2, 2.5)),
                 r.rows("station.panels.clicks.max-rows", 4));
-        Bulk bulk = new Bulk((float) r.positive("station.panel.bulk.scale", 0.45));
+        Bulk bulk = new Bulk((float) r.positive("station.panel.bulk.scale", 0.5));
         Tween tween = new Tween(
                 (int) Math.clamp(r.positive("station.panel.tween.ticks", 8), 1, 100),
                 (int) Math.clamp(r.positive("station.panel.tween.step-ticks", 2), 1, 20),
