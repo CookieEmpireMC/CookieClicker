@@ -2,7 +2,7 @@ package dev.casperrs.cookieClicker.view;
 
 import dev.casperrs.cookieClicker.config.StationVisualSettings.Offset;
 import dev.casperrs.cookieClicker.station.Station;
-import org.bukkit.entity.BlockDisplay;
+import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Interaction;
 import org.bukkit.entity.ItemDisplay;
@@ -153,7 +153,19 @@ final class StationView {
     final Interaction cookieHitbox;
     /** Cookie centre in world space (left clicks have no hit position). */
     final double[] cookieCentre;
-    final @Nullable BlockDisplay pedestal;
+    /** The pedestal: the cookie basket (item display, with our pack) or the plain block (block display), or none. */
+    final @Nullable Display pedestal;
+    /** The basket (same entity as {@link #pedestal}), or null when the plain block or nothing is shown. */
+    final @Nullable ItemDisplay basket;
+    /** Bottom centre of the pedestal in world space (where the basket tier-up effect plays). */
+    double[] pedestalBottom = new double[3];
+    /** Height of the pedestal bottom above the station point (the "up" of its offset). */
+    double pedestalUp;
+    /** The basket look shown, or null without a basket. */
+    @Nullable BasketLook basketLook;
+    /** A tier-up waiting for its effect's peak: this look is shown at tick {@link #basketSwitchAt}. */
+    @Nullable BasketLook pendingLook;
+    long basketSwitchAt = Long.MIN_VALUE;
     final Panel buildings;
     final Panel clicks;
     /** Upgrade id → its shelf icon (entities added and removed as upgrades are bought). */
@@ -167,13 +179,14 @@ final class StationView {
     boolean motionFromPop;
 
     StationView(UUID owner, Station station, ItemDisplay cookie, Interaction cookieHitbox, double[] cookieCentre,
-                @Nullable BlockDisplay pedestal, Panel buildings, Panel clicks, boolean withPack) {
+                @Nullable Display pedestal, Panel buildings, Panel clicks, boolean withPack) {
         this.owner = owner;
         this.station = station;
         this.cookie = cookie;
         this.cookieHitbox = cookieHitbox;
         this.cookieCentre = cookieCentre;
         this.pedestal = pedestal;
+        this.basket = pedestal instanceof ItemDisplay d ? d : null;
         this.buildings = buildings;
         this.clicks = clicks;
         this.withPack = withPack;

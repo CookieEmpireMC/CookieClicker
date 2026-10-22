@@ -185,6 +185,7 @@ public final class CookieClicker extends JavaPlugin {
         pm.registerEvents(new SessionBukkitListener(sessions), this);
         StationInteractions interactions = new StationInteractions(views, sessions, economy, effects, sounds, hud, messages);
         views.setShelfLanding(interactions::iconShelved);
+        views.setBasketTierUp(interactions::basketTierUp);
         pm.registerEvents(new ClickRouter(views, interactions, () -> settings.visuals(), getLogger()), this);
         views.start();
 
