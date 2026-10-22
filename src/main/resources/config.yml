@@ -75,6 +75,29 @@ station:
     offset: [0, 0, 2.5]
     width: 0.9
     height: 0.95
+  # With our resource pack the pedestal is a cookie basket (at the pedestal offset) that fills with the cookies
+  # in your pouch; without it the block above is shown and the cookie stays at cookie.offset. These are looks
+  # only, not economy values.
+  basket:
+    # Cookies in the pouch where wicker, bushel and golden start, then where golden is full. Each tier's range
+    # is split into 5 fill steps (0-4) on a log scale.
+    tier-starts: [1, 1000000, 1000000000, 1000000000000]
+    # A look only changes once the pouch is this fraction past the boundary (no flicker at a boundary)
+    hysteresis: 0.05
+    # Highest point of each look, fill 0-4, in blocks above the basket bottom (design/basket.md; golden never
+    # below its corner posts, 0.688)
+    heights:
+      wicker: [0.281, 0.313, 0.406, 0.500, 0.594]
+      bushel: [0.484, 0.500, 0.594, 0.688, 0.781]
+      golden: [0.69, 0.69, 0.781, 0.969, 1.188]
+    # Air between the basket and the cookie's lowest point (bob included), blocks
+    cookie-gap: 0.1
+    # The cookie centre never goes higher than this above the ground (eye level 1.62 + 0.6), so it stays clickable
+    cookie-max-height: 2.2
+    # The cookie glides to its new height over this many ticks (0-59)
+    move-ticks: 10
+    # On a tier-up the look switches this many ticks after the sparkle starts (its peak, design/effects.md)
+    tier-up-switch-ticks: 8
   # The two hologram panels. offset = bottom centre of the header text (rows go down from there), from the
   # pedestal. With a plot layout (/bakery plot setup) a panel stands on its layout spot (buildings: layout.shop,
   # clicks: layout.clicks) and only the "up" part of offset counts. max-rows = most rows shown.

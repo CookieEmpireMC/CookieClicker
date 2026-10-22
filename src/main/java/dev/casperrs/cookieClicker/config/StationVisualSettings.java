@@ -17,7 +17,7 @@ import java.util.function.Consumer;
 public record StationVisualSettings(double viewDistance, int refreshTicks, double clickDistance, boolean debugClicks,
                                     Cookie cookie, Pedestal pedestal, Panel panel, PanelSpot buildings,
                                     PanelSpot clicks, Bulk bulk, Tween tween, Shelf shelf,
-                                    Map<String, String> upgradeFallbacks) {
+                                    Map<String, String> upgradeFallbacks, BasketSettings basket) {
 
     /**
      * Where one hologram panel ({@code station.panels.<panel>}) stands: {@code offset} is its header's bottom centre
@@ -249,7 +249,8 @@ public record StationVisualSettings(double viewDistance, int refreshTicks, doubl
                 (int) r.positive("station.refresh-ticks", 20),
                 r.positive("station.click-distance", 6),
                 c.getBoolean("debug.log-click-events", false),
-                cookie, pedestal, panel, buildings, clicks, bulk, tween, shelf, Map.copyOf(upgradeFallbacks));
+                cookie, pedestal, panel, buildings, clicks, bulk, tween, shelf, Map.copyOf(upgradeFallbacks),
+                BasketSettings.from(c, problems));
     }
 
     /** Reads with defaults and reports bad values. */
