@@ -185,7 +185,7 @@ public record StationVisualSettings(double viewDistance, int refreshTicks, doubl
             }
         }
         Panel panel = new Panel(
-                r.offset("station.panel.offset", new Offset(1.9, 2.55, 2.5)),
+                r.offset("station.panel.offset", new Offset(2.15, 2.55, 2.5)),
                 (float) c.getDouble("station.panel.text-yaw-offset", 0),
                 (float) c.getDouble("station.panel.icon-yaw-offset", 0),
                 (float) r.positive("station.panel.header-scale", 0.72),
@@ -214,7 +214,7 @@ public record StationVisualSettings(double viewDistance, int refreshTicks, doubl
 
         PanelSpot buildings = new PanelSpot(r.offset("station.panels.buildings.offset", panel.offset()),
                 r.rows("station.panels.buildings.max-rows", 8));
-        PanelSpot clicks = new PanelSpot(r.offset("station.panels.clicks.offset", new Offset(-1.9, 3.2, 2.5)),
+        PanelSpot clicks = new PanelSpot(r.offset("station.panels.clicks.offset", new Offset(-2.15, 3.2, 2.5)),
                 r.rows("station.panels.clicks.max-rows", 4));
         Bulk bulk = new Bulk((float) r.positive("station.panel.bulk.scale", 0.5));
         Tween tween = new Tween(

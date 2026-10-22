@@ -103,10 +103,10 @@ station:
   # clicks: layout.clicks) and only the "up" part of offset counts. max-rows = most rows shown.
   panels:
     buildings:
-      offset: [1.9, 2.55, 2.5]
+      offset: [2.15, 2.55, 2.5]
       max-rows: 8
     clicks:
-      offset: [-1.9, 3.2, 2.5]
+      offset: [-2.15, 3.2, 2.5]
       # The repeatable upgrade(s) on top, then the cheapest one-time upgrades you haven't bought
       max-rows: 4
   # Looks shared by both panels
