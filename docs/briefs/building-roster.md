@@ -1,6 +1,6 @@
 # building-roster
 
-**Status:** in progress  <!-- planned | in progress | review | done -->
+**Status:** done  <!-- planned | in progress | review | done -->
 **Created:** 2026-10-22 · **Approved:** 2026-10-22 · **Depends on:** plot-polish (merged, PR #11/#12, 1.1.0)
 
 ## Goal
@@ -102,7 +102,14 @@ stage thresholds in config.yml, so the two coder parts don't share files.
 ## Status
 | Agent | Status | Branch | Verdict | Notes |
 |---|---|---|---|---|
-| | planned | | | |
+| balance-designer | done | building-roster/balance-designer (+ -fix) | READY | 11 buildings, milestones, 19/19 targets, golden one-short fix |
+| model-designer | done | building-roster/model-designer | asset-only | 6×3 world models, 9 icons, building-slots.yml, decor rework (placeholders) |
+| sound-designer | done | building-roster/sound-designer | asset-only | building_appear (3 variants), building_milestone |
+| vfx-designer | done | building-roster/vfx-designer | asset-only | building_appear, building_milestone |
+| plugin-coder (economy) | done | building-roster/plugin-coder-economy | READY | milestones, ▲/▼ paging, row fit (line-width 150), names, 1.2.0 |
+| plugin-coder (world) | done | building-roster/plugin-coder-world | READY | visible buildings per player, stages, effects |
+| plugin-coder (cleanup) | done | building-roster/plugin-coder-cleanup | (integration) | scroll pulse, effect cap, footprint keep-out |
+| plugin-tester | done | feature/building-roster | READY | docs/reviews/2026-10-22-building-roster.md |
 
 ## Merge order
 1. model-designer, 2. sound-designer, 3. vfx-designer, 4. balance-designer, 5. plugin-coder (economy), 6. plugin-coder (world)
