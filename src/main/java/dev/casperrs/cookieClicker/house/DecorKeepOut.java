@@ -4,6 +4,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * The plot columns (plot cells from the plot's min corner, the frame of {@code layout:}) where decor may never go,
@@ -15,7 +16,8 @@ import java.util.List;
  *       by {@link #FRONT_MARGIN_X} / {@link #FRONT_MARGIN_Z} (the walk, the click rows, hitboxes, panels, shelf);</li>
  *   <li>the walk from the gate to the house door ({@code points.door}): the bounding box of the gate and the door;</li>
  *   <li>the belt cells plus {@link #MARGIN};</li>
- *   <li>every building slot cell ({@code houses/building-slots.yml}), when given.</li>
+ *   <li>every building slot ({@code houses/building-slots.yml}), when given: each cell its footprint square covers
+ *       ({@code floor(c+0.5-h) .. ceil(c+0.5+h)-1}, h = half the side, design/buildings-world.md).</li>
  * </ul>
  * For the factory layout this gives exactly the table in design/decor.md (factory x 5..25 z 9..24, front zone
  * x 12..23 z 1..8 inside the ring).
@@ -64,14 +66,26 @@ public final class DecorKeepOut {
      * stands where a bought building appears); null when the design has no layout.
      */
     public static @Nullable DecorKeepOut of(HouseDesign design, BuildingSlots slots) {
+        return of(design, slots, Map.of());
+    }
+
+    /**
+     * As {@link #of(HouseDesign, BuildingSlots)}, with every slot's footprint square kept out instead of its cell.
+     *
+     * @param footprints building id → footprint side in blocks; a missing id keeps only the slot cell
+     */
+    public static @Nullable DecorKeepOut of(HouseDesign design, BuildingSlots slots, Map<String, Double> footprints) {
         DecorKeepOut base = layoutOnly(design);
         if (base == null || slots.slots().isEmpty()) {
             return base;
         }
         List<Area> areas = new ArrayList<>(base.areas);
-        for (int[] c : slots.columns()) {
-            areas.add(new Area("a building slot", c[0], c[1], c[0], c[1]));
-        }
+        slots.slots().forEach((id, list) -> {
+            double h = footprints.getOrDefault(id, 0.0) / 2;
+            for (BuildingSlots.Slot s : list) {
+                areas.add(new Area("a building slot", low(s.x(), h), low(s.z(), h), high(s.x(), h), high(s.z(), h)));
+            }
+        });
         return new DecorKeepOut(base.sizeX, base.sizeZ, areas);
     }
 
@@ -145,6 +159,16 @@ public final class DecorKeepOut {
             }
         }
         return out;
+    }
+
+    /** First cell a footprint of half side {@code h} centred on cell {@code c}'s middle covers. */
+    private static int low(int c, double h) {
+        return h <= 0 ? c : (int) Math.floor(c + 0.5 - h);
+    }
+
+    /** Last cell it covers. */
+    private static int high(int c, double h) {
+        return h <= 0 ? c : (int) Math.ceil(c + 0.5 + h) - 1;
     }
 
     private static int[] cell(double[] at) {

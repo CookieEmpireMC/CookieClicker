@@ -283,6 +283,9 @@ plot:
     view-range: 1.0
     # Ticks between the effects of several buildings that appear or level up at once
     effect-stagger-ticks: 2
+    # Most effects one purchase plays (a xMax buy can cross a stage for many buildings at once); beyond it the
+    # buildings still appear, silently apart from the one purchase sound
+    max-effects-per-purchase: 12
     # Added to every slot's yaw (degrees), if the models face the wrong way
     yaw-offset: 0
     # Without our resource pack: a block of this size per building
@@ -295,6 +298,15 @@ plot:
       shipping_centre: "minecraft:barrel"
       alchemy_lab: "minecraft:brewing_stand"
       portal_bakery: "minecraft:crying_obsidian"
+    # Side of each building's centred footprint square (blocks, design/buildings-world.md): decor is kept off every
+    # cell such a square covers around each slot. A building not listed keeps only its slot cell free.
+    footprints:
+      villager_baker: 0.82
+      industrial_oven: 1.55
+      extra_belt: 1.56
+      shipping_centre: 1.60
+      alchemy_lab: 1.50
+      portal_bakery: 1.41
 
 house:
   # /bakery plot setup and /bakery house place: refuse designs whose box (x * y * z), or layouts whose area (x * z),

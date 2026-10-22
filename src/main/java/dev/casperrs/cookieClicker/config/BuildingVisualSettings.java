@@ -21,13 +21,18 @@ import java.util.function.Consumer;
  * @param fallbackScale       size of the vanilla fallback block (blocks)
  * @param fallbackBlocks      building id → vanilla block shown without our pack
  * @param fallbackBlock       the block for buildings not in {@code fallbackBlocks}
+ * @param maxEffectsPerPurchase most effects one purchase plays (a ×Max buy crossing a stage for many types); the
+ *                            rest plays none (the one sound stays)
+ * @param footprints          building id → side of its centred footprint square (blocks, design/buildings-world.md),
+ *                            for the decor keep-out around each slot; missing = the slot cell only
  */
 public record BuildingVisualSettings(boolean enabled, int stage2, int stage3, float viewRange, int effectStaggerTicks,
                                      float yawOffset, float fallbackScale, Map<String, String> fallbackBlocks,
-                                     String fallbackBlock) {
+                                     String fallbackBlock, int maxEffectsPerPurchase, Map<String, Double> footprints) {
 
     public BuildingVisualSettings {
         fallbackBlocks = Map.copyOf(fallbackBlocks);
+        footprints = Map.copyOf(footprints);
     }
 
     /** Model stage 1/2/3 for {@code owned} buildings of one type. */
@@ -40,7 +45,7 @@ public record BuildingVisualSettings(boolean enabled, int stage2, int stage3, fl
     }
 
     public static BuildingVisualSettings defaults() {
-        return new BuildingVisualSettings(true, 25, 100, 1f, 2, 0f, 0.8f, Map.of(), "minecraft:barrel");
+        return new BuildingVisualSettings(true, 25, 100, 1f, 2, 0f, 0.8f, Map.of(), "minecraft:barrel", 12, Map.of());
     }
 
     /** @param c the {@code plot.buildings} section, or null (all defaults) */
@@ -48,16 +53,15 @@ public record BuildingVisualSettings(boolean enabled, int stage2, int stage3, fl
         if (c == null) {
             return defaults();
         }
-        String p = "";
-        int stage2 = c.getInt(p + "stage-2", 25);
-        int stage3 = c.getInt(p + "stage-3", 100);
+        int stage2 = c.getInt("stage-2", 25);
+        int stage3 = c.getInt("stage-3", 100);
         if (stage2 < 1 || stage3 <= stage2) {
             problems.accept("config.yml: plot.buildings.stage-2/stage-3 must be 1 <= stage-2 < stage-3; using 25 / 100");
             stage2 = 25;
             stage3 = 100;
         }
         Map<String, String> blocks = new LinkedHashMap<>();
-        ConfigurationSection fb = c.getConfigurationSection(p + "fallback-blocks");
+        ConfigurationSection fb = c.getConfigurationSection("fallback-blocks");
         if (fb != null) {
             for (String id : fb.getKeys(false)) {
                 String block = fb.getString(id);
@@ -66,15 +70,29 @@ public record BuildingVisualSettings(boolean enabled, int stage2, int stage3, fl
                 }
             }
         }
+        Map<String, Double> footprints = new LinkedHashMap<>();
+        ConfigurationSection fp = c.getConfigurationSection("footprints");
+        if (fp != null) {
+            for (String id : fp.getKeys(false)) {
+                double side = fp.getDouble(id, -1);
+                if (side > 0 && side <= 16) {
+                    footprints.put(id, side);
+                } else {
+                    problems.accept("config.yml: plot.buildings.footprints." + id + " must be a size in blocks (0-16]; using the slot cell only");
+                }
+            }
+        }
         return new BuildingVisualSettings(
-                c.getBoolean(p + "enabled", true),
+                c.getBoolean("enabled", true),
                 stage2,
                 stage3,
-                (float) Math.clamp(c.getDouble(p + "view-range", 1.0), 0.1, 10.0),
-                Math.clamp(c.getInt(p + "effect-stagger-ticks", 2), 0, 20),
-                (float) c.getDouble(p + "yaw-offset", 0.0),
-                (float) Math.clamp(c.getDouble(p + "fallback-scale", 0.8), 0.1, 3.0),
+                (float) Math.clamp(c.getDouble("view-range", 1.0), 0.1, 10.0),
+                Math.clamp(c.getInt("effect-stagger-ticks", 2), 0, 20),
+                (float) c.getDouble("yaw-offset", 0.0),
+                (float) Math.clamp(c.getDouble("fallback-scale", 0.8), 0.1, 3.0),
                 blocks,
-                c.getString(p + "fallback-block", "minecraft:barrel"));
+                c.getString("fallback-block", "minecraft:barrel"),
+                Math.clamp(c.getInt("max-effects-per-purchase", 12), 0, 200),
+                footprints);
     }
 }

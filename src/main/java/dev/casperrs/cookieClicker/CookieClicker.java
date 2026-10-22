@@ -216,7 +216,7 @@ public final class CookieClicker extends JavaPlugin {
                     belts.plotChanged(plot.id());
                     buildings.plotChanged(plot.id());
                 }, messages, io, mainThread,
-                () -> settings.house().maxBlocks());
+                () -> settings.house().maxBlocks(), () -> settings.plot().buildings().footprints());
 
         BakeryCommand command = new BakeryCommand(plots, outlines, houses, setup, cinematics, () -> settings, messages, this::reload);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
