@@ -67,7 +67,7 @@ class StationVisualSettingsTest {
         assertEquals(3, problems.size(), problems.toString());
         assertEquals(new Offset(0, 1.8, 2.5), s.cookie().offset());
         assertEquals(new Offset(0, 0, 2.5), s.pedestal().offset());
-        assertEquals(new Offset(1.9, 2.55, 2.5), s.panel().offset());
+        assertEquals(new Offset(2.15, 2.55, 2.5), s.panel().offset());
     }
 
     @Test
@@ -75,7 +75,7 @@ class StationVisualSettingsTest {
         List<String> problems = new ArrayList<>();
         StationVisualSettings s = parse("station:\n  panel:\n    offset: [1, 2.5, -3]\n", problems);
         assertEquals(new Offset(1, 2.5, -3), s.buildings().offset());
-        assertEquals(new Offset(-1.9, 3.2, 2.5), s.clicks().offset());
+        assertEquals(new Offset(-2.15, 3.2, 2.5), s.clicks().offset());
         assertTrue(problems.isEmpty(), problems.toString());
     }
 
