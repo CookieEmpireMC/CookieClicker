@@ -54,15 +54,17 @@ class PanelLayoutTest {
     }
 
     // ---- click picking: the rendered text under the crosshair (default station.panel numbers) ----------------
-    // Header 0..0.15; gap 0.2; toggle text 0.1125 tall, bottom -0.3125; gap 0.25; row text 0.25 tall, bottom of
-    // row i = -0.8125 - 0.42 i (row 1 = -1.2325). Text grows up from its position, so a row spans bottom..bottom+h.
+    // Header 0..0.18 (scale 0.72); gap 0.22; toggle text 0.125 tall, bottom -0.345; gap 0.28; row text 0.25 tall,
+    // bottom of row i = -0.875 - 0.42 i (row 1 = -1.295). Text grows up from its position, so a row spans
+    // bottom..bottom+h. Column: text left edge -0.9125, 1.825 wide; row icon centre -1.1125, 0.3 wide.
+    // Toggle click band: -0.345 - 0.14 .. -0.22 + 0.11 = -0.485 .. -0.11 (half of each gap).
 
     private static final StationVisualSettings DEFAULTS =
             StationVisualSettings.from(new YamlConfiguration(), problem -> { });
     private static final Offset ORIGIN = new Offset(0, 0, 0);
     private static final PanelLayout.RowBox TWO_LINES = new PanelLayout.RowBox(true, 2, 116);
     private static final PanelLayout.RowBox EMPTY = new PanelLayout.RowBox(false, 2, 116);
-    /** Four 20 px labels in an 80 px toggle (scale 0.45: 1 block = 40 / 0.45 px). */
+    /** Four 20 px labels in an 80 px toggle (scale 0.5: 1 block = 40 / 0.5 = 80 px). */
     private static final PanelLayout.ToggleBox TOGGLE = new PanelLayout.ToggleBox(80, Map.of(
             BulkMode.ONE, new int[] {0, 20}, BulkMode.FIVE, new int[] {20, 40},
             BulkMode.TEN, new int[] {40, 60}, BulkMode.MAX, new int[] {60, 80}));
@@ -95,16 +97,17 @@ class PanelLayoutTest {
     void aRowIsPickedByItsRenderedTextAndItsIcon() {
         assertRow(0, aim(0.2, -0.6875, fourRows(), null));    // middle of row 0's text
         assertRow(0, aim(0.2, -0.8025, fourRows(), null));    // just above row 0's bottom: text grows up from it
-        assertRow(0, aim(-0.75, -0.6875, fourRows(), null));  // the icon belongs to the row
+        assertRow(0, aim(-1.1125, -0.6875, fourRows(), null)); // the icon (centre -1.1125) belongs to the row
         assertRow(1, aim(0.2, -1.0, fourRows(), null));
         assertRow(3, aim(0.2, -1.9, fourRows(), null));
     }
 
     @Test
     void theGapsBetweenRowsBesideTheIconAndBelowTheLastRowPickNothing() {
-        assertNull(aim(0.2, -0.89, fourRows(), null));        // air between row 0 and row 1 (margin 0.03 each side)
-        // the row box starts at the icon's left edge (about -1.09 with the shipped line-width 150): -1.2 is beside it
-        assertNull(aim(-1.2, -0.6875, fourRows(), null));     // beside the icon, outside the margin
+        // air between row 0 (band -0.925 .. -0.565 with the margin) and row 1 (band -1.345 .. -0.985): centre -0.955
+        assertNull(aim(0.2, -0.955, fourRows(), null));
+        // the row box starts at the icon's left edge (-1.2625, less the margin -1.2925): -1.35 is beside it
+        assertNull(aim(-1.35, -0.6875, fourRows(), null));
         assertNull(aim(0.2, -2.3, fourRows(), null));         // below the last row
     }
 
@@ -124,13 +127,13 @@ class PanelLayoutTest {
 
     @Test
     void eachToggleLabelSelectsItsModeAndAGapBetweenLabelsCycles() {
-        assertToggle(BulkMode.ONE, -0.3375);   // 10 px from the left edge of the toggle
-        assertToggle(BulkMode.FIVE, -0.1125);  // 30 px
-        assertToggle(BulkMode.TEN, 0.1125);    // 50 px
-        assertToggle(BulkMode.MAX, 0.3375);    // 70 px
+        assertToggle(BulkMode.ONE, -0.375);    // 10 px from the left edge of the toggle
+        assertToggle(BulkMode.FIVE, -0.125);   // 30 px
+        assertToggle(BulkMode.TEN, 0.125);     // 50 px
+        assertToggle(BulkMode.MAX, 0.375);     // 70 px
         PanelLayout.ToggleBox tight = new PanelLayout.ToggleBox(80,
                 Map.of(BulkMode.ONE, new int[] {0, 18}, BulkMode.FIVE, new int[] {22, 40}));
-        PanelLayout.Hit gap = aim(-0.225, -0.26, List.of(), tight); // 20 px: between the two labels
+        PanelLayout.Hit gap = aim(-0.25, -0.26, List.of(), tight); // 20 px: between the two labels
         assertNotNull(gap);
         assertEquals(PanelLayout.Hit.Kind.TOGGLE, gap.kind());
         assertNull(gap.mode(), "between labels: the toggle cycles");
@@ -141,13 +144,13 @@ class PanelLayoutTest {
         PanelLayout.ToggleBox paged = new PanelLayout.ToggleBox(80,
                 Map.of(BulkMode.ONE, new int[] {20, 40}, BulkMode.FIVE, new int[] {40, 60}),
                 Map.of(PanelLayout.Hit.Kind.PAGE_UP, new int[] {0, 18}, PanelLayout.Hit.Kind.PAGE_DOWN, new int[] {62, 80}));
-        PanelLayout.Hit up = aim(-0.3375, -0.26, List.of(), paged); // 10 px: the ▲ on the left
+        PanelLayout.Hit up = aim(-0.375, -0.26, List.of(), paged); // 10 px: the ▲ on the left
         assertNotNull(up);
         assertEquals(PanelLayout.Hit.Kind.PAGE_UP, up.kind());
         assertEquals(-1, up.row());
         assertNull(up.mode());
-        assertEquals(PanelLayout.Hit.Kind.PAGE_DOWN, aim(0.3375, -0.26, List.of(), paged).kind()); // 70 px: the ▼
-        assertEquals(BulkMode.ONE, aim(-0.1125, -0.26, List.of(), paged).mode(), "30 px: the ×1 label");
+        assertEquals(PanelLayout.Hit.Kind.PAGE_DOWN, aim(0.375, -0.26, List.of(), paged).kind()); // 70 px: the ▼
+        assertEquals(BulkMode.ONE, aim(-0.125, -0.26, List.of(), paged).mode(), "30 px: the ×1 label");
     }
 
     @Test
@@ -179,7 +182,9 @@ class PanelLayoutTest {
         double cookieHalf = (cookie.scale() + cookie.hitboxMargin()) / 2;
         PanelLayout layout = PanelLayout.of(DEFAULTS, 4);
         for (Offset panel : List.of(DEFAULTS.buildings().offset(), DEFAULTS.clicks().offset())) {
-            double gap = Math.abs(panel.right() - cookie.offset().right()) - layout.boxWidth() / 2 - cookieHalf;
+            // the box is off-centre on the anchor (it spans the icons too): measure to the edge that faces the cookie
+            double edge = panel.right() + layout.boxBottom().right() - Math.signum(panel.right()) * layout.boxWidth() / 2;
+            double gap = Math.abs(edge - cookie.offset().right()) - cookieHalf;
             assertTrue(gap > 0, "the panel box touches the cookie box, gap " + gap);
         }
         assertTrue(layout.boxBottom().up() < layout.rowBottom(3), "box misses the last row");

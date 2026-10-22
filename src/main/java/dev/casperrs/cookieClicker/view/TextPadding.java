@@ -41,14 +41,20 @@ final class TextPadding {
         return n <= 0 ? text : Component.text().append(text).append(Component.text(" ".repeat(n))).build();
     }
 
-    /** A single line with at least {@code spaces} spaces on each side, centred in at least {@code targetPx}. */
+    /**
+     * A single line with at least {@code spaces} spaces on each side, padded to the space count closest to
+     * {@code targetPx} (so its background matches the column within half a space on each side) and centred in it;
+     * an odd count puts the extra space on the right.
+     */
     static Component centred(Component text, int spaces, int targetPx) {
         int width = TextWidth.width(text, PanelLayout.SINGLE_LINE_WIDTH);
-        int side = Math.max(spaces, (int) Math.ceil((targetPx - width) / (2.0 * TextWidth.SPACE_PX)));
-        if (side <= 0) {
+        int total = (int) Math.round((targetPx - width) / (double) TextWidth.SPACE_PX);
+        int left = Math.max(spaces, total / 2);
+        int right = Math.max(spaces, total - total / 2);
+        if (left + right <= 0) {
             return text;
         }
-        Component pad = Component.text(" ".repeat(side));
-        return Component.text().append(pad).append(text).append(pad).build();
+        return Component.text().append(Component.text(" ".repeat(left))).append(text)
+                .append(Component.text(" ".repeat(right))).build();
     }
 }

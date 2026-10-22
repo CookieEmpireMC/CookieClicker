@@ -11,10 +11,11 @@ import java.util.Map;
  * Where everything of one hologram panel sits, and which line an eye ray hits. Positions are in the panel's frame
  * ({@link StationFrame}: right, up, forward) relative to the panel anchor, the bottom centre of the header.
  *
- * <p>Header, ×N toggle and rows are centred on one column: a row is its icon plus its text, and that pair is
- * centred under the header. Going down: header, {@code gap-after-header}, toggle, {@code gap-after-toggle}, then the
- * rows with {@code row-gap} between them. Every row is laid out as two text lines; with {@code same-width} each
- * row's background is padded to {@link #rowWidthPx()} and the header and toggle to the column width.
+ * <p>One text column per panel, centred on the anchor and as wide as a full row background ({@link #rowWidthPx()}
+ * at the row text scale): header, ×N toggle and every row text share its left edge and width (with
+ * {@code same-width}), header and toggle centred in it, row texts left-aligned, row icons hanging left of it.
+ * Going down: header, {@code gap-after-header}, toggle, {@code gap-after-toggle}, then the rows with
+ * {@code row-gap} between them. Every row is laid out as two text lines.
  *
  * <p>Clicks use the same numbers: {@link #pick} intersects the ray with the text plane and picks the row or toggle
  * whose rendered bounds contain the hit (plus {@code click-margin}); between lines or off the text it picks
@@ -68,6 +69,19 @@ public record PanelLayout(StationVisualSettings.Panel p, float toggleScale, int 
         return -p.headerGap() - toggleHeight();
     }
 
+    /**
+     * Lowest point of the toggle's click band: the toggle line is easy to hit, so its band reaches half-way into
+     * the gaps above and below it (never less than {@code click-margin}); the other half stays air.
+     */
+    double toggleHitBottom() {
+        return toggleBottom() - Math.max(p.clickMargin(), p.toggleGap() / 2.0);
+    }
+
+    /** Highest point of the toggle's click band (see {@link #toggleHitBottom()}). */
+    double toggleHitTop() {
+        return toggleBottom() + toggleHeight() + Math.max(p.clickMargin(), p.headerGap() / 2.0);
+    }
+
     double rowHeight() {
         return TextWidth.blocks(ROW_LINES * TextWidth.LINE_HEIGHT_PX, p.textScale());
     }
@@ -82,27 +96,24 @@ public record PanelLayout(StationVisualSettings.Panel p, float toggleScale, int 
         return p.lineWidth() - TextWidth.SPACE_PX;
     }
 
-    private double textWidth() {
+    /** Width of the text column: a full-width row background ({@link #rowWidthPx()} at the row text scale). */
+    double columnWidth() {
         return TextWidth.blocks(rowWidthPx(), p.textScale());
     }
 
-    private double iconLeft() {
-        return p.iconOffset().right() - p.iconScale() / 2.0;
-    }
-
-    /** Width of the column: from a row icon's left edge to the right edge of a full-width row text. */
-    double columnWidth() {
-        return p.textOffset().right() + textWidth() - iconLeft();
-    }
-
-    /** Moves the icon + text pair so that it is centred on the column. */
-    private double shift() {
-        return -(iconLeft() + p.textOffset().right() + textWidth()) / 2.0;
-    }
-
-    /** Left edge of the row texts. */
+    /** Left edge of the text column and of every row text: the column is centred on the panel anchor. */
     double textLeft() {
-        return p.textOffset().right() + shift();
+        return -columnWidth() / 2.0;
+    }
+
+    /** Moves a row (icon + text) so that its text starts at {@link #textLeft()}; the icon hangs left of it. */
+    private double shift() {
+        return textLeft() - p.textOffset().right();
+    }
+
+    /** Left edge of the row icons, outside the text column. */
+    private double iconLeft() {
+        return p.iconOffset().right() + shift() - p.iconScale() / 2.0;
     }
 
     Offset iconAt(int i) {
@@ -110,30 +121,40 @@ public record PanelLayout(StationVisualSettings.Panel p, float toggleScale, int 
                 p.iconOffset().forward());
     }
 
-    /** Position of row {@code i}'s text display: its left edge with text-left-edge, else the column's text centre. */
+    /** Position of row {@code i}'s text display: its left edge with text-left-edge, else the column centre. */
     Offset textAt(int i) {
-        double right = p.textLeftEdge() ? textLeft() : textLeft() + textWidth() / 2.0;
+        double right = p.textLeftEdge() ? textLeft() : textLeft() + columnWidth() / 2.0;
         return new Offset(right, rowBottom(i) + p.textOffset().up(), p.textOffset().forward());
     }
 
+    /** The toggle line, centred on the text column. */
     Offset toggleAt() {
         return new Offset(0, toggleBottom(), 0);
     }
 
-    /** Pixel width (at its own scale) the header is padded to; 0 without same-width. */
+    /** Pixel width (at its own scale) the header is padded to: the text column; 0 without same-width. */
     int headerTargetPx() {
         return p.sameWidth() ? (int) Math.round(columnWidth() * TextWidth.PIXELS_PER_BLOCK / p.headerScale()) : 0;
     }
 
-    /** Pixel width (at its own scale) the toggle is padded to; 0 without same-width. */
+    /** Pixel width (at its own scale) the toggle is padded to: the text column; 0 without same-width. */
     int toggleTargetPx() {
         return p.sameWidth() ? (int) Math.round(columnWidth() * TextWidth.PIXELS_PER_BLOCK / toggleScale) : 0;
+    }
+
+    /** Left edge of everything clickable: the row icons hang left of the text column. */
+    private double boxLeft() {
+        return Math.min(iconLeft(), textLeft());
+    }
+
+    private double boxRight() {
+        return textLeft() + columnWidth();
     }
 
     /** Bottom centre of the panel's one click box (it only triggers the ray check). */
     Offset boxBottom() {
         double bottom = rowCount > 0 ? rowBottom(rowCount - 1) : toggleBottom();
-        return new Offset(0, bottom - p.clickMargin(), 0);
+        return new Offset((boxLeft() + boxRight()) / 2.0, bottom - p.clickMargin(), 0);
     }
 
     double boxHeight() {
@@ -141,7 +162,7 @@ public record PanelLayout(StationVisualSettings.Panel p, float toggleScale, int 
     }
 
     double boxWidth() {
-        return columnWidth() + 2 * p.clickMargin();
+        return boxRight() - boxLeft() + 2 * p.clickMargin();
     }
 
     /**
@@ -169,7 +190,7 @@ public record PanelLayout(StationVisualSettings.Panel p, float toggleScale, int 
                         p.textScale());
                 Offset icon = iconAt(i);
                 double width = TextWidth.blocks(row.widthPx(), p.textScale());
-                double textL = p.textLeftEdge() ? textLeft() : textLeft() + textWidth() / 2.0 - width / 2.0;
+                double textL = p.textLeftEdge() ? textLeft() : textLeft() + columnWidth() / 2.0 - width / 2.0;
                 double left = Math.min(icon.right() - p.iconScale() / 2.0, textL);
                 double right = textL + width;
                 double low = Math.min(bottom, icon.up() - p.iconScale() / 2.0);
@@ -186,8 +207,7 @@ public record PanelLayout(StationVisualSettings.Panel p, float toggleScale, int 
                 double r = eye.right() + tt * dir.right();
                 double u = eye.up() + tt * dir.up();
                 double half = TextWidth.blocks(toggle.widthPx() / 2.0, toggleScale);
-                double bottom = toggleBottom();
-                if (r >= -half - m && r <= half + m && u >= bottom - m && u <= bottom + toggleHeight() + m) {
+                if (r >= -half - m && r <= half + m && u >= toggleHitBottom() && u <= toggleHitTop()) {
                     double px = r * TextWidth.PIXELS_PER_BLOCK / toggleScale + toggle.widthPx() / 2.0;
                     Hit.Kind page = page(toggle, px);
                     best = page != null ? new Hit(page, -1, null, tt) : new Hit(Hit.Kind.TOGGLE, -1, label(toggle, px), tt);
