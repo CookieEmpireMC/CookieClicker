@@ -14,7 +14,8 @@ import java.util.List;
  *   <li>the front zone: the rectangle around the gate, the pedestal, the shop and the click-upgrade spots, widened
  *       by {@link #FRONT_MARGIN_X} / {@link #FRONT_MARGIN_Z} (the walk, the click rows, hitboxes, panels, shelf);</li>
  *   <li>the walk from the gate to the house door ({@code points.door}): the bounding box of the gate and the door;</li>
- *   <li>the belt cells plus {@link #MARGIN}.</li>
+ *   <li>the belt cells plus {@link #MARGIN};</li>
+ *   <li>every building slot cell ({@code houses/building-slots.yml}), when given.</li>
  * </ul>
  * For the factory layout this gives exactly the table in design/decor.md (factory x 5..25 z 9..24, front zone
  * x 12..23 z 1..8 inside the ring).
@@ -55,6 +56,26 @@ public final class DecorKeepOut {
 
     /** The keep-out of {@code design}'s plot layout; null when the design has no layout. */
     public static @Nullable DecorKeepOut of(HouseDesign design) {
+        return of(design, BuildingSlots.empty());
+    }
+
+    /**
+     * The keep-out of {@code design}'s plot layout plus every building slot cell (brief building-roster: decor never
+     * stands where a bought building appears); null when the design has no layout.
+     */
+    public static @Nullable DecorKeepOut of(HouseDesign design, BuildingSlots slots) {
+        DecorKeepOut base = layoutOnly(design);
+        if (base == null || slots.slots().isEmpty()) {
+            return base;
+        }
+        List<Area> areas = new ArrayList<>(base.areas);
+        for (int[] c : slots.columns()) {
+            areas.add(new Area("a building slot", c[0], c[1], c[0], c[1]));
+        }
+        return new DecorKeepOut(base.sizeX, base.sizeZ, areas);
+    }
+
+    private static @Nullable DecorKeepOut layoutOnly(HouseDesign design) {
         HouseLayout layout = design.layout();
         if (layout == null) {
             return null;

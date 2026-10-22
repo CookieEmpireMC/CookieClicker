@@ -68,6 +68,8 @@ public final class PlotSetup {
     public static final String FENCE_STYLE = "fence.yml";
     public static final String BELT_STYLE = "belt.yml";
     public static final String DECOR = "decor.yml";
+    /** Bought-building slots (brief building-roster); its cells join the decor keep-out. */
+    public static final String BUILDING_SLOTS = "building-slots.yml";
     public static final int MAX_GROUND_SPREAD = 2;
     /** The fence follows the ground per column, but never more than this far from the layout's ground. */
     private static final int FENCE_GROUND_SLACK = 3;
@@ -101,7 +103,7 @@ public final class PlotSetup {
 
     /** What the IO thread read for a setup. */
     private record Inputs(@Nullable String design, @Nullable String style, @Nullable String belt,
-                          @Nullable String decor, @Nullable Path oldYml,
+                          @Nullable String decor, @Nullable String slots, @Nullable Path oldYml,
                           @Nullable String oldText, byte @Nullable [] oldNbt) {
     }
 
@@ -129,7 +131,7 @@ public final class PlotSetup {
                 Path oldYml = newest(dir);
                 Path oldNbt = oldYml == null ? null : sibling(oldYml, ".nbt");
                 in = new Inputs(read(data, designName + ".yml"), read(data, FENCE_STYLE), read(data, BELT_STYLE),
-                        read(data, DECOR), oldYml,
+                        read(data, DECOR), read(data, BUILDING_SLOTS), oldYml,
                         oldYml == null ? null : Files.readString(oldYml, StandardCharsets.UTF_8),
                         oldNbt != null && Files.isRegularFile(oldNbt) ? Files.readAllBytes(oldNbt) : null);
             } catch (IOException e) {
@@ -352,7 +354,7 @@ public final class PlotSetup {
         }
 
         // decoration (houses/decor.yml; missing = none, bad or keep-out blocks are logged and skipped)
-        placeDecor(world, design, in.decor(), ax, y0, az, known, cells, changes);
+        placeDecor(world, design, in.decor(), in.slots(), ax, y0, az, known, cells, changes);
 
         // points
         Plot.Pedestal pedestal = spot(layout.pedestal(), ax, y0, az);
@@ -513,13 +515,21 @@ public final class PlotSetup {
      * The decor blocks of {@code houses/decor.yml} at {@code (ax, y0, az)} + their plot cell, outside the
      * {@link DecorKeepOut} columns; tile entities are never replaced. Every problem is a warning; the rest is placed.
      */
-    private void placeDecor(World world, HouseDesign design, @Nullable String text, int ax, int y0, int az,
-                            Map<String, BlockData> known, List<HouseBackup.Cell> cells,
+    private void placeDecor(World world, HouseDesign design, @Nullable String text, @Nullable String slotsText,
+                            int ax, int y0, int az, Map<String, BlockData> known, List<HouseBackup.Cell> cells,
                             List<HouseBackup.Change> changes) {
         if (text == null) {
             return; // no decoration set shipped or installed
         }
-        DecorKeepOut keepOut = DecorKeepOut.of(design);
+        BuildingSlots slots = BuildingSlots.empty();
+        if (slotsText != null) { // missing = no building slots to keep free; problems are VisibleBuildings' to log
+            try {
+                slots = BuildingSlots.parse(yaml(slotsText)).slots();
+            } catch (InvalidConfigurationException e) {
+                plugin.getLogger().warning("houses/" + BUILDING_SLOTS + ": not valid YAML; decor ignores the slots");
+            }
+        }
+        DecorKeepOut keepOut = DecorKeepOut.of(design, slots);
         if (keepOut == null) {
             return;
         }
@@ -611,7 +621,7 @@ public final class PlotSetup {
                     return;
                 }
                 Path nbt = sibling(yml, ".nbt");
-                in = new Inputs(null, null, null, null, yml, Files.readString(yml, StandardCharsets.UTF_8),
+                in = new Inputs(null, null, null, null, null, yml, Files.readString(yml, StandardCharsets.UTF_8),
                         Files.isRegularFile(nbt) ? Files.readAllBytes(nbt) : null);
             } catch (IOException e) {
                 plugin.getLogger().log(Level.SEVERE, "Could not read the setup backups of plot " + plotId, e);
