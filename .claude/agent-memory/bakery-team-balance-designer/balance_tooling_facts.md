@@ -15,5 +15,6 @@ metadata:
 - (2026-10-22) Bash commands containing the worktree path (it has "GitHub" in it) together with `cd`, `$(…)` or `>>` appends are refused as "names git"; use relative paths from the worktree cwd, write scratch scripts with Write, and pass options as argv (scratchpad explore.py took `b:buildings.x.base-cost=N` overrides + `dump:a,b,profile`).
 - (2026-10-22) Tool tests run with `python -m unittest discover -s tools -p 'test_*.py'` (no pytest in the venv; `-s tools/balance` fails on the `balance` package import).
 - (2026-10-22) Since building-roster: `baked` metric, `min-seconds` on targets, milestone-lookahead buyer (MILESTONE_LOOKAHEAD = 5, copies bought one by one), golden `building-cps`.
+- (2026-10-22) Golden pouches must be representable doubles: costs from `math.ceil` are Python ints, and `int - 1` above 2^53 isn't a double (Java reads it rounded). `main.py` `_below`/`_above` convert to float and use `math.nextafter` when ±1/±0.5 rounds back. Max/maths edits: verify with `mise run check-quiet` (Java GoldenValuesTest), not only tools-test.
 
 Related: [[bakery-core-balance]]

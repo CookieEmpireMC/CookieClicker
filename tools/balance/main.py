@@ -12,6 +12,7 @@ import argparse
 import bisect
 import datetime
 import json
+import math
 import re
 import sys
 from pathlib import Path
@@ -153,7 +154,7 @@ def golden_values(eco: Economy, results: dict[str, Result]) -> dict:
                                   "max": upgrade_max(eco, uid, u.max_level, 1e30), "case": "at max-level"})
         else:
             max_cases += [{"kind": "upgrade", "id": uid, "owned": lv, "pouch": p, "max": upgrade_max(eco, uid, lv, p),
-                           "case": c} for lv, p, c in ((0, u.cost, "exact"), (0, u.cost - 1, "one short"),
+                           "case": c} for lv, p, c in ((0, u.cost, "exact"), (0, _below(u.cost), "one short"),
                                                        (0, u.cost * 1000, "rich, one-time"),
                                                        (1, u.cost * 1000, "already bought"))]
         upgrades[uid] = entry
@@ -189,6 +190,18 @@ def golden_values(eco: Economy, results: dict[str, Result]) -> dict:
             "building-cps": production, "upgrades": upgrades, "max-affordable": max_cases, "states": states}
 
 
+def _below(x: float) -> float:
+    """One cookie short of x; above ~9e15 (ulp >= 2) x - 1 rounds back to x, so use the next double below."""
+    x = float(x)                      # costs are Python ints; Java reads every pouch as a double
+    return x - 1 if x - 1 < x else math.nextafter(x, 0)
+
+
+def _above(x: float) -> float:
+    """Half a cookie over x, or the next double above when x + 0.5 isn't representable."""
+    x = float(x)
+    return x + 0.5 if x + 0.5 > x else math.nextafter(x, math.inf)
+
+
 def _max_cases(kind: str, item_id: str, cost, maxf, owned_list, max_level: int | None) -> list[dict]:
     """Max-affordable cases around the boundaries: exactly N, one cookie short of N, nothing, cap."""
     cases = []
@@ -197,14 +210,14 @@ def _max_cases(kind: str, item_id: str, cost, maxf, owned_list, max_level: int |
             cases.append({"kind": kind, "id": item_id, "owned": n, "pouch": pouch, "max": maxf(n, pouch),
                           "case": label})
         add(0, "empty pouch")
-        add(cost(n, 1) - 1, "one short of 1")
+        add(_below(cost(n, 1)), "one short of 1")
         for k in (1, 2, 5, 10, 37):
             if max_level is not None and n + k > max_level:
                 continue
             exact = cost(n, k)
             add(exact, f"exactly {k}")
-            add(exact - 1, f"one short of {k}")
-            add(exact + 0.5, f"just over {k}")
+            add(_below(exact), f"one short of {k}")
+            add(_above(exact), f"just over {k}")
         if max_level is not None:
             add(cost(n, max_level - n) * 10, "capped by max-level")
         else:

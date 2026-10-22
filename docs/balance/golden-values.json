@@ -3653,7 +3653,7 @@
       "kind": "building",
       "id": "wheat_farm",
       "owned": 0,
-      "pouch": 14,
+      "pouch": 14.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -3669,7 +3669,7 @@
       "kind": "building",
       "id": "wheat_farm",
       "owned": 0,
-      "pouch": 14,
+      "pouch": 14.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -3693,7 +3693,7 @@
       "kind": "building",
       "id": "wheat_farm",
       "owned": 0,
-      "pouch": 32,
+      "pouch": 32.0,
       "max": 1,
       "case": "one short of 2"
     },
@@ -3717,7 +3717,7 @@
       "kind": "building",
       "id": "wheat_farm",
       "owned": 0,
-      "pouch": 101,
+      "pouch": 101.0,
       "max": 4,
       "case": "one short of 5"
     },
@@ -3741,7 +3741,7 @@
       "kind": "building",
       "id": "wheat_farm",
       "owned": 0,
-      "pouch": 304,
+      "pouch": 304.0,
       "max": 9,
       "case": "one short of 10"
     },
@@ -3765,7 +3765,7 @@
       "kind": "building",
       "id": "wheat_farm",
       "owned": 0,
-      "pouch": 17512,
+      "pouch": 17512.0,
       "max": 36,
       "case": "one short of 37"
     },
@@ -3797,7 +3797,7 @@
       "kind": "building",
       "id": "wheat_farm",
       "owned": 7,
-      "pouch": 39,
+      "pouch": 39.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -3813,7 +3813,7 @@
       "kind": "building",
       "id": "wheat_farm",
       "owned": 7,
-      "pouch": 39,
+      "pouch": 39.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -3837,7 +3837,7 @@
       "kind": "building",
       "id": "wheat_farm",
       "owned": 7,
-      "pouch": 85,
+      "pouch": 85.0,
       "max": 1,
       "case": "one short of 2"
     },
@@ -3861,7 +3861,7 @@
       "kind": "building",
       "id": "wheat_farm",
       "owned": 7,
-      "pouch": 269,
+      "pouch": 269.0,
       "max": 4,
       "case": "one short of 5"
     },
@@ -3885,7 +3885,7 @@
       "kind": "building",
       "id": "wheat_farm",
       "owned": 7,
-      "pouch": 810,
+      "pouch": 810.0,
       "max": 9,
       "case": "one short of 10"
     },
@@ -3909,7 +3909,7 @@
       "kind": "building",
       "id": "wheat_farm",
       "owned": 7,
-      "pouch": 46583,
+      "pouch": 46583.0,
       "max": 36,
       "case": "one short of 37"
     },
@@ -3941,7 +3941,7 @@
       "kind": "building",
       "id": "wheat_farm",
       "owned": 50,
-      "pouch": 16254,
+      "pouch": 16254.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -3957,7 +3957,7 @@
       "kind": "building",
       "id": "wheat_farm",
       "owned": 50,
-      "pouch": 16254,
+      "pouch": 16254.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -3981,7 +3981,7 @@
       "kind": "building",
       "id": "wheat_farm",
       "owned": 50,
-      "pouch": 34947,
+      "pouch": 34947.0,
       "max": 1,
       "case": "one short of 2"
     },
@@ -4005,7 +4005,7 @@
       "kind": "building",
       "id": "wheat_farm",
       "owned": 50,
-      "pouch": 109596,
+      "pouch": 109596.0,
       "max": 4,
       "case": "one short of 5"
     },
@@ -4029,7 +4029,7 @@
       "kind": "building",
       "id": "wheat_farm",
       "owned": 50,
-      "pouch": 330034,
+      "pouch": 330034.0,
       "max": 9,
       "case": "one short of 10"
     },
@@ -4053,7 +4053,7 @@
       "kind": "building",
       "id": "wheat_farm",
       "owned": 50,
-      "pouch": 18977510,
+      "pouch": 18977510.0,
       "max": 36,
       "case": "one short of 37"
     },
@@ -4085,7 +4085,7 @@
       "kind": "building",
       "id": "villager_baker",
       "owned": 0,
-      "pouch": 74,
+      "pouch": 74.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -4101,7 +4101,7 @@
       "kind": "building",
       "id": "villager_baker",
       "owned": 0,
-      "pouch": 74,
+      "pouch": 74.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -4125,7 +4125,7 @@
       "kind": "building",
       "id": "villager_baker",
       "owned": 0,
-      "pouch": 161,
+      "pouch": 161.0,
       "max": 1,
       "case": "one short of 2"
     },
@@ -4149,7 +4149,7 @@
       "kind": "building",
       "id": "villager_baker",
       "owned": 0,
-      "pouch": 505,
+      "pouch": 505.0,
       "max": 4,
       "case": "one short of 5"
     },
@@ -4173,7 +4173,7 @@
       "kind": "building",
       "id": "villager_baker",
       "owned": 0,
-      "pouch": 1522,
+      "pouch": 1522.0,
       "max": 9,
       "case": "one short of 10"
     },
@@ -4197,7 +4197,7 @@
       "kind": "building",
       "id": "villager_baker",
       "owned": 0,
-      "pouch": 87562,
+      "pouch": 87562.0,
       "max": 36,
       "case": "one short of 37"
     },
@@ -4229,7 +4229,7 @@
       "kind": "building",
       "id": "villager_baker",
       "owned": 7,
-      "pouch": 199,
+      "pouch": 199.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -4245,7 +4245,7 @@
       "kind": "building",
       "id": "villager_baker",
       "owned": 7,
-      "pouch": 199,
+      "pouch": 199.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -4269,7 +4269,7 @@
       "kind": "building",
       "id": "villager_baker",
       "owned": 7,
-      "pouch": 428,
+      "pouch": 428.0,
       "max": 1,
       "case": "one short of 2"
     },
@@ -4293,7 +4293,7 @@
       "kind": "building",
       "id": "villager_baker",
       "owned": 7,
-      "pouch": 1345,
+      "pouch": 1345.0,
       "max": 4,
       "case": "one short of 5"
     },
@@ -4317,7 +4317,7 @@
       "kind": "building",
       "id": "villager_baker",
       "owned": 7,
-      "pouch": 4050,
+      "pouch": 4050.0,
       "max": 9,
       "case": "one short of 10"
     },
@@ -4341,7 +4341,7 @@
       "kind": "building",
       "id": "villager_baker",
       "owned": 7,
-      "pouch": 232917,
+      "pouch": 232917.0,
       "max": 36,
       "case": "one short of 37"
     },
@@ -4373,7 +4373,7 @@
       "kind": "building",
       "id": "villager_baker",
       "owned": 50,
-      "pouch": 81274,
+      "pouch": 81274.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -4389,7 +4389,7 @@
       "kind": "building",
       "id": "villager_baker",
       "owned": 50,
-      "pouch": 81274,
+      "pouch": 81274.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -4413,7 +4413,7 @@
       "kind": "building",
       "id": "villager_baker",
       "owned": 50,
-      "pouch": 174739,
+      "pouch": 174739.0,
       "max": 1,
       "case": "one short of 2"
     },
@@ -4437,7 +4437,7 @@
       "kind": "building",
       "id": "villager_baker",
       "owned": 50,
-      "pouch": 547982,
+      "pouch": 547982.0,
       "max": 4,
       "case": "one short of 5"
     },
@@ -4461,7 +4461,7 @@
       "kind": "building",
       "id": "villager_baker",
       "owned": 50,
-      "pouch": 1650170,
+      "pouch": 1650170.0,
       "max": 9,
       "case": "one short of 10"
     },
@@ -4485,7 +4485,7 @@
       "kind": "building",
       "id": "villager_baker",
       "owned": 50,
-      "pouch": 94887554,
+      "pouch": 94887554.0,
       "max": 36,
       "case": "one short of 37"
     },
@@ -4517,7 +4517,7 @@
       "kind": "building",
       "id": "cow_barn",
       "owned": 0,
-      "pouch": 1099,
+      "pouch": 1099.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -4533,7 +4533,7 @@
       "kind": "building",
       "id": "cow_barn",
       "owned": 0,
-      "pouch": 1099,
+      "pouch": 1099.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -4557,7 +4557,7 @@
       "kind": "building",
       "id": "cow_barn",
       "owned": 0,
-      "pouch": 2364,
+      "pouch": 2364.0,
       "max": 1,
       "case": "one short of 2"
     },
@@ -4581,7 +4581,7 @@
       "kind": "building",
       "id": "cow_barn",
       "owned": 0,
-      "pouch": 7416,
+      "pouch": 7416.0,
       "max": 4,
       "case": "one short of 5"
     },
@@ -4605,7 +4605,7 @@
       "kind": "building",
       "id": "cow_barn",
       "owned": 0,
-      "pouch": 22334,
+      "pouch": 22334.0,
       "max": 9,
       "case": "one short of 10"
     },
@@ -4629,7 +4629,7 @@
       "kind": "building",
       "id": "cow_barn",
       "owned": 0,
-      "pouch": 1284247,
+      "pouch": 1284247.0,
       "max": 36,
       "case": "one short of 37"
     },
@@ -4661,7 +4661,7 @@
       "kind": "building",
       "id": "cow_barn",
       "owned": 7,
-      "pouch": 2926,
+      "pouch": 2926.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -4677,7 +4677,7 @@
       "kind": "building",
       "id": "cow_barn",
       "owned": 7,
-      "pouch": 2926,
+      "pouch": 2926.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -4701,7 +4701,7 @@
       "kind": "building",
       "id": "cow_barn",
       "owned": 7,
-      "pouch": 6290,
+      "pouch": 6290.0,
       "max": 1,
       "case": "one short of 2"
     },
@@ -4725,7 +4725,7 @@
       "kind": "building",
       "id": "cow_barn",
       "owned": 7,
-      "pouch": 19728,
+      "pouch": 19728.0,
       "max": 4,
       "case": "one short of 5"
     },
@@ -4749,7 +4749,7 @@
       "kind": "building",
       "id": "cow_barn",
       "owned": 7,
-      "pouch": 59409,
+      "pouch": 59409.0,
       "max": 9,
       "case": "one short of 10"
     },
@@ -4773,7 +4773,7 @@
       "kind": "building",
       "id": "cow_barn",
       "owned": 7,
-      "pouch": 3416123,
+      "pouch": 3416123.0,
       "max": 36,
       "case": "one short of 37"
     },
@@ -4805,7 +4805,7 @@
       "kind": "building",
       "id": "cow_barn",
       "owned": 50,
-      "pouch": 1192023,
+      "pouch": 1192023.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -4821,7 +4821,7 @@
       "kind": "building",
       "id": "cow_barn",
       "owned": 50,
-      "pouch": 1192023,
+      "pouch": 1192023.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -4845,7 +4845,7 @@
       "kind": "building",
       "id": "cow_barn",
       "owned": 50,
-      "pouch": 2562849,
+      "pouch": 2562849.0,
       "max": 1,
       "case": "one short of 2"
     },
@@ -4869,7 +4869,7 @@
       "kind": "building",
       "id": "cow_barn",
       "owned": 50,
-      "pouch": 8037074,
+      "pouch": 8037074.0,
       "max": 4,
       "case": "one short of 5"
     },
@@ -4893,7 +4893,7 @@
       "kind": "building",
       "id": "cow_barn",
       "owned": 50,
-      "pouch": 24202502,
+      "pouch": 24202502.0,
       "max": 9,
       "case": "one short of 10"
     },
@@ -4917,7 +4917,7 @@
       "kind": "building",
       "id": "cow_barn",
       "owned": 50,
-      "pouch": 1391684126,
+      "pouch": 1391684126.0,
       "max": 36,
       "case": "one short of 37"
     },
@@ -4949,7 +4949,7 @@
       "kind": "building",
       "id": "sugar_cane_field",
       "owned": 0,
-      "pouch": 11999,
+      "pouch": 11999.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -4965,7 +4965,7 @@
       "kind": "building",
       "id": "sugar_cane_field",
       "owned": 0,
-      "pouch": 11999,
+      "pouch": 11999.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -4989,7 +4989,7 @@
       "kind": "building",
       "id": "sugar_cane_field",
       "owned": 0,
-      "pouch": 25799,
+      "pouch": 25799.0,
       "max": 1,
       "case": "one short of 2"
     },
@@ -5013,7 +5013,7 @@
       "kind": "building",
       "id": "sugar_cane_field",
       "owned": 0,
-      "pouch": 80908,
+      "pouch": 80908.0,
       "max": 4,
       "case": "one short of 5"
     },
@@ -5037,7 +5037,7 @@
       "kind": "building",
       "id": "sugar_cane_field",
       "owned": 0,
-      "pouch": 243644,
+      "pouch": 243644.0,
       "max": 9,
       "case": "one short of 10"
     },
@@ -5061,7 +5061,7 @@
       "kind": "building",
       "id": "sugar_cane_field",
       "owned": 0,
-      "pouch": 14009970,
+      "pouch": 14009970.0,
       "max": 36,
       "case": "one short of 37"
     },
@@ -5093,7 +5093,7 @@
       "kind": "building",
       "id": "sugar_cane_field",
       "owned": 7,
-      "pouch": 31920,
+      "pouch": 31920.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -5109,7 +5109,7 @@
       "kind": "building",
       "id": "sugar_cane_field",
       "owned": 7,
-      "pouch": 31920,
+      "pouch": 31920.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -5133,7 +5133,7 @@
       "kind": "building",
       "id": "sugar_cane_field",
       "owned": 7,
-      "pouch": 68628,
+      "pouch": 68628.0,
       "max": 1,
       "case": "one short of 2"
     },
@@ -5157,7 +5157,7 @@
       "kind": "building",
       "id": "sugar_cane_field",
       "owned": 7,
-      "pouch": 215218,
+      "pouch": 215218.0,
       "max": 4,
       "case": "one short of 5"
     },
@@ -5181,7 +5181,7 @@
       "kind": "building",
       "id": "sugar_cane_field",
       "owned": 7,
-      "pouch": 648099,
+      "pouch": 648099.0,
       "max": 9,
       "case": "one short of 10"
     },
@@ -5205,7 +5205,7 @@
       "kind": "building",
       "id": "sugar_cane_field",
       "owned": 7,
-      "pouch": 37266799,
+      "pouch": 37266799.0,
       "max": 36,
       "case": "one short of 37"
     },
@@ -5237,7 +5237,7 @@
       "kind": "building",
       "id": "sugar_cane_field",
       "owned": 50,
-      "pouch": 13003889,
+      "pouch": 13003889.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -5253,7 +5253,7 @@
       "kind": "building",
       "id": "sugar_cane_field",
       "owned": 50,
-      "pouch": 13003889,
+      "pouch": 13003889.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -5277,7 +5277,7 @@
       "kind": "building",
       "id": "sugar_cane_field",
       "owned": 50,
-      "pouch": 27958361,
+      "pouch": 27958361.0,
       "max": 1,
       "case": "one short of 2"
     },
@@ -5301,7 +5301,7 @@
       "kind": "building",
       "id": "sugar_cane_field",
       "owned": 50,
-      "pouch": 87677179,
+      "pouch": 87677179.0,
       "max": 4,
       "case": "one short of 5"
     },
@@ -5325,7 +5325,7 @@
       "kind": "building",
       "id": "sugar_cane_field",
       "owned": 50,
-      "pouch": 264027304,
+      "pouch": 264027304.0,
       "max": 9,
       "case": "one short of 10"
     },
@@ -5349,7 +5349,7 @@
       "kind": "building",
       "id": "sugar_cane_field",
       "owned": 50,
-      "pouch": 15182008656,
+      "pouch": 15182008656.0,
       "max": 36,
       "case": "one short of 37"
     },
@@ -5381,7 +5381,7 @@
       "kind": "building",
       "id": "industrial_oven",
       "owned": 0,
-      "pouch": 159999,
+      "pouch": 159999.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -5397,7 +5397,7 @@
       "kind": "building",
       "id": "industrial_oven",
       "owned": 0,
-      "pouch": 159999,
+      "pouch": 159999.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -5421,7 +5421,7 @@
       "kind": "building",
       "id": "industrial_oven",
       "owned": 0,
-      "pouch": 343999,
+      "pouch": 343999.0,
       "max": 1,
       "case": "one short of 2"
     },
@@ -5445,7 +5445,7 @@
       "kind": "building",
       "id": "industrial_oven",
       "owned": 0,
-      "pouch": 1078780,
+      "pouch": 1078780.0,
       "max": 4,
       "case": "one short of 5"
     },
@@ -5469,7 +5469,7 @@
       "kind": "building",
       "id": "industrial_oven",
       "owned": 0,
-      "pouch": 3248594,
+      "pouch": 3248594.0,
       "max": 9,
       "case": "one short of 10"
     },
@@ -5493,7 +5493,7 @@
       "kind": "building",
       "id": "industrial_oven",
       "owned": 0,
-      "pouch": 186799605,
+      "pouch": 186799605.0,
       "max": 36,
       "case": "one short of 37"
     },
@@ -5525,7 +5525,7 @@
       "kind": "building",
       "id": "industrial_oven",
       "owned": 7,
-      "pouch": 425603,
+      "pouch": 425603.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -5541,7 +5541,7 @@
       "kind": "building",
       "id": "industrial_oven",
       "owned": 7,
-      "pouch": 425603,
+      "pouch": 425603.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -5565,7 +5565,7 @@
       "kind": "building",
       "id": "industrial_oven",
       "owned": 7,
-      "pouch": 915046,
+      "pouch": 915046.0,
       "max": 1,
       "case": "one short of 2"
     },
@@ -5589,7 +5589,7 @@
       "kind": "building",
       "id": "industrial_oven",
       "owned": 7,
-      "pouch": 2869578,
+      "pouch": 2869578.0,
       "max": 4,
       "case": "one short of 5"
     },
@@ -5613,7 +5613,7 @@
       "kind": "building",
       "id": "industrial_oven",
       "owned": 7,
-      "pouch": 8641327,
+      "pouch": 8641327.0,
       "max": 9,
       "case": "one short of 10"
     },
@@ -5637,7 +5637,7 @@
       "kind": "building",
       "id": "industrial_oven",
       "owned": 7,
-      "pouch": 496890663,
+      "pouch": 496890663.0,
       "max": 36,
       "case": "one short of 37"
     },
@@ -5669,7 +5669,7 @@
       "kind": "building",
       "id": "industrial_oven",
       "owned": 50,
-      "pouch": 173385190,
+      "pouch": 173385190.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -5685,7 +5685,7 @@
       "kind": "building",
       "id": "industrial_oven",
       "owned": 50,
-      "pouch": 173385190,
+      "pouch": 173385190.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -5709,7 +5709,7 @@
       "kind": "building",
       "id": "industrial_oven",
       "owned": 50,
-      "pouch": 372778159,
+      "pouch": 372778159.0,
       "max": 1,
       "case": "one short of 2"
     },
@@ -5733,7 +5733,7 @@
       "kind": "building",
       "id": "industrial_oven",
       "owned": 50,
-      "pouch": 1169029058,
+      "pouch": 1169029058.0,
       "max": 4,
       "case": "one short of 5"
     },
@@ -5757,7 +5757,7 @@
       "kind": "building",
       "id": "industrial_oven",
       "owned": 50,
-      "pouch": 3520364057,
+      "pouch": 3520364057.0,
       "max": 9,
       "case": "one short of 10"
     },
@@ -5781,7 +5781,7 @@
       "kind": "building",
       "id": "industrial_oven",
       "owned": 50,
-      "pouch": 202426782087,
+      "pouch": 202426782087.0,
       "max": 36,
       "case": "one short of 37"
     },
@@ -5813,7 +5813,7 @@
       "kind": "building",
       "id": "extra_belt",
       "owned": 0,
-      "pouch": 1999999,
+      "pouch": 1999999.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -5829,7 +5829,7 @@
       "kind": "building",
       "id": "extra_belt",
       "owned": 0,
-      "pouch": 1999999,
+      "pouch": 1999999.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -5853,7 +5853,7 @@
       "kind": "building",
       "id": "extra_belt",
       "owned": 0,
-      "pouch": 4299999,
+      "pouch": 4299999.0,
       "max": 1,
       "case": "one short of 2"
     },
@@ -5877,7 +5877,7 @@
       "kind": "building",
       "id": "extra_belt",
       "owned": 0,
-      "pouch": 13484762,
+      "pouch": 13484762.0,
       "max": 4,
       "case": "one short of 5"
     },
@@ -5901,7 +5901,7 @@
       "kind": "building",
       "id": "extra_belt",
       "owned": 0,
-      "pouch": 40607436,
+      "pouch": 40607436.0,
       "max": 9,
       "case": "one short of 10"
     },
@@ -5925,7 +5925,7 @@
       "kind": "building",
       "id": "extra_belt",
       "owned": 0,
-      "pouch": 2334995063,
+      "pouch": 2334995063.0,
       "max": 36,
       "case": "one short of 37"
     },
@@ -5957,7 +5957,7 @@
       "kind": "building",
       "id": "extra_belt",
       "owned": 7,
-      "pouch": 5320039,
+      "pouch": 5320039.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -5973,7 +5973,7 @@
       "kind": "building",
       "id": "extra_belt",
       "owned": 7,
-      "pouch": 5320039,
+      "pouch": 5320039.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -5997,7 +5997,7 @@
       "kind": "building",
       "id": "extra_belt",
       "owned": 7,
-      "pouch": 11438085,
+      "pouch": 11438085.0,
       "max": 1,
       "case": "one short of 2"
     },
@@ -6021,7 +6021,7 @@
       "kind": "building",
       "id": "extra_belt",
       "owned": 7,
-      "pouch": 35869736,
+      "pouch": 35869736.0,
       "max": 4,
       "case": "one short of 5"
     },
@@ -6045,7 +6045,7 @@
       "kind": "building",
       "id": "extra_belt",
       "owned": 7,
-      "pouch": 108016588,
+      "pouch": 108016588.0,
       "max": 9,
       "case": "one short of 10"
     },
@@ -6069,7 +6069,7 @@
       "kind": "building",
       "id": "extra_belt",
       "owned": 7,
-      "pouch": 6211133288,
+      "pouch": 6211133288.0,
       "max": 36,
       "case": "one short of 37"
     },
@@ -6101,7 +6101,7 @@
       "kind": "building",
       "id": "extra_belt",
       "owned": 50,
-      "pouch": 2167314883,
+      "pouch": 2167314883.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -6117,7 +6117,7 @@
       "kind": "building",
       "id": "extra_belt",
       "owned": 50,
-      "pouch": 2167314883,
+      "pouch": 2167314883.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -6141,7 +6141,7 @@
       "kind": "building",
       "id": "extra_belt",
       "owned": 50,
-      "pouch": 4659726998,
+      "pouch": 4659726998.0,
       "max": 1,
       "case": "one short of 2"
     },
@@ -6165,7 +6165,7 @@
       "kind": "building",
       "id": "extra_belt",
       "owned": 50,
-      "pouch": 14612863231,
+      "pouch": 14612863231.0,
       "max": 4,
       "case": "one short of 5"
     },
@@ -6189,7 +6189,7 @@
       "kind": "building",
       "id": "extra_belt",
       "owned": 50,
-      "pouch": 44004550720,
+      "pouch": 44004550720.0,
       "max": 9,
       "case": "one short of 10"
     },
@@ -6213,7 +6213,7 @@
       "kind": "building",
       "id": "extra_belt",
       "owned": 50,
-      "pouch": 2530334776097,
+      "pouch": 2530334776097.0,
       "max": 36,
       "case": "one short of 37"
     },
@@ -6245,7 +6245,7 @@
       "kind": "building",
       "id": "beehive",
       "owned": 0,
-      "pouch": 29999999,
+      "pouch": 29999999.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -6261,7 +6261,7 @@
       "kind": "building",
       "id": "beehive",
       "owned": 0,
-      "pouch": 29999999,
+      "pouch": 29999999.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -6285,7 +6285,7 @@
       "kind": "building",
       "id": "beehive",
       "owned": 0,
-      "pouch": 64499999,
+      "pouch": 64499999.0,
       "max": 1,
       "case": "one short of 2"
     },
@@ -6309,7 +6309,7 @@
       "kind": "building",
       "id": "beehive",
       "owned": 0,
-      "pouch": 202271437,
+      "pouch": 202271437.0,
       "max": 4,
       "case": "one short of 5"
     },
@@ -6333,7 +6333,7 @@
       "kind": "building",
       "id": "beehive",
       "owned": 0,
-      "pouch": 609111547,
+      "pouch": 609111547.0,
       "max": 9,
       "case": "one short of 10"
     },
@@ -6357,7 +6357,7 @@
       "kind": "building",
       "id": "beehive",
       "owned": 0,
-      "pouch": 35024925945,
+      "pouch": 35024925945.0,
       "max": 36,
       "case": "one short of 37"
     },
@@ -6389,7 +6389,7 @@
       "kind": "building",
       "id": "beehive",
       "owned": 7,
-      "pouch": 79800596,
+      "pouch": 79800596.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -6405,7 +6405,7 @@
       "kind": "building",
       "id": "beehive",
       "owned": 7,
-      "pouch": 79800596,
+      "pouch": 79800596.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -6429,7 +6429,7 @@
       "kind": "building",
       "id": "beehive",
       "owned": 7,
-      "pouch": 171571282,
+      "pouch": 171571282.0,
       "max": 1,
       "case": "one short of 2"
     },
@@ -6453,7 +6453,7 @@
       "kind": "building",
       "id": "beehive",
       "owned": 7,
-      "pouch": 538046045,
+      "pouch": 538046045.0,
       "max": 4,
       "case": "one short of 5"
     },
@@ -6477,7 +6477,7 @@
       "kind": "building",
       "id": "beehive",
       "owned": 7,
-      "pouch": 1620248824,
+      "pouch": 1620248824.0,
       "max": 9,
       "case": "one short of 10"
     },
@@ -6501,7 +6501,7 @@
       "kind": "building",
       "id": "beehive",
       "owned": 7,
-      "pouch": 93166999326,
+      "pouch": 93166999326.0,
       "max": 36,
       "case": "one short of 37"
     },
@@ -6533,7 +6533,7 @@
       "kind": "building",
       "id": "beehive",
       "owned": 50,
-      "pouch": 32509723247,
+      "pouch": 32509723247.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -6549,7 +6549,7 @@
       "kind": "building",
       "id": "beehive",
       "owned": 50,
-      "pouch": 32509723247,
+      "pouch": 32509723247.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -6573,7 +6573,7 @@
       "kind": "building",
       "id": "beehive",
       "owned": 50,
-      "pouch": 69895904982,
+      "pouch": 69895904982.0,
       "max": 1,
       "case": "one short of 2"
     },
@@ -6597,7 +6597,7 @@
       "kind": "building",
       "id": "beehive",
       "owned": 50,
-      "pouch": 219192948466,
+      "pouch": 219192948466.0,
       "max": 4,
       "case": "one short of 5"
     },
@@ -6621,7 +6621,7 @@
       "kind": "building",
       "id": "beehive",
       "owned": 50,
-      "pouch": 660068260814,
+      "pouch": 660068260814.0,
       "max": 9,
       "case": "one short of 10"
     },
@@ -6645,7 +6645,7 @@
       "kind": "building",
       "id": "beehive",
       "owned": 50,
-      "pouch": 37955021641467,
+      "pouch": 37955021641467.0,
       "max": 36,
       "case": "one short of 37"
     },
@@ -6677,7 +6677,7 @@
       "kind": "building",
       "id": "cocoa_plantation",
       "owned": 0,
-      "pouch": 399999999,
+      "pouch": 399999999.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -6693,7 +6693,7 @@
       "kind": "building",
       "id": "cocoa_plantation",
       "owned": 0,
-      "pouch": 399999999,
+      "pouch": 399999999.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -6717,7 +6717,7 @@
       "kind": "building",
       "id": "cocoa_plantation",
       "owned": 0,
-      "pouch": 859999999,
+      "pouch": 859999999.0,
       "max": 1,
       "case": "one short of 2"
     },
@@ -6741,7 +6741,7 @@
       "kind": "building",
       "id": "cocoa_plantation",
       "owned": 0,
-      "pouch": 2696952499,
+      "pouch": 2696952499.0,
       "max": 4,
       "case": "one short of 5"
     },
@@ -6765,7 +6765,7 @@
       "kind": "building",
       "id": "cocoa_plantation",
       "owned": 0,
-      "pouch": 8121487295,
+      "pouch": 8121487295.0,
       "max": 9,
       "case": "one short of 10"
     },
@@ -6789,7 +6789,7 @@
       "kind": "building",
       "id": "cocoa_plantation",
       "owned": 0,
-      "pouch": 466999012602,
+      "pouch": 466999012602.0,
       "max": 36,
       "case": "one short of 37"
     },
@@ -6821,7 +6821,7 @@
       "kind": "building",
       "id": "cocoa_plantation",
       "owned": 7,
-      "pouch": 1064007952,
+      "pouch": 1064007952.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -6837,7 +6837,7 @@
       "kind": "building",
       "id": "cocoa_plantation",
       "owned": 7,
-      "pouch": 1064007952,
+      "pouch": 1064007952.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -6861,7 +6861,7 @@
       "kind": "building",
       "id": "cocoa_plantation",
       "owned": 7,
-      "pouch": 2287617097,
+      "pouch": 2287617097.0,
       "max": 1,
       "case": "one short of 2"
     },
@@ -6885,7 +6885,7 @@
       "kind": "building",
       "id": "cocoa_plantation",
       "owned": 7,
-      "pouch": 7173947266,
+      "pouch": 7173947266.0,
       "max": 4,
       "case": "one short of 5"
     },
@@ -6909,7 +6909,7 @@
       "kind": "building",
       "id": "cocoa_plantation",
       "owned": 7,
-      "pouch": 21603317664,
+      "pouch": 21603317664.0,
       "max": 9,
       "case": "one short of 10"
     },
@@ -6933,7 +6933,7 @@
       "kind": "building",
       "id": "cocoa_plantation",
       "owned": 7,
-      "pouch": 1242226657683,
+      "pouch": 1242226657683.0,
       "max": 36,
       "case": "one short of 37"
     },
@@ -6965,7 +6965,7 @@
       "kind": "building",
       "id": "cocoa_plantation",
       "owned": 50,
-      "pouch": 433462976633,
+      "pouch": 433462976633.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -6981,7 +6981,7 @@
       "kind": "building",
       "id": "cocoa_plantation",
       "owned": 50,
-      "pouch": 433462976633,
+      "pouch": 433462976633.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -7005,7 +7005,7 @@
       "kind": "building",
       "id": "cocoa_plantation",
       "owned": 50,
-      "pouch": 931945399762,
+      "pouch": 931945399762.0,
       "max": 1,
       "case": "one short of 2"
     },
@@ -7029,7 +7029,7 @@
       "kind": "building",
       "id": "cocoa_plantation",
       "owned": 50,
-      "pouch": 2922572646223,
+      "pouch": 2922572646223.0,
       "max": 4,
       "case": "one short of 5"
     },
@@ -7053,7 +7053,7 @@
       "kind": "building",
       "id": "cocoa_plantation",
       "owned": 50,
-      "pouch": 8800910144195,
+      "pouch": 8800910144195.0,
       "max": 9,
       "case": "one short of 10"
     },
@@ -7077,7 +7077,7 @@
       "kind": "building",
       "id": "cocoa_plantation",
       "owned": 50,
-      "pouch": 506066955219565,
+      "pouch": 506066955219565.0,
       "max": 36,
       "case": "one short of 37"
     },
@@ -7109,7 +7109,7 @@
       "kind": "building",
       "id": "shipping_centre",
       "owned": 0,
-      "pouch": 5099999999,
+      "pouch": 5099999999.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -7125,7 +7125,7 @@
       "kind": "building",
       "id": "shipping_centre",
       "owned": 0,
-      "pouch": 5099999999,
+      "pouch": 5099999999.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -7149,7 +7149,7 @@
       "kind": "building",
       "id": "shipping_centre",
       "owned": 0,
-      "pouch": 10964999999,
+      "pouch": 10964999999.0,
       "max": 1,
       "case": "one short of 2"
     },
@@ -7173,7 +7173,7 @@
       "kind": "building",
       "id": "shipping_centre",
       "owned": 0,
-      "pouch": 34386144374,
+      "pouch": 34386144374.0,
       "max": 4,
       "case": "one short of 5"
     },
@@ -7197,7 +7197,7 @@
       "kind": "building",
       "id": "shipping_centre",
       "owned": 0,
-      "pouch": 103548963014,
+      "pouch": 103548963014.0,
       "max": 9,
       "case": "one short of 10"
     },
@@ -7221,7 +7221,7 @@
       "kind": "building",
       "id": "shipping_centre",
       "owned": 0,
-      "pouch": 5954237410687,
+      "pouch": 5954237410687.0,
       "max": 36,
       "case": "one short of 37"
     },
@@ -7253,7 +7253,7 @@
       "kind": "building",
       "id": "shipping_centre",
       "owned": 7,
-      "pouch": 13566101390,
+      "pouch": 13566101390.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -7269,7 +7269,7 @@
       "kind": "building",
       "id": "shipping_centre",
       "owned": 7,
-      "pouch": 13566101390,
+      "pouch": 13566101390.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -7293,7 +7293,7 @@
       "kind": "building",
       "id": "shipping_centre",
       "owned": 7,
-      "pouch": 29167117989,
+      "pouch": 29167117989.0,
       "max": 1,
       "case": "one short of 2"
     },
@@ -7317,7 +7317,7 @@
       "kind": "building",
       "id": "shipping_centre",
       "owned": 7,
-      "pouch": 91467827650,
+      "pouch": 91467827650.0,
       "max": 4,
       "case": "one short of 5"
     },
@@ -7341,7 +7341,7 @@
       "kind": "building",
       "id": "shipping_centre",
       "owned": 7,
-      "pouch": 275442300219,
+      "pouch": 275442300219.0,
       "max": 9,
       "case": "one short of 10"
     },
@@ -7365,7 +7365,7 @@
       "kind": "building",
       "id": "shipping_centre",
       "owned": 7,
-      "pouch": 15838389885460,
+      "pouch": 15838389885460.0,
       "max": 36,
       "case": "one short of 37"
     },
@@ -7397,7 +7397,7 @@
       "kind": "building",
       "id": "shipping_centre",
       "owned": 50,
-      "pouch": 5526652952078,
+      "pouch": 5526652952078.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -7413,7 +7413,7 @@
       "kind": "building",
       "id": "shipping_centre",
       "owned": 50,
-      "pouch": 5526652952078,
+      "pouch": 5526652952078.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -7437,7 +7437,7 @@
       "kind": "building",
       "id": "shipping_centre",
       "owned": 50,
-      "pouch": 11882303846968,
+      "pouch": 11882303846968.0,
       "max": 1,
       "case": "one short of 2"
     },
@@ -7461,7 +7461,7 @@
       "kind": "building",
       "id": "shipping_centre",
       "owned": 50,
-      "pouch": 37262801239348,
+      "pouch": 37262801239348.0,
       "max": 4,
       "case": "one short of 5"
     },
@@ -7485,7 +7485,7 @@
       "kind": "building",
       "id": "shipping_centre",
       "owned": 50,
-      "pouch": 112211604338497,
+      "pouch": 112211604338497.0,
       "max": 9,
       "case": "one short of 10"
     },
@@ -7509,7 +7509,7 @@
       "kind": "building",
       "id": "shipping_centre",
       "owned": 50,
-      "pouch": 6452353679049464,
+      "pouch": 6452353679049464.0,
       "max": 36,
       "case": "one short of 37"
     },
@@ -7541,7 +7541,7 @@
       "kind": "building",
       "id": "alchemy_lab",
       "owned": 0,
-      "pouch": 74999999999,
+      "pouch": 74999999999.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -7557,7 +7557,7 @@
       "kind": "building",
       "id": "alchemy_lab",
       "owned": 0,
-      "pouch": 74999999999,
+      "pouch": 74999999999.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -7581,7 +7581,7 @@
       "kind": "building",
       "id": "alchemy_lab",
       "owned": 0,
-      "pouch": 161249999999,
+      "pouch": 161249999999.0,
       "max": 1,
       "case": "one short of 2"
     },
@@ -7605,7 +7605,7 @@
       "kind": "building",
       "id": "alchemy_lab",
       "owned": 0,
-      "pouch": 505678593749,
+      "pouch": 505678593749.0,
       "max": 4,
       "case": "one short of 5"
     },
@@ -7629,7 +7629,7 @@
       "kind": "building",
       "id": "alchemy_lab",
       "owned": 0,
-      "pouch": 1522778867853,
+      "pouch": 1522778867853.0,
       "max": 9,
       "case": "one short of 10"
     },
@@ -7653,7 +7653,7 @@
       "kind": "building",
       "id": "alchemy_lab",
       "owned": 0,
-      "pouch": 87562314863056,
+      "pouch": 87562314863056.0,
       "max": 36,
       "case": "one short of 37"
     },
@@ -7685,7 +7685,7 @@
       "kind": "building",
       "id": "alchemy_lab",
       "owned": 7,
-      "pouch": 199501491035,
+      "pouch": 199501491035.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -7701,7 +7701,7 @@
       "kind": "building",
       "id": "alchemy_lab",
       "owned": 7,
-      "pouch": 199501491035,
+      "pouch": 199501491035.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -7725,7 +7725,7 @@
       "kind": "building",
       "id": "alchemy_lab",
       "owned": 7,
-      "pouch": 428928205725,
+      "pouch": 428928205725.0,
       "max": 1,
       "case": "one short of 2"
     },
@@ -7749,7 +7749,7 @@
       "kind": "building",
       "id": "alchemy_lab",
       "owned": 7,
-      "pouch": 1345115112502,
+      "pouch": 1345115112502.0,
       "max": 4,
       "case": "one short of 5"
     },
@@ -7773,7 +7773,7 @@
       "kind": "building",
       "id": "alchemy_lab",
       "owned": 7,
-      "pouch": 4050622062049,
+      "pouch": 4050622062049.0,
       "max": 9,
       "case": "one short of 10"
     },
@@ -7797,7 +7797,7 @@
       "kind": "building",
       "id": "alchemy_lab",
       "owned": 7,
-      "pouch": 232917498315595,
+      "pouch": 232917498315595.0,
       "max": 36,
       "case": "one short of 37"
     },
@@ -7829,7 +7829,7 @@
       "kind": "building",
       "id": "alchemy_lab",
       "owned": 50,
-      "pouch": 81274308118796,
+      "pouch": 81274308118796.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -7845,7 +7845,7 @@
       "kind": "building",
       "id": "alchemy_lab",
       "owned": 50,
-      "pouch": 81274308118796,
+      "pouch": 81274308118796.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -7869,7 +7869,7 @@
       "kind": "building",
       "id": "alchemy_lab",
       "owned": 50,
-      "pouch": 174739762455412,
+      "pouch": 174739762455412.0,
       "max": 1,
       "case": "one short of 2"
     },
@@ -7893,7 +7893,7 @@
       "kind": "building",
       "id": "alchemy_lab",
       "owned": 50,
-      "pouch": 547982371166896,
+      "pouch": 547982371166896.0,
       "max": 4,
       "case": "one short of 5"
     },
@@ -7917,7 +7917,7 @@
       "kind": "building",
       "id": "alchemy_lab",
       "owned": 50,
-      "pouch": 1650170652036724,
+      "pouch": 1650170652036724.0,
       "max": 9,
       "case": "one short of 10"
     },
@@ -7941,7 +7941,7 @@
       "kind": "building",
       "id": "alchemy_lab",
       "owned": 50,
-      "pouch": 94887554103668607,
+      "pouch": 9.488755410366859e+16,
       "max": 36,
       "case": "one short of 37"
     },
@@ -7949,7 +7949,7 @@
       "kind": "building",
       "id": "alchemy_lab",
       "owned": 50,
-      "pouch": 9.48875541036686e+16,
+      "pouch": 9.488755410366862e+16,
       "max": 37,
       "case": "just over 37"
     },
@@ -7973,7 +7973,7 @@
       "kind": "building",
       "id": "portal_bakery",
       "owned": 0,
-      "pouch": 999999999999,
+      "pouch": 999999999999.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -7989,7 +7989,7 @@
       "kind": "building",
       "id": "portal_bakery",
       "owned": 0,
-      "pouch": 999999999999,
+      "pouch": 999999999999.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -8013,7 +8013,7 @@
       "kind": "building",
       "id": "portal_bakery",
       "owned": 0,
-      "pouch": 2149999999999,
+      "pouch": 2149999999999.0,
       "max": 1,
       "case": "one short of 2"
     },
@@ -8037,7 +8037,7 @@
       "kind": "building",
       "id": "portal_bakery",
       "owned": 0,
-      "pouch": 6742381249999,
+      "pouch": 6742381249999.0,
       "max": 4,
       "case": "one short of 5"
     },
@@ -8061,7 +8061,7 @@
       "kind": "building",
       "id": "portal_bakery",
       "owned": 0,
-      "pouch": 20303718238052,
+      "pouch": 20303718238052.0,
       "max": 9,
       "case": "one short of 10"
     },
@@ -8085,7 +8085,7 @@
       "kind": "building",
       "id": "portal_bakery",
       "owned": 0,
-      "pouch": 1167497531507422,
+      "pouch": 1167497531507422.0,
       "max": 36,
       "case": "one short of 37"
     },
@@ -8117,7 +8117,7 @@
       "kind": "building",
       "id": "portal_bakery",
       "owned": 7,
-      "pouch": 2660019880468,
+      "pouch": 2660019880468.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -8133,7 +8133,7 @@
       "kind": "building",
       "id": "portal_bakery",
       "owned": 7,
-      "pouch": 2660019880468,
+      "pouch": 2660019880468.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -8157,7 +8157,7 @@
       "kind": "building",
       "id": "portal_bakery",
       "owned": 7,
-      "pouch": 5719042743007,
+      "pouch": 5719042743007.0,
       "max": 1,
       "case": "one short of 2"
     },
@@ -8181,7 +8181,7 @@
       "kind": "building",
       "id": "portal_bakery",
       "owned": 7,
-      "pouch": 17934868166699,
+      "pouch": 17934868166699.0,
       "max": 4,
       "case": "one short of 5"
     },
@@ -8205,7 +8205,7 @@
       "kind": "building",
       "id": "portal_bakery",
       "owned": 7,
-      "pouch": 54008294160656,
+      "pouch": 54008294160656.0,
       "max": 9,
       "case": "one short of 10"
     },
@@ -8229,7 +8229,7 @@
       "kind": "building",
       "id": "portal_bakery",
       "owned": 7,
-      "pouch": 3105566644207933,
+      "pouch": 3105566644207933.0,
       "max": 36,
       "case": "one short of 37"
     },
@@ -8261,7 +8261,7 @@
       "kind": "building",
       "id": "portal_bakery",
       "owned": 50,
-      "pouch": 1083657441583953,
+      "pouch": 1083657441583953.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -8277,7 +8277,7 @@
       "kind": "building",
       "id": "portal_bakery",
       "owned": 50,
-      "pouch": 1083657441583953,
+      "pouch": 1083657441583953.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -8301,7 +8301,7 @@
       "kind": "building",
       "id": "portal_bakery",
       "owned": 50,
-      "pouch": 2329863499405499,
+      "pouch": 2329863499405499.0,
       "max": 1,
       "case": "one short of 2"
     },
@@ -8325,7 +8325,7 @@
       "kind": "building",
       "id": "portal_bakery",
       "owned": 50,
-      "pouch": 7306431615558616,
+      "pouch": 7306431615558616.0,
       "max": 4,
       "case": "one short of 5"
     },
@@ -8349,7 +8349,7 @@
       "kind": "building",
       "id": "portal_bakery",
       "owned": 50,
-      "pouch": 22002275360489667,
+      "pouch": 2.2002275360489664e+16,
       "max": 9,
       "case": "one short of 10"
     },
@@ -8357,7 +8357,7 @@
       "kind": "building",
       "id": "portal_bakery",
       "owned": 50,
-      "pouch": 2.2002275360489668e+16,
+      "pouch": 2.200227536048967e+16,
       "max": 10,
       "case": "just over 10"
     },
@@ -8373,7 +8373,7 @@
       "kind": "building",
       "id": "portal_bakery",
       "owned": 50,
-      "pouch": 1265167388048914687,
+      "pouch": 1.2651673880489144e+18,
       "max": 36,
       "case": "one short of 37"
     },
@@ -8381,7 +8381,7 @@
       "kind": "building",
       "id": "portal_bakery",
       "owned": 50,
-      "pouch": 1.2651673880489147e+18,
+      "pouch": 1.265167388048915e+18,
       "max": 37,
       "case": "just over 37"
     },
@@ -8405,7 +8405,7 @@
       "kind": "upgrade",
       "id": "bakers_strength",
       "owned": 0,
-      "pouch": 199,
+      "pouch": 199.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -8421,7 +8421,7 @@
       "kind": "upgrade",
       "id": "bakers_strength",
       "owned": 0,
-      "pouch": 199,
+      "pouch": 199.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -8445,7 +8445,7 @@
       "kind": "upgrade",
       "id": "bakers_strength",
       "owned": 0,
-      "pouch": 449,
+      "pouch": 449.0,
       "max": 1,
       "case": "one short of 2"
     },
@@ -8469,7 +8469,7 @@
       "kind": "upgrade",
       "id": "bakers_strength",
       "owned": 0,
-      "pouch": 1641,
+      "pouch": 1641.0,
       "max": 4,
       "case": "one short of 5"
     },
@@ -8493,7 +8493,7 @@
       "kind": "upgrade",
       "id": "bakers_strength",
       "owned": 0,
-      "pouch": 6650,
+      "pouch": 6650.0,
       "max": 9,
       "case": "one short of 10"
     },
@@ -8517,7 +8517,7 @@
       "kind": "upgrade",
       "id": "bakers_strength",
       "owned": 0,
-      "pouch": 3080687,
+      "pouch": 3080687.0,
       "max": 36,
       "case": "one short of 37"
     },
@@ -8549,7 +8549,7 @@
       "kind": "upgrade",
       "id": "bakers_strength",
       "owned": 3,
-      "pouch": 390,
+      "pouch": 390.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -8565,7 +8565,7 @@
       "kind": "upgrade",
       "id": "bakers_strength",
       "owned": 3,
-      "pouch": 390,
+      "pouch": 390.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -8589,7 +8589,7 @@
       "kind": "upgrade",
       "id": "bakers_strength",
       "owned": 3,
-      "pouch": 878,
+      "pouch": 878.0,
       "max": 1,
       "case": "one short of 2"
     },
@@ -8613,7 +8613,7 @@
       "kind": "upgrade",
       "id": "bakers_strength",
       "owned": 3,
-      "pouch": 3205,
+      "pouch": 3205.0,
       "max": 4,
       "case": "one short of 5"
     },
@@ -8637,7 +8637,7 @@
       "kind": "upgrade",
       "id": "bakers_strength",
       "owned": 3,
-      "pouch": 12989,
+      "pouch": 12989.0,
       "max": 9,
       "case": "one short of 10"
     },
@@ -8661,7 +8661,7 @@
       "kind": "upgrade",
       "id": "bakers_strength",
       "owned": 3,
-      "pouch": 6016968,
+      "pouch": 6016968.0,
       "max": 36,
       "case": "one short of 37"
     },
@@ -8693,7 +8693,7 @@
       "kind": "upgrade",
       "id": "bakers_strength",
       "owned": 47,
-      "pouch": 7174648,
+      "pouch": 7174648.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -8709,7 +8709,7 @@
       "kind": "upgrade",
       "id": "bakers_strength",
       "owned": 47,
-      "pouch": 7174648,
+      "pouch": 7174648.0,
       "max": 0,
       "case": "one short of 1"
     },
@@ -8733,7 +8733,7 @@
       "kind": "upgrade",
       "id": "bakers_strength",
       "owned": 47,
-      "pouch": 16142958,
+      "pouch": 16142958.0,
       "max": 1,
       "case": "one short of 2"
     },
