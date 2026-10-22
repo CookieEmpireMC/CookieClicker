@@ -130,6 +130,8 @@ public final class ClickRouter implements Listener {
             interactions.clickCookie(player, view, aim.cookieAt());
         } else if (line.kind() == PanelLayout.Hit.Kind.ROW) {
             interactions.clickRow(player, view, aim.panel(), line.row());
+        } else if (line.kind() == PanelLayout.Hit.Kind.PAGE_UP || line.kind() == PanelLayout.Hit.Kind.PAGE_DOWN) {
+            interactions.clickPage(player, view, aim.panel(), line.kind() == PanelLayout.Hit.Kind.PAGE_UP ? -1 : 1);
         } else {
             interactions.clickToggle(player, view, aim.panel(), line.mode());
         }

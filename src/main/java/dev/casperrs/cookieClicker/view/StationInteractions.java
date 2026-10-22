@@ -151,6 +151,19 @@ public final class StationInteractions {
         views.refreshPanels(player, pouch, true);
     }
 
+    /**
+     * A ▲ / ▼ page label was clicked: the panel scrolls one row ({@code delta} -1 = up) with the toggle's tick sound;
+     * at the end of the list (a greyed label) nothing happens.
+     */
+    void clickPage(Player player, StationView view, PanelKind kind, int delta) {
+        CookiePouch pouch = sessions.get(player.getUniqueId()).orElse(null);
+        if (pouch == null || !views.scroll(view, kind, pouch, delta)) {
+            return;
+        }
+        sounds.play(player, BULK_TOGGLE, view.panel(kind).toggle.getLocation());
+        views.refreshPanels(player, pouch, true);
+    }
+
     /** A shelf icon was clicked: its name and effect in the action bar for a few seconds. */
     void clickShelf(Player player, String upgradeId) {
         UpgradeDef u = economy.config().upgrades().get(upgradeId);
