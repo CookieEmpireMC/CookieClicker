@@ -89,6 +89,8 @@ final class StationView {
         @Nullable String shownToggle;
         /** What the toggle renders (width and label spans), for the click bounds; null before its first text. */
         PanelLayout.@Nullable ToggleBox toggleBox;
+        /** The player scrolled since the last update: rows whose item changed by the scroll don't pulse. */
+        boolean scrolled;
 
         Panel(PanelKind kind, StationFrame frame, Offset anchor, float iconYaw, TextDisplay header, TextDisplay toggle,
               Interaction hitbox, List<Row> rows) {

@@ -82,8 +82,10 @@ final class PanelUpdater {
             return false;
         }
         int rows = panel.rows.size();
-        return pages.scroll(view.owner, panel.kind, delta, defaultTop(pouch, rows),
+        boolean moved = pages.scroll(view.owner, panel.kind, delta, defaultTop(pouch, rows),
                 PanelRows.maxTop(economy.config(), rows));
+        panel.scrolled |= moved;
+        return moved;
     }
 
     /**
@@ -126,6 +128,9 @@ final class PanelUpdater {
             panel.shownMode = mode;
             panel.shownToggle = toggleKey;
         }
+        // items that slid into a row because the player scrolled are not news: only a purchase/unlock pulses them
+        boolean scrolled = panel.scrolled;
+        panel.scrolled = false;
         StationVisualSettings.Tween tween = settings.get().tween();
         int ticks = tween.ticks();
         int step = tween.stepTicks();
@@ -139,14 +144,15 @@ final class PanelUpdater {
                 id = null;
             }
             if (!Objects.equals(id, row.id)) {
-                // another item moved into this slot (a bought upgrade left): show it right away, with a pulse
+                // another item moved into this slot (a bought upgrade left, a building unlocked): show it right
+                // away, with a pulse unless the player's own scroll moved it there
                 boolean hadItem = row.id != null;
                 row.id = id;
                 row.state = state;
                 row.icon.setItemStack(id == null ? ItemStack.empty() : icons.icon(panel.kind, id, view.withPack));
                 row.cost = PriceTween.fixed(state == null ? 0 : state.cost());
                 row.gain = PriceTween.fixed(state == null ? 0 : state.gain());
-                if (hadItem && id != null) {
+                if (hadItem && id != null && !scrolled) {
                     row.pulseStart = now;
                 }
                 row.animating = true;
