@@ -29,8 +29,9 @@ import java.util.stream.Collectors;
  * Left click: {@link EntityDamageByEntityEvent} and {@link PrePlayerAttackEntityEvent} (whichever fires on 26.3 for
  * an Interaction; both are handled and deduped). One click per player per tick, owner and distance checked
  * server-side, the event is cancelled. A click on the cookie's or a panel's box is resolved from the player's eye ray
- * ({@link StationViews#aim}): the panel row or toggle label under the crosshair, else the cookie, else nothing. With {@code debug.log-click-events} every event on one of our hitboxes is
- * logged, so the in-game test can see which events fire. Main thread only.
+ * ({@link StationViews#aim}): the panel row or toggle label under the crosshair, else the cookie, else nothing.
+ * With {@code debug.log-click-events} every event on one of our hitboxes is logged, so the in-game test can see which
+ * events fire. Main thread only.
  */
 public final class ClickRouter implements Listener {
 

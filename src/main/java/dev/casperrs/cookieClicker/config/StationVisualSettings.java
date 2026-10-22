@@ -1,5 +1,7 @@
 package dev.casperrs.cookieClicker.config;
 
+import dev.casperrs.cookieClicker.view.PanelLayout;
+import dev.casperrs.cookieClicker.view.TextWidth;
 import org.bukkit.configuration.ConfigurationSection;
 
 import java.util.LinkedHashMap;
@@ -101,8 +103,6 @@ public record StationVisualSettings(double viewDistance, int refreshTicks, doubl
      * @param textOffset    row text left edge, relative to the row's bottom; with {@link #iconOffset} it only sets
      *                      how icon and text sit next to each other: the row (icon + text) is centred on the column
      * @param iconOffset    row icon centre relative to the row's bottom (see textOffset)
-     * @param hitboxOffset  unused since plot-polish (one click box per panel, sized from the layout); kept so old
-     *                      configs still load
      * @param colors        background colours as {@code #AARRGGBB}: header, affordable, unaffordable, locked
      * @param iconFallbacks building id -> vanilla material name shown to players without the pack
      * @param textBrightness block and sky light of the header and row texts (0-15)
@@ -117,7 +117,7 @@ public record StationVisualSettings(double viewDistance, int refreshTicks, doubl
      */
     public record Panel(Offset offset, float textYawOffset, float iconYawOffset, float headerScale, float textScale,
                         int lineWidth, Offset textOffset, Offset iconOffset,
-                        float iconScale, Offset hitboxOffset, float hitboxWidth, float hitboxHeight,
+                        float iconScale,
                         Map<String, Integer> colors, int iconBrightAffordable, int iconBrightUnaffordable,
                         float viewRange, Map<String, String> iconFallbacks, String defaultFallback,
                         int textBrightness, boolean textShadowed, boolean textSeeThrough,
@@ -125,11 +125,11 @@ public record StationVisualSettings(double viewDistance, int refreshTicks, doubl
                         double headerGap, double toggleGap, double rowGap, double clickMargin) {
 
         /**
-         * Distance between two row bottoms: a two-line row ({@code 2 × 10 px} at {@code textScale}, 40 px per block)
-         * plus {@link #rowGap}.
+         * Distance between two row bottoms: a row of {@link PanelLayout#ROW_LINES} lines
+         * ({@link TextWidth#LINE_HEIGHT_PX} each) at {@code textScale}, plus {@link #rowGap}.
          */
         public double rowPitch() {
-            return 2 * 10 * textScale / 40.0 + rowGap;
+            return TextWidth.blocks(PanelLayout.ROW_LINES * TextWidth.LINE_HEIGHT_PX, textScale) + rowGap;
         }
 
         public int color(String state) {
@@ -194,9 +194,6 @@ public record StationVisualSettings(double viewDistance, int refreshTicks, doubl
                 r.offset("station.panel.row.text-offset", new Offset(-0.3, 0, 0)),
                 r.offset("station.panel.row.icon-offset", new Offset(-0.5, 0.13, -0.02)),
                 (float) r.positive("station.panel.row.icon-scale", 0.3),
-                r.offset("station.panel.row.hitbox-offset", new Offset(0.25, -0.02, 0)),
-                (float) r.positive("station.panel.row.hitbox-width", 1.7),
-                (float) r.positive("station.panel.row.hitbox-height", 0.34),
                 Map.copyOf(colors),
                 Math.clamp(c.getInt("station.panel.icon-brightness.affordable", 15), 0, 15),
                 Math.clamp(c.getInt("station.panel.icon-brightness.unaffordable", 5), 0, 15),

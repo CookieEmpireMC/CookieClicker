@@ -21,10 +21,10 @@ import java.util.Map;
  * nothing. A text display draws its lines upward from its position ({@link TextWidth#LINE_HEIGHT_PX} per line) and
  * centred on it. The text yaw calibration offset is assumed 0 (the text plane faces the frame's forward). Pure.
  */
-record PanelLayout(StationVisualSettings.Panel p, float toggleScale, int rowCount) {
+public record PanelLayout(StationVisualSettings.Panel p, float toggleScale, int rowCount) {
 
     /** Lines every row is laid out for (the panel texts are written as two lines). */
-    static final int ROW_LINES = 2;
+    public static final int ROW_LINES = 2;
     /** Line width of the header and toggle displays: single lines that are never wrapped. */
     static final int SINGLE_LINE_WIDTH = 1000;
 

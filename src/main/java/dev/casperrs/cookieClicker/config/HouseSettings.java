@@ -48,15 +48,6 @@ public record HouseSettings(int maxBlocks, Cinematic cinematic, Chimney chimney,
      *                     pitch (0 = never); a timer of its own, not tied to the smoke puffs
      */
     public record Chimney(boolean smoke, int crackleTicks) {
-
-        /**
-         * The old {@code crackle-every} (every n-th smoke puff, puffs 10 ticks apart) that {@link #crackleTicks}
-         * replaces. Only kept so the existing tests compile; remove once they use {@link #crackleTicks}.
-         */
-        @Deprecated(forRemoval = true)
-        public int crackleEvery() {
-            return crackleTicks / 10;
-        }
     }
 
     /**

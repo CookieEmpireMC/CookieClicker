@@ -64,11 +64,6 @@ final class StationView {
             this.iconAt = iconAt;
         }
 
-        /** Rows had their own hitbox before plot-polish; kept for code that still passes one (it is ignored). */
-        Row(int index, ItemDisplay icon, TextDisplay text, Interaction ignored, double[] centre, double[] iconAt) {
-            this(index, icon, text, centre, iconAt);
-        }
-
         PanelLayout.RowBox box() {
             return new PanelLayout.RowBox(id != null, renderedLines, renderedWidth);
         }
