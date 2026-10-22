@@ -1,6 +1,7 @@
 package dev.casperrs.cookieClicker;
 
 import dev.casperrs.cookieClicker.belt.ConveyorBelts;
+import dev.casperrs.cookieClicker.building.VisibleBuildings;
 import dev.casperrs.cookieClicker.command.BakeryCommand;
 import dev.casperrs.cookieClicker.config.PluginSettings;
 import dev.casperrs.cookieClicker.economy.Economy;
@@ -80,6 +81,7 @@ public final class CookieClicker extends JavaPlugin {
     private HouseSeen houseSeen;
     private HouseCinematics cinematics;
     private ConveyorBelts belts;
+    private VisibleBuildings buildings;
     private SessionManager sessions;
     private Hud hud;
     private BakeryTicker ticker;
@@ -198,6 +200,10 @@ public final class CookieClicker extends JavaPlugin {
                 resourcePacks::hasPack, cinematics::isRunning, () -> settings.belt(),
                 () -> settings.house().ambient().radius());
         belts.start();
+        buildings = new VisibleBuildings(this, plotRegistry, plotTracker, sessions, effects, sounds,
+                resourcePacks::hasPack, () -> settings.plot().buildings());
+        interactions.setBuildingsBought(buildings::bought);
+        buildings.start(); // shows players already in a plot (quietly)
         outlines = new PlotOutlines(this, effects, () -> settings.plot().show());
         pedestalPrivacy = new PedestalPrivacy(this, () -> settings.plot().hideOthers(), stations::all);
         pedestalPrivacy.restart();
@@ -208,8 +214,9 @@ public final class CookieClicker extends JavaPlugin {
                     plots.update(plot, problem -> getLogger().warning(problem));
                     cinematics.plotChanged(plot.id());
                     belts.plotChanged(plot.id());
+                    buildings.plotChanged(plot.id());
                 }, messages, io, mainThread,
-                () -> settings.house().maxBlocks());
+                () -> settings.house().maxBlocks(), () -> settings.plot().buildings().footprints());
 
         BakeryCommand command = new BakeryCommand(plots, outlines, houses, setup, cinematics, () -> settings, messages, this::reload);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
@@ -272,6 +279,9 @@ public final class CookieClicker extends JavaPlugin {
         }
         if (belts != null) {
             safely("the conveyor belts", belts::shutdown);
+        }
+        if (buildings != null) {
+            safely("the visible buildings", buildings::shutdown);
         }
         safely("plot tracking", () -> {
             if (plotTracker != null) {
@@ -341,6 +351,7 @@ public final class CookieClicker extends JavaPlugin {
         effects.reload();
         views.restart(); // removes every view; the next refresh respawns with the new layout and balance
         plotTracker.resyncAll();
+        buildings.reload(); // after the resync: rebuilt quietly for everyone in a plot
         cinematics.restart(); // smoke loops died with effects.reload()
         pedestalPrivacy.restart();
         applySettings();

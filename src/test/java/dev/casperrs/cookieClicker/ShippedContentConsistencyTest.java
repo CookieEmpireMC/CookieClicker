@@ -154,9 +154,50 @@ class ShippedContentConsistencyTest {
             assertTrue(messages.isString("buildings." + id + ".name"), "messages.yml buildings." + id + ".name");
             assertTrue(config.isString("station.panel.icons." + id + ".fallback-material"), "fallback icon for " + id);
         }
-        List<String> panelOnly = new ArrayList<>(config.getConfigurationSection("station.panel.icons").getKeys(false));
-        panelOnly.removeAll(list.getKeys(false));
-        assertTrue(panelOnly.isEmpty(), "icon config for unknown buildings: " + panelOnly);
+        // The roster is complete: every icon entry names a building in buildings.yml.
+        List<String> stray = new ArrayList<>(config.getConfigurationSection("station.panel.icons").getKeys(false));
+        stray.removeAll(list.getKeys(false));
+        assertTrue(stray.isEmpty(), "icon config for ids that are not in buildings.yml: " + stray);
+        List<String> named = new ArrayList<>(messages.getConfigurationSection("buildings").getKeys(false));
+        named.removeAll(list.getKeys(false));
+        assertTrue(named.isEmpty(), "buildings.<id>.name for ids that are not in buildings.yml: " + named);
+    }
+
+    @Test
+    void visibleBuildingsHaveSlotsConfigModelsStagesSoundsAndEffects() throws IOException {
+        YamlConfiguration buildings = yaml("buildings.yml");
+        YamlConfiguration config = yaml("config.yml");
+        YamlConfiguration slots = yaml("houses/building-slots.yml");
+        Set<String> ids = slots.getConfigurationSection("slots").getKeys(false);
+        assertEquals(6, ids.size(), "the six bakery buildings");
+        for (String id : ids) {
+            assertTrue(buildings.isConfigurationSection("buildings." + id), id + " is not in buildings.yml");
+            assertTrue(config.isString("plot.buildings.fallback-blocks." + id), "fallback block for " + id);
+            assertTrue(config.getDouble("plot.buildings.footprints." + id) > 0, "footprint for " + id);
+            Path def = PACK.resolve("items/building_world/" + id + ".json");
+            assertTrue(Files.isRegularFile(def), "no item definition for building_world/" + id);
+            Set<String> stages = new java.util.TreeSet<>();
+            json(def).getAsJsonObject("model").getAsJsonArray("cases").forEach(c -> stages.add(c.getAsJsonObject().get("when").getAsString()));
+            assertEquals(Set.of("1", "2", "3"), stages, id + " stages");
+            for (String stage : stages) {
+                Path model = PACK.resolve("models/item/building_world/" + id + "_" + stage + ".json");
+                assertTrue(Files.isRegularFile(model), "no model " + id + "_" + stage);
+                json(model).getAsJsonObject("textures").entrySet().forEach(t -> assertTrue(Files.isRegularFile(
+                        PACK.resolve("textures/" + t.getValue().getAsString().substring("cookieclicker:".length()) + ".png")),
+                        "missing texture " + t.getValue().getAsString()));
+            }
+        }
+        assertEquals(ids, config.getConfigurationSection("plot.buildings.footprints").getKeys(false));
+        YamlConfiguration sounds = yaml("sounds.yml");
+        YamlConfiguration effects = yaml("effects.yml");
+        JsonObject soundsJson = json(PACK.resolve("sounds.json"));
+        for (String event : List.of("building_appear", "building_milestone")) {
+            assertTrue(effects.isConfigurationSection(event), "effects.yml lacks " + event);
+            String key = sounds.getString(event + ".key");
+            assertTrue(soundsJson.has(key.substring("cookieclicker:".length())), "sounds.json lacks " + key);
+            soundsJson.getAsJsonObject(key.substring("cookieclicker:".length())).getAsJsonArray("sounds").forEach(f -> assertTrue(
+                    Files.isRegularFile(PACK.resolve("sounds/" + f.getAsString().substring("cookieclicker:".length()) + ".ogg")), f.getAsString()));
+        }
     }
 
     @Test

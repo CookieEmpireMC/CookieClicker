@@ -48,3 +48,6 @@ Style: the factory palette (spruce, dark oak greens, bricks, lanterns), pink che
 
 ## Placeholder / needs a human
 Everything is a first design judged from a top-down plan only (no in-game view): check the density, tree size, bench orientation, and the raised grass blocks under flowers and trees.
+
+## building-roster rework (2026-10-22)
+Slot zones from `houses/building-slots.yml` (footprint squares plus 0.35 blocks, see `design/buildings-world.md`) are a third keep-out in the generator (`building_slots.zone_cells`) and the parser should add the slot cells too. New layout (282 blocks, 7 clusters): `path_edge_west/east` unchanged; `front_west_garden` (x1..4: radius-1 cherry tree at [2,3], wheat bed x1..3 z6..8 with water [2,0,7], scarecrow [4,*,7] facing east); `front_east_corner` (flowers, hay, lamp [29,*,4] around the portal at x26..28 z3..5); `west_store` (x 4: lamps, barrels, sack, hay beside shipping/alchemy); `east_yard` (x 29: lamps, flowers beside the ovens); `back_yard` (hedges, log pile x17..21, trees [5,26] r1 and [27,26], lamps [12,26] [18,26], flowers). Removed: benches, east tree, west bench garden.

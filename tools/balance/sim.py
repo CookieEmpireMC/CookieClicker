@@ -1,8 +1,13 @@
 """Second-by-second pacing simulation of one player profile with the optimal-ish buy strategy."""
 from dataclasses import dataclass, field
 
-from model import (Economy, State, building_cost, building_unlocked, expected_click, total_cps,
+from model import (Economy, State, building_cost, building_unlocked, expected_click, milestones_of, total_cps,
                    upgrade_cost, upgrade_unlocked)
+
+# A player saving towards a building milestone: the buyer also scores "buy the k copies that reach the next
+# milestone" as one purchase when k is at most this. Without it, a one-step greedy buyer never sees that the
+# 8th and 9th copy are worth it for the doubling at 10.
+MILESTONE_LOOKAHEAD = 5
 
 
 @dataclass
@@ -27,6 +32,7 @@ class Result:
     purchases: list[Purchase] = field(default_factory=list)
     timeline: list[tuple[int, float, float, float]] = field(default_factory=list)  # t, cps, expected click, pouch
     dead_zones: list[tuple[int, int]] = field(default_factory=list)                # (start, length)
+    baked: list[float] = field(default_factory=list)       # baked[t - 1] = cookies baked after second t
     final: State | None = None
 
 
@@ -60,13 +66,27 @@ def apply(state: State, kind: str, item_id: str) -> State:
 
 
 def best(eco: Economy, state: State, clicks: float):
-    """Lowest cost per extra cookie/s; items that add nothing are never chosen."""
+    """Lowest cost per extra cookie/s as (score, total cost, kind, id, count); items that add nothing are never
+    chosen. count > 1 is a push to the building's next milestone: the buyer commits to that building and buys its
+    copies one at a time; the choice is re-scored after each copy."""
     now = income(eco, state, clicks)
     scored = []
     for kind, item_id, cost in candidates(eco, state):
-        gain = income(eco, apply(state, kind, item_id), clicks) - now
+        after = apply(state, kind, item_id)
+        gain = income(eco, after, clicks) - now
         if gain > 1e-12:
-            scored.append((cost / gain, cost, kind, item_id))
+            scored.append((cost / gain, cost, kind, item_id, 1))
+        if kind == "building":
+            owned = state.owned.get(item_id, 0)
+            need = next((c - owned for c in milestones_of(eco, item_id) if c > owned), 0)
+            if 2 <= need <= MILESTONE_LOOKAHEAD:
+                total, step = cost, after
+                for _ in range(need - 1):
+                    total += building_cost(eco, step, item_id)
+                    step = apply(step, kind, item_id)
+                gain = income(eco, step, clicks) - now
+                if gain > 1e-12:
+                    scored.append((total / gain, total, kind, item_id, need))
     return min(scored) if scored else None
 
 
@@ -79,6 +99,7 @@ def simulate(eco: Economy, profile: Profile, horizon_seconds: int, sample_every:
         gained = income(eco, state, clicks)
         state.pouch += gained
         state.baked += gained
+        result.baked.append(state.baked)
 
         offers = candidates(eco, state)
         if len(offers) != unlocked_count:
@@ -86,9 +107,13 @@ def simulate(eco: Economy, profile: Profile, horizon_seconds: int, sample_every:
         while True:
             if dirty:
                 choice, dirty = best(eco, state, clicks), False
-            if choice is None or state.pouch < choice[1]:
+            if choice is None:
                 break
-            _, cost, kind, item_id = choice
+            _, _, kind, item_id, _ = choice
+            # a milestone push is bought one copy at a time, as each becomes affordable
+            cost = building_cost(eco, state, item_id) if kind == "building" else upgrade_cost(eco, state, item_id)
+            if state.pouch < cost:
+                break
             state.pouch -= cost
             state = apply(state, kind, item_id)
             owned = state.owned.get(item_id, 1) if kind == "building" else state.level(item_id)

@@ -4,8 +4,13 @@ import org.bukkit.configuration.ConfigurationSection;
 
 import java.util.function.Consumer;
 
-/** {@code config.yml} {@code plot.*}: the admin outline and the optional "hide others near the pedestal". */
-public record PlotSettings(Show show, HideOthers hideOthers, int chimneyReach) {
+/** {@code config.yml} {@code plot.*}: the admin outline, the optional "hide others near the pedestal" and the bought buildings. */
+public record PlotSettings(Show show, HideOthers hideOthers, int chimneyReach, BuildingVisualSettings buildings) {
+
+    /** Without the bought-building visuals (defaults), the plot-polish shape. */
+    public PlotSettings(Show show, HideOthers hideOthers, int chimneyReach) {
+        this(show, hideOthers, chimneyReach, BuildingVisualSettings.defaults());
+    }
 
     /**
      * {@code /bakery plot show}.
@@ -40,7 +45,8 @@ public record PlotSettings(Show show, HideOthers hideOthers, int chimneyReach) {
                 Math.clamp(c.getDouble("plot.hide-others-near-pedestal.radius", 6.0), 1.0, 64.0),
                 Math.clamp(c.getInt("plot.hide-others-near-pedestal.check-ticks", 10), 1, 200));
         // /bakery plot setchimney: how far away the looked-at chimney top may be
-        return new PlotSettings(show, hide, Math.clamp(c.getInt("plot.chimney-reach", 16), 1, 64));
+        return new PlotSettings(show, hide, Math.clamp(c.getInt("plot.chimney-reach", 16), 1, 64),
+                BuildingVisualSettings.from(c.getConfigurationSection("plot.buildings"), problems));
     }
 
     private static String effectId(ConfigurationSection c, String path, String fallback, Consumer<String> problems) {

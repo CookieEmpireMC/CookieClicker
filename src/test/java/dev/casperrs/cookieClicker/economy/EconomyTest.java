@@ -2,12 +2,15 @@ package dev.casperrs.cookieClicker.economy;
 
 import static dev.casperrs.cookieClicker.economy.EconomyTestSupport.config;
 import static dev.casperrs.cookieClicker.economy.EconomyTestSupport.fixed;
+import static dev.casperrs.cookieClicker.economy.EconomyTestSupport.map;
 import static dev.casperrs.cookieClicker.economy.EconomyTestSupport.pouch;
+import static dev.casperrs.cookieClicker.economy.EconomyTestSupport.upgradesYaml;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
@@ -70,6 +73,23 @@ class EconomyTest {
         CookiePouch p = pouch(0, 0, Map.of("baker", 10, "farm", 2), "bakerx2", "global");
         assertEquals(2.0, economy.buildingCps(p, "baker"), 1e-12);
         assertEquals((2.0 + 2.0) * 1.5, economy.totalCps(p), 1e-12);
+    }
+
+    @Test
+    void milestonesDoubleProductionAndABulkBuyCountsEveryMilestoneItCrosses() throws Exception {
+        // baker: 0.1 CPS each, ×2 at 2 owned and again at 4 owned (listed out of order in the file)
+        Economy milestones = new Economy(EconomyConfigParser.parse(
+                map("cost-growth", 1.15, "milestones", List.of(4, 2), "buildings", map(
+                        "baker", map("base-cost", 15, "base-cps", 0.1, "unlock", map("baked", 0)))),
+                upgradesYaml()).config(), fixed(0.99));
+        CookiePouch one = pouch(0, 0, Map.of("baker", 1));
+        assertEquals(0.1, milestones.buildingCps(one, "baker"), 1e-9, "1 owned: no milestone yet");
+        assertEquals(0.4, milestones.buildingCps(pouch(0, 0, Map.of("baker", 2)), "baker"), 1e-9, "2 owned: ×2");
+        assertEquals(1.6, milestones.totalCps(pouch(0, 0, Map.of("baker", 4))), 1e-9, "4 owned: ×4");
+        assertEquals(0.3, milestones.nextBuildingCps(one, "baker"), 1e-9, "the second one crosses the 2 milestone");
+        assertEquals(1.5, milestones.buildingCpsGain(one, "baker", 3), 1e-9,
+                "3 more cross 2 and 4: (1.6 - 0.1), not the linear 0.3");
+        assertEquals(0.0, milestones.buildingCpsGain(one, "baker", 0), 1e-12);
     }
 
     @Test

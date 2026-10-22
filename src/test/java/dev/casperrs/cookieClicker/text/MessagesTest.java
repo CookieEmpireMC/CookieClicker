@@ -157,7 +157,7 @@ class MessagesTest {
 
     @Test
     void buildingNamesComeFromMessagesWithIdFallback() {
-        assertEquals("Villager Baker", PLAIN.serialize(messages.buildingName("villager_baker")));
+        assertEquals("Baker's Apprentice", PLAIN.serialize(messages.buildingName("villager_baker")));
         assertEquals("unknown_id", PLAIN.serialize(messages.buildingName("unknown_id")));
     }
 

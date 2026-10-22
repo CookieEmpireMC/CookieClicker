@@ -11,10 +11,16 @@ import dev.casperrs.cookieClicker.economy.Economy;
 import dev.casperrs.cookieClicker.economy.EconomyConfigException;
 import dev.casperrs.cookieClicker.economy.EconomyConfigParser;
 import dev.casperrs.cookieClicker.economy.PouchSnapshot;
+import dev.casperrs.cookieClicker.format.RealMessages;
 import dev.casperrs.cookieClicker.station.Station;
 import dev.casperrs.cookieClicker.text.Messages;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -86,6 +92,66 @@ class PanelUpdaterTest {
         assertFalse(row.animating, "the roll has settled");
         // renderedKey = path|id|owned|count|mode|cost|gain: the cost field is the exact new value
         assertEquals("18", row.renderedKey.split("\\|")[5]);
+    }
+
+    /** The shipped messages.yml, loaded like the server does it. */
+    private static Messages shippedMessages() {
+        Messages m = new Messages(Logger.getLogger("panel-updater-test"));
+        m.load(RealMessages.yaml());
+        return m;
+    }
+
+    /** {@code station.panel.line-width} from the shipped config.yml. */
+    private static int shippedLineWidth() {
+        try (InputStream in = PanelUpdaterTest.class.getClassLoader().getResourceAsStream("config.yml");
+             Reader r = new InputStreamReader(in, StandardCharsets.UTF_8)) {
+            return StationVisualSettings.from(YamlConfiguration.loadConfiguration(r), problem -> {
+                throw new AssertionError(problem);
+            }).panel().lineWidth();
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    /** Every building id in the shipped buildings.yml (all 11 names must fit, not just the longest-looking ones). */
+    private static java.util.Set<String> shippedBuildingIds() {
+        try (InputStream in = PanelUpdaterTest.class.getClassLoader().getResourceAsStream("buildings.yml");
+             Reader r = new InputStreamReader(in, StandardCharsets.UTF_8)) {
+            return YamlConfiguration.loadConfiguration(r).getConfigurationSection("buildings").getKeys(false);
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    @Test
+    void theLongestBuildingRowsStayTwoLinesWithinTheShippedLineWidth() {
+        Messages shipped = shippedMessages();
+        int lineWidth = shippedLineWidth();
+        // longest shipped names with a ×10000 amount and a huge cost, in both affordability styles
+        for (String id : shippedBuildingIds()) {
+            for (String path : List.of("panel.row.affordable", "panel.row.unaffordable")) {
+                for (double cost : new double[] {1.234e15, 9.99e33}) {
+                    Component row = PanelUpdater.buildingRow(shipped, path, 1, id, 9999,
+                            shipped.number(cost), shipped.number(9.99e9), 1e15,
+                            PanelUpdater.amount(shipped, BulkMode.MAX, 10000));
+                    String text = PLAIN.serialize(row);
+                    List<Integer> lines = TextWidth.lineWidths(TextWidth.runs(row), lineWidth);
+                    assertEquals(PanelLayout.ROW_LINES, lines.size(), "wrapped: " + text);
+                    assertTrue(lines.stream().allMatch(w -> w <= lineWidth), "too wide " + lines + ": " + text);
+                }
+            }
+        }
+    }
+
+    @Test
+    void aPagedToggleTagsBothArrowsEvenWhenOneIsDisabled() {
+        PanelUpdater updater = new PanelUpdater(() -> settings, economy, shippedMessages(), new BulkModes(),
+                (kind, id, withPack) -> null);
+        // a disabled arrow is still clickable (it does nothing), so both are tagged for the ray pick
+        PanelLayout.ToggleBox box = PanelUpdater.toggleBox(updater.pagedToggle(Component.text("×1"), false, true));
+        assertTrue(box.pages().containsKey(PanelLayout.Hit.Kind.PAGE_UP));
+        assertTrue(box.pages().containsKey(PanelLayout.Hit.Kind.PAGE_DOWN));
+        assertTrue(box.labels().isEmpty(), "plain text here is not a mode label");
     }
 
     private StationView view(Station station) {

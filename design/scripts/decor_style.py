@@ -18,6 +18,7 @@ from PIL import Image, ImageDraw
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
 import house_lib  # noqa: E402
+import building_slots  # noqa: E402
 
 OUT_YML = ROOT / "src/main/resources/houses/decor.yml"
 OUT_PNG = ROOT / "design/scripts/previews/decor_plot.png"
@@ -46,6 +47,9 @@ POTS = [P + f for f in ("potted_poppy", "potted_dandelion", "potted_cornflower",
 NEEDS_GROUND = {"poppy", "dandelion", "cornflower", "azure_bluet", "oxeye_daisy", "pink_tulip", "wheat"}
 BENCH_E = P + "spruce_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]"
 BENCH_W = P + "spruce_stairs[facing=west,half=bottom,shape=straight,waterlogged=false]"
+
+SLOT_MARGIN = 0.35                 # blocks of clearance around a slot footprint
+SLOT_ZONE = building_slots.zone_cells(SLOT_MARGIN)
 
 blocks: dict[tuple[int, int, int], str] = {}
 clusters: dict[str, list[tuple[int, int, int]]] = {}
@@ -110,87 +114,77 @@ for i, z in enumerate(range(2, 8)):
     else:
         flower(24, z, FLOWERS[(i + 3) % len(FLOWERS)])
 
-cluster("front_west_garden")       # cherry tree, bench facing the pedestal, potted plants
-tree(3, 3)
-for z in (5, 6, 7):
-    put(8, 0, z, BENCH_E)
-put(8, 0, 4, POTS[0])
-put(8, 0, 8, POTS[2])
-flower(6, 2, FLOWERS[1]); flower(7, 2, FLOWERS[2]); flower(6, 3, FLOWERS[4])
-flower(5, 6, FLOWERS[3]); flower(5, 7, FLOWERS[0]); flower(4, 7, FLOWERS[5])
-
-cluster("front_east_wheat")        # 3x3 wheat bed (centre = water so the farmland stays wet), scarecrow, hay
-for x in (26, 27, 28):
-    for z in (2, 3, 4):
-        if (x, z) == (27, 3):
+cluster("front_west_garden")       # small cherry tree, wheat bed and scarecrow west of the apprentices' yard
+tree(2, 3, trunk=3, r=1)
+flower(3, 1, FLOWERS[1]); flower(1, 1, FLOWERS[2]); flower(1, 5, FLOWERS[4]); flower(1, 3, FLOWERS[3])
+flower(2, 5, FLOWERS[0]); flower(3, 5, FLOWERS[5]); flower(3, 4, FLOWERS[1])
+for x in (1, 2, 3):                 # 3x3 wheat bed, centre = water
+    for z in (6, 7, 8):
+        if (x, z) == (2, 7):
             put(x, 0, z, P + "water[level=0]")
         else:
             put(x, 0, z, P + "farmland[moisture=7]")
             put(x, 1, z, P + "wheat[age=7]")
-put(29, 0, 6, LOG)
-put(29, 1, 6, HAY)
-put(29, 2, 6, P + "carved_pumpkin[facing=west]")
-put(26, 0, 7, HAY)
-put(27, 0, 7, HAYX)
-put(26, 1, 7, HAY)
-put(27, 0, 8, POTS[1])
+put(4, 0, 7, LOG)
+put(4, 1, 7, HAY)
+put(4, 2, 7, P + "carved_pumpkin[facing=east]")
+put(4, 0, 8, POTS[1])
 
-cluster("west_store")              # crates and flour sacks west of the factory
-for x, z in ((2, 12), (3, 12), (2, 13)):
-    put(x, 0, z, BARREL)
-put(2, 1, 12, BARREL)
-sack(3, 13); sack(2, 14); sack(3, 14)
-put(1, 0, 16, HAY); put(2, 0, 16, HAY); put(1, 1, 16, HAY)
-put(3, 0, 17, POTS[4])
+cluster("front_east_corner")       # flowers and hay by the portal corner
+for i, x in enumerate((26, 27, 28)):
+    flower(x, 1, FLOWERS[(i + 2) % len(FLOWERS)])
+    flower(x, 2, FLOWERS[(i + 4) % len(FLOWERS)])
+for z in (2, 5, 8):
+    flower(29, z, FLOWERS[z % len(FLOWERS)])
+put(26, 0, 8, HAY)
+put(27, 0, 8, HAYX)
+put(26, 1, 8, HAY)
+put(28, 0, 8, POTS[1])
+lamp(29, 4)
+
+cluster("west_store")              # crates and flour sacks beside the shipping yard and the lab (x = 4)
 lamp(4, 11)
-lamp(4, 22)
+put(4, 0, 13, BARREL)
+put(4, 1, 13, BARREL)
+sack(4, 14)
+put(4, 0, 17, HAY)
+put(4, 0, 18, POTS[4])
+lamp(4, 20)
+put(4, 0, 24, POTS[5])
 
-cluster("west_bench_garden")       # small garden with a bench further back
-for z in (19, 20, 21):
-    put(3, 0, z, BENCH_E)
-put(3, 0, 18, POTS[3]); put(3, 0, 22, POTS[5])
-for x in (1, 2):
-    for z in (19, 20, 21):
-        flower(x, z, FLOWERS[(x + z) % len(FLOWERS)])
-
-cluster("east_yard")               # tree, crates and hay on the east side
-tree(28, 13, r=1)
-for x, z in ((27, 18), (28, 18), (28, 19)):
-    put(x, 0, z, BARREL)
-put(27, 1, 18, BARREL)
-put(27, 0, 19, HAY)
-sack(28, 20); sack(27, 21); sack(28, 21)
-put(26, 0, 17, POTS[2])
-lamp(26, 11)
-lamp(26, 22)
-
-cluster("east_bench")              # bench facing west towards the factory
-for z in (15, 16):
-    put(26, 0, z, BENCH_W)
-put(26, 0, 14, POTS[0])
+cluster("east_yard")               # lamp posts and flowers beside the ovens (x = 29)
+lamp(29, 11)
+lamp(29, 17)
+lamp(29, 23)
+for i, z in enumerate((13, 14, 15, 19, 20, 21)):
+    flower(29, z, FLOWERS[i % len(FLOWERS)])
 
 cluster("back_yard")               # hedge, log pile, trees, lamps behind the factory
-for x in (7, 8, 9, 22, 23, 24):
+for x in (7, 8, 22, 23, 24):
     put(x, 0, 28, OAKLEAVES)
     if x in (8, 23):
         put(x, 1, 28, OAKLEAVES)
-for x in (12, 13, 14, 15, 16):
+for x in (17, 18, 19, 20, 21):
     put(x, 0, 28, P + "spruce_log[axis=x]")
-for x in (13, 14, 15):
+for x in (18, 19, 20):
     put(x, 1, 28, P + "spruce_log[axis=x]")
-put(14, 2, 28, P + "spruce_log[axis=x]")
-tree(3, 26, leaves=OAKLEAVES, log="oak_log")
+put(19, 2, 28, P + "spruce_log[axis=x]")
+tree(5, 26, leaves=OAKLEAVES, log="oak_log", r=1)
 tree(27, 26)
-lamp(10, 26)
-lamp(20, 26)
-for i, x in enumerate((11, 12, 18, 19)):
-    flower(x, 27, FLOWERS[i])
+lamp(12, 26)
+lamp(18, 26)
+for i, x in enumerate((17, 19, 20, 21)):
+    flower(x, 26, FLOWERS[i])
+for x, z in ((12, 28), (13, 28), (11, 28)):
+    flower(x, z, FLOWERS[(x + z) % len(FLOWERS)])
 
 
 # --- validation ----------------------------------------------------------------------------------------------------
 def keep_out(x: int, z: int) -> str | None:
     if x in (0, PLOT_X - 1) or z in (0, PLOT_Z - 1):
         return "ring"
+    if (x, z) in SLOT_ZONE:
+        return "building slot"
     for name, r in KEEP_OUT.items():
         if r[0] <= x <= r[2] and r[1] <= z <= r[3]:
             return name
@@ -237,6 +231,8 @@ def preview():
     def rect(x0, z0, x1, z1, col):
         d.rectangle([x0 * s, z0 * s, (x1 + 1) * s - 1, (z1 + 1) * s - 1], fill=col)
 
+    for cx, cz in SLOT_ZONE:
+        rect(cx, cz, cx, cz, (200, 160, 200))
     rect(*KEEP_OUT["front"], (118, 150, 76))
     rect(*KEEP_OUT["factory"], (140, 120, 110))
     rect(6, 10, 24, 23, (150, 82, 66))

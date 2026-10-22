@@ -144,3 +144,21 @@ basket_tier_up:
   pitch-min: 1.0
   pitch-max: 1.0
   source: ui
+
+# --- building-roster ---
+
+building_appear:
+  key: "cookieclicker:building.appear"       # 3 variants, ~0.4 s wooden plop + ding, plays often
+  fallback: "minecraft:block.wood.place"
+  volume: 0.6
+  pitch-min: 0.95
+  pitch-max: 1.08
+  source: block
+
+building_milestone:
+  key: "cookieclicker:building.milestone"    # ~0.95 s celebratory chime when a building's look upgrades
+  fallback: "minecraft:ui.toast.challenge_complete"
+  volume: 0.8
+  pitch-min: 1.0
+  pitch-max: 1.0
+  source: block

@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "cookieclicker:item/building/sugar_cane_field"
+  }
+}

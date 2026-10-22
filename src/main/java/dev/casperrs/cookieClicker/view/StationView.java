@@ -85,8 +85,12 @@ final class StationView {
         final List<Row> rows;
         /** The mode the toggle currently shows. */
         @Nullable BulkMode shownMode;
+        /** What the toggle line shows (mode + ▲ / ▼ state); null before its first text. */
+        @Nullable String shownToggle;
         /** What the toggle renders (width and label spans), for the click bounds; null before its first text. */
         PanelLayout.@Nullable ToggleBox toggleBox;
+        /** The player scrolled since the last update: rows whose item changed by the scroll don't pulse. */
+        boolean scrolled;
 
         Panel(PanelKind kind, StationFrame frame, Offset anchor, float iconYaw, TextDisplay header, TextDisplay toggle,
               Interaction hitbox, List<Row> rows) {

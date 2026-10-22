@@ -190,7 +190,7 @@ public record StationVisualSettings(double viewDistance, int refreshTicks, doubl
                 (float) c.getDouble("station.panel.icon-yaw-offset", 0),
                 (float) r.positive("station.panel.header-scale", 0.6),
                 (float) r.positive("station.panel.text-scale", 0.5),
-                (int) r.positive("station.panel.line-width", 120),
+                (int) r.positive("station.panel.line-width", 150),
                 r.offset("station.panel.row.text-offset", new Offset(-0.3, 0, 0)),
                 r.offset("station.panel.row.icon-offset", new Offset(-0.5, 0.13, -0.02)),
                 (float) r.positive("station.panel.row.icon-scale", 0.3),

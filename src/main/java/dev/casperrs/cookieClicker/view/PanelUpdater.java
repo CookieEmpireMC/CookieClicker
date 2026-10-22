@@ -38,20 +38,54 @@ final class PanelUpdater {
     private static final PlainTextComponentSerializer PLAIN = PlainTextComponentSerializer.plainText();
     /** Insertion that marks a toggle label (the client ignores it on a text display), + the mode name. */
     static final String LABEL = "cookieclicker:bulk:";
+    /** Insertion that marks a ▲ / ▼ page label, + the {@link PanelLayout.Hit.Kind} name. */
+    static final String PAGE = "cookieclicker:page:";
 
     private final Supplier<StationVisualSettings> settings;
     private final Economy economy;
     private final Messages messages;
     private final BulkModes modes;
     private final Icons icons;
+    private final PanelPages pages;
 
     PanelUpdater(Supplier<StationVisualSettings> settings, Economy economy, Messages messages, BulkModes modes,
                  Icons icons) {
+        this(settings, economy, messages, modes, icons, new PanelPages());
+    }
+
+    PanelUpdater(Supplier<StationVisualSettings> settings, Economy economy, Messages messages, BulkModes modes,
+                 Icons icons, PanelPages pages) {
         this.settings = settings;
         this.economy = economy;
         this.messages = messages;
         this.modes = modes;
         this.icons = icons;
+        this.pages = pages;
+    }
+
+    /** First row of the buildings window this player sees now (their scroll, else the default window). */
+    private int buildingsTop(StationView view, StationView.Panel panel, CookiePouch pouch) {
+        int rows = panel.rows.size();
+        return pages.top(view.owner, panel.kind, defaultTop(pouch, rows), PanelRows.maxTop(economy.config(), rows));
+    }
+
+    private int defaultTop(CookiePouch pouch, int rows) {
+        return PanelRows.defaultTop(economy.config(), id -> economy.buildingUnlocked(pouch, id), rows);
+    }
+
+    /**
+     * A ▲ (-1) / ▼ (+1) label was clicked: scrolls the buildings window one row. False when it is already at that
+     * end, or the panel doesn't page.
+     */
+    boolean scroll(StationView view, StationView.Panel panel, CookiePouch pouch, int delta) {
+        if (panel.kind != PanelKind.BUILDINGS) {
+            return false;
+        }
+        int rows = panel.rows.size();
+        boolean moved = pages.scroll(view.owner, panel.kind, delta, defaultTop(pouch, rows),
+                PanelRows.maxTop(economy.config(), rows));
+        panel.scrolled |= moved;
+        return moved;
     }
 
     /**
@@ -67,17 +101,36 @@ final class PanelUpdater {
 
     private void update(StationView view, StationView.Panel panel, CookiePouch pouch, long now, boolean pulse) {
         BulkMode mode = modes.get(view.owner, panel.kind);
-        if (mode != panel.shownMode && panel.toggle.isValid()) {
+        List<String> ids;
+        String pageKey = "";
+        boolean up = false;
+        boolean down = false;
+        if (panel.kind == PanelKind.BUILDINGS) {
+            int top = buildingsTop(view, panel, pouch);
+            int maxTop = PanelRows.maxTop(economy.config(), panel.rows.size());
+            ids = PanelRows.buildings(economy.config(), top, panel.rows.size());
+            if (maxTop > 0) {
+                up = top > 0;
+                down = top < maxTop;
+                pageKey = (up ? "^" : "-") + (down ? "v" : "-");
+            }
+        } else {
+            ids = PanelRows.clicks(economy.config(), pouch.upgradeLevelsView(), panel.rows.size());
+        }
+        String toggleKey = mode.name() + '|' + pageKey;
+        if (!toggleKey.equals(panel.shownToggle) && panel.toggle.isValid()) {
             StationVisualSettings s = settings.get();
-            Component toggle = TextPadding.centred(toggleText(mode), s.panel().textPadding(),
+            Component line = pageKey.isEmpty() ? toggleText(mode) : pagedToggle(toggleText(mode), up, down);
+            Component toggle = TextPadding.centred(line, s.panel().textPadding(),
                     PanelLayout.of(s, panel.rows.size()).toggleTargetPx());
             panel.toggle.text(toggle);
             panel.toggleBox = toggleBox(toggle);
             panel.shownMode = mode;
+            panel.shownToggle = toggleKey;
         }
-        List<String> ids = panel.kind == PanelKind.BUILDINGS
-                ? PanelRows.buildings(economy.config(), panel.rows.size())
-                : PanelRows.clicks(economy.config(), pouch.upgradeLevelsView(), panel.rows.size());
+        // items that slid into a row because the player scrolled are not news: only a purchase/unlock pulses them
+        boolean scrolled = panel.scrolled;
+        panel.scrolled = false;
         StationVisualSettings.Tween tween = settings.get().tween();
         int ticks = tween.ticks();
         int step = tween.stepTicks();
@@ -91,14 +144,15 @@ final class PanelUpdater {
                 id = null;
             }
             if (!Objects.equals(id, row.id)) {
-                // another item moved into this slot (a bought upgrade left): show it right away, with a pulse
+                // another item moved into this slot (a bought upgrade left, a building unlocked): show it right
+                // away, with a pulse unless the player's own scroll moved it there
                 boolean hadItem = row.id != null;
                 row.id = id;
                 row.state = state;
                 row.icon.setItemStack(id == null ? ItemStack.empty() : icons.icon(panel.kind, id, view.withPack));
                 row.cost = PriceTween.fixed(state == null ? 0 : state.cost());
                 row.gain = PriceTween.fixed(state == null ? 0 : state.gain());
-                if (hadItem && id != null) {
+                if (hadItem && id != null && !scrolled) {
                     row.pulseStart = now;
                 }
                 row.animating = true;
@@ -191,13 +245,8 @@ final class PanelUpdater {
             String key = path + '|' + id + '|' + b.owned() + '|' + b.count() + '|' + mode + '|' + cost + '|' + gain;
             if (!key.equals(row.renderedKey)) {
                 row.renderedKey = key;
-                text = TextPadding.lines(messages.raw(path), p.textPadding(),
-                        Placeholder.unparsed("name", PLAIN.serialize(messages.buildingName(id))),
-                        messages.number("owned", b.owned()),
-                        Placeholder.unparsed("cost", cost),
-                        Placeholder.unparsed("cps", gain),
-                        messages.number("needed", b.needed()),
-                        Placeholder.component("amount", amount(mode, b.count())));
+                text = buildingRow(messages, path, p.textPadding(), id, b.owned(), cost, gain, b.needed(),
+                        amount(messages, mode, b.count()));
             }
         } else if (state instanceof UpgradeRowState u) {
             String path = clickPath(u);
@@ -262,8 +311,33 @@ final class PanelUpdater {
         }
     }
 
-    /** {@code panel.bulk.amount} ("×37 ") for every mode but ×1. */
+    /**
+     * A buildings row as the panel sends it (before the right padding): template {@code path} ({@code panel.row.*})
+     * with {@code spaces} padding spaces in front of every line. Static so a test can render the longest names and
+     * biggest numbers with the shipped {@code messages.yml} and check they stay {@link PanelLayout#ROW_LINES} lines
+     * within {@code station.panel.line-width} ({@link TextWidth#lineWidths}).
+     *
+     * @param cost   formatted cost of the chosen amount
+     * @param gain   formatted +CPS of the chosen amount
+     * @param amount {@link #amount(Messages, BulkMode, int)}
+     */
+    static Component buildingRow(Messages messages, String path, int spaces, String buildingId, int owned, String cost,
+                                 String gain, double needed, Component amount) {
+        return TextPadding.lines(messages.raw(path), spaces,
+                Placeholder.unparsed("name", PLAIN.serialize(messages.buildingName(buildingId))),
+                messages.number("owned", owned),
+                Placeholder.unparsed("cost", cost),
+                Placeholder.unparsed("cps", gain),
+                messages.number("needed", needed),
+                Placeholder.component("amount", amount));
+    }
+
     private Component amount(BulkMode mode, int count) {
+        return amount(messages, mode, count);
+    }
+
+    /** {@code panel.bulk.amount} ("×37 ") for every mode but ×1. */
+    static Component amount(Messages messages, BulkMode mode, int count) {
         return mode == BulkMode.ONE ? Component.empty()
                 : messages.component("panel.bulk.amount", Placeholder.unparsed("count", Integer.toString(count)));
     }
@@ -312,12 +386,34 @@ final class PanelUpdater {
                 Placeholder.component("label", name)).insertion(LABEL + mode.name());
     }
 
-    /** Width and label spans of a rendered toggle text (labels are tagged with a {@link #LABEL} insertion). */
+    /**
+     * The toggle line of a panel that pages: {@code panel.page.line} with the ×N labels and ▲ / ▼, each in the
+     * enabled or disabled style (a disabled one is still tagged, so a click on it does nothing instead of cycling).
+     */
+    Component pagedToggle(Component toggle, boolean up, boolean down) {
+        return messages.component("panel.page.line", Placeholder.component("toggle", toggle),
+                Placeholder.component("up", pageLabel(PanelLayout.Hit.Kind.PAGE_UP, up)),
+                Placeholder.component("down", pageLabel(PanelLayout.Hit.Kind.PAGE_DOWN, down)));
+    }
+
+    private Component pageLabel(PanelLayout.Hit.Kind kind, boolean enabled) {
+        Component name = messages.component(kind == PanelLayout.Hit.Kind.PAGE_UP ? "panel.page.up" : "panel.page.down");
+        return messages.component(enabled ? "panel.page.enabled" : "panel.page.disabled",
+                Placeholder.component("label", name)).insertion(PAGE + kind.name());
+    }
+
+    /**
+     * Width and label spans of a rendered toggle text (labels are tagged with a {@link #LABEL} insertion, page
+     * labels with {@link #PAGE}).
+     */
     static PanelLayout.ToggleBox toggleBox(Component toggle) {
         Map<BulkMode, int[]> labels = new EnumMap<>(BulkMode.class);
         TextWidth.spans(toggle, LABEL).forEach((insertion, span) ->
                 labels.put(BulkMode.valueOf(insertion.substring(LABEL.length())), span));
-        return new PanelLayout.ToggleBox(TextWidth.width(toggle, PanelLayout.SINGLE_LINE_WIDTH), labels);
+        Map<PanelLayout.Hit.Kind, int[]> pages = new EnumMap<>(PanelLayout.Hit.Kind.class);
+        TextWidth.spans(toggle, PAGE).forEach((insertion, span) ->
+                pages.put(PanelLayout.Hit.Kind.valueOf(insertion.substring(PAGE.length())), span));
+        return new PanelLayout.ToggleBox(TextWidth.width(toggle, PanelLayout.SINGLE_LINE_WIDTH), labels, pages);
     }
 
     /**

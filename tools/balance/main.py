@@ -9,8 +9,10 @@ plots in docs/balance/img/, and regenerates docs/balance/golden-values.json for 
 `check` runs the same simulation, writes nothing, and exits 1 if any target fails.
 """
 import argparse
+import bisect
 import datetime
 import json
+import math
 import re
 import sys
 from pathlib import Path
@@ -18,14 +20,18 @@ from pathlib import Path
 import yaml
 
 sys.path.insert(0, str(Path(__file__).parent))
-from model import (ConfigError, Economy, State, building_max, bulk_cost, click_power, click_value,  # noqa: E402
-                   crit_factor, expected_click, load, total_cps, upgrade_bulk_cost, upgrade_max)
+from model import (ConfigError, Economy, State, building_cps, building_max, bulk_cost, click_power,  # noqa: E402
+                   click_value, crit_factor, expected_click, load, milestone_factor, milestones_of, milestones_reached,
+                   total_cps,
+                   upgrade_bulk_cost, upgrade_max)
 from sim import Profile, Result, simulate  # noqa: E402
 
 TARGETS = Path("docs/balance/targets.md")
 BALANCE_DIR = Path("docs/balance")
 DEFAULT_CONFIG_DIR = Path("src/main/resources")
 MILESTONES = [1, 10, 25, 50, 100]
+BAKED_MARKS = [10_000, 750_000, 25_000_000, 1_000_000_000]   # roughly the expansion-tier unlocks + Rebirth
+MILESTONE_OWNED = (0, 1, 9, 10, 24, 25, 49, 50, 99, 100, 149, 150, 199, 200, 250)
 from model import MAX_BULK  # noqa: E402
 
 
@@ -62,7 +68,15 @@ def metric(eco: Economy, result: Result, target: dict) -> float | None:
         return first_time(result, "building", target["building"], int(target["count"]))
     if kind == "upgrade":
         return first_time(result, "upgrade", target["upgrade"])
+    if kind == "baked":
+        return baked_time(result, float(target["cookies"]))
     raise ConfigError(f"unknown metric '{kind}' in target {target.get('id')}")
+
+
+def baked_time(result: Result, cookies: float) -> int | None:
+    """First second at which `cookies` have been baked in total."""
+    i = bisect.bisect_left(result.baked, cookies)
+    return i + 1 if i < len(result.baked) else None
 
 
 def longest_dead_zone(result: Result, window_minutes: float | None = None) -> int:
@@ -80,9 +94,15 @@ def evaluate(eco: Economy, targets: dict, results: dict[str, Result]) -> list[di
             if name not in results:
                 raise ConfigError(f"target {target['id']} uses unknown profile '{name}'")
             value = metric(eco, results[name], target)
-            limit = float(target["max-seconds"])
+            limit = float(target["max-seconds"]) if "max-seconds" in target else None
+            floor = float(target["min-seconds"]) if "min-seconds" in target else None
+            if limit is None and floor is None:
+                raise ConfigError(f"target {target['id']} needs max-seconds and/or min-seconds")
+            # never reached passes a min-only target ("not too fast"); it fails anything with a max
+            ok = (value is None and limit is None) or (value is not None and (limit is None or value <= limit)
+                                                       and (floor is None or value >= floor))
             rows.append({"id": target["id"], "description": target.get("description", ""), "profile": name,
-                         "value": value, "max": limit, "ok": value is not None and value <= limit})
+                         "value": value, "min": floor, "max": limit, "ok": ok})
     return rows
 
 
@@ -93,6 +113,15 @@ def fmt_time(seconds: float | None) -> str:
     h, rem = divmod(seconds, 3600)
     m, s = divmod(rem, 60)
     return f"{h}h{m:02d}m{s:02d}s" if h else (f"{m}m{s:02d}s" if m else f"{s}s")
+
+
+def fmt_limit(row: dict) -> str:
+    """'≤ 3m00s', '≥ 1h30m00s' or '1h30m00s – 4h00m00s'."""
+    if row["min"] is None:
+        return f"≤ {fmt_time(row['max'])}"
+    if row["max"] is None:
+        return f"≥ {fmt_time(row['min'])}"
+    return f"{fmt_time(row['min'])} – {fmt_time(row['max'])}"
 
 
 def golden_values(eco: Economy, results: dict[str, Result]) -> dict:
@@ -125,7 +154,7 @@ def golden_values(eco: Economy, results: dict[str, Result]) -> dict:
                                   "max": upgrade_max(eco, uid, u.max_level, 1e30), "case": "at max-level"})
         else:
             max_cases += [{"kind": "upgrade", "id": uid, "owned": lv, "pouch": p, "max": upgrade_max(eco, uid, lv, p),
-                           "case": c} for lv, p, c in ((0, u.cost, "exact"), (0, u.cost - 1, "one short"),
+                           "case": c} for lv, p, c in ((0, u.cost, "exact"), (0, _below(u.cost), "one short"),
                                                        (0, u.cost * 1000, "rich, one-time"),
                                                        (1, u.cost * 1000, "already bought"))]
         upgrades[uid] = entry
@@ -137,7 +166,7 @@ def golden_values(eco: Economy, results: dict[str, Result]) -> dict:
     states = []
     for name, result in results.items():
         # replay the purchases to get the state at a few checkpoints
-        for t in (60, 600, 1800, 3600, 7200):
+        for t in (60, 600, 1800, 3600, 7200, 14400):
             snap = State(owned={}, upgrades={})
             for p in result.purchases:
                 if p.time > t:
@@ -151,8 +180,26 @@ def golden_values(eco: Economy, results: dict[str, Result]) -> dict:
                            "click-power": click_power(eco, snap),
                            "normal-click": click_value(eco, snap, False), "crit-click": click_value(eco, snap, True),
                            "expected-click": expected_click(eco, snap)})
-    return {"cost-growth": eco.cost_growth, "max-bulk": MAX_BULK, "click": click, "costs": costs,
-            "upgrades": upgrades, "max-affordable": max_cases, "states": states}
+    production = {bid: [{"owned": n, "milestones-reached": milestones_reached(eco, bid, n),
+                         "factor": milestone_factor(eco, bid, n),
+                         "cps": building_cps(eco, State(owned={bid: n}, upgrades={}), bid)}
+                        for n in MILESTONE_OWNED]
+                  for bid in eco.buildings}
+    return {"cost-growth": eco.cost_growth, "max-bulk": MAX_BULK, "milestones": list(eco.milestones),
+            "building-milestones": {bid: list(milestones_of(eco, bid)) for bid in eco.buildings}, "click": click, "costs": costs,
+            "building-cps": production, "upgrades": upgrades, "max-affordable": max_cases, "states": states}
+
+
+def _below(x: float) -> float:
+    """One cookie short of x; above ~9e15 (ulp >= 2) x - 1 rounds back to x, so use the next double below."""
+    x = float(x)                      # costs are Python ints; Java reads every pouch as a double
+    return x - 1 if x - 1 < x else math.nextafter(x, 0)
+
+
+def _above(x: float) -> float:
+    """Half a cookie over x, or the next double above when x + 0.5 isn't representable."""
+    x = float(x)
+    return x + 0.5 if x + 0.5 > x else math.nextafter(x, math.inf)
 
 
 def _max_cases(kind: str, item_id: str, cost, maxf, owned_list, max_level: int | None) -> list[dict]:
@@ -163,14 +210,14 @@ def _max_cases(kind: str, item_id: str, cost, maxf, owned_list, max_level: int |
             cases.append({"kind": kind, "id": item_id, "owned": n, "pouch": pouch, "max": maxf(n, pouch),
                           "case": label})
         add(0, "empty pouch")
-        add(cost(n, 1) - 1, "one short of 1")
+        add(_below(cost(n, 1)), "one short of 1")
         for k in (1, 2, 5, 10, 37):
             if max_level is not None and n + k > max_level:
                 continue
             exact = cost(n, k)
             add(exact, f"exactly {k}")
-            add(exact - 1, f"one short of {k}")
-            add(exact + 0.5, f"just over {k}")
+            add(_below(exact), f"one short of {k}")
+            add(_above(exact), f"just over {k}")
         if max_level is not None:
             add(cost(n, max_level - n) * 10, "capped by max-level")
         else:
@@ -226,9 +273,12 @@ def write_report(eco: Economy, targets: dict, results: dict[str, Result], rows: 
            f"Configs: `buildings.yml`, `upgrades.yml` · horizon {targets.get('horizon-minutes')} min · "
            f"targets: {passed}/{len(rows)} pass", "",
            f"Click: base power {eco.base_click:g}, crit {eco.crit_chance:.0%} × {eco.crit_multiplier:g} "
-           f"→ expected {crit_factor(eco):g} × click power", "", "## Targets", "",
+           f"→ expected {crit_factor(eco):g} × click power", "",
+           "Milestones: ×2 per building at " + (", ".join(str(c) for c in eco.milestones) or "none") + " owned"
+           + "".join(f"; {b}: " + (", ".join(map(str, eco.buildings[b].milestones)) or "none")
+                     for b in eco.buildings if eco.buildings[b].milestones is not None), "", "## Targets", "",
            "| Target | Profile | Result | Limit | |", "|---|---|---|---|---|"]
-    out += [f"| {r['id']} | {r['profile']} | {fmt_time(r['value'])} | {fmt_time(r['max'])} | "
+    out += [f"| {r['id']} | {r['profile']} | {fmt_time(r['value'])} | {fmt_limit(r)} | "
             f"{'✅' if r['ok'] else '❌'} |" for r in rows]
     out += ["", "## Time to Nth building", ""]
     header = "| Building | " + " | ".join(f"{p} #{n}" for p in results for n in MILESTONES) + " |"
@@ -236,6 +286,9 @@ def write_report(eco: Economy, targets: dict, results: dict[str, Result], rows: 
     for bid in eco.buildings:
         cells = [fmt_time(_nth(r, bid, n)) for r in results.values() for n in MILESTONES]
         out.append(f"| {bid} | " + " | ".join(cells) + " |")
+    out += ["", "## Cookies baked", "", "| Baked | " + " | ".join(results) + " |", "|---|" + "---|" * len(results)]
+    for cookies in BAKED_MARKS:
+        out.append(f"| {cookies:,} | " + " | ".join(fmt_time(baked_time(r, cookies)) for r in results.values()) + " |")
     out += ["", "## Upgrades", "", "| Upgrade | " + " | ".join(results) + " |", "|---|" + "---|" * len(results)]
     for uid in eco.upgrades:
         cells = []
@@ -292,7 +345,7 @@ def main() -> int:
 
     for r in rows:
         print(f"{'PASS' if r['ok'] else 'FAIL'}  {r['id']:<24} {r['profile']:<8} "
-              f"{fmt_time(r['value']):>10}  (max {fmt_time(r['max'])})")
+              f"{fmt_time(r['value']):>10}  ({fmt_limit(r)})")
     if args.mode == "report":
         stamp = datetime.date.today().isoformat()
         report = write_report(eco, targets, results, rows, stamp)
