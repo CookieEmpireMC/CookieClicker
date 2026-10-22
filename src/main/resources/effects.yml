@@ -301,6 +301,32 @@ basket_tier_up:
         shape: sparkles, points: 6, radius: 0.7, height: 1.0, duration-ticks: 10, stagger-ticks: 12,
         emit-every: 2, delay-ticks: 6 }
 
+# A bakery building pops into its slot: a woody-beige dust ring rolls out at the base, a few low poofs and three
+# light-gold sparks rise. About 0.6 s. Play at the building's bottom centre, viewer = owner. ~19 particles each, so
+# a x10 buy (10 plays) stays near 190 particles total. 0 entities.
+building_appear:
+  layers:
+    - { type: particle, particle: dust, color: "#d9b88a", size: 1.2, shape: ring, points: 6, radius-start: 0.3,
+        radius: 0.8, duration-ticks: 2, origin: [0, 0.1, 0] }
+    - { type: particle, particle: poof, shape: ring, points: 4, radius: 0.5, start-angle: 45, direction: outward,
+        speed: 0.08, origin: [0, 0.1, 0], delay-ticks: 1 }
+    - { type: particle, particle: dust_color_transition, color: "#fff2a8", to-color: "#f5c542", size: 0.6,
+        shape: sparkles, points: 3, radius: 0.5, height: 0.8, duration-ticks: 8, stagger-ticks: 4,
+        origin: [0, 0.3, 0], delay-ticks: 2 }
+
+# A building's look upgrades: a gold ring at its base, gold sparkles drift up around it and a small end_rod burst
+# twinkles at the peak (about tick 6). About 1.2 s. Play at the building's bottom centre on every visible instance
+# of the type, viewer = owner. ~45 particles each (10 instances = ~450, spread over time). 0 entities.
+building_milestone:
+  layers:
+    - { type: particle, particle: dust_color_transition, color: "#fff2a8", to-color: "#f5c542", size: 0.9,
+        shape: ring, points: 8, radius-start: 0.6, radius: 0.7, duration-ticks: 2, origin: [0, 0.2, 0] }
+    - { type: particle, particle: dust_color_transition, color: "#fff2a8", to-color: "#f5a623", size: 0.7,
+        shape: sparkles, points: 5, radius: 0.7, height: 1.4, duration-ticks: 16, stagger-ticks: 8,
+        emit-every: 3, origin: [0, 0.2, 0] }
+    - { type: particle, particle: end_rod, shape: burst, points: 6, radius: 0.3, speed: 0.06, delay-ticks: 6,
+        origin: [0, 0.8, 0] }
+
 # ---- admin tools (not seen by normal players) ----------------------------------------------------------------------
 # /bakery plot show: code plays one of these per outline point (up to ~120 points per region, redrawn every
 # 20 ticks), viewer = the admin. One fat dust mote per play, sent in the extended range so the whole outline shows
