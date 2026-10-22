@@ -2,12 +2,13 @@
 # Tuned with tools/balance (mise run balance); see docs/balance/report-*.md.
 cost-growth: 1.15            # cost multiplier per building already owned
 # Building milestones (GDD §4.3): a building's own production doubles at each of these owned counts.
+# A building may set its own `milestones: [...]`, which replaces this list for that building.
 milestones: [10, 25, 50, 100, 150, 200]
-milestone-multiplier: 2
 # Unlocks stand in for the plot expansions (GDD §5) until those exist: each pair unlocks at about the
 # cookies baked by the time the matching expansion would be bought (10K, 500K + spending, 25M, 1B, 100B).
 # Prices start from GDD §4.2; the mid/late tiers are a little slower so the run doesn't race to 1B
 # before golden cookies, recipes and stars exist (docs/balance/report-2026-10-22.md).
+# Keep buildings in cost / unlock order: the shop's default view relies on the file order.
 buildings:
   wheat_farm:                # Wheat Field
     base-cost: 15

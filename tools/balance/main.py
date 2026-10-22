@@ -20,7 +20,8 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).parent))
 from model import (ConfigError, Economy, State, building_cps, building_max, bulk_cost, click_power,  # noqa: E402
-                   click_value, crit_factor, expected_click, load, milestone_factor, milestones_reached, total_cps,
+                   click_value, crit_factor, expected_click, load, milestone_factor, milestones_of, milestones_reached,
+                   total_cps,
                    upgrade_bulk_cost, upgrade_max)
 from sim import Profile, Result, simulate  # noqa: E402
 
@@ -178,13 +179,13 @@ def golden_values(eco: Economy, results: dict[str, Result]) -> dict:
                            "click-power": click_power(eco, snap),
                            "normal-click": click_value(eco, snap, False), "crit-click": click_value(eco, snap, True),
                            "expected-click": expected_click(eco, snap)})
-    production = {bid: [{"owned": n, "milestones-reached": milestones_reached(eco, n),
-                         "factor": milestone_factor(eco, n),
+    production = {bid: [{"owned": n, "milestones-reached": milestones_reached(eco, bid, n),
+                         "factor": milestone_factor(eco, bid, n),
                          "cps": building_cps(eco, State(owned={bid: n}, upgrades={}), bid)}
                         for n in MILESTONE_OWNED]
                   for bid in eco.buildings}
     return {"cost-growth": eco.cost_growth, "max-bulk": MAX_BULK, "milestones": list(eco.milestones),
-            "milestone-multiplier": eco.milestone_multiplier, "click": click, "costs": costs,
+            "building-milestones": {bid: list(milestones_of(eco, bid)) for bid in eco.buildings}, "click": click, "costs": costs,
             "building-cps": production, "upgrades": upgrades, "max-affordable": max_cases, "states": states}
 
 
@@ -260,8 +261,9 @@ def write_report(eco: Economy, targets: dict, results: dict[str, Result], rows: 
            f"targets: {passed}/{len(rows)} pass", "",
            f"Click: base power {eco.base_click:g}, crit {eco.crit_chance:.0%} × {eco.crit_multiplier:g} "
            f"→ expected {crit_factor(eco):g} × click power", "",
-           f"Milestones: ×{eco.milestone_multiplier:g} per building at "
-           f"{', '.join(str(c) for c in eco.milestones) or 'none'} owned", "", "## Targets", "",
+           "Milestones: ×2 per building at " + (", ".join(str(c) for c in eco.milestones) or "none") + " owned"
+           + "".join(f"; {b}: " + (", ".join(map(str, eco.buildings[b].milestones)) or "none")
+                     for b in eco.buildings if eco.buildings[b].milestones is not None), "", "## Targets", "",
            "| Target | Profile | Result | Limit | |", "|---|---|---|---|---|"]
     out += [f"| {r['id']} | {r['profile']} | {fmt_time(r['value'])} | {fmt_limit(r)} | "
             f"{'✅' if r['ok'] else '❌'} |" for r in rows]

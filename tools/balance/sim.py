@@ -1,7 +1,7 @@
 """Second-by-second pacing simulation of one player profile with the optimal-ish buy strategy."""
 from dataclasses import dataclass, field
 
-from model import (Economy, State, building_cost, building_unlocked, expected_click, total_cps,
+from model import (Economy, State, building_cost, building_unlocked, expected_click, milestones_of, total_cps,
                    upgrade_cost, upgrade_unlocked)
 
 # A player saving towards a building milestone: the buyer also scores "buy the k copies that reach the next
@@ -78,7 +78,7 @@ def best(eco: Economy, state: State, clicks: float):
             scored.append((cost / gain, cost, kind, item_id, 1))
         if kind == "building":
             owned = state.owned.get(item_id, 0)
-            need = next((c - owned for c in eco.milestones if c > owned), 0)
+            need = next((c - owned for c in milestones_of(eco, item_id) if c > owned), 0)
             if 2 <= need <= MILESTONE_LOOKAHEAD:
                 total, step = cost, after
                 for _ in range(need - 1):
