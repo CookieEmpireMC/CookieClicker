@@ -13,7 +13,7 @@ import java.util.List;
  *   <li>the factory: the whole design box plus {@link #MARGIN} (door, hatch, porch);</li>
  *   <li>the front zone: the rectangle around the gate, the pedestal, the shop and the click-upgrade spots, widened
  *       by {@link #FRONT_MARGIN_X} / {@link #FRONT_MARGIN_Z} (the walk, the click rows, hitboxes, panels, shelf);</li>
- *   <li>the walk from the gate to the house door ({@code points.door}, one column wide);</li>
+ *   <li>the walk from the gate to the house door ({@code points.door}): the bounding box of the gate and the door;</li>
  *   <li>the belt cells plus {@link #MARGIN}.</li>
  * </ul>
  * For the factory layout this gives exactly the table in design/decor.md (factory x 5..25 z 9..24, front zone
