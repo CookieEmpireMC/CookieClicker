@@ -51,6 +51,7 @@ SCHEMAS = [
     (lambda b: b.startswith("potted_"), {}),
     (lambda b: b.endswith("_leaves"), {"distance": {str(i) for i in range(1, 8)}, "persistent": BOOL,
      "waterlogged": BOOL}),
+    (lambda b: b == "grass_block", {"snowy": BOOL}),
     (lambda b: b == "farmland", {"moisture": {str(i) for i in range(8)}}),
     (lambda b: b == "wheat", {"age": {str(i) for i in range(8)}}),
     (lambda b: b == "water", {"level": {str(i) for i in range(16)}}),

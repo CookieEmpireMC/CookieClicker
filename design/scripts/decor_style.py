@@ -70,8 +70,16 @@ def lamp(x, z):
     put(x, 3, z, LANTERN)
 
 
+def flower(x, z, data, soil=P + "grass_block[snowy=false]"):
+    """A plant on its own raised soil block (the plot ground is unknown, nothing may depend on it)."""
+    put(x, 0, z, soil)
+    put(x, 1, z, data)
+
+
 def tree(x, z, trunk=4, leaves=LEAVES, log="cherry_log", r=2):
-    for y in range(trunk):
+    put(x, 0, z, P + "grass_block[snowy=false]")
+    trunk += 1                                     # trunk y 1..trunk-1
+    for y in range(1, trunk):
         put(x, y, z, P + log + "[axis=y]")
     for y, rr in ((trunk - 2, r), (trunk - 1, r), (trunk, 1), (trunk + 1, 0)):
         for dx in range(-rr, rr + 1):
@@ -94,13 +102,13 @@ for i, z in enumerate(range(2, 8)):
     if z == 4:
         lamp(11, z)
     else:
-        put(11, 0, z, FLOWERS[i % len(FLOWERS)])
+        flower(11, z, FLOWERS[i % len(FLOWERS)])
 cluster("path_edge_east")
 for i, z in enumerate(range(2, 8)):
     if z == 4:
         lamp(24, z)
     else:
-        put(24, 0, z, FLOWERS[(i + 3) % len(FLOWERS)])
+        flower(24, z, FLOWERS[(i + 3) % len(FLOWERS)])
 
 cluster("front_west_garden")       # cherry tree, bench facing the pedestal, potted plants
 tree(3, 3)
@@ -108,8 +116,8 @@ for z in (5, 6, 7):
     put(8, 0, z, BENCH_E)
 put(8, 0, 4, POTS[0])
 put(8, 0, 8, POTS[2])
-put(6, 0, 2, FLOWERS[1]); put(7, 0, 2, FLOWERS[2]); put(6, 0, 3, FLOWERS[4])
-put(5, 0, 6, FLOWERS[3]); put(5, 0, 7, FLOWERS[0]); put(4, 0, 7, FLOWERS[5])
+flower(6, 2, FLOWERS[1]); flower(7, 2, FLOWERS[2]); flower(6, 3, FLOWERS[4])
+flower(5, 6, FLOWERS[3]); flower(5, 7, FLOWERS[0]); flower(4, 7, FLOWERS[5])
 
 cluster("front_east_wheat")        # 3x3 wheat bed (centre = water so the farmland stays wet), scarecrow, hay
 for x in (26, 27, 28):
@@ -143,7 +151,7 @@ for z in (19, 20, 21):
 put(3, 0, 18, POTS[3]); put(3, 0, 22, POTS[5])
 for x in (1, 2):
     for z in (19, 20, 21):
-        put(x, 0, z, FLOWERS[(x + z) % len(FLOWERS)])
+        flower(x, z, FLOWERS[(x + z) % len(FLOWERS)])
 
 cluster("east_yard")               # tree, crates and hay on the east side
 tree(28, 13, r=1)
@@ -176,7 +184,7 @@ tree(27, 26)
 lamp(10, 26)
 lamp(20, 26)
 for i, x in enumerate((11, 12, 18, 19)):
-    put(x, 0, 27, FLOWERS[i])
+    flower(x, 27, FLOWERS[i])
 
 
 # --- validation ----------------------------------------------------------------------------------------------------
@@ -197,7 +205,8 @@ def validate():
         assert k is None, f"{(x, y, z)} {data} is inside keep-out '{k}'"
         b = house_lib.parse_block_data(data)[0]
         if b in NEEDS_GROUND:
-            assert y == 0 or blocks.get((x, y - 1, z), "").startswith(P + "farmland"), f"{(x, y, z)} floats"
+            below = blocks.get((x, y - 1, z), "")
+            assert y == 1 and below.startswith((P + "grass_block", P + "dirt", P + "farmland")), f"{(x, y, z)} no own soil"
         if b == "lantern":
             assert (x, y - 1, z) in blocks, f"{(x, y, z)} lantern floats"
         assert not b.endswith("_fence"), "no fences (would need connection states)"
