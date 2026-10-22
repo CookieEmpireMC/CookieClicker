@@ -83,34 +83,44 @@ upgrades:
   wooden_spatula:
     name: "<#c8a06a>Wooden Spatula"
     effect: "+<value> cookies per click"
+    short: "+<value>/click"
   stone_rolling_pin:
     name: "<#9a9a9a>Stone Rolling Pin"
     effect: "+<value> cookies per click"
+    short: "+<value>/click"
   iron_rolling_pin:
     name: "<#d8d8d8>Iron Rolling Pin"
     effect: "+<value> cookies per click"
+    short: "+<value>/click"
   golden_glove:
     name: "<#f2c94c>Golden Glove"
     effect: "+<value> cookies per click"
+    short: "+<value>/click"
   diamond_fingers:
     name: "<#5fd9e0>Diamond Fingers"
     effect: "+<value> cookies per click"
+    short: "+<value>/click"
   netherite_hands:
     name: "<#6b5a5a>Netherite Hands"
     effect: "+<value> cookies per click"
+    short: "+<value>/click"
   handy_fingers_1:
     name: "<#f0a0c0>Handy Fingers I"
     effect: "Each click also gives <value>% of your CPS"
+    short: "+<value>% CPS/click"
   handy_fingers_2:
     name: "<#f08ab0>Handy Fingers II"
     effect: "Each click also gives another <value>% of your CPS"
+    short: "+<value>% CPS/click"
   handy_fingers_3:
     name: "<#e070a0>Handy Fingers III"
     effect: "Each click also gives another <value>% of your CPS"
+    short: "+<value>% CPS/click"
 
 # The two floating panels next to the cookie: Buildings (shop spot) and Click upgrades (clicks spot). Each row is
 # redrawn only when it changes; while a price rolls to a new value it is redrawn every few ticks.
-# Keep every row two lines, so rows line up. Background colours: config.yml station.panel.colors.
+# Keep every row at most two lines of about 110 px (line-width 120 less the padding spaces; a letter is ~6 px,
+# bold +1), so rows line up and clicks land on the right row. Background colours: config.yml station.panel.colors.
 # (The floating "+N" click numbers are in effects.yml.)
 panel:
   buildings:
@@ -121,7 +131,7 @@ panel:
   row:
     affordable: "<white><b><name></b></white> <gray>×<owned></gray><newline><amount><green><cost></green> <gray>· +<cps>/s</gray>"
     unaffordable: "<gray><name></gray> <dark_gray>×<owned></dark_gray><newline><amount><red><cost></red> <dark_gray>· +<cps>/s</dark_gray>"
-    locked: "<dark_gray>???</dark_gray><newline><dark_gray><i>bake <needed> cookies to unlock</i></dark_gray>"
+    locked: "<dark_gray>???</dark_gray><newline><dark_gray><i>Bake <needed> to unlock</i></dark_gray>"
   clicks:
     header: "<gradient:#f5c542:#e07a4a><b>Click Upgrades</b></gradient>"
     # Repeatable upgrades (pinned on top). <name> (plain), <level>, <cost> (for the chosen amount), <cpc> (cookies per
@@ -130,18 +140,19 @@ panel:
       affordable: "<white><b><name></b></white> <gray>Lv <level></gray><newline><amount><green><cost></green> <gray>· +<cpc>/click</gray>"
       unaffordable: "<gray><name></gray> <dark_gray>Lv <level></dark_gray><newline><amount><red><cost></red> <dark_gray>· +<cpc>/click</dark_gray>"
       locked: "<dark_gray><name> Lv <level></dark_gray><newline><dark_gray><i><requirement></i></dark_gray>"
-      maxed: "<gold><name></gold> <gray>Lv <level></gray><newline><gold>maxed out</gold>"
-    # One-time upgrades (the cheapest ones not bought yet). <name>, <cost>, <effect> = upgrades.<id>.effect,
-    # <requirement> = need-baked / need-building. Bought upgrades leave the list and fly to the shelf.
+      maxed: "<gold><name></gold> <gray>Lv <level></gray><newline><gold>Maxed out</gold>"
+    # One-time upgrades (the cheapest ones not bought yet). <name>, <cost>, <effect> = upgrades.<id>.short (the
+    # long upgrades.<id>.effect when there is no short one), <requirement> = need-baked / need-building. Bought
+    # upgrades leave the list and fly to the shelf.
     one-time:
       affordable: "<white><b><name></b></white><newline><green><cost></green> <gray>· <effect></gray>"
       unaffordable: "<gray><name></gray><newline><red><cost></red> <dark_gray>· <effect></dark_gray>"
       locked: "<dark_gray>???</dark_gray><newline><dark_gray><i><requirement></i></dark_gray>"
-    need-baked: "bake <needed> cookies to unlock"
-    # <owned> = how many, <building> = building name (plain)
-    need-building: "own <owned> <building> to unlock"
+    need-baked: "Bake <needed> to unlock"
+    # <owned> = how many, <building> = building name (plain). Short on purpose: "to unlock" would wrap long names.
+    need-building: "Own <owned> <building>"
   # The ×1 ×5 ×10 Max toggle under each header. <one> <five> <ten> <max> = each label in the selected or unselected
-  # style; clicking the toggle picks the next one.
+  # style; clicking a label picks that amount, clicking between labels picks the next one.
   bulk:
     toggle: "<one>  <five>  <ten>  <max>"
     selected: "<gold><b>[<label>]</b></gold>"
