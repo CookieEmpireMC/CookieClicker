@@ -7,3 +7,4 @@
 - [upgrade-panels facts](upgrade-panels-facts.md) — panels/shelf/spin-fix structure, PopJob sync first step, pinned tests, shelf teleport rule (row hitboxes replaced, see next)
 - [plot-polish panels facts](plot-polish-panels-facts.md) — ray-picked clicks via PanelLayout, padded column, pinned legacy fields, smoke-run classpath recipe
 - [plot-polish facts](plot-polish-facts.md) — item display 180 flip, flat cookie maths, LoopPacer loops, decor keep-out, crackleEvery test pin
+- [plot-polish basket facts](plot-polish-basket-facts.md) — CustomModelData builder, basket as Display pedestal, pack-change respawn, cookie height maths
