@@ -32,6 +32,21 @@ lamps and small bakery props that make it feel lived in.
       padding inside its background (a little space left/right of the text), and there is clear air between
       header, toggle and rows. All spacing values live in `config.yml` `station.panel`, and the precise click
       bounds follow the same values.
+### Cookie basket (added 2026-10-22, user request)
+- [ ] The pedestal becomes a **cookie basket** (per owner, like the cookie today): an item display with the item
+      model `cookieclicker:cookie_basket` that **fills with the cookies in your pouch** (fill 0-4) and **upgrades its
+      look at crazy amounts** (tiers `wicker` -> `bushel` -> `golden`, like a Clash of Clans storage).
+- [ ] Tier and fill come from `config.yml: station.basket` thresholds (cookies in the pouch, log-scaled by default:
+      wicker up to 1M, bushel up to 1B, golden above; each tier's fill steps split its range on a log scale).
+      These are visual thresholds, not economy values. The basket switches look at most once per refresh, never
+      flickers at a boundary (small hysteresis), and needs no tick work when nothing changed.
+- [ ] Size stays in scale with the factory and the decor: the golden tier is at most **1.4 blocks wide and 1.2 high**
+      (wicker about 0.9 x 0.6), within the pedestal cell +-0.2, clear of both panels and the belt end.
+- [ ] The rotating cookie floats **above the basket**: its centre is `basket top of the current look + gap`
+      (heights per look from `design/basket.md`), it moves smoothly (interpolated) when the basket grows, and it
+      stays clickable: cookie centre never higher than eye level + 0.6 from the ground in front of the pedestal,
+      and the click hitbox follows it.
+- [ ] Without our resource pack the old pedestal block is shown (vanilla fallback).
 ### Panels (texts)
 - [ ] Every row is at most two lines at `line-width` 120: a locked row is `???` + one short line, e.g.
       `Bake 250M to unlock` / `Own 10 Wheat Farm to unlock`; the buildings panel's locked row uses the same style.
@@ -60,6 +75,7 @@ lamps and small bakery props that make it feel lived in.
 ## Assets needed
 | Kind | What | Owner |
 |---|---|---|
+| model / texture / glyph | `cookieclicker:cookie_basket`: 3 tiers x 5 fill steps, spec + heights in `design/basket.md` | model-designer |
 | model / texture / glyph | `houses/decor.yml` + generator script + spec `design/decor.md` | model-designer |
 | sound | check the three loops are seamless at their fixed pitch; fix files or `sounds.yml` (crackle: fixed pitch) | sound-designer |
 | effect | none | — |
@@ -76,6 +92,8 @@ none
 ## Contract (fixed names; change only via the orchestrator)
 | Kind | ID | Owner | Notes |
 |---|---|---|---|
+| item model | `cookieclicker:cookie_basket` | model-designer | one item model definition, `select` on `custom_model_data` strings[0] = `<tier>_<fill>`: tiers `wicker`, `bushel`, `golden`, fill `0`..`4` (e.g. `golden_4`); origin = bottom centre at the item display position (transform NONE, scale 1); `design/basket.md` lists each look's top height and width |
+| config key | `config.yml: station.basket.*` (tier/fill thresholds, cookie gap, hysteresis) | plugin-coder | |
 | house design file | `src/main/resources/houses/decor.yml` | model-designer | format in `design/decor.md`: `blocks:` list of `{at: [x, y, z], block: "<block data>"}` in plot cells from the plot's min corner (same frame as `layout:` in factory.yml), y 0 = first air layer above the ground |
 | message key | `upgrades.<id>.short` | plugin-coder | `+<value>/click`, `+<value>% CPS/click` |
 | message key | `panel.row.locked`, `panel.clicks.*.locked`, `panel.clicks.need-baked`, `panel.clicks.need-building` | plugin-coder | one line under the title |
@@ -100,10 +118,11 @@ Both coder parts touch `config.yml` in different sections only (panels: `station
 | | planned | | | |
 
 ## Merge order
-1. model-designer, 2. sound-designer, 3. plugin-coder (plot), 4. plugin-coder (panels)
+1. model-designer, 2. sound-designer, 3. plugin-coder (plot), 4. plugin-coder (panels), 5. model-designer (basket), 6. plugin-coder (basket)
 
 ## Needs human review
 - [ ] In game: click every row and each toggle label at an angle and from 2–5 blocks; nothing hits a neighbour
 - [ ] In game: belt slats and cookies move toward the pedestal, cookies lie flat
 - [ ] Listen: stand by the factory for a minute; no stutter in the hum, crackle or belt
+- [ ] In game: the basket fills and changes tier, the cookie floats above it and stays clickable, it looks in scale
 - [ ] In game: `/bakery plot setup` on a fresh plot; the decoration looks good and `undo` removes it
