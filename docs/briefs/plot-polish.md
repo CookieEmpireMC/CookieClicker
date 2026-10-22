@@ -1,6 +1,6 @@
 # plot-polish
 
-**Status:** in progress  <!-- planned | in progress | review | done -->
+**Status:** done  <!-- planned | in progress | review | done -->
 **Created:** 2026-10-22 · **Approved:** 2026-10-22 · **Depends on:** upgrade-holograms (merged, PR #10)
 
 ## Goal
@@ -121,7 +121,14 @@ Both coder parts touch `config.yml` in different sections only (panels: `station
 ## Status
 | Agent | Status | Branch | Verdict | Notes |
 |---|---|---|---|---|
-| | planned | | | |
+| model-designer | done | plot-polish/model-designer, plot-polish/model-designer-basket | asset-only | decor.yml (360 blocks), cookie_basket (15 looks, placeholder textures) |
+| sound-designer | done | plot-polish/sound-designer, plot-polish/sound-designer-basket | asset-only | crackle fixed pitch; basket_tier_up |
+| vfx-designer | done | plot-polish/vfx-designer-basket | asset-only | basket_tier_up (peak tick 8) |
+| plugin-coder (plot) | done | plot-polish/plugin-coder-plot | READY | belt direction, flat cookies, LoopPacer, decor placement |
+| plugin-coder (panels) | done | plot-polish/plugin-coder-panels | READY | ray-picked clicks, padded column, short texts |
+| plugin-coder (basket) | done | plot-polish/plugin-coder-basket | READY | basket display, tier/fill, tier-up |
+| plugin-coder (cleanup) | done | plot-polish/plugin-coder-cleanup | (integration) | removed shims, config comments |
+| plugin-tester | done | feature/plot-polish | READY | docs/reviews/2026-10-22-plot-polish.md |
 
 ## Merge order
 1. model-designer, 2. sound-designer, 3. plugin-coder (plot), 4. plugin-coder (panels), 5. model-designer (basket), sound-designer (basket), vfx-designer (basket), 6. plugin-coder (basket)
