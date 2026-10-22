@@ -254,6 +254,28 @@ plot:
     radius: 6
     # How often to check (ticks)
     check-ticks: 10
+  # Bought bakery buildings stand on the factory plot (slots: houses/building-slots.yml), only for their owner
+  buildings:
+    enabled: true
+    # Owned count from which the nicer looks show (model stage 2 and 3; visual only, not economy)
+    stage-2: 25
+    stage-3: 100
+    # Display view range multiplier (1 = 64 blocks)
+    view-range: 1.0
+    # Ticks between the effects of several buildings that appear or level up at once
+    effect-stagger-ticks: 2
+    # Added to every slot's yaw (degrees), if the models face the wrong way
+    yaw-offset: 0
+    # Without our resource pack: a block of this size per building
+    fallback-scale: 0.8
+    fallback-block: "minecraft:barrel"
+    fallback-blocks:
+      villager_baker: "minecraft:crafting_table"
+      industrial_oven: "minecraft:blast_furnace"
+      extra_belt: "minecraft:smooth_stone_slab"
+      shipping_centre: "minecraft:barrel"
+      alchemy_lab: "minecraft:brewing_stand"
+      portal_bakery: "minecraft:crying_obsidian"
 
 house:
   # /bakery plot setup and /bakery house place: refuse designs whose box (x * y * z), or layouts whose area (x * z),
