@@ -70,4 +70,17 @@ class PlotSettingsTest {
                     id + " must be a preset in effects.yml");
         }
     }
+
+    @Test
+    void shippedBuildingVisualsLoadWithoutProblems() throws Exception {
+        YamlConfiguration config = new YamlConfiguration();
+        try (var in = getClass().getClassLoader().getResourceAsStream("config.yml")) {
+            config.load(new InputStreamReader(in, StandardCharsets.UTF_8));
+        }
+        List<String> problems = new ArrayList<>();
+        PlotSettings s = PlotSettings.from(config, problems::add);
+        assertTrue(problems.isEmpty(), problems.toString());
+        assertEquals(25, s.buildings().stage2());
+        assertEquals(100, s.buildings().stage3());
+    }
 }

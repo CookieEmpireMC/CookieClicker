@@ -9,3 +9,4 @@
 - [plot-polish facts](plot-polish-facts.md) — item display 180 flip, flat cookie maths, LoopPacer loops, decor keep-out
 - [plot-polish basket facts](plot-polish-basket-facts.md) — CustomModelData builder, basket as Display pedestal, pack-change respawn, cookie height maths
 - [building-roster economy facts](building-roster-economy-facts.md) — milestones in BuildingDef, shop paging API, row-fit widths, test pins that break
+- [building-roster world facts](building-roster-world-facts.md) — layout origin from house box, purchase hook, MessagesTest literal trap

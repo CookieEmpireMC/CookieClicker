@@ -70,4 +70,15 @@ class DecorKeepOutTest {
         assertTrue(problems.isEmpty(), problems.toString());
         assertEquals(decor.blocks().size(), kept);
     }
+
+    @Test
+    void aBuildingSlotIsKeptOutOnItsCellOnly() throws Exception {
+        BuildingSlots slots = new BuildingSlots(java.util.Map.of("villager_baker",
+                List.of(new BuildingSlots.Slot(2, 0, 2, 180f))));
+        DecorKeepOut k = DecorKeepOut.of(factory(), slots);
+        assertNotNull(k);
+        assertEquals("a building slot", k.reason(2, 2));
+        assertNull(k.reason(3, 2));
+        assertNull(DecorKeepOut.of(factory()).reason(2, 2), "the layout alone leaves that cell open");
+    }
 }

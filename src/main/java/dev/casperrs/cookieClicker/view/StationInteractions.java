@@ -18,6 +18,7 @@ import org.bukkit.util.Vector;
 import org.jspecify.annotations.Nullable;
 
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.UUID;
 
 /**
@@ -44,6 +45,8 @@ public final class StationInteractions {
     private final SoundService sounds;
     private final Hud hud;
     private final Messages messages;
+    /** Told after every building purchase that went through (the visible buildings, brief building-roster). */
+    private Consumer<Player> buildingsBought = player -> { };
 
     public StationInteractions(StationViews views, SessionManager sessions, Economy economy, Effects effects,
                                SoundService sounds, Hud hud, Messages messages) {
@@ -54,6 +57,10 @@ public final class StationInteractions {
         this.sounds = sounds;
         this.hud = hud;
         this.messages = messages;
+    }
+
+    public void setBuildingsBought(Consumer<Player> buildingsBought) {
+        this.buildingsBought = buildingsBought;
     }
 
     /** @param hit world position of the hit on the hitbox, or null (left click: the cookie centre is used) */
@@ -130,6 +137,9 @@ public final class StationInteractions {
         sounds.play(player, PURCHASE, loc);
         hud.refresh(player, pouch);
         views.refreshPanels(player, pouch, true);
+        if (kind == PanelKind.BUILDINGS) {
+            buildingsBought.accept(player);
+        }
     }
 
     /**
