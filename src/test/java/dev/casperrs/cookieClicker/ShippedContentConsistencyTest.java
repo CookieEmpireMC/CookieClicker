@@ -154,9 +154,11 @@ class ShippedContentConsistencyTest {
             assertTrue(messages.isString("buildings." + id + ".name"), "messages.yml buildings." + id + ".name");
             assertTrue(config.isString("station.panel.icons." + id + ".fallback-material"), "fallback icon for " + id);
         }
-        List<String> panelOnly = new ArrayList<>(config.getConfigurationSection("station.panel.icons").getKeys(false));
-        panelOnly.removeAll(list.getKeys(false));
-        assertTrue(panelOnly.isEmpty(), "icon config for unknown buildings: " + panelOnly);
+        // Icons may be configured ahead of buildings.yml (the roster lands in several branches), but a stray icon
+        // key still shows up: every icon entry must name a building in messages.yml.
+        List<String> unnamed = new ArrayList<>(config.getConfigurationSection("station.panel.icons").getKeys(false));
+        unnamed.removeIf(id -> messages.isString("buildings." + id + ".name"));
+        assertTrue(unnamed.isEmpty(), "icon config for ids without a building name: " + unnamed);
     }
 
     @Test

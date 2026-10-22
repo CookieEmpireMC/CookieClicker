@@ -59,6 +59,26 @@ class EconomyConfigParserTest {
     }
 
     @Test
+    void milestonesAreSortedDeduplicatedAndAnEmptyOverrideSwitchesThemOffForOneBuilding() throws Exception {
+        Map<String, Object> b = map("cost-growth", 1.15, "milestones", List.of(25, 10, 10), "buildings", map(
+                "baker", map("base-cost", 15, "base-cps", 0.1, "unlock", map("baked", 0)),
+                "farm", map("base-cost", 100, "base-cps", 1, "milestones", List.of(), "unlock", map("baked", 50))));
+        EconomyConfig c = parse(b, upgradesYaml()).config();
+        assertEquals(List.of(10, 25), c.buildings().get("baker").milestones());
+        assertEquals(List.of(), c.buildings().get("farm").milestones());
+    }
+
+    @Test
+    void rejectsMilestonesThatAreNotListsOfWholeCounts() {
+        Map<String, Object> zero = buildingsYaml();
+        zero.put("milestones", List.of(0));
+        assertTrue(error(zero, upgradesYaml()).contains("milestones"));
+        Map<String, Object> text = buildingsYaml();
+        text.put("milestones", "ten");
+        assertTrue(error(text, upgradesYaml()).contains("must be a list"));
+    }
+
+    @Test
     void rejectsMissingOrEmptyBuildings() {
         assertTrue(error(map("cost-growth", 1.15), upgradesYaml()).contains("buildings"));
         assertTrue(error(map("cost-growth", 1.15, "buildings", map()), upgradesYaml()).contains("no buildings"));

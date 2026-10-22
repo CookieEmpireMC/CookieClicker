@@ -103,7 +103,8 @@ class PanelLayoutTest {
     @Test
     void theGapsBetweenRowsBesideTheIconAndBelowTheLastRowPickNothing() {
         assertNull(aim(0.2, -0.89, fourRows(), null));        // air between row 0 and row 1 (margin 0.03 each side)
-        assertNull(aim(-0.95, -0.6875, fourRows(), null));    // beside the icon, outside the margin
+        // the row box starts at the icon's left edge (about -1.09 with the shipped line-width 150): -1.2 is beside it
+        assertNull(aim(-1.2, -0.6875, fourRows(), null));     // beside the icon, outside the margin
         assertNull(aim(0.2, -2.3, fourRows(), null));         // below the last row
     }
 
@@ -133,6 +134,20 @@ class PanelLayoutTest {
         assertNotNull(gap);
         assertEquals(PanelLayout.Hit.Kind.TOGGLE, gap.kind());
         assertNull(gap.mode(), "between labels: the toggle cycles");
+    }
+
+    @Test
+    void thePageArrowsOnTheToggleLinePickTheirOwnEndAndTheLabelsStillPickTheirMode() {
+        PanelLayout.ToggleBox paged = new PanelLayout.ToggleBox(80,
+                Map.of(BulkMode.ONE, new int[] {20, 40}, BulkMode.FIVE, new int[] {40, 60}),
+                Map.of(PanelLayout.Hit.Kind.PAGE_UP, new int[] {0, 18}, PanelLayout.Hit.Kind.PAGE_DOWN, new int[] {62, 80}));
+        PanelLayout.Hit up = aim(-0.3375, -0.26, List.of(), paged); // 10 px: the ▲ on the left
+        assertNotNull(up);
+        assertEquals(PanelLayout.Hit.Kind.PAGE_UP, up.kind());
+        assertEquals(-1, up.row());
+        assertNull(up.mode());
+        assertEquals(PanelLayout.Hit.Kind.PAGE_DOWN, aim(0.3375, -0.26, List.of(), paged).kind()); // 70 px: the ▼
+        assertEquals(BulkMode.ONE, aim(-0.1125, -0.26, List.of(), paged).mode(), "30 px: the ×1 label");
     }
 
     @Test
