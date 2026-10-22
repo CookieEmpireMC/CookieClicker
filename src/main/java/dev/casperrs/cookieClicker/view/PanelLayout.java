@@ -32,17 +32,27 @@ public record PanelLayout(StationVisualSettings.Panel p, float toggleScale, int 
         return new PanelLayout(s.panel(), s.bulk().scale(), rowCount);
     }
 
-    /** What a ray hit on a panel: a row slot, a toggle label ({@code mode} set) or the toggle between labels. */
+    /**
+     * What a ray hit on a panel: a row slot, a toggle label ({@code mode} set), the toggle between labels, or a
+     * ▲ / ▼ page label on the toggle line.
+     */
     record Hit(Kind kind, int row, @Nullable BulkMode mode, double distance) {
-        enum Kind { ROW, TOGGLE }
+        enum Kind { ROW, TOGGLE, PAGE_UP, PAGE_DOWN }
     }
 
     /** What a row slot renders now: whether it shows an item, its line count and background width (px). */
     record RowBox(boolean present, int lines, int widthPx) {
     }
 
-    /** What the toggle renders now: its background width (px) and each label's {start, end} px from its left. */
-    record ToggleBox(int widthPx, Map<BulkMode, int[]> labels) {
+    /**
+     * What the toggle renders now: its background width (px) and each label's {start, end} px from its left, the
+     * ▲ / ▼ page labels ({@link Hit.Kind#PAGE_UP} / {@link Hit.Kind#PAGE_DOWN}) included when shown.
+     */
+    record ToggleBox(int widthPx, Map<BulkMode, int[]> labels, Map<Hit.Kind, int[]> pages) {
+        /** Without page labels. */
+        ToggleBox(int widthPx, Map<BulkMode, int[]> labels) {
+            this(widthPx, labels, Map.of());
+        }
     }
 
     double headerHeight() {
@@ -179,7 +189,8 @@ public record PanelLayout(StationVisualSettings.Panel p, float toggleScale, int 
                 double bottom = toggleBottom();
                 if (r >= -half - m && r <= half + m && u >= bottom - m && u <= bottom + toggleHeight() + m) {
                     double px = r * TextWidth.PIXELS_PER_BLOCK / toggleScale + toggle.widthPx() / 2.0;
-                    best = new Hit(Hit.Kind.TOGGLE, -1, label(toggle, px), tt);
+                    Hit.Kind page = page(toggle, px);
+                    best = page != null ? new Hit(page, -1, null, tt) : new Hit(Hit.Kind.TOGGLE, -1, label(toggle, px), tt);
                 }
             }
         }
@@ -189,6 +200,16 @@ public record PanelLayout(StationVisualSettings.Panel p, float toggleScale, int 
     /** The label under pixel {@code px} of the toggle (labels are tight: a gap between them cycles). */
     private static @Nullable BulkMode label(ToggleBox toggle, double px) {
         for (Map.Entry<BulkMode, int[]> e : toggle.labels().entrySet()) {
+            if (px >= e.getValue()[0] && px <= e.getValue()[1]) {
+                return e.getKey();
+            }
+        }
+        return null;
+    }
+
+    /** The page label under pixel {@code px} of the toggle, or null. */
+    private static Hit.@Nullable Kind page(ToggleBox toggle, double px) {
+        for (Map.Entry<Hit.Kind, int[]> e : toggle.pages().entrySet()) {
             if (px >= e.getValue()[0] && px <= e.getValue()[1]) {
                 return e.getKey();
             }

@@ -124,8 +124,9 @@ station:
     text-shadow: true
     text-see-through: false
     text-default-background: false
-    # Row text wraps after this many pixels (the panel texts are written to fit two lines)
-    line-width: 120
+    # Row text wraps after this many pixels (the panel texts are written to fit two lines; 150 fits the longest
+    # building names with ×1000 and big costs)
+    line-width: 150
     # Layout: header, x1/x5/x10/Max toggle and rows (icon + text) are centred on one column under the header.
     # Spaces of padding inside every text background, left and right
     text-padding: 1
@@ -180,6 +181,24 @@ station:
         fallback-material: BREAD
       wheat_farm:
         fallback-material: WHEAT
+      cow_barn:
+        fallback-material: MILK_BUCKET
+      sugar_cane_field:
+        fallback-material: SUGAR_CANE
+      industrial_oven:
+        fallback-material: BLAST_FURNACE
+      extra_belt:
+        fallback-material: POWERED_RAIL
+      beehive:
+        fallback-material: HONEYCOMB
+      cocoa_plantation:
+        fallback-material: COCOA_BEANS
+      shipping_centre:
+        fallback-material: BARREL
+      alchemy_lab:
+        fallback-material: BREWING_STAND
+      portal_bakery:
+        fallback-material: END_PORTAL_FRAME
     # For buildings and upgrades not listed
     default-fallback-material: COOKIE
   # Vanilla item shown as an upgrade icon (click upgrades panel and shelf) to players without our resource pack

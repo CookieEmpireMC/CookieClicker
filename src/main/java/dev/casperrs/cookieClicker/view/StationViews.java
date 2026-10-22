@@ -92,6 +92,7 @@ public final class StationViews implements Listener, StationListener, SessionLis
     private final Logger log;
     private final NamespacedKey entityKey;
     private final BulkModes modes = new BulkModes();
+    private final PanelPages pages = new PanelPages();
     private final PanelUpdater panels;
 
     private final Map<UUID, Map<String, StationView>> byOwner = new HashMap<>();
@@ -117,7 +118,7 @@ public final class StationViews implements Listener, StationListener, SessionLis
         this.log = plugin.getLogger();
         this.entityKey = new NamespacedKey(plugin, "station");
         this.motion = CookieMotion.of(settings.get().cookie());
-        this.panels = new PanelUpdater(settings, economy, messages, modes, this::iconStack);
+        this.panels = new PanelUpdater(settings, economy, messages, modes, this::iconStack, pages);
     }
 
     /** Called when a bought upgrade's icon lands on its shelf slot (effect + sound live with the interactions). */
@@ -246,6 +247,14 @@ public final class StationViews implements Listener, StationListener, SessionLis
     /** A toggle label was clicked: that mode. */
     void setMode(Player player, PanelKind panel, BulkMode mode) {
         modes.set(player.getUniqueId(), panel, mode);
+    }
+
+    /**
+     * A ▲ (-1) / ▼ (+1) page label was clicked: scrolls that panel one row for this player. False when it can't
+     * scroll that way (already at the end, or the panel doesn't page).
+     */
+    boolean scroll(StationView view, PanelKind panel, CookiePouch pouch, int delta) {
+        return panels.scroll(view, view.panel(panel), pouch, delta);
     }
 
     /**
@@ -1019,6 +1028,7 @@ public final class StationViews implements Listener, StationListener, SessionLis
     public void onQuit(PlayerQuitEvent event) {
         removeOwner(event.getPlayer().getUniqueId());
         modes.forget(event.getPlayer().getUniqueId());
+        pages.forget(event.getPlayer().getUniqueId());
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

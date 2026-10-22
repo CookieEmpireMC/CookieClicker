@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
 /** Which item goes in which panel row and shelf slot. Pure Java (no Bukkit), so the order is testable. */
 public final class PanelRows {
@@ -16,7 +17,34 @@ public final class PanelRows {
 
     /** Buildings panel: every building in {@code buildings.yml} order, at most {@code maxRows}. */
     public static List<String> buildings(EconomyConfig config, int maxRows) {
-        return config.buildings().keySet().stream().limit(Math.max(0, maxRows)).toList();
+        return buildings(config, 0, maxRows);
+    }
+
+    /** Buildings panel window: {@code buildings.yml} order from index {@code top}, at most {@code maxRows}. */
+    public static List<String> buildings(EconomyConfig config, int top, int maxRows) {
+        return config.buildings().keySet().stream().skip(Math.max(0, top)).limit(Math.max(0, maxRows)).toList();
+    }
+
+    /** Highest top index of a buildings window of {@code rows} rows (0 = everything fits, no paging). */
+    public static int maxTop(EconomyConfig config, int rows) {
+        return Math.max(0, config.buildings().size() - Math.max(0, rows));
+    }
+
+    /**
+     * Default buildings window: the next locked building (the first locked one in file order) in the bottom row and
+     * the most expensive unlocked ones above it; with everything unlocked, the last {@code rows}. Clamped to
+     * {@code 0..maxTop}.
+     */
+    public static int defaultTop(EconomyConfig config, Predicate<String> unlocked, int rows) {
+        int max = maxTop(config, rows);
+        int index = 0;
+        for (String id : config.buildings().keySet()) {
+            if (!unlocked.test(id)) {
+                return Math.max(0, Math.min(index - Math.max(1, rows) + 1, max));
+            }
+            index++;
+        }
+        return max;
     }
 
     /**

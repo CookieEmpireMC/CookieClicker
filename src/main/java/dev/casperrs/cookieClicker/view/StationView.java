@@ -85,6 +85,8 @@ final class StationView {
         final List<Row> rows;
         /** The mode the toggle currently shows. */
         @Nullable BulkMode shownMode;
+        /** What the toggle line shows (mode + ▲ / ▼ state); null before its first text. */
+        @Nullable String shownToggle;
         /** What the toggle renders (width and label spans), for the click bounds; null before its first text. */
         PanelLayout.@Nullable ToggleBox toggleBox;
 

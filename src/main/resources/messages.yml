@@ -66,10 +66,28 @@ numbers:
 
 # Display names per building ID from buildings.yml
 buildings:
-  villager_baker:
-    name: "<#e8b46a>Villager Baker"
   wheat_farm:
-    name: "<#d9c45a>Wheat Farm"
+    name: "<#d9c45a>Wheat Field"
+  villager_baker:
+    name: "<#e8b46a>Baker's Apprentice"
+  cow_barn:
+    name: "<#f2efe6>Cow Barn"
+  sugar_cane_field:
+    name: "<#8fd16a>Sugar Cane Field"
+  industrial_oven:
+    name: "<#e07a4a>Industrial Oven"
+  extra_belt:
+    name: "<#b0b0b8>Extra Conveyor Belt"
+  beehive:
+    name: "<#f5c542>Beehive"
+  cocoa_plantation:
+    name: "<#9c6b3e>Cocoa Plantation"
+  shipping_centre:
+    name: "<#6fa8dc>Shipping Centre"
+  alchemy_lab:
+    name: "<#b07fe0>Alchemy Lab"
+  portal_bakery:
+    name: "<#d36bff>Portal Bakery"
 
 # Display text per upgrade ID from upgrades.yml (the click upgrades panel and the upgrade shelf).
 # name: shown as plain text in panel rows (colours are stripped there, like building names).
@@ -129,7 +147,8 @@ panel:
   # colours apply), <owned>, <cost> (for the chosen amount), <cps> (what that amount adds), <needed> (baked cookies to
   # unlock) = formatted numbers, <amount> = panel.bulk.amount (empty on x1).
   row:
-    affordable: "<white><b><name></b></white> <gray>×<owned></gray><newline><amount><green><cost></green> <gray>· +<cps>/s</gray>"
+    # Not bold: the longest names ("Extra Conveyor Belt ×1000") must fit station.panel.line-width on one line.
+    affordable: "<white><name></white> <gray>×<owned></gray><newline><amount><green><cost></green> <gray>· +<cps>/s</gray>"
     unaffordable: "<gray><name></gray> <dark_gray>×<owned></dark_gray><newline><amount><red><cost></red> <dark_gray>· +<cps>/s</dark_gray>"
     locked: "<dark_gray>???</dark_gray><newline><dark_gray><i>Bake <needed> to unlock</i></dark_gray>"
   clicks:
@@ -164,6 +183,15 @@ panel:
       max: "Max"
     # In front of the cost on every mode but ×1: how many a click buys. <count> = the number.
     amount: "<yellow>×<count></yellow> "
+  # Scrolling the Bakery Shop when it has more buildings than station.panels.buildings.max-rows: the toggle line
+  # becomes "line" with <toggle> = the ×1 ×5 ×10 Max labels and <up> / <down> = the arrows, each in the enabled style
+  # (click scrolls one row) or the disabled one (already at that end). Without paging the toggle stays as above.
+  page:
+    line: "<up>  <toggle>  <down>"
+    up: "▲"
+    down: "▼"
+    enabled: "<white><b><label></b></white>"
+    disabled: "<dark_gray><label></dark_gray>"
   # Action bar when you click an icon on the upgrade shelf. <name> = upgrades.<id>.name, <effect> = upgrades.<id>.effect
   shelf:
     tooltip: "<name> <dark_gray>·</dark_gray> <gray><effect></gray>"
