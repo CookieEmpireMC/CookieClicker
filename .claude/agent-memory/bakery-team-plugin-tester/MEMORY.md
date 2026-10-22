@@ -13,3 +13,4 @@
 - [Ledger: building-roster world](ledger-building-roster-world.md) — VisibleBuildings/BuildingSlots at c11df8d READY, tests f97cfe5; footprint keep-out LOW; effect fan-out PERF-LOW
 - [Ledger: building-roster economy](ledger-building-roster-economy.md) — milestones/paging/row-fit at 6ce0d9a READY; row pick geometry (-1.2 beside icon); scroll pulse LOW
 - [Ledger: building-roster balance](ledger-building-roster-balance.md) — milestones/override/buyer/baked targets at b7613e3; tools-test 146; CLI mutation recipe
+- [Ledger: building-roster integration](ledger-building-roster-integration.md) — feature-level review at d158726 READY; tests added; open LOWs
