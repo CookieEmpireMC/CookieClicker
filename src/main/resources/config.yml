@@ -111,7 +111,9 @@ station:
       max-rows: 4
   # Looks shared by both panels
   panel:
-    # Degrees added to the text / icon facing, in case they show mirrored or edge-on in game
+    # Degrees added to the text / icon facing, in case they show mirrored or edge-on in game.
+    # Keep text-yaw-offset at 0: click picking assumes the text faces the panel's yaw, so any other value makes
+    # clicks land on the wrong row.
     text-yaw-offset: 0
     icon-yaw-offset: 0
     header-scale: 0.6
@@ -301,7 +303,8 @@ house:
   chimney:
     smoke: true
     # Ticks between house_chimney_crackle plays: the file's length at its fixed pitch (sounds.yml: 3 s = 60;
-    # 0 = no sound). Its own fixed-period clock per player, not tied to the smoke puffs.
+    # 0 = no sound). Its own fixed-period clock per player, not tied to the smoke puffs. The gap-free timing only
+    # holds with our resource pack: the vanilla fallback sound has a different length.
     crackle-ticks: 60
   # Factory steam (factory_steam effect) at every steam point of the plot (plots.yml steam)
   steam:
@@ -312,7 +315,8 @@ house:
   ambient:
     enabled: true
     # Ticks between plays: the file's length at its fixed pitch (sounds.yml: 4 s = 80). One fixed-period clock per
-    # player, never restarted early (re-entering the plot, the end of the cinematic, a reload)
+    # player, never restarted early (re-entering the plot, the end of the cinematic, a reload). The gap-free timing
+    # only holds with our resource pack: the vanilla fallback sound has a different length.
     every: 80
     # Only players within this many blocks of the first steam point (or the house centre) hear it
     radius: 24.0
@@ -340,11 +344,13 @@ belt:
   cps-scale: 1000
   # Ticks between belt_loop plays while your belt runs: the file's length at its fixed pitch (sounds.yml: 100 = 5 s;
   # 0 = silent). One fixed-period clock per player, never restarted early. Heard within house.ambient.radius.
+  # The gap-free timing only holds with our resource pack: the vanilla fallback sound has a different length.
   sound-every: 100
   # Belt surface item for players without our resource pack (a vanilla item name)
   fallback-item: BLACK_CARPET
   # Degrees added to the belt surface's facing. 0 = the slats move from the hatch toward the pedestal, like the
-  # cookies (the code already undoes the 180 degree turn item displays give a model). 180 reverses them.
+  # cookies (the code already undoes the 180 degree turn item displays give a model, so the old 180 workaround is
+  # no longer needed). 180 reverses them.
   surface-yaw: 0
   # Degrees a belt cookie is tipped about the belt's cross axis: 90 = lying flat on the rubber, face up; 0 = upright
   cookie-pitch: 90

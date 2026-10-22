@@ -12,9 +12,8 @@ Verified 2026-10-22 (branch plot-polish/plugin-coder-panels, commits 8556fd3, 37
 - Layout numbers live in `PanelLayout` (pure): rows assumed 2 lines, line height 10 px, row bg padded to
   line-width - 4 px, header/toggle padded to column width with line width 1000. `Panel.rowPitch()` is DERIVED
   (2 lines + row-gap) because TextWidthTest pins `p.rowPitch()`.
-- Pinned by tests (tester-owned): StationVisualSettingsTest pins `textOffset` (-0.3,0,0), `hitboxOffset` (0.25,-0.02,0),
-  `hitboxWidth` 1.7 defaults -> kept as unused legacy Panel components; PanelUpdaterTest uses the 6-arg Row ctor with an
-  Interaction (compat ctor kept) and the 8-arg Panel ctor.
+- Legacy row hitbox components + 6-arg Row ctor removed 2026-10-22 (cleanup; no test used them). PanelLayout is now
+  public (ROW_LINES public) so config's rowPitch() can use it. PanelUpdaterTest uses the 5-arg Row and 8-arg Panel ctors.
 - Toggle label spans: labels get `Component.insertion("cookieclicker:bulk:<MODE>")` (Adventure 5.2 has
   `Component#insertion(String)`), `TextWidth.spans` walks the tree and merges split leaves.
 - Width budget: "Own 10 Wheat Farm to unlock" = 144 px > 120, so need-building is "Own <owned> <building>".
