@@ -15,7 +15,7 @@ blocks:
 ```
 - `at: [x, y, z]` ints in **plot cells from the plot's min corner** (same frame as `layout:` in factory.yml, `design/factory.md`): x west to east, z north to south, y 0 = first air layer above the ground. All y >= 0 (nothing replaces ground); y max is 6.
 - `block`: full block data with explicit states for every stateful block. No rotation, nothing relative to the house. YAML `#` comment lines name the clusters.
-- Placement: physics off (like the house). One block per cell, no duplicates. Plants other than potted ones, and the wheat, assume grass/dirt ground (flowers) or the farmland below them (wheat).
+- Placement: physics off (like the house). One block per cell, no duplicates. Plants never rely on the ground: each stands on soil placed at y 0 (see above).
 - All cells are inside the interior, x 1..29, z 1..28.
 
 ## Keep-out (parser check; any y)
@@ -47,4 +47,4 @@ Style: the factory palette (spruce, dark oak greens, bricks, lanterns), pink che
 - **plugin-tester:** parser cases: a decor cell inside each keep-out zone is rejected, an out-of-range cell is rejected, the shipped file loads (360 blocks) and none of them hit the keep-out.
 
 ## Placeholder / needs a human
-Everything is a first design judged from a top-down plan only (no in-game view): check the density, tree size, bench orientation, and that the flowers/wheat survive on the real ground block (they need grass/dirt; if the plot ground is something else, say so and I switch to potted plants only).
+Everything is a first design judged from a top-down plan only (no in-game view): check the density, tree size, bench orientation, and the raised grass blocks under flowers and trees.
