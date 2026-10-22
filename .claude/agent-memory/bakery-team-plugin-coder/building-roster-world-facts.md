@@ -15,3 +15,10 @@ Verified 2026-10-22 (branch building-roster/plugin-coder-world, commits 0b77c57,
   Plugin/Plot/HouseSettings.java) and fails if it is not in messages.yml: config paths with those prefixes go in
   PlotSettings or use a relative section (`c.getConfigurationSection("plot.buildings")` from PlotSettings).
 - PlotSetup.Inputs gained `slots` (building-slots.yml text); DecorKeepOut.of(design) kept for DecorKeepOutTest.
+- Cleanup 2026-10-22 (commit 803425e): decor keep-out uses `plot.buildings.footprints` (id -> side, config.yml
+  only; getConfig falls back to the jar's config.yml for a missing section) via
+  `PlotSetup(..., Supplier<Map<String,Double>> footprints)` -> `DecorKeepOut.of(design, slots, footprints)`.
+  Scroll vs unlock pulse: `StationView.Panel.scrolled`, set in PanelUpdater.scroll, cleared in update.
+- `Economy.nextBuildingCps` has no main caller but RowStateTest uses it: keep it.
+- Worktree guard: a Bash command mixing heredoc/sed file writes with a git commit is refused; write memory with
+  Write/Edit, then commit in a plain separate command.

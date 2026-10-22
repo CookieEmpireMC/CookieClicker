@@ -335,7 +335,8 @@ public final class VisibleBuildings implements Listener, PlotPresenceListener, S
         if (sound != null) {
             sounds.play(player, sound, soundAt);
         }
-        play(player, plays, s.effectStaggerTicks());
+        // one purchase may cross a stage for many types at once: cap its effects (the sound above is one anyway)
+        play(player, plays.subList(0, Math.min(plays.size(), s.maxEffectsPerPurchase())), s.effectStaggerTicks());
     }
 
     /** Plays {@code plays} in order, {@code stagger} ticks apart (the first right away). */

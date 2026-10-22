@@ -47,6 +47,7 @@ import java.util.Random;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.IntSupplier;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.stream.Stream;
 
@@ -81,14 +82,16 @@ public final class PlotSetup {
     private final Executor io;
     private final Executor main;
     private final IntSupplier maxBlocks;
+    private final Supplier<Map<String, Double>> footprints;
     private final OperationGate gate = new OperationGate();
 
     /**
      * @param store     saves a changed plot everywhere (registry, stations, plots.yml): {@code PlotService#update}
      * @param maxBlocks {@code house.max-blocks}: the largest design box and layout area accepted
+     * @param footprints {@code plot.buildings.footprints}: building id → footprint side, kept free of decor
      */
     public PlotSetup(JavaPlugin plugin, PlotRegistry plots, Consumer<Plot> store, Messages messages, Executor io,
-                     Executor main, IntSupplier maxBlocks) {
+                     Executor main, IntSupplier maxBlocks, Supplier<Map<String, Double>> footprints) {
         this.plugin = plugin;
         this.plots = plots;
         this.store = store;
@@ -96,6 +99,7 @@ public final class PlotSetup {
         this.io = io;
         this.main = main;
         this.maxBlocks = maxBlocks;
+        this.footprints = footprints;
     }
 
     private record Op(CommandSender sender, long token) {
@@ -529,7 +533,7 @@ public final class PlotSetup {
                 plugin.getLogger().warning("houses/" + BUILDING_SLOTS + ": not valid YAML; decor ignores the slots");
             }
         }
-        DecorKeepOut keepOut = DecorKeepOut.of(design, slots);
+        DecorKeepOut keepOut = DecorKeepOut.of(design, slots, footprints.get());
         if (keepOut == null) {
             return;
         }

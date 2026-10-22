@@ -106,13 +106,13 @@ public record BuildingSlots(Map<String, List<Slot>> slots) {
                 if (yaw != null && !(yaw instanceof Number)) {
                     problems.add(where + ".yaw must be a number; using 0");
                 }
-                if (!used.add(List.of(at[0], at[1], at[2]))) {
-                    problems.add(where + ": cell " + at[0] + " " + at[1] + " " + at[2] + " is used twice; skipped");
-                    continue;
-                }
                 if (slots.size() >= MAX_PER_TYPE) {
                     problems.add("slots." + id + ": more than " + MAX_PER_TYPE + " slots; the rest is skipped");
                     break;
+                }
+                if (!used.add(List.of(at[0], at[1], at[2]))) {
+                    problems.add(where + ": cell " + at[0] + " " + at[1] + " " + at[2] + " is used twice; skipped");
+                    continue;
                 }
                 slots.add(new Slot(at[0], at[1], at[2], yaw instanceof Number n ? n.floatValue() : 0f));
             }
