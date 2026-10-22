@@ -6,7 +6,8 @@ Outputs (all under resourcepack/assets/cookieclicker/):
   textures/item/basket/<tier>.png            one atlas per tier (128x128, golden 256x256, 2 texels per model unit)
   design/scripts/basket_heights.json         widths and top heights (read by the spec check)
 
-Origin = bottom centre (8, 0, 8). The four sides are identical, so the 180 degree Y turn of item displays
+Bottom centre is at model (8, 8, 8): ItemDisplay NONE draws the model centre at the display position,
+so every element is shifted +8 on y (lowest element y == 8, asserted). Gui/fixed translations compensate. The four sides are identical, so the 180 degree Y turn of item displays
 does not matter. No element rotations. Deterministic. Spec: design/basket.md
 """
 import json
@@ -21,6 +22,7 @@ ASSETS = Path("resourcepack/assets") / NS
 ATLAS_SIZE = {"wicker": 128, "bushel": 128, "golden": 256}
 PX = 2  # texels per model unit
 FILLS = range(5)
+YOFF = 8  # model y 8 = display position with transform NONE (see design/conveyor-belt.md)
 
 # ---- palettes (light -> dark), hue shifted: lights lean yellow, shadows lean red/purple
 DOUGH = ["#F7DC9A", "#EBBE6C", "#D69A4C", "#B8743A", "#8E5032", "#5C2F2A"]   # same as the cookie
@@ -306,12 +308,16 @@ def model_json(tier, boxes, atlas, fill):
             mat = bx.inner.get(f) or bx.mat
             w, h = face_size(bx, f)
             faces[f] = {"uv": [round(v, 4) for v in atlas.get(mat, w, h)], "texture": "#0"}
-        elements.append({"name": bx.tag, "from": list(bx.a), "to": list(bx.b), "faces": faces})
+        # ItemDisplay NONE draws model (8,8,8) at the display position: model y 8 = bottom (floor point)
+        elements.append({"name": bx.tag, "from": [bx.a[0], bx.a[1] + YOFF, bx.a[2]],
+                         "to": [bx.b[0], bx.b[1] + YOFF, bx.b[2]], "faces": faces})
+    assert min(e["from"][1] for e in elements) == 8, "lowest element y must be 8"
+    assert max(e["to"][1] for e in elements) <= 32 and min(e["from"][1] for e in elements) >= -16
     return {
         "textures": {"0": f"{NS}:item/basket/{tier}", "particle": f"{NS}:item/basket/{tier}"},
         "elements": elements,
-        "display": {"gui": {"rotation": [30, 225, 0], "scale": [0.55, 0.55, 0.55], "translation": [0, -1, 0]},
-                    "fixed": {"rotation": [0, 0, 0], "scale": [0.6, 0.6, 0.6], "translation": [0, -3, 0]}},
+        "display": {"gui": {"rotation": [30, 225, 0], "scale": [0.55, 0.55, 0.55], "translation": [0, -5, 0]},
+                    "fixed": {"rotation": [0, 0, 0], "scale": [0.6, 0.6, 0.6], "translation": [0, -8, 0]}},
     }
 
 
