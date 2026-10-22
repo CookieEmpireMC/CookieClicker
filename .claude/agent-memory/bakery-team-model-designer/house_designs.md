@@ -19,3 +19,5 @@ metadata:
 
 **Why:** avoids re-deriving the format, ownership workaround and block ids next time.
 **How to apply:** new designs (e.g. bakery-growth tiers) import `house_lib` and copy the `house_factory.py` structure (block-data grid, auto connections, auto chars). See [[pack-facts-26-3]].
+
+- decor (2026-10-22): `houses/decor.yml` from `design/scripts/decor_style.py`, spec `design/decor.md` (keep-out rectangles: factory x5..25 z9..24, front x12..23 z1..8, ring). Plain list format `blocks: [{at, block}]`; house_lib got schemas for leaves/farmland/wheat/water/carved_pumpkin/flowers. Paper-api sources jar: ~/.m2/.../paper-api/26.3.build.205-stable/*-sources.jar. Bash sandbox refuses heredocs with python and awk here: use Write/Edit and sed.
