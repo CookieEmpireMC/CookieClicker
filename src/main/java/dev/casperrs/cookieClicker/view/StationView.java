@@ -23,14 +23,14 @@ import java.util.UUID;
 final class StationView {
 
     /**
-     * One panel row slot: icon, text and its own hitbox. Which item it shows ({@link #id}) can change (click
-     * upgrades move up when one is bought); an empty slot shows nothing and ignores clicks.
+     * One panel row slot: icon and text (clicks come through the panel's box and a ray check). Which item it shows
+     * ({@link #id}) can change (click upgrades move up when one is bought); an empty slot shows nothing and ignores
+     * clicks.
      */
     static final class Row {
         final int index;
         final ItemDisplay icon;
         final TextDisplay text;
-        final Interaction hitbox;
         /** Centre of the row in world space (where the purchase effect plays). */
         final double[] centre;
         /** Icon centre in world space (where a bought upgrade's icon flies out from). */
@@ -49,22 +49,35 @@ final class StationView {
         @Nullable String renderedKey;
         /** Estimated pixel width of the rendered text (for the left-edge shift). */
         int renderedWidth;
+        /** Wrapped line count of the rendered text (for the click bounds). */
+        int renderedLines = PanelLayout.ROW_LINES;
         float sentShift = Float.NaN;
         float sentScale = Float.NaN;
         int sentColor;
         int sentLight = -1;
 
-        Row(int index, ItemDisplay icon, TextDisplay text, Interaction hitbox, double[] centre, double[] iconAt) {
+        Row(int index, ItemDisplay icon, TextDisplay text, double[] centre, double[] iconAt) {
             this.index = index;
             this.icon = icon;
             this.text = text;
-            this.hitbox = hitbox;
             this.centre = centre;
             this.iconAt = iconAt;
         }
+
+        /** Rows had their own hitbox before plot-polish; kept for code that still passes one (it is ignored). */
+        Row(int index, ItemDisplay icon, TextDisplay text, Interaction ignored, double[] centre, double[] iconAt) {
+            this(index, icon, text, centre, iconAt);
+        }
+
+        PanelLayout.RowBox box() {
+            return new PanelLayout.RowBox(id != null, renderedLines, renderedWidth);
+        }
     }
 
-    /** One hologram panel: header, ×1/×5/×10/Max toggle with its hitbox, and row slots. */
+    /**
+     * One hologram panel: header, ×1/×5/×10/Max toggle, row slots and one click box over all of them (it only
+     * triggers the ray check that picks the line).
+     */
     static final class Panel {
         final PanelKind kind;
         final StationFrame frame;
@@ -73,31 +86,40 @@ final class StationView {
         final float iconYaw;
         final TextDisplay header;
         final TextDisplay toggle;
-        final Interaction toggleHitbox;
+        final Interaction hitbox;
         final List<Row> rows;
         /** The mode the toggle currently shows. */
         @Nullable BulkMode shownMode;
+        /** What the toggle renders (width and label spans), for the click bounds; null before its first text. */
+        PanelLayout.@Nullable ToggleBox toggleBox;
 
         Panel(PanelKind kind, StationFrame frame, Offset anchor, float iconYaw, TextDisplay header, TextDisplay toggle,
-              Interaction toggleHitbox, List<Row> rows) {
+              Interaction hitbox, List<Row> rows) {
             this.kind = kind;
             this.frame = frame;
             this.anchor = anchor;
             this.iconYaw = iconYaw;
             this.header = header;
             this.toggle = toggle;
-            this.toggleHitbox = toggleHitbox;
+            this.hitbox = hitbox;
             this.rows = List.copyOf(rows);
+        }
+
+        List<PanelLayout.RowBox> rowBoxes() {
+            List<PanelLayout.RowBox> out = new ArrayList<>(rows.size());
+            for (Row r : rows) {
+                out.add(r.box());
+            }
+            return out;
         }
 
         void addEntities(List<Entity> out) {
             out.add(header);
             out.add(toggle);
-            out.add(toggleHitbox);
+            out.add(hitbox);
             for (Row r : rows) {
                 out.add(r.icon);
                 out.add(r.text);
-                out.add(r.hitbox);
             }
         }
     }

@@ -99,21 +99,24 @@ station:
     text-shadow: true
     text-see-through: false
     text-default-background: false
-    # Text wraps after this many pixels
+    # Row text wraps after this many pixels (the panel texts are written to fit two lines)
     line-width: 120
-    # First row sits this far below the header, each further row this much lower
-    first-row-drop: 0.45
-    row-pitch: 0.4
+    # Layout: header, x1/x5/x10/Max toggle and rows (icon + text) are centred on one column under the header.
+    # Spaces of padding inside every text background, left and right
+    text-padding: 1
+    # true = header, toggle and every row background get the same width (a tidy column); false = they hug the text
+    same-width: true
+    # Air (blocks) between the header and the toggle, the toggle and the first row, and two rows
+    gap-after-header: 0.2
+    gap-after-toggle: 0.25
+    row-gap: 0.17
+    # Clicks pick the row or toggle label under your crosshair by where its text is drawn; a click this close
+    # (blocks) outside a line's text still counts. Between lines nothing happens. Clicking a toggle label picks that
+    # amount, clicking the toggle between labels picks the next one.
+    click-margin: 0.03
     # The x1 / x5 / x10 / Max toggle under each header (texts in messages.yml panel.bulk)
     bulk:
-      # Centre of the toggle text, relative to the header; the rows move down by rows-drop to make room
-      offset: [0, -0.32, 0]
       scale: 0.45
-      rows-drop: 0.3
-      # Bottom centre of its click box relative to the toggle text, and its size
-      hitbox-offset: [0, -0.02, 0]
-      hitbox-width: 1.7
-      hitbox-height: 0.24
     # Price roll when you switch the amount or buy something: the numbers roll to their new value over `ticks`
     # (eased, even from 1K to 1M), the row text is re-sent at most every `step-ticks`, and briefly grows to
     # pulse-scale x its size
@@ -122,20 +125,15 @@ station:
       step-ticks: 2
       pulse-scale: 1.08
     row:
-      # Relative to the row's anchor: [right, up, forward]
-      # text-offset is the LEFT EDGE of the row's text background when text-left-edge is true (keep it just right of
-      # the icon: icon centre + icon-scale / 2 + a small gap), else the centre of the text block.
+      # How the icon and the text sit next to each other, [right, up, forward] from the row's bottom: text-offset
+      # is the LEFT EDGE of the text background (keep it just right of the icon: icon centre + icon-scale / 2 + a
+      # small gap), icon-offset the icon centre. The pair is then centred on the panel column.
       text-offset: [-0.3, 0, 0]
       # true = every row's text starts at text-offset, however long or wrapped it is (the plugin estimates the
       # rendered width from the default font and shifts the text right by half of it); false = text centred
       text-left-edge: true
       icon-offset: [-0.5, 0.13, -0.02]
       icon-scale: 0.3
-      # Bottom centre of the row's click box; keep it clear of the cookie's box. It should cover the icon and the
-      # text: from about icon-offset - icon-scale / 2 to text-offset + line-width * text-scale / 40
-      hitbox-offset: [0.25, -0.02, 0]
-      hitbox-width: 1.7
-      hitbox-height: 0.34
     # Text background colours, "#AARRGGBB" (alpha below 1A is invisible)
     colors:
       header: "#C0301A0C"
@@ -176,7 +174,7 @@ station:
   # icon shows its name and effect in the action bar.
   shelf:
     # Centre of the first (top left) icon, relative to the click upgrades panel header: [right, up, forward]
-    offset: [-0.28, -2.4, 0]
+    offset: [-0.55, -2.45, 0]
     columns: 6
     # Distance between icon centres (right and down) and the icon size
     spacing: 0.22

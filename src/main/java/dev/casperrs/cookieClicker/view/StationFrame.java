@@ -23,6 +23,20 @@ public record StationFrame(double x, double y, double z, float yaw) {
         return new double[] {x + rx * o.right() + fx * o.forward(), y + o.up(), z + rz * o.right() + fz * o.forward()};
     }
 
+    /** A world position in this frame, relative to {@code base} (the inverse of {@link #point(Offset, Offset)}). */
+    public Offset local(double wx, double wy, double wz, Offset base) {
+        Offset d = direction(wx - x, wy - y, wz - z);
+        return new Offset(d.right() - base.right(), d.up() - base.up(), d.forward() - base.forward());
+    }
+
+    /** A world direction in this frame (right, up, forward); lengths are kept. */
+    public Offset direction(double dx, double dy, double dz) {
+        double rad = Math.toRadians(yaw);
+        double sin = Math.sin(rad);
+        double cos = Math.cos(rad);
+        return new Offset(-cos * dx - sin * dz, dy, -sin * dx + cos * dz);
+    }
+
     /** World position of {@code base + rel} (both in this frame). */
     public double[] point(Offset base, Offset rel) {
         return point(new Offset(base.right() + rel.right(), base.up() + rel.up(), base.forward() + rel.forward()));

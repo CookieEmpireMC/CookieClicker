@@ -40,7 +40,9 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Transformation;
+import org.bukkit.util.Vector;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.jspecify.annotations.Nullable;
@@ -232,6 +234,43 @@ public final class StationViews implements Listener, StationListener, SessionLis
         return modes.cycle(player.getUniqueId(), panel);
     }
 
+    /** A toggle label was clicked: that mode. */
+    void setMode(Player player, PanelKind panel, BulkMode mode) {
+        modes.set(player.getUniqueId(), panel, mode);
+    }
+
+    /**
+     * What the player's eye ray hits first at {@code view} within {@code maxDistance}: a panel row or toggle (by
+     * its rendered bounds) or the cookie's box. Clicks on any of the view's boxes are resolved this way, so a box
+     * that overlaps another (or sits in front of it) never steals the click.
+     */
+    @Nullable Aim aim(StationView view, Vector eye, Vector dir, double maxDistance) {
+        StationVisualSettings s = settings.get();
+        Aim best = null;
+        RayTraceResult cookie = view.cookieHitbox.isValid()
+                ? view.cookieHitbox.getBoundingBox().rayTrace(eye, dir, maxDistance) : null;
+        if (cookie != null) {
+            best = new Aim(null, null, cookie.getHitPosition(), cookie.getHitPosition().distance(eye));
+        }
+        for (StationView.Panel panel : view.panels()) {
+            Offset e = panel.frame.local(eye.getX(), eye.getY(), eye.getZ(), panel.anchor);
+            Offset d = panel.frame.direction(dir.getX(), dir.getY(), dir.getZ());
+            PanelLayout.Hit hit = PanelLayout.of(s, panel.rows.size())
+                    .pick(e, d, maxDistance, panel.rowBoxes(), panel.toggleBox);
+            if (hit != null && (best == null || hit.distance() < best.distance())) {
+                best = new Aim(panel.kind, hit, null, hit.distance());
+            }
+        }
+        return best;
+    }
+
+    /**
+     * The first thing an eye ray hits at a view: a line of panel {@code panel} ({@code hit}), or the cookie
+     * ({@code cookieAt} = where the ray enters its box).
+     */
+    record Aim(@Nullable PanelKind panel, PanelLayout.@Nullable Hit hit, @Nullable Vector cookieAt, double distance) {
+    }
+
     // ---- refresh (proximity lifecycle) ----------------------------------------------------------------------
 
     private void refresh() {
@@ -362,10 +401,6 @@ public final class StationViews implements Listener, StationListener, SessionLis
         return new Offset(0, o.up(), 0);
     }
 
-    private static Offset plus(Offset a, Offset b) {
-        return new Offset(a.right() + b.right(), a.up() + b.up(), a.forward() + b.forward());
-    }
-
     private static boolean chunkLoaded(World world, StationFrame frame, Offset o) {
         double[] p = frame.point(o);
         return world.isChunkLoaded((int) Math.floor(p[0]) >> 4, (int) Math.floor(p[2]) >> 4);
@@ -434,37 +469,43 @@ public final class StationViews implements Listener, StationListener, SessionLis
         }
     }
 
-    /** One panel: header, ×N toggle (text + hitbox) and {@code rowCount} row slots (icon, text, hitbox). */
+    /**
+     * One panel, laid out by {@link PanelLayout}: header, ×N toggle, {@code rowCount} row slots (icon, text) and one
+     * click box over all of them.
+     */
     private StationView.Panel spawnPanel(PanelKind kind, World world, Station station, StationVisualSettings s,
                                          Player owner, List<Entity> spawned, int rowCount) {
         StationVisualSettings.Panel p = s.panel();
-        StationVisualSettings.Bulk b = s.bulk();
+        PanelLayout layout = PanelLayout.of(s, rowCount);
         StationFrame pf = panelFrame(station, kind);
         Offset po = panelOffset(station, kind, s);
         float textYaw = pf.facingViewers(p.textYawOffset());
         float iconYaw = pf.facingViewers(p.iconYawOffset());
         TextDisplay header = spawn(world, pf.point(po), textYaw, TextDisplay.class, owner, spawned, t -> {
             styleText(t, p, p.headerScale(), p.color("header"));
+            t.setLineWidth(PanelLayout.SINGLE_LINE_WIDTH);
             t.setAlignment(TextDisplay.TextAlignment.CENTER);
-            t.text(messages.component(kind == PanelKind.BUILDINGS ? "panel.buildings.header" : "panel.clicks.header"));
+            t.text(TextPadding.centred(messages.component(kind == PanelKind.BUILDINGS ? "panel.buildings.header"
+                    : "panel.clicks.header"), p.textPadding(), layout.headerTargetPx()));
         });
-        Offset toggleAnchor = plus(po, b.offset());
-        TextDisplay toggle = spawn(world, pf.point(toggleAnchor), textYaw, TextDisplay.class, owner, spawned, t -> {
-            styleText(t, p, b.scale(), p.color("toggle"));
-            t.setAlignment(TextDisplay.TextAlignment.CENTER);
-        });
-        Interaction toggleBox = spawn(world, pf.point(toggleAnchor, b.hitboxOffset()), 0, Interaction.class, owner,
-                spawned, i -> {
-                    i.setInteractionWidth(b.hitboxWidth());
-                    i.setInteractionHeight(b.hitboxHeight());
+        TextDisplay toggle = spawn(world, pf.point(po, layout.toggleAt()), textYaw, TextDisplay.class, owner, spawned,
+                t -> {
+                    styleText(t, p, s.bulk().scale(), p.color("toggle"));
+                    t.setLineWidth(PanelLayout.SINGLE_LINE_WIDTH);
+                    t.setAlignment(TextDisplay.TextAlignment.CENTER);
+                });
+        float boxWidth = (float) layout.boxWidth();
+        float boxHeight = (float) layout.boxHeight();
+        Interaction panelBox = spawn(world, pf.point(po, layout.boxBottom()), 0, Interaction.class, owner, spawned,
+                i -> {
+                    i.setInteractionWidth(boxWidth);
+                    i.setInteractionHeight(boxHeight);
                     i.setResponsive(true);
                 });
 
         List<StationView.Row> rows = new ArrayList<>();
         for (int index = 0; index < rowCount; index++) {
-            Offset anchor = new Offset(po.right(), po.up() - p.firstRowDrop() - b.rowsDrop() - index * p.rowPitch(),
-                    po.forward());
-            double[] iconAt = pf.point(anchor, p.iconOffset());
+            double[] iconAt = pf.point(po, layout.iconAt(index));
             ItemDisplay icon = spawn(world, iconAt, iconYaw, ItemDisplay.class, owner, spawned, d -> {
                 d.setItemStack(ItemStack.empty());
                 d.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
@@ -474,21 +515,16 @@ public final class StationViews implements Listener, StationListener, SessionLis
                 d.setTransformation(new Transformation(new Vector3f(), new Quaternionf(),
                         new Vector3f(is, is, is), new Quaternionf()));
             });
-            TextDisplay text = spawn(world, pf.point(anchor, p.textOffset()), textYaw, TextDisplay.class, owner,
+            TextDisplay text = spawn(world, pf.point(po, layout.textAt(index)), textYaw, TextDisplay.class, owner,
                     spawned, t -> {
                         styleText(t, p, p.textScale(), 0);
                         t.setAlignment(TextDisplay.TextAlignment.LEFT);
                     });
-            double[] boxBottom = pf.point(anchor, p.hitboxOffset());
-            Interaction box = spawn(world, boxBottom, 0, Interaction.class, owner, spawned, i -> {
-                i.setInteractionWidth(p.hitboxWidth());
-                i.setInteractionHeight(p.hitboxHeight());
-                i.setResponsive(true);
-            });
-            double[] rowCentre = {boxBottom[0], boxBottom[1] + p.hitboxHeight() / 2, boxBottom[2]};
-            rows.add(new StationView.Row(index, icon, text, box, rowCentre, iconAt));
+            double[] rowCentre = pf.point(po, new Offset(0, layout.rowBottom(index) + layout.rowHeight() / 2,
+                    p.textOffset().forward()));
+            rows.add(new StationView.Row(index, icon, text, rowCentre, iconAt));
         }
-        return new StationView.Panel(kind, pf, po, iconYaw, header, toggle, toggleBox, rows);
+        return new StationView.Panel(kind, pf, po, iconYaw, header, toggle, panelBox, rows);
     }
 
     private @Nullable BlockDisplay spawnPedestal(World world, StationFrame frame, StationVisualSettings.Pedestal ped,
@@ -550,10 +586,7 @@ public final class StationViews implements Listener, StationListener, SessionLis
         String id = view.station.id();
         targets.put(view.cookieHitbox.getUniqueId(), ClickTarget.cookie(view.owner, id));
         for (StationView.Panel panel : view.panels()) {
-            targets.put(panel.toggleHitbox.getUniqueId(), ClickTarget.toggle(view.owner, id, panel.kind));
-            for (StationView.Row r : panel.rows) {
-                targets.put(r.hitbox.getUniqueId(), ClickTarget.row(view.owner, id, panel.kind, r.index));
-            }
+            targets.put(panel.hitbox.getUniqueId(), ClickTarget.panel(view.owner, id, panel.kind));
         }
     }
 
