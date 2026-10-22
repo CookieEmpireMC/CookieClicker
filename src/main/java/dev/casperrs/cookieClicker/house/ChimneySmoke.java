@@ -22,10 +22,12 @@ import java.util.function.Supplier;
 
 /**
  * The living house for every player in a plot who isn't watching the cinematic: a {@code house_chimney_smoke} loop
- * at every smoke point (with {@code house_chimney_crackle} every {@code house.chimney.crackle-every} plays of the
- * first one), a {@code factory_steam} loop at every steam point (vent starts staggered by {@code house.steam.every}
- * ticks) and the {@code factory_ambient} hum every {@code house.ambient.every} ticks while the player is within
- * {@code house.ambient.radius} of the first steam point (or the house centre). One set per player. The effects
+ * at every smoke point, {@code house_chimney_crackle} at the first one every {@code house.chimney.crackle-ticks}
+ * ticks (its own timer), a {@code factory_steam} loop at every steam point (vent starts staggered by
+ * {@code house.steam.every} ticks) and the {@code factory_ambient} hum every {@code house.ambient.every} ticks while
+ * the player is within {@code house.ambient.radius} of the first steam point (or the house centre). The two sounds
+ * are fixed-period timers that keep their beat across restarts ({@link SoundService#playLoop}). One set per
+ * player. The effects
  * engine ends loops by itself on quit, world change, reload and shutdown; {@link HouseCinematics} starts and stops
  * them. Main thread only.
  */
@@ -85,21 +87,13 @@ public final class ChimneySmoke {
         Session session = new Session();
 
         if (s.chimney().smoke()) {
-            int every = s.chimney().crackleEvery();
-            boolean first = true;
             for (Plot.Point c : plot.smoke()) {
-                Location at = at(world, c);
-                Runnable crackle = null;
-                if (first && every > 0) {
-                    int[] plays = {0};
-                    crackle = () -> {
-                        if (plays[0]++ % every == 0) {
-                            sounds.play(player, CRACKLE, at);
-                        }
-                    };
-                }
-                first = false;
-                addLoop(session, effects.loop(SMOKE, at, player, crackle));
+                addLoop(session, effects.loop(SMOKE, at(world, c), player));
+            }
+            int crackle = s.chimney().crackleTicks();
+            if (crackle > 0 && !plot.smoke().isEmpty()) {
+                Location at = at(world, plot.smoke().getFirst());
+                loopTimer(session, player, world, CRACKLE, at, crackle, Double.POSITIVE_INFINITY);
             }
         }
 
@@ -125,18 +119,29 @@ public final class ChimneySmoke {
                 : houseCentre != null ? houseCentre.clone()
                 : plot.chimney() != null ? at(world, plot.chimney()) : null;
         if (ambient.enabled() && anchor != null) {
-            double r2 = ambient.radius() * ambient.radius();
-            session.tasks.add(Bukkit.getScheduler().runTaskTimer(plugin, () -> {
-                if (player.isOnline() && player.getWorld().equals(world)
-                        && player.getLocation().distanceSquared(anchor) <= r2) {
-                    sounds.play(player, AMBIENT, anchor);
-                }
-            }, 0L, ambient.every()));
+            loopTimer(session, player, world, AMBIENT, anchor, ambient.every(), ambient.radius());
         }
 
         if (!session.loops.isEmpty() || !session.tasks.isEmpty()) {
             sessions.put(id, session);
         }
+    }
+
+    /**
+     * A fixed-period timer for one looping sound: every {@code period} ticks (the file length at its fixed pitch),
+     * starting where the player's previous play of it ends, so a restart never overlaps or doubles it
+     * ({@link SoundService#playLoop}).
+     */
+    private void loopTimer(Session session, Player player, World world, String event, Location at, int period,
+                           double radius) {
+        double r2 = radius * radius;
+        long delay = sounds.loopDelay(player.getUniqueId(), event, period, Bukkit.getCurrentTick());
+        session.tasks.add(Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            if (player.isOnline() && player.getWorld().equals(world)
+                    && player.getLocation().distanceSquared(at) <= r2) {
+                sounds.playLoop(player, event, at, period, Bukkit.getCurrentTick());
+            }
+        }, delay, period));
     }
 
     private static void addLoop(Session session, EffectHandle handle) {
