@@ -22,6 +22,7 @@ public final class EconomyConfigParser {
     public static Result parse(Map<String, ?> buildingsYaml, Map<String, ?> upgradesYaml) throws EconomyConfigException {
         List<String> warnings = new ArrayList<>();
 
+        List<Integer> milestones = milestones(buildingsYaml.get("milestones"), "buildings.yml: milestones");
         Map<String, BuildingDef> buildings = new LinkedHashMap<>();
         for (Map.Entry<String, ?> e : section(buildingsYaml, "buildings", "buildings.yml").entrySet()) {
             String id = e.getKey();
@@ -34,7 +35,8 @@ public final class EconomyConfigParser {
             }
             buildings.put(id, new BuildingDef(id, baseCost,
                     number(spec.get("base-cps"), where + ".base-cps"),
-                    unlock.containsKey("baked") ? number(unlock.get("baked"), where + ".unlock.baked") : 0));
+                    unlock.containsKey("baked") ? number(unlock.get("baked"), where + ".unlock.baked") : 0,
+                    spec.containsKey("milestones") ? milestones(spec.get("milestones"), where + ".milestones") : milestones));
         }
         if (buildings.isEmpty()) {
             throw new EconomyConfigException("buildings.yml has no buildings");
@@ -107,6 +109,28 @@ public final class EconomyConfigParser {
             warnings.add("upgrades.yml: click.crit-chance / click.crit-multiplier missing, crits are off");
         }
         return new Result(new EconomyConfig(growth, basePower, critChance, critMultiplier, buildings, upgrades), warnings);
+    }
+
+    /**
+     * {@code milestones:} = a list of owned counts (integers >= 1), each doubling production once reached.
+     * Absent = no milestones. Sorted and de-duplicated, so the order in the file doesn't matter.
+     */
+    private static List<Integer> milestones(Object raw, String where) throws EconomyConfigException {
+        if (raw == null) {
+            return List.of();
+        }
+        if (!(raw instanceof List<?> list)) {
+            throw new EconomyConfigException(where + " must be a list of owned counts, got " + raw);
+        }
+        java.util.TreeSet<Integer> counts = new java.util.TreeSet<>();
+        for (Object o : list) {
+            if (!(o instanceof Integer || o instanceof Long) || ((Number) o).longValue() < 1
+                    || ((Number) o).longValue() > Integer.MAX_VALUE) {
+                throw new EconomyConfigException(where + " entries must be integers >= 1, got " + o);
+            }
+            counts.add(((Number) o).intValue());
+        }
+        return List.copyOf(counts);
     }
 
     private static Map<String, ?> section(Map<String, ?> root, String key, String file) throws EconomyConfigException {

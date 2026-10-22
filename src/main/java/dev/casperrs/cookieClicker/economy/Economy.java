@@ -127,32 +127,39 @@ public final class Economy {
 
     // ---- derived values (effects at the upgrade's level) ---------------------------------------
 
-    /** {@code owned × base_cps × Π(building-multiplier for b at its level)}; excludes global multipliers. */
+    /**
+     * {@code base_cps × owned × 2^(milestones reached) × Π(building-multiplier for b at its level)};
+     * excludes global multipliers.
+     */
     public double buildingCps(CookiePouch pouch, String buildingId) {
         BuildingDef b = config.buildings().get(buildingId);
         int owned = pouch.owned(buildingId);
         if (b == null || owned == 0) {
             return 0;
         }
-        return SafeMath.sanitize(owned * b.baseCps() * buildingMultiplier(pouch, buildingId, null, 0));
+        return SafeMath.sanitize(b.production(owned) * buildingMultiplier(pouch, buildingId, null, 0));
+    }
+
+    /** What one more of {@code buildingId} would add to {@link #totalCps} (incl. crossing a milestone). */
+    public double nextBuildingCps(CookiePouch pouch, String buildingId) {
+        return buildingCpsGain(pouch, buildingId, 1);
     }
 
     /**
-     * What one more of {@code buildingId} would add to {@link #totalCps}:
-     * {@code base_cps × Π(building-multiplier for b) × Π(global-multiplier)}. For the shop panel.
+     * What {@code count} more of {@code buildingId} would add to {@link #totalCps}: the building's
+     * production at {@code owned + count} minus at {@code owned} (milestones crossed included),
+     * {@code × Π(building-multiplier for b) × Π(global-multiplier)}. For the shop panel.
      */
-    public double nextBuildingCps(CookiePouch pouch, String buildingId) {
+    public double buildingCpsGain(CookiePouch pouch, String buildingId, int count) {
         BuildingDef b = config.buildings().get(buildingId);
-        if (b == null) {
+        if (b == null || count <= 0) {
             return 0;
         }
-        return SafeMath.sanitize(b.baseCps() * buildingMultiplier(pouch, buildingId, null, 0)
+        int owned = pouch.owned(buildingId);
+        int after = (int) Math.min(Integer.MAX_VALUE, (long) owned + count);
+        double delta = b.production(after) - b.production(owned);
+        return SafeMath.sanitize(delta * buildingMultiplier(pouch, buildingId, null, 0)
                 * product(pouch, EffectType.GLOBAL_MULTIPLIER, null, 0));
-    }
-
-    /** What {@code count} more of {@code buildingId} would add to {@link #totalCps} (CPS is linear in owned). */
-    public double buildingCpsGain(CookiePouch pouch, String buildingId, int count) {
-        return SafeMath.multiply(nextBuildingCps(pouch, buildingId), Math.max(0, count));
     }
 
     /** {@code Σ building_cps × Π(global-multiplier)}. */
@@ -216,7 +223,7 @@ public final class Economy {
             if (b == null || e.getValue() == 0) {
                 continue;
             }
-            total += SafeMath.sanitize(e.getValue() * b.baseCps()
+            total += SafeMath.sanitize(b.production(e.getValue())
                     * buildingMultiplier(pouch, e.getKey(), overrideId, overrideLevel));
         }
         return SafeMath.sanitize(total * product(pouch, EffectType.GLOBAL_MULTIPLIER, overrideId, overrideLevel));
