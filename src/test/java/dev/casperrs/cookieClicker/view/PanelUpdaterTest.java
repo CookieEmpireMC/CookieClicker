@@ -101,15 +101,87 @@ class PanelUpdaterTest {
         return m;
     }
 
-    /** {@code station.panel.line-width} from the shipped config.yml. */
-    private static int shippedLineWidth() {
+    /** The shipped config.yml, loaded like the server does it. */
+    private static StationVisualSettings shippedSettings() {
         try (InputStream in = PanelUpdaterTest.class.getClassLoader().getResourceAsStream("config.yml");
              Reader r = new InputStreamReader(in, StandardCharsets.UTF_8)) {
             return StationVisualSettings.from(YamlConfiguration.loadConfiguration(r), problem -> {
                 throw new AssertionError(problem);
-            }).panel().lineWidth();
+            });
         } catch (IOException e) {
             throw new IllegalStateException(e);
+        }
+    }
+
+    /** {@code station.panel.line-width} from the shipped config.yml. */
+    private static int shippedLineWidth() {
+        return shippedSettings().panel().lineWidth();
+    }
+
+    /** Half a space at {@code scale}, in blocks: the tolerance for "the same width". */
+    private static double halfSpace(float scale) {
+        return TextWidth.SPACE_PX / 2.0 * scale / TextWidth.PIXELS_PER_BLOCK;
+    }
+
+    /** Asserts a background's left and right edge are the column's, each within half a space at {@code scale}. */
+    private static void assertSameColumn(String what, double left, double right, double colLeft, double colRight,
+                                         float scale) {
+        double tol = halfSpace(scale);
+        assertTrue(Math.abs(left - colLeft) <= tol && Math.abs(right - colRight) <= tol,
+                what + " spans " + left + ".." + right + ", the column " + colLeft + ".." + colRight);
+    }
+
+    @Test
+    void theHeaderToggleAndRowsShareOneTextColumnAndTheirTitlesFitIt() {
+        StationVisualSettings s = shippedSettings();
+        StationVisualSettings.Panel p = s.panel();
+        Messages shipped = shippedMessages();
+        PanelLayout layout = PanelLayout.of(s, 8);
+        double colLeft = layout.textLeft();
+        double colRight = colLeft + layout.columnWidth();
+        float bulkScale = layout.toggleScale();
+        PanelUpdater updater = new PanelUpdater(() -> s, economy, shipped, new BulkModes(),
+                (kind, id, withPack) -> null);
+
+        // header and toggle are centred on the anchor, so their background is -w/2 .. w/2
+        for (String path : List.of("panel.buildings.header", "panel.clicks.header")) {
+            Component header = TextPadding.centred(shipped.component(path), p.textPadding(), layout.headerTargetPx());
+            double w = TextWidth.blocks(TextWidth.width(header, PanelLayout.SINGLE_LINE_WIDTH), p.headerScale());
+            assertSameColumn(path, -w / 2, w / 2, colLeft, colRight, p.headerScale());
+        }
+        // every toggle line: the plain ×N line and the paged one with each arrow on or off, in each selected mode
+        for (BulkMode mode : BulkMode.values()) {
+            List<Component> lines = new ArrayList<>(List.of(updater.toggleText(mode)));
+            for (boolean up : new boolean[] {false, true}) {
+                for (boolean down : new boolean[] {false, true}) {
+                    lines.add(updater.pagedToggle(updater.toggleText(mode), up, down));
+                }
+            }
+            for (Component line : lines) {
+                Component toggle = TextPadding.centred(line, p.textPadding(), layout.toggleTargetPx());
+                double w = TextWidth.blocks(TextWidth.width(toggle, PanelLayout.SINGLE_LINE_WIDTH), bulkScale);
+                assertSameColumn("toggle " + mode + " " + PLAIN.serialize(line), -w / 2, w / 2, colLeft, colRight,
+                        bulkScale);
+                // padded in whole spaces to the column's pixel width: at most half a space wider than the target, in px
+                int px = TextWidth.width(toggle, PanelLayout.SINGLE_LINE_WIDTH);
+                assertTrue(px <= layout.toggleTargetPx() + TextWidth.SPACE_PX / 2,
+                        "toggle " + PLAIN.serialize(line) + " is " + px + " px, the column " + layout.toggleTargetPx());
+            }
+        }
+        // building rows: left edge at the column, and the background as wide as the column (half a space each way)
+        int lineWidth = p.lineWidth();
+        for (String id : shippedBuildingIds()) {
+            for (String path : List.of("panel.row.affordable", "panel.row.unaffordable")) {
+                for (Component row : List.of(
+                        PanelUpdater.buildingRow(shipped, path, p.textPadding(), id, 1, shipped.number(15),
+                                shipped.number(0.1), 0, Component.empty()),
+                        PanelUpdater.buildingRow(shipped, path, p.textPadding(), id, 9999, shipped.number(1.234e15),
+                                shipped.number(9.99e9), 1e15, PanelUpdater.amount(shipped, BulkMode.MAX, 10000)))) {
+                    Component padded = TextPadding.right(row, p.textPadding(), layout.rowWidthPx(), lineWidth);
+                    double w = TextWidth.blocks(TextWidth.width(padded, lineWidth), p.textScale());
+                    assertSameColumn(id + " " + path, colLeft, colLeft + w, colLeft, colRight, p.textScale());
+                }
+            }
         }
     }
 
