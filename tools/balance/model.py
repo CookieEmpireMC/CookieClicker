@@ -60,6 +60,8 @@ class Economy:
     upgrades: dict[str, Upgrade]
     crit_chance: float = 0.0        # probability a click is a crit, 0..1
     crit_multiplier: float = 1.0    # a crit multiplies the whole click value by this (>= 1)
+    milestones: tuple[int, ...] = ()        # owned counts; each one reached multiplies that building's CPS
+    milestone_multiplier: float = 2.0       # the factor per milestone reached (>= 1)
 
 
 @dataclass
@@ -149,7 +151,17 @@ def load(config_dir: Path) -> Economy | None:
     crit_multiplier = _number(click.get("crit-multiplier", 1), "upgrades.yml: click.crit-multiplier")
     if crit_multiplier < 1:
         raise ConfigError("upgrades.yml: click.crit-multiplier must be >= 1")
-    return Economy(growth, base_click, buildings, upgrades, crit_chance, crit_multiplier)
+    milestones = b_raw.get("milestones") or []
+    if not isinstance(milestones, list) or any(not isinstance(c, int) or isinstance(c, bool) or c < 1
+                                               for c in milestones):
+        raise ConfigError(f"buildings.yml: milestones must be a list of integers >= 1, got {milestones!r}")
+    if any(b <= a for a, b in zip(milestones, milestones[1:])):
+        raise ConfigError("buildings.yml: milestones must be strictly increasing")
+    milestone_multiplier = _number(b_raw.get("milestone-multiplier", 2), "buildings.yml: milestone-multiplier")
+    if milestone_multiplier < 1:
+        raise ConfigError("buildings.yml: milestone-multiplier must be >= 1")
+    return Economy(growth, base_click, buildings, upgrades, crit_chance, crit_multiplier,
+                   tuple(milestones), milestone_multiplier)
 
 
 def series_cost(base: float, growth: float, owned: int, count: int) -> float:
@@ -213,11 +225,28 @@ def upgrade_max(eco: Economy, uid: str, level: int, pouch: float) -> int:
     return series_max(u.cost, u.cost_growth, level, u.level_cap - level, pouch)
 
 
+def milestones_reached(eco: Economy, owned: int) -> int:
+    """How many milestone counts are <= owned."""
+    return sum(1 for c in eco.milestones if owned >= c)
+
+
+def milestone_factor(eco: Economy, owned: int) -> float:
+    """milestone_multiplier ^ milestones_reached (model.md "Milestones")."""
+    return eco.milestone_multiplier ** milestones_reached(eco, owned)
+
+
+def building_cps(eco: Economy, state: State, bid: str) -> float:
+    """owned × base_cps × milestone factor × Π building-multiplier effects, in that order."""
+    n = state.owned.get(bid, 0)
+    mult = math.prod(_effect(u, lv) for u, lv in _bought(eco, state, "building-multiplier") if u.building == bid)
+    return n * eco.buildings[bid].base_cps * milestone_factor(eco, n) * mult
+
+
 def total_cps(eco: Economy, state: State) -> float:
     total = 0.0
-    for bid, n in state.owned.items():
-        mult = math.prod(_effect(u, lv) for u, lv in _bought(eco, state, "building-multiplier") if u.building == bid)
-        total += n * eco.buildings[bid].base_cps * mult
+    for bid in eco.buildings:              # buildings.yml order (model.md), so sums match the Java economy bit for bit
+        if state.owned.get(bid, 0):
+            total += building_cps(eco, state, bid)
     return total * math.prod(_effect(u, lv) for u, lv in _bought(eco, state, "global-multiplier"))
 
 
