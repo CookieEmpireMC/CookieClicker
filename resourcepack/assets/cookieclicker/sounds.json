@@ -87,5 +87,19 @@
     "sounds": [
       "cookieclicker:ui/basket_tier_up"
     ]
+  },
+  "building.appear": {
+    "subtitle": "subtitles.cookieclicker.building_appear",
+    "sounds": [
+      "cookieclicker:building/appear_1",
+      "cookieclicker:building/appear_2",
+      "cookieclicker:building/appear_3"
+    ]
+  },
+  "building.milestone": {
+    "subtitle": "subtitles.cookieclicker.building_milestone",
+    "sounds": [
+      "cookieclicker:building/milestone"
+    ]
   }
 }

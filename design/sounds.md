@@ -112,3 +112,12 @@ What to listen for:
 | `basket_tier_up` | `cookieclicker:ui.basket_tier_up` | `sounds/ui/basket_tier_up.ogg` | Cookie basket reaches a higher tier (wicker, bushel, golden): soft rising whoosh, quick bell arpeggio C5-E5-G5-C6 landing on a ringing C6/E6/G6/C7 sparkle chord with coin-shimmer grains. Bigger and longer than `upgrade_shelved`, same bell family. Script `design/sound-scripts/basket_tier_up.py`. | 1200 ms, peak -4.9 dBFS, -16.0 LUFS (sound-check warns: UI sound > 400 ms, intended) | `minecraft:entity.player.levelup` | vol 0.8, pitch 1.0 (fixed, tuned chord), `ui` | placeholder (needs audition) |
 
 Review: does the chime read as a clear "level up" without being shrill, and sit above `upgrade_shelved` in size without being louder than `house_fanfare`?
+
+## building-roster
+
+| Event (sounds.yml) | Pack key | Files | Feel | Measured | Fallback | Config | Status |
+|---|---|---|---|---|---|---|---|
+| `building_appear` | `cookieclicker:building.appear` | `sounds/building/appear_{1,2,3}.ogg` | A new building pops up on the plot: soft wooden plop with a pinch of crumb, then one small warm bell ding (A5 / B5 / D6 per variant). Pleasant on repeat. Script `design/sound-scripts/building_appear.py`. Original synthesis. | 390 ms, about -18 dBFS RMS | `minecraft:block.wood.place` | vol 0.6, pitch 0.95-1.08, `block` | placeholder (needs audition) |
+| `building_milestone` | `cookieclicker:building.milestone` | `sounds/building/milestone.ogg` | A building type upgrades its look (25/100 owned): wooden thud, quick G-major bell arpeggio G5-B5-D6 landing on a G5/D6/G6/B6 chord with a soft pad and coin shimmer. Between `upgrade_shelved` and `basket_tier_up` in size, no whoosh. Script `design/sound-scripts/building_milestone.py`. Original synthesis. | 950 ms, -16 LUFS (sound-check warns: UI sound > 400 ms, intended) | `minecraft:ui.toast.challenge_complete` | vol 0.8, pitch 1.0 (fixed, tuned chord), `block` | placeholder (needs audition) |
+
+Review: does appear stay pleasant when 3-4 buildings pop in quickly (bulk buy x10)? Does the milestone read as clearly bigger than appear but smaller than the basket tier-up? Both use `source: block` (positional, play at the building). The `challenge_complete` fallback is long for a milestone stand-in.
