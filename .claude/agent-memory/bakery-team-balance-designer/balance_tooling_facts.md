@@ -12,5 +12,8 @@ metadata:
 - As of 2026-10-18, `longest-dead-zone` accepts `window-minutes`, and the report has an early (first 15 min) gaps plot.
 - (2026-10-21) The guard also refuses `for` loops over a script and heredocs written into `.claude/` paths; run each sweep as its own plain command and write memory with the Write/Edit tools.
 - (2026-10-21) `test_balance.py::test_empty_upgrades_map_is_valid` asserts the shipped upgrades.yml is empty; it breaks once real upgrades ship (ask the tester to update it).
+- (2026-10-22) Bash commands containing the worktree path (it has "GitHub" in it) together with `cd`, `$(…)` or `>>` appends are refused as "names git"; use relative paths from the worktree cwd, write scratch scripts with Write, and pass options as argv (scratchpad explore.py took `b:buildings.x.base-cost=N` overrides + `dump:a,b,profile`).
+- (2026-10-22) Tool tests run with `python -m unittest discover -s tools -p 'test_*.py'` (no pytest in the venv; `-s tools/balance` fails on the `balance` package import).
+- (2026-10-22) Since building-roster: `baked` metric, `min-seconds` on targets, milestone-lookahead buyer (MILESTONE_LOOKAHEAD = 5, copies bought one by one), golden `building-cps`.
 
 Related: [[bakery-core-balance]]
