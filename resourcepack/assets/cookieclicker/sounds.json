@@ -81,5 +81,11 @@
     "sounds": [
       "cookieclicker:factory/belt_loop"
     ]
+  },
+  "ui.basket_tier_up": {
+    "subtitle": "subtitles.cookieclicker.basket_tier_up",
+    "sounds": [
+      "cookieclicker:ui/basket_tier_up"
+    ]
   }
 }

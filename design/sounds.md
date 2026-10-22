@@ -103,3 +103,12 @@ What to listen for:
 - **Fallbacks:** `block.anvil.place` at volume 0.4 / pitch 1.15-1.35 may still be clangy; if so, `block.wood.hit` is the softer stand-in. `ui.toast.challenge_complete` is long and grand for a fanfare stand-in.
 - **factory_ambient:** a cosy oven/machine hum, not a fridge, transformer buzz or engine drone. Loop it for two minutes together with the chimney crackle: does the 1 Hz breath/chuff become a metronome, is the 4 s seam audible, and does it sit clearly under the crackle at 0.3 vs 0.5? On laptop speakers the hum should still be faintly there (its 200-800 Hz harmonics). The fallback `block.furnace.fire_crackle` at 0.3 is crackly rather than hummy; acceptable as a stand-in?
 - **belt_loop:** a soft, cosy belt (gentle hum + light slat rattle), not a drill, sewing machine or helicopter. Loop it at pitch 0.8 every 100 ticks together with `factory_ambient` (0.3): does it sit clearly under the oven hum at 0.2, is the 5 s seam or the stronger every-4th slat audible as a repeat, and does the 5-per-second rattle get tiring? Fallback `block.beehive.work` at pitch 0.8 / volume 0.2: belt-like enough, or too buzzy/beelike?
+
+
+## plot-polish (basket)
+
+| Event (sounds.yml) | Pack key | Files | Feel | Measured | Fallback | Status |
+|---|---|---|---|---|---|---|---|
+| `basket_tier_up` | `cookieclicker:ui.basket_tier_up` | `sounds/ui/basket_tier_up.ogg` | Cookie basket reaches a higher tier (wicker, bushel, golden): soft rising whoosh, quick bell arpeggio C5-E5-G5-C6 landing on a ringing C6/E6/G6/C7 sparkle chord with coin-shimmer grains. Bigger and longer than `upgrade_shelved`, same bell family. Script `design/sound-scripts/basket_tier_up.py`. | 1200 ms, peak -4.9 dBFS, -16.0 LUFS (sound-check warns: UI sound > 400 ms, intended) | `minecraft:entity.player.levelup` | vol 0.8, pitch 1.0 (fixed, tuned chord), `ui` | placeholder (needs audition) |
+
+Review: does the chime read as a clear "level up" without being shrill, and sit above `upgrade_shelved` in size without being louder than `house_fanfare`?
