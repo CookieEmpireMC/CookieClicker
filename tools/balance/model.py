@@ -25,6 +25,7 @@ class Building:
     base_cost: float
     base_cps: float
     unlock_baked: float
+    milestones: tuple[int, ...] | None = None   # per-building override of the top-level list; None = use it
 
 
 @dataclass(frozen=True)
@@ -60,6 +61,7 @@ class Economy:
     upgrades: dict[str, Upgrade]
     crit_chance: float = 0.0        # probability a click is a crit, 0..1
     crit_multiplier: float = 1.0    # a crit multiplies the whole click value by this (>= 1)
+    milestones: tuple[int, ...] = ()        # owned counts; each one reached doubles that building's CPS
 
 
 @dataclass
@@ -104,7 +106,9 @@ def load(config_dir: Path) -> Economy | None:
             raise ConfigError(f"{where}.base-cost must be > 0")
         buildings[bid] = Building(bid, _number(spec.get("base-cost"), f"{where}.base-cost"),
                                   _number(spec.get("base-cps"), f"{where}.base-cps"),
-                                  _number(unlock.get("baked", 0), f"{where}.unlock.baked"))
+                                  _number(unlock.get("baked", 0), f"{where}.unlock.baked"),
+                                  _milestones(spec["milestones"], f"{where}.milestones")
+                                  if "milestones" in spec else None)
     if not buildings:
         raise ConfigError("buildings.yml has no buildings")
 
@@ -149,7 +153,18 @@ def load(config_dir: Path) -> Economy | None:
     crit_multiplier = _number(click.get("crit-multiplier", 1), "upgrades.yml: click.crit-multiplier")
     if crit_multiplier < 1:
         raise ConfigError("upgrades.yml: click.crit-multiplier must be >= 1")
-    return Economy(growth, base_click, buildings, upgrades, crit_chance, crit_multiplier)
+    milestones = _milestones(b_raw.get("milestones"), "buildings.yml: milestones")
+    return Economy(growth, base_click, buildings, upgrades, crit_chance, crit_multiplier, milestones)
+
+
+def _milestones(raw, where: str) -> tuple[int, ...]:
+    """A milestones list: strictly increasing integers >= 1; missing/null/empty = none."""
+    raw = [] if raw is None else raw
+    if not isinstance(raw, list) or any(not isinstance(c, int) or isinstance(c, bool) or c < 1 for c in raw):
+        raise ConfigError(f"{where} must be a list of integers >= 1, got {raw!r}")
+    if any(b <= a for a, b in zip(raw, raw[1:])):
+        raise ConfigError(f"{where} must be strictly increasing")
+    return tuple(raw)
 
 
 def series_cost(base: float, growth: float, owned: int, count: int) -> float:
@@ -213,11 +228,37 @@ def upgrade_max(eco: Economy, uid: str, level: int, pouch: float) -> int:
     return series_max(u.cost, u.cost_growth, level, u.level_cap - level, pouch)
 
 
+MILESTONE_FACTOR = 2.0      # each milestone reached doubles the building's production (model.md, GDD §4.3)
+
+
+def milestones_of(eco: Economy, bid: str) -> tuple[int, ...]:
+    """The building's own `milestones:` if set, else the top-level list."""
+    own = eco.buildings[bid].milestones
+    return eco.milestones if own is None else own
+
+
+def milestones_reached(eco: Economy, bid: str, owned: int) -> int:
+    """How many of the building's milestone counts are <= owned."""
+    return sum(1 for c in milestones_of(eco, bid) if owned >= c)
+
+
+def milestone_factor(eco: Economy, bid: str, owned: int) -> float:
+    """2 ^ milestones_reached (model.md "Milestones")."""
+    return MILESTONE_FACTOR ** milestones_reached(eco, bid, owned)
+
+
+def building_cps(eco: Economy, state: State, bid: str) -> float:
+    """owned × base_cps × milestone factor × Π building-multiplier effects, in that order."""
+    n = state.owned.get(bid, 0)
+    mult = math.prod(_effect(u, lv) for u, lv in _bought(eco, state, "building-multiplier") if u.building == bid)
+    return n * eco.buildings[bid].base_cps * milestone_factor(eco, bid, n) * mult
+
+
 def total_cps(eco: Economy, state: State) -> float:
     total = 0.0
-    for bid, n in state.owned.items():
-        mult = math.prod(_effect(u, lv) for u, lv in _bought(eco, state, "building-multiplier") if u.building == bid)
-        total += n * eco.buildings[bid].base_cps * mult
+    for bid in eco.buildings:              # buildings.yml order (model.md), so sums match the Java economy bit for bit
+        if state.owned.get(bid, 0):
+            total += building_cps(eco, state, bid)
     return total * math.prod(_effect(u, lv) for u, lv in _bought(eco, state, "global-multiplier"))
 
 

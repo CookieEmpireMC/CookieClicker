@@ -22,3 +22,12 @@ Dated notes from each balance job: which lever moved which metric and by how muc
 - Gaps plot: the big single spikes (casual ~1h35m around 2h55m, active ~40 min) are the buyer *saving* for Diamond Fingers / Netherite Hands while cheaper items are affordable; not dead zones (longest dead zone over 4 h is 86 s casual, 116 s active). With only 2 buildings the GDD's ×10 price steps between tools feel steep late; more building tiers will fill this.
 - Handy Fingers are never bought in 4 h: 1 % of ~250 CPS is ~2.5 per click. They're for the later building roster, as the GDD intends.
 - Bulk cost now rounds once; the Max closed form matched brute force on 200,000 random cases with at most a ±1 correction step.
+
+## 2026-10-22: building-roster (11 buildings, milestones ×2 at 10/25/50/100/150/200)
+- GDD §4.2 numbers as-is reach 1B baked at 3h09m casual / 2h49m active with no golden cookies, recipes or stars yet; milestones make the low tiers keep pace, so the whole run is faster than the GDD §6.1 guideline (Rebirth at 6–10 h *with* buffs).
+- First Apprentice: base cost is the lever (100 → 23 s, 75 → 18 s casual). Making it cheaper delays the first Wheat Field (2m49s → 3m06s) unless the Wheat Field's payback matches it (CPS 0.1 → 0.15: 2m14s).
+- 1B baked is robust: late-tier prices ×1.5–1.8 pushed it past 4 h but Cocoa was never bought; the final mix (Oven 160K/240, Belt 2M/1300, Beehive 30M/6000, Cocoa 400M/40000) moved it 3h09m → 3h49m. Late-tier CPS cuts moved it ~7 min per step; the mid tiers (Oven/Belt) move it more than the top ones.
+- Tier first-buy times follow their **unlock** threshold, not their price, as long as the unlocked building's payback is competitive (Oven: 500K → 750K unlock = 19m41s → 21m15s).
+- Simulator: a one-step greedy buyer undervalues the copies before a milestone. The milestone lookahead (score the push to the next milestone as one choice, ≤ 5 copies) fixed that, but buying the push as one lump made the buyer save 52 min for 5 Beehives. Buying a push copy by copy (re-scoring after each) brought the longest casual gap to ~12 min.
+- Handy Fingers I: 50M → 25M moved it from 3h42m to 2h18m casual (1h33m active); it's +4.35 % CPS per click-second for casual (3 × 1.45 × 1 %), so it needs a CPS ~1e5 to pay back.
+- Didn't work: the Rebirth floor of 4 h for both profiles; active players are always ~25 min faster, so the active floor is 3 h.

@@ -2,7 +2,7 @@
 
 My notes on how incremental games are balanced, in my own words, and how they apply to Cookie Empire. Sources are at the bottom. I took the techniques from them, not their tables, names or numbers.
 
-Last updated: 2026-10-21 (upgrade-holograms)
+Last updated: 2026-10-22 (building-roster)
 
 ---
 
@@ -38,6 +38,18 @@ An idle economy is a race between **production**, which grows roughly linearly w
 - Flat `+CPC` tools are worth `clicks/s × crit factor` cookies/s per +1, so for an active player (8/s × 1.45 = 11.6/s per +1) a +1 click upgrade is worth ~23 Villager Bakers. In a building-light slice, an optimal active player therefore spends most early money on clicks. That is the genre norm (clicking is the engine before buildings take over); the buildings still win for idle players, who never buy click upgrades.
 - A **repeatable** +1 CPC with growth per level is a steady "always something to buy" sink: it fills the gaps between big one-time tools. Its payback grows by the growth factor each level while its gain stays flat, so it fades by itself as the run goes on. A `max-level` keeps its list row from becoming a wall of absurd prices.
 - Unlocking each one-time tool at about half its price makes the next row visible before it's affordable (§7).
+
+### Count milestones (2026-10-22)
+- A ×2 at fixed owned counts turns cost growth from a pure wall into a staircase: the copies just before a
+  milestone are bad buys alone but great as a group. That gives the player a short goal ("3 more to 25") and a
+  reason to keep buying an old tier, which is how lower tiers stay relevant without changing their base numbers
+  (Pecorella Part I/II on multipliers at count thresholds).
+- Milestones compound with growth: at 1.15, the 50th copy costs ~33× the 25th (the 25 copies together ~210×) for one
+  more ×2, so later milestones arrive further apart and late tiers take over. Spacing them closer late (100, 150,
+  200) keeps something to aim for.
+- Measured: with milestones, the old tiers keep pace so well that the run is faster overall. Late tier prices
+  (or the later buffs) have to absorb that. A buyer model has to look ahead to the next milestone, or the
+  simulation undervalues it.
 
 ## 6. Dead zones and walls
 - **Dead zone** (our metric): stretches where *nothing* is affordable. These are what feel like "stuck". A long wait for the *best* item while a cheaper one is affordable is a choice, not a dead zone.
