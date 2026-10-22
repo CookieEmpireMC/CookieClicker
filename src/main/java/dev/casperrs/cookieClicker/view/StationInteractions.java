@@ -131,13 +131,20 @@ public final class StationInteractions {
         views.refreshPanels(player, pouch, true);
     }
 
-    /** The ×1/×5/×10/Max toggle of a panel was clicked: next mode, a tick sound, and the prices roll. */
-    void clickToggle(Player player, StationView view, PanelKind kind) {
+    /**
+     * The ×1/×5/×10/Max toggle of a panel was clicked: on a label that mode, elsewhere on the toggle the next mode;
+     * a tick sound, and the prices roll.
+     */
+    void clickToggle(Player player, StationView view, PanelKind kind, @Nullable BulkMode label) {
         CookiePouch pouch = sessions.get(player.getUniqueId()).orElse(null);
         if (pouch == null) {
             return;
         }
-        views.cycleMode(player, kind);
+        if (label == null) {
+            views.cycleMode(player, kind);
+        } else {
+            views.setMode(player, kind, label);
+        }
         StationView.Panel panel = view.panel(kind);
         sounds.play(player, BULK_TOGGLE, panel.toggle.getLocation());
         views.refreshPanels(player, pouch, true);

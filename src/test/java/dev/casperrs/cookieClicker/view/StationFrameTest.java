@@ -87,4 +87,18 @@ class StationFrameTest {
     void noShopSpotMeansNoMirroredClicksSpot() {
         assertNull(StationViews.mirroredClicks(new Station("s", "minecraft:overworld", 10, 64, 20, 0f)));
     }
+
+    @Test
+    void localIsTheInverseOfPointAtAnyYaw() {
+        Offset base = new Offset(0.5, -1.25, 2.0);
+        Offset rel = new Offset(-0.75, 0.3, -3.1);
+        for (float yaw : new float[] {0, 30, 90, -135, 200}) {
+            StationFrame f = at(yaw);
+            double[] p = f.point(base, rel);
+            Offset back = f.local(p[0], p[1], p[2], base);
+            assertEquals(rel.right(), back.right(), EPS, "right at yaw " + yaw);
+            assertEquals(rel.up(), back.up(), EPS, "up at yaw " + yaw);
+            assertEquals(rel.forward(), back.forward(), EPS, "forward at yaw " + yaw);
+        }
+    }
 }

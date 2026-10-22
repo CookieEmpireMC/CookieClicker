@@ -3,6 +3,7 @@ package dev.casperrs.cookieClicker.view;
 import dev.casperrs.cookieClicker.config.StationVisualSettings;
 import io.papermc.paper.event.player.PrePlayerAttackEntityEvent;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;
@@ -27,7 +28,8 @@ import java.util.stream.Collectors;
  * The one place clicks on our hitboxes come in. Right click: {@link PlayerInteractAtEntityEvent} (main hand).
  * Left click: {@link EntityDamageByEntityEvent} and {@link PrePlayerAttackEntityEvent} (whichever fires on 26.3 for
  * an Interaction; both are handled and deduped). One click per player per tick, owner and distance checked
- * server-side, the event is cancelled. With {@code debug.log-click-events} every event on one of our hitboxes is
+ * server-side, the event is cancelled. A click on the cookie's or a panel's box is resolved from the player's eye ray
+ * ({@link StationViews#aim}): the panel row or toggle label under the crosshair, else the cookie, else nothing. With {@code debug.log-click-events} every event on one of our hitboxes is
  * logged, so the in-game test can see which events fire. Main thread only.
  */
 public final class ClickRouter implements Listener {
@@ -99,31 +101,36 @@ public final class ClickRouter implements Listener {
             return; // the same click reported by a second event
         }
         double max = settings.get().clickDistance();
-        if (!player.getWorld().equals(hitbox.getWorld())
-                || player.getEyeLocation().distanceSquared(hitbox.getLocation()) > max * max) {
+        if (!player.getWorld().equals(hitbox.getWorld())) {
             return;
         }
+        boolean inReach = player.getEyeLocation().distanceSquared(hitbox.getLocation()) <= max * max;
         StationView view = views.view(target.owner(), target.stationId());
         if (view == null) {
             return;
         }
-        switch (target.kind()) {
-            case COOKIE -> interactions.clickCookie(player, view, hit);
-            case ROW -> {
-                if (target.panel() != null) {
-                    interactions.clickRow(player, view, target.panel(), target.row());
-                }
+        if (target.kind() == ClickTarget.Kind.SHELF) {
+            if (inReach && target.upgradeId() != null) {
+                interactions.clickShelf(player, target.upgradeId());
             }
-            case TOGGLE -> {
-                if (target.panel() != null) {
-                    interactions.clickToggle(player, view, target.panel());
-                }
+            return;
+        }
+        // cookie and panels: the eye ray decides (left clicks carry no hit position, and the boxes are only triggers)
+        Location eye = player.getEyeLocation();
+        StationViews.Aim aim = views.aim(view, eye.toVector(), eye.getDirection(), max);
+        if (aim == null) {
+            if (target.kind() == ClickTarget.Kind.COOKIE && inReach) {
+                interactions.clickCookie(player, view, hit); // the ray grazed past the box edge: still the cookie
             }
-            case SHELF -> {
-                if (target.upgradeId() != null) {
-                    interactions.clickShelf(player, target.upgradeId());
-                }
-            }
+            return; // between panel lines or off the text
+        }
+        PanelLayout.Hit line = aim.hit();
+        if (aim.panel() == null || line == null) {
+            interactions.clickCookie(player, view, aim.cookieAt());
+        } else if (line.kind() == PanelLayout.Hit.Kind.ROW) {
+            interactions.clickRow(player, view, aim.panel(), line.row());
+        } else {
+            interactions.clickToggle(player, view, aim.panel(), line.mode());
         }
     }
 

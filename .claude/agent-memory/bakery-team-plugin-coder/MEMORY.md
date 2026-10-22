@@ -4,5 +4,6 @@
 - [Repo tooling facts](repo-tooling-facts.md) — ownership matcher copy in tools/ownership, repo CookieEmpireMC/CookieClicker, worktree Bash guard quirks
 - [conveyor-belt facts](conveyor-belt-facts.md) — spectator camera + display interpolation APIs, Pat's belt.yml/camera format, no src/test for coder
 - [Economy levels facts](economy-levels-facts.md) — BulkMath/BulkPurchase API, schema v3 SQL + MySQL-safe addColumn, short suffixes, golden smoke recipe, guard quirks
-- [upgrade-panels facts](upgrade-panels-facts.md) — panels/shelf/spin-fix structure, PopJob sync first step, pinned tests, shelf teleport rule
+- [upgrade-panels facts](upgrade-panels-facts.md) — panels/shelf/spin-fix structure, PopJob sync first step, pinned tests, shelf teleport rule (row hitboxes replaced, see next)
+- [plot-polish panels facts](plot-polish-panels-facts.md) — ray-picked clicks via PanelLayout, padded column, pinned legacy fields, smoke-run classpath recipe
 - [plot-polish facts](plot-polish-facts.md) — item display 180 flip, flat cookie maths, LoopPacer loops, decor keep-out, crackleEvery test pin
