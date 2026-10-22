@@ -8,3 +8,4 @@
 - [Ledger: conveyor-belt coder](ledger-conveyor-belt-coder.md) — review at 8da4215 READY; open LOWs, integration to-dos, cross-branch asset test recipe
 - [Ledger: plot-polish coder](ledger-plot-polish-coder.md) — decor parser/keep-out, LoopPacer, belt cookie pose at f57fe49; shipped-file recipe; open LOWs
 - [Ledger: plot-polish panels](ledger-plot-polish-panels.md) — ray pick (PanelLayout/aim) at d2e33dd; text vertical anchor unverified (in-game); no server jar offline
+- [Ledger: plot-polish basket](ledger-plot-polish-basket.md) — BasketLook/tier-up/respawn at 9cea984 READY; tests b3f1b56; open LOWs (click-time look change, hitbox jump during glide)
