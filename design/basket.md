@@ -12,7 +12,7 @@ Plain resource pack, namespace `cookieclicker`, Paper 26.3 (pack format 97.1, un
 ## IDs for the code
 - `item_model` = `cookieclicker:cookie_basket` (base material anything, e.g. `Material.COOKIE`).
 - Custom model data **string** at index 0 = `<tier>_<fill>`: tiers `wicker`, `bushel`, `golden`; fill `0`..`4` (`0` empty, `4` heaped). Example `golden_4`. Unknown strings show `wicker_0`.
-- ItemDisplay, transform NONE, scale 1. Origin = **bottom centre** of the model (display position = floor point, x/z centre of the cell). All four sides are identical, so the 180 degree Y turn of item displays does not matter (no front).
+- ItemDisplay, transform NONE, scale 1. The basket's **bottom is at model y 8** (an ItemDisplay with transform NONE draws the model centre (8,8,8) at its position), so the display position = floor point, x/z centre of the cell; every element is shifted +8 on y and the generator asserts the lowest element y == 8. Models reach y 16.0 (wicker) to 27 (golden heap), within the -16..32 limit. Widths and top heights below are unchanged, in blocks above the display position. All four sides are identical, so the 180 degree Y turn of item displays does not matter (no front).
 
 ## Sizes (1 block = 16 model units at scale 1)
 Width is the full footprint (square, centred). **Top height** = height of the pile (or the rim when empty) at the basket centre, in blocks: float the cookie above this (+ gap).
