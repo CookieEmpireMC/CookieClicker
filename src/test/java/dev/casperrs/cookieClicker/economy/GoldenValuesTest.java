@@ -196,4 +196,33 @@ class GoldenValuesTest {
                     "expected-click " + label);
         }
     }
+
+    @Test
+    void milestoneListsAndPerBuildingCpsMatch() throws Exception {
+        JsonObject g = golden();
+        Assumptions.assumeTrue(g.has("building-cps"), "golden values without milestones");
+        EconomyConfig config = EconomyConfigParser.parse(resourceYaml("buildings.yml"), resourceYaml("upgrades.yml")).config();
+        Economy e = new Economy(config, new java.util.Random(1));
+        assertEquals(config.buildings().keySet(), g.getAsJsonObject("building-cps").keySet(),
+                "every shipped building has recorded building-cps");
+        for (var en : g.getAsJsonObject("building-milestones").entrySet()) {
+            java.util.List<Integer> expected = new java.util.ArrayList<>();
+            en.getValue().getAsJsonArray().forEach(x -> expected.add(x.getAsInt()));
+            assertEquals(expected, config.buildings().get(en.getKey()).milestones(), "milestones of " + en.getKey());
+        }
+        for (var en : g.getAsJsonObject("building-cps").entrySet()) {
+            String id = en.getKey();
+            for (JsonElement el : en.getValue().getAsJsonArray()) {
+                JsonObject row = el.getAsJsonObject();
+                int owned = row.get("owned").getAsInt();
+                String label = id + " x" + owned;
+                CookiePouch p = CookiePouch.fromSnapshot(new PouchSnapshot(0, 0, Map.of(id, owned), Map.of()));
+                BuildingDef def = config.buildings().get(id);
+                assertEquals(row.get("milestones-reached").getAsInt(), def.milestonesReached(owned), "reached " + label);
+                assertClose(row.get("factor").getAsDouble(), def.milestoneMultiplier(owned), "factor " + label);
+                assertClose(row.get("cps").getAsDouble(), e.buildingCps(p, id), "cps " + label);
+                assertClose(row.get("cps").getAsDouble(), e.totalCps(p), "total cps " + label);
+            }
+        }
+    }
 }

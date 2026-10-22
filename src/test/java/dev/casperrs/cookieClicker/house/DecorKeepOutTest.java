@@ -81,4 +81,68 @@ class DecorKeepOutTest {
         assertNull(k.reason(3, 2));
         assertNull(DecorKeepOut.of(factory()).reason(2, 2), "the layout alone leaves that cell open");
     }
+
+    @Test
+    void aFootprintKeepsOutEveryCellItsSquareCoversAndNoMore() throws Exception {
+        BuildingSlots slots = new BuildingSlots(java.util.Map.of(
+                "industrial_oven", List.of(new BuildingSlots.Slot(4, 0, 4, 90f)),
+                "villager_baker", List.of(new BuildingSlots.Slot(4, 0, 7, 0f))));
+        DecorKeepOut k = DecorKeepOut.of(factory(), slots,
+                java.util.Map.of("industrial_oven", 1.55, "villager_baker", 0.82));
+        assertNotNull(k);
+        // 1.55 around the middle of cell 4 (4.5 +- 0.775) reaches cells 3..5 on both axes
+        assertEquals("a building slot", k.reason(3, 3));
+        assertEquals("a building slot", k.reason(5, 5));
+        assertNull(k.reason(6, 4));
+        assertNull(k.reason(2, 4));
+        // 0.82 stays inside its own cell; a building without a footprint entry also keeps just the cell
+        assertEquals("a building slot", k.reason(4, 7));
+        assertNull(k.reason(3, 7));
+        assertNull(k.reason(5, 7));
+    }
+
+    @Test
+    void shippedSlotsWithTheirFootprintsAreClearOfEveryLayoutZoneAndTheShippedDecor() throws Exception {
+        Path slotsFile = Path.of("src/main/resources/houses/building-slots.yml");
+        Path decorFile = Path.of("src/main/resources/houses/decor.yml");
+        Path configFile = Path.of("src/main/resources/config.yml");
+        assumeTrue(Files.isRegularFile(slotsFile) && Files.isRegularFile(decorFile), "roster files not present");
+        YamlConfiguration y = new YamlConfiguration();
+        y.loadFromString(Files.readString(slotsFile));
+        BuildingSlots slots = BuildingSlots.parse(YamlFiles.toMap(y)).slots();
+        YamlConfiguration cfg = YamlConfiguration.loadConfiguration(configFile.toFile());
+        java.util.Map<String, Double> footprints = new java.util.HashMap<>();
+        var section = cfg.getConfigurationSection("plot.buildings.footprints");
+        assertNotNull(section);
+        section.getKeys(false).forEach(id -> footprints.put(id, section.getDouble(id)));
+
+        DecorKeepOut layoutOnly = DecorKeepOut.of(factory());
+        DecorKeepOut withSlots = DecorKeepOut.of(factory(), slots, footprints);
+        assertNotNull(layoutOnly);
+        assertNotNull(withSlots);
+        // every cell any footprint covers: inside the plot, off the fence, factory, walk, panels, basket and belt
+        List<String> bad = new ArrayList<>();
+        slots.slots().forEach((id, list) -> list.forEach(sl -> {
+            double h = footprints.getOrDefault(id, 0.0) / 2;
+            int x0 = (int) Math.floor(sl.x() + 0.5 - h);
+            int x1 = (int) Math.ceil(sl.x() + 0.5 + h) - 1;
+            int z0 = (int) Math.floor(sl.z() + 0.5 - h);
+            int z1 = (int) Math.ceil(sl.z() + 0.5 + h) - 1;
+            for (int x = x0; x <= x1; x++) {
+                for (int z = z0; z <= z1; z++) {
+                    String why = layoutOnly.reason(x, z);
+                    if (why != null) {
+                        bad.add(id + " slot " + sl.x() + "," + sl.z() + " covers " + x + "," + z + " (" + why + ")");
+                    }
+                }
+            }
+        }));
+        assertTrue(bad.isEmpty(), bad.toString());
+
+        y = new YamlConfiguration();
+        y.loadFromString(Files.readString(decorFile));
+        Decor decor = Decor.parse(YamlFiles.toMap(y)).decor();
+        List<String> problems = new ArrayList<>();
+        assertEquals(decor.blocks().size(), withSlots.allowed(decor, problems).size(), problems.toString());
+    }
 }

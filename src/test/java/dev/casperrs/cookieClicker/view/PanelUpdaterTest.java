@@ -113,12 +113,22 @@ class PanelUpdaterTest {
         }
     }
 
+    /** Every building id in the shipped buildings.yml (all 11 names must fit, not just the longest-looking ones). */
+    private static java.util.Set<String> shippedBuildingIds() {
+        try (InputStream in = PanelUpdaterTest.class.getClassLoader().getResourceAsStream("buildings.yml");
+             Reader r = new InputStreamReader(in, StandardCharsets.UTF_8)) {
+            return YamlConfiguration.loadConfiguration(r).getConfigurationSection("buildings").getKeys(false);
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
     @Test
     void theLongestBuildingRowsStayTwoLinesWithinTheShippedLineWidth() {
         Messages shipped = shippedMessages();
         int lineWidth = shippedLineWidth();
         // longest shipped names with a ×10000 amount and a huge cost, in both affordability styles
-        for (String id : List.of("extra_belt", "villager_baker", "cocoa_plantation")) {
+        for (String id : shippedBuildingIds()) {
             for (String path : List.of("panel.row.affordable", "panel.row.unaffordable")) {
                 for (double cost : new double[] {1.234e15, 9.99e33}) {
                     Component row = PanelUpdater.buildingRow(shipped, path, 1, id, 9999,

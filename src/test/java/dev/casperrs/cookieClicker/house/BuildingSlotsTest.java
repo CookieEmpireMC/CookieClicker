@@ -71,6 +71,20 @@ class BuildingSlotsTest {
     }
 
     @Test
+    void anOverCapCellIsNotReservedSoAnotherTypeCanUseIt() throws Exception {
+        StringBuilder text = new StringBuilder("slots:\n  villager_baker:\n");
+        for (int i = 0; i < 11; i++) {
+            text.append("    - {at: [").append(i).append(", 0, 0], yaw: 0}\n");
+        }
+        // the 11th baker cell (10,0,0) was dropped by the cap; the oven may take it
+        text.append("  industrial_oven:\n    - {at: [10, 0, 0], yaw: 0}\n");
+        BuildingSlots.Result r = parse(text.toString());
+        assertEquals(1, r.problems().size(), r.problems().toString());
+        assertTrue(r.problems().get(0).contains("more than"), r.problems().toString());
+        assertEquals(1, r.slots().of("industrial_oven").size());
+    }
+
+    @Test
     void shippedSlotsFileLoadsWithoutProblems() throws Exception {
         Path file = Path.of("src/main/resources/houses/building-slots.yml");
         assumeTrue(Files.isRegularFile(file), "houses/building-slots.yml is not on this branch yet");
