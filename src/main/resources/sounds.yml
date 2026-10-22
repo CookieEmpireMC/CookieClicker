@@ -89,17 +89,18 @@ house_fanfare:
   source: ui
 
 house_chimney_crackle:
-  key: "cookieclicker:house.chimney_crackle" # 3.0 s seamless loop; replay every 60 ticks
+  key: "cookieclicker:house.chimney_crackle" # 3.0 s seamless loop. REPLAY PERIOD: exactly 60 ticks, on its own
+                                            # fixed timer (not "every 6th smoke puff" of a timer that can skip/jitter)
   fallback: "minecraft:block.campfire.crackle"
   volume: 0.5
-  pitch-min: 0.97                           # at pitch p the file lasts 3.0/p s (3.09-2.91 s)
-  pitch-max: 1.03
+  pitch-min: 1.0                            # FIXED 1.0: a random pitch p makes the file last 3.0/p s
+  pitch-max: 1.0                            # (2.91-3.09 s), which drifts against the 60-tick period = gaps/doubles
   source: ambient
 
 # --- factory-makeover ---
 
 factory_ambient:
-  key: "cookieclicker:factory.ambient"       # 4.0 s seamless loop (80 ticks); replay every 80 ticks
+  key: "cookieclicker:factory.ambient"       # 4.0 s seamless loop. REPLAY PERIOD: exactly 80 ticks
   fallback: "minecraft:block.furnace.fire_crackle"  # shares the quiet volume below
   volume: 0.3                               # sits under house_chimney_crackle (0.5, file -19.1 LUFS)
   pitch-min: 1.0                            # fixed pitch: a tonal hum would phase against itself
@@ -109,7 +110,7 @@ factory_ambient:
 # --- conveyor-belt ---
 
 belt_loop:
-  key: "cookieclicker:factory.belt_loop"     # 4.0 s file authored for pitch 0.8 -> 5.0 s seamless loop in game
+  key: "cookieclicker:factory.belt_loop"     # 4.0 s file authored for pitch 0.8 -> 5.0 s seamless loop in game. REPLAY PERIOD: exactly 100 ticks
   fallback: "minecraft:block.beehive.work"   # shares the low pitch below: a slow, soft buzz-rattle
   volume: 0.2                               # sits under factory_ambient (0.3, file -19.5 LUFS; this file -19.9)
   pitch-min: 0.8                            # FIXED 0.8: the file is designed for it. At 0.8 it lasts
