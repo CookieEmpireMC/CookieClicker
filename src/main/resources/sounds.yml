@@ -134,3 +134,13 @@ bulk_toggle:
   pitch-min: 0.97
   pitch-max: 1.05
   source: ui
+
+# --- plot-polish ---
+
+basket_tier_up:
+  key: "cookieclicker:ui.basket_tier_up"     # 1.2 s chime + whoosh, played once for the owner on a basket tier-up
+  fallback: "minecraft:entity.player.levelup"
+  volume: 0.8
+  pitch-min: 1.0
+  pitch-max: 1.0
+  source: ui
