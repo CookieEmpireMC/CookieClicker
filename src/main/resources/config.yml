@@ -279,8 +279,9 @@ house:
   # to every player in the plot who isn't watching the cinematic
   chimney:
     smoke: true
-    # Replay the crackle sound every n-th smoke puff (the smoke puffs every 10 ticks; 0 = no sound)
-    crackle-every: 6
+    # Ticks between house_chimney_crackle plays: the file's length at its fixed pitch (sounds.yml: 3 s = 60;
+    # 0 = no sound). Its own fixed-period clock per player, not tied to the smoke puffs.
+    crackle-ticks: 60
   # Factory steam (factory_steam effect) at every steam point of the plot (plots.yml steam)
   steam:
     enabled: true
@@ -289,7 +290,8 @@ house:
   # Low oven hum (factory_ambient sound) for players in the plot near the factory
   ambient:
     enabled: true
-    # Ticks between plays (the sound is a 4 second loop)
+    # Ticks between plays: the file's length at its fixed pitch (sounds.yml: 4 s = 80). One fixed-period clock per
+    # player, never restarted early (re-entering the plot, the end of the cinematic, a reload)
     every: 80
     # Only players within this many blocks of the first steam point (or the house centre) hear it
     radius: 24.0
@@ -315,13 +317,16 @@ belt:
     min: 8
     max: 80
   cps-scale: 1000
-  # Ticks between belt_loop plays while your belt runs (the sound is a 5 second loop: 100; 0 = silent). Heard within
-  # house.ambient.radius of the belt.
+  # Ticks between belt_loop plays while your belt runs: the file's length at its fixed pitch (sounds.yml: 100 = 5 s;
+  # 0 = silent). One fixed-period clock per player, never restarted early. Heard within house.ambient.radius.
   sound-every: 100
   # Belt surface item for players without our resource pack (a vanilla item name)
   fallback-item: BLACK_CARPET
-  # Degrees added to the belt surface's facing. Set 180 if the slats move toward the hatch instead of the pedestal.
+  # Degrees added to the belt surface's facing. 0 = the slats move from the hatch toward the pedestal, like the
+  # cookies (the code already undoes the 180 degree turn item displays give a model). 180 reverses them.
   surface-yaw: 0
+  # Degrees a belt cookie is tipped about the belt's cross axis: 90 = lying flat on the rubber, face up; 0 = upright
+  cookie-pitch: 90
 
 debug:
   # Log every click event on a bakery hitbox (which events fire, who tracks the entity). For testing.

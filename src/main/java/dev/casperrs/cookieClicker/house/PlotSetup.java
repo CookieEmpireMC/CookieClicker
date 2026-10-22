@@ -67,6 +67,7 @@ public final class PlotSetup {
     public static final String DEFAULT_DESIGN = "factory";
     public static final String FENCE_STYLE = "fence.yml";
     public static final String BELT_STYLE = "belt.yml";
+    public static final String DECOR = "decor.yml";
     public static final int MAX_GROUND_SPREAD = 2;
     /** The fence follows the ground per column, but never more than this far from the layout's ground. */
     private static final int FENCE_GROUND_SLACK = 3;
@@ -99,7 +100,8 @@ public final class PlotSetup {
     }
 
     /** What the IO thread read for a setup. */
-    private record Inputs(@Nullable String design, @Nullable String style, @Nullable String belt, @Nullable Path oldYml,
+    private record Inputs(@Nullable String design, @Nullable String style, @Nullable String belt,
+                          @Nullable String decor, @Nullable Path oldYml,
                           @Nullable String oldText, byte @Nullable [] oldNbt) {
     }
 
@@ -126,7 +128,8 @@ public final class PlotSetup {
             try {
                 Path oldYml = newest(dir);
                 Path oldNbt = oldYml == null ? null : sibling(oldYml, ".nbt");
-                in = new Inputs(read(data, designName + ".yml"), read(data, FENCE_STYLE), read(data, BELT_STYLE), oldYml,
+                in = new Inputs(read(data, designName + ".yml"), read(data, FENCE_STYLE), read(data, BELT_STYLE),
+                        read(data, DECOR), oldYml,
                         oldYml == null ? null : Files.readString(oldYml, StandardCharsets.UTF_8),
                         oldNbt != null && Files.isRegularFile(oldNbt) ? Files.readAllBytes(oldNbt) : null);
             } catch (IOException e) {
@@ -348,6 +351,9 @@ public final class PlotSetup {
             }
         }
 
+        // decoration (houses/decor.yml; missing = none, bad or keep-out blocks are logged and skipped)
+        placeDecor(world, design, in.decor(), ax, y0, az, known, cells, changes);
+
         // points
         Plot.Pedestal pedestal = spot(layout.pedestal(), ax, y0, az);
         Plot.Pedestal shop = spot(layout.shop(), ax, y0, az);
@@ -504,6 +510,49 @@ public final class PlotSetup {
     }
 
     /**
+     * The decor blocks of {@code houses/decor.yml} at {@code (ax, y0, az)} + their plot cell, outside the
+     * {@link DecorKeepOut} columns; tile entities are never replaced. Every problem is a warning; the rest is placed.
+     */
+    private void placeDecor(World world, HouseDesign design, @Nullable String text, int ax, int y0, int az,
+                            Map<String, BlockData> known, List<HouseBackup.Cell> cells,
+                            List<HouseBackup.Change> changes) {
+        if (text == null) {
+            return; // no decoration set shipped or installed
+        }
+        DecorKeepOut keepOut = DecorKeepOut.of(design);
+        if (keepOut == null) {
+            return;
+        }
+        Decor.Result parsed;
+        try {
+            parsed = Decor.parse(yaml(text));
+        } catch (InvalidConfigurationException e) {
+            parsed = new Decor.Result(Decor.empty(), List.of("not valid YAML: " + e.getMessage()));
+        }
+        List<String> problems = new ArrayList<>(parsed.problems());
+        for (Decor.Block b : keepOut.allowed(parsed.decor(), problems)) {
+            BlockData data;
+            try {
+                data = known.computeIfAbsent(b.blockData(), Bukkit::createBlockData);
+            } catch (IllegalArgumentException e) {
+                problems.add("'" + b.blockData() + "' is not valid block data; skipped");
+                continue;
+            }
+            int x = ax + b.x();
+            int y = y0 + b.y();
+            int z = az + b.z();
+            if (y < world.getMinHeight() || y >= world.getMaxHeight()
+                    || world.getBlockAt(x, y, z).getState(false) instanceof TileState) {
+                continue; // never replace a chest, sign, ...
+            }
+            change(world, x, y, z, data.getAsString(), cells, changes);
+        }
+        for (String p : problems) {
+            plugin.getLogger().warning("houses/" + DECOR + ": " + p);
+        }
+    }
+
+    /**
      * A layout spot's yaw is the way it faces (toward the visitors); a station's yaw is the opposite (the facing of
      * someone looking at it, like the admin who placed a pedestal by hand).
      */
@@ -562,7 +611,7 @@ public final class PlotSetup {
                     return;
                 }
                 Path nbt = sibling(yml, ".nbt");
-                in = new Inputs(null, null, null, yml, Files.readString(yml, StandardCharsets.UTF_8),
+                in = new Inputs(null, null, null, null, yml, Files.readString(yml, StandardCharsets.UTF_8),
                         Files.isRegularFile(nbt) ? Files.readAllBytes(nbt) : null);
             } catch (IOException e) {
                 plugin.getLogger().log(Level.SEVERE, "Could not read the setup backups of plot " + plotId, e);

@@ -44,9 +44,19 @@ public record HouseSettings(int maxBlocks, Cinematic cinematic, Chimney chimney,
 
     /**
      * @param smoke        play the chimney smoke loop for players in the plot
-     * @param crackleEvery replay {@code house_chimney_crackle} every n-th smoke play (0 = never)
+     * @param crackleTicks replay {@code house_chimney_crackle} every this many ticks, its file length at its fixed
+     *                     pitch (0 = never); a timer of its own, not tied to the smoke puffs
      */
-    public record Chimney(boolean smoke, int crackleEvery) {
+    public record Chimney(boolean smoke, int crackleTicks) {
+
+        /**
+         * The old {@code crackle-every} (every n-th smoke puff, puffs 10 ticks apart) that {@link #crackleTicks}
+         * replaces. Only kept so the existing tests compile; remove once they use {@link #crackleTicks}.
+         */
+        @Deprecated(forRemoval = true)
+        public int crackleEvery() {
+            return crackleTicks / 10;
+        }
     }
 
     /**
@@ -58,7 +68,7 @@ public record HouseSettings(int maxBlocks, Cinematic cinematic, Chimney chimney,
 
     /**
      * @param enabled play {@code factory_ambient} for players in the plot
-     * @param every   ticks between plays (the sound is a 4 s loop: 80)
+     * @param every   ticks between plays: the file's length at its fixed pitch (4 s: 80)
      * @param radius  only for players within this many blocks of the first steam point (or the house centre)
      */
     public record Ambient(boolean enabled, int every, double radius) {
@@ -84,7 +94,7 @@ public record HouseSettings(int maxBlocks, Cinematic cinematic, Chimney chimney,
                 c.getBoolean(p + "camera", true));
         Chimney chimney = new Chimney(
                 c.getBoolean("house.chimney.smoke", true),
-                Math.clamp(c.getInt("house.chimney.crackle-every", 6), 0, 1000));
+                Math.clamp(c.getInt("house.chimney.crackle-ticks", 60), 0, 6000));
         Steam steam = new Steam(
                 c.getBoolean("house.steam.enabled", true),
                 Math.clamp(c.getInt("house.steam.every", 7), 0, 200));
