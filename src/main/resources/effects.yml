@@ -279,6 +279,28 @@ upgrade_shelved:
     - { type: particle, particle: dust, color: "#fff2a8", size: 0.5, shape: ring, plane: facing, points: 6,
         radius-start: 0.05, radius: 0.16, duration-ticks: 2 }
 
+# The cookie basket reached a higher tier (wicker -> bushel -> golden); play at the basket's bottom centre, viewer =
+# owner. About 1.5 s: three gold rings climb the basket (heights 0.15/0.65/1.15, ticks 0/5/10), a double helix winds
+# up 1.4 blocks (tick 0-24) and sparkles drift up. PEAK = tick 8: the end_rod + firework burst at 0.6 blocks high
+# hides the model swap, so the coder switches the basket look 8 ticks after play. About 150 particles, 0 entities.
+basket_tier_up:
+  layers:
+    - { type: particle, particle: dust_color_transition, color: "#fff2a8", to-color: "#f5c542", size: 1.0,
+        shape: ring, points: 10, radius-start: 0.5, radius: 0.85, duration-ticks: 2, origin: [0, 0.15, 0] }
+    - { type: particle, particle: dust_color_transition, color: "#fff2a8", to-color: "#f5c542", size: 1.0,
+        shape: ring, points: 10, radius-start: 0.5, radius: 0.85, duration-ticks: 2, origin: [0, 0.65, 0], delay-ticks: 5 }
+    - { type: particle, particle: dust_color_transition, color: "#fff2a8", to-color: "#f5a623", size: 1.0,
+        shape: ring, points: 10, radius-start: 0.5, radius: 0.85, duration-ticks: 2, origin: [0, 1.15, 0], delay-ticks: 10 }
+    - { type: particle, particle: dust, color: "#f5c542", size: 0.8, shape: helix, points: 14, radius: 0.8,
+        height: 1.4, turns: 1.5, strands: 2, duration-ticks: 24 }
+    - { type: particle, particle: end_rod, shape: burst, points: 12, radius: 0.3, speed: 0.1, delay-ticks: 8,
+        origin: [0, 0.6, 0] }
+    - { type: particle, particle: firework, shape: burst, points: 8, radius: 0.3, speed: 0.07, delay-ticks: 8,
+        origin: [0, 0.6, 0] }
+    - { type: particle, particle: dust_color_transition, color: "#fff2a8", to-color: "#f5c542", size: 0.6,
+        shape: sparkles, points: 6, radius: 0.7, height: 1.0, duration-ticks: 10, stagger-ticks: 12,
+        emit-every: 2, delay-ticks: 6 }
+
 # ---- admin tools (not seen by normal players) ----------------------------------------------------------------------
 # /bakery plot show: code plays one of these per outline point (up to ~120 points per region, redrawn every
 # 20 ticks), viewer = the admin. One fat dust mote per play, sent in the extended range so the whole outline shows
