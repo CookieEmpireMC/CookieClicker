@@ -5,3 +5,4 @@
 - [conveyor-belt facts](conveyor-belt-facts.md) — spectator camera + display interpolation APIs, Pat's belt.yml/camera format, no src/test for coder
 - [Economy levels facts](economy-levels-facts.md) — BulkMath/BulkPurchase API, schema v3 SQL + MySQL-safe addColumn, short suffixes, golden smoke recipe, guard quirks
 - [upgrade-panels facts](upgrade-panels-facts.md) — panels/shelf/spin-fix structure, PopJob sync first step, pinned tests, shelf teleport rule
+- [plot-polish facts](plot-polish-facts.md) — item display 180 flip, flat cookie maths, LoopPacer loops, decor keep-out, crackleEvery test pin
