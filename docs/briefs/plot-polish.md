@@ -52,7 +52,7 @@ lamps and small bakery props that make it feel lived in.
       the tier drops). The look switches at the peak of the effect.
 ### Panels (texts)
 - [ ] Every row is at most two lines at `line-width` 120: a locked row is `???` + one short line, e.g.
-      `Bake 250M to unlock` / `Own 10 Wheat Farm to unlock`; the buildings panel's locked row uses the same style.
+      `Bake 250M to unlock` / `Own 10 Wheat Farm` (no "to unlock": it would wrap); the buildings panel's locked row uses the same style.
 - [ ] One-time click upgrades show a short effect: `+20/click` (flat click upgrades), `+1% CPS/click`
       (Handy Fingers), via a new `upgrades.<id>.short` message; the long `effect` stays for the shelf tooltip.
 ### Belt
