@@ -1,12 +1,55 @@
 # Buildings (format: docs/balance/model.md). IDs only; display names live in messages.yml.
 # Tuned with tools/balance (mise run balance); see docs/balance/report-*.md.
 cost-growth: 1.15            # cost multiplier per building already owned
+# Building milestones (GDD §4.3): a building's own production doubles at each of these owned counts.
+milestones: [10, 25, 50, 100, 150, 200]
+milestone-multiplier: 2
+# Unlocks stand in for the plot expansions (GDD §5) until those exist: each pair unlocks at about the
+# cookies baked by the time the matching expansion would be bought (10K, 500K + spending, 25M, 1B, 100B).
+# Prices start from GDD §4.2; the mid/late tiers are a little slower so the run doesn't race to 1B
+# before golden cookies, recipes and stars exist (docs/balance/report-2026-10-22.md).
 buildings:
-  villager_baker:
-    base-cost: 50
-    base-cps: 0.5
+  wheat_farm:                # Wheat Field
+    base-cost: 15
+    base-cps: 0.15           # GDD 0.1: payback 100 s like the Apprentice, so it's a real first buy
     unlock: { baked: 0 }
-  wheat_farm:
-    base-cost: 500
-    base-cps: 4
-    unlock: { baked: 100 }
+  villager_baker:            # Baker's Apprentice
+    base-cost: 75            # GDD 100: first Apprentice within ~20 s of clicking (targets.md)
+    base-cps: 1
+    unlock: { baked: 0 }
+  cow_barn:
+    base-cost: 1100
+    base-cps: 8
+    unlock: { baked: 10000 }
+  sugar_cane_field:
+    base-cost: 12000
+    base-cps: 47
+    unlock: { baked: 10000 }
+  industrial_oven:
+    base-cost: 160000
+    base-cps: 240
+    unlock: { baked: 750000 }
+  extra_belt:
+    base-cost: 2000000
+    base-cps: 1300
+    unlock: { baked: 750000 }
+  beehive:
+    base-cost: 30000000
+    base-cps: 6000
+    unlock: { baked: 25000000 }
+  cocoa_plantation:
+    base-cost: 400000000
+    base-cps: 40000
+    unlock: { baked: 25000000 }
+  shipping_centre:
+    base-cost: 5100000000
+    base-cps: 260000
+    unlock: { baked: 1000000000 }
+  alchemy_lab:
+    base-cost: 75000000000
+    base-cps: 1600000
+    unlock: { baked: 1000000000 }
+  portal_bakery:
+    base-cost: 1000000000000
+    base-cps: 10000000
+    unlock: { baked: 100000000000 }
