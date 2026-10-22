@@ -15,7 +15,9 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.jspecify.annotations.Nullable;
 
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
 
@@ -34,6 +36,8 @@ final class PanelUpdater {
     }
 
     private static final PlainTextComponentSerializer PLAIN = PlainTextComponentSerializer.plainText();
+    /** Insertion that marks a toggle label (the client ignores it on a text display), + the mode name. */
+    static final String LABEL = "cookieclicker:bulk:";
 
     private final Supplier<StationVisualSettings> settings;
     private final Economy economy;
@@ -64,7 +68,11 @@ final class PanelUpdater {
     private void update(StationView view, StationView.Panel panel, CookiePouch pouch, long now, boolean pulse) {
         BulkMode mode = modes.get(view.owner, panel.kind);
         if (mode != panel.shownMode && panel.toggle.isValid()) {
-            panel.toggle.text(toggleText(mode));
+            StationVisualSettings s = settings.get();
+            Component toggle = TextPadding.centred(toggleText(mode), s.panel().textPadding(),
+                    PanelLayout.of(s, panel.rows.size()).toggleTargetPx());
+            panel.toggle.text(toggle);
+            panel.toggleBox = toggleBox(toggle);
             panel.shownMode = mode;
         }
         List<String> ids = panel.kind == PanelKind.BUILDINGS
@@ -183,7 +191,7 @@ final class PanelUpdater {
             String key = path + '|' + id + '|' + b.owned() + '|' + b.count() + '|' + mode + '|' + cost + '|' + gain;
             if (!key.equals(row.renderedKey)) {
                 row.renderedKey = key;
-                text = messages.component(path,
+                text = TextPadding.lines(messages.raw(path), p.textPadding(),
                         Placeholder.unparsed("name", PLAIN.serialize(messages.buildingName(id))),
                         messages.number("owned", b.owned()),
                         Placeholder.unparsed("cost", cost),
@@ -197,19 +205,23 @@ final class PanelUpdater {
                     + '|' + u.neededBuilding();
             if (!key.equals(row.renderedKey)) {
                 row.renderedKey = key;
-                text = messages.component(path,
+                text = TextPadding.lines(messages.raw(path), p.textPadding(),
                         Placeholder.unparsed("name", PLAIN.serialize(messages.upgradeName(id))),
                         Placeholder.unparsed("level", Integer.toString(u.level())),
                         Placeholder.unparsed("cost", cost),
                         Placeholder.unparsed("cpc", gain),
                         Placeholder.component("amount", u.repeatable() ? amount(mode, u.count()) : Component.empty()),
-                        Placeholder.component("effect", messages.upgradeEffect(id, u.shownValue(), u.level())),
+                        Placeholder.component("effect", shortEffect(id, u)),
                         Placeholder.component("requirement", requirement(u)));
             }
         }
         if (text != null) {
+            int target = p.sameWidth() ? PanelLayout.of(settings.get(), panel.rows.size()).rowWidthPx() : 0;
+            text = TextPadding.right(text, p.textPadding(), target, p.lineWidth());
             row.text.text(text);
-            row.renderedWidth = TextWidth.width(text, p.lineWidth());
+            List<Integer> lines = TextWidth.lineWidths(TextWidth.runs(text), p.lineWidth());
+            row.renderedWidth = lines.stream().mapToInt(Integer::intValue).max().orElse(0);
+            row.renderedLines = lines.size();
         }
         transform(row, now);
         background(row, p.color(state.colorKey()), state.bright() ? p.iconBrightAffordable() : p.iconBrightUnaffordable());
@@ -297,6 +309,27 @@ final class PanelUpdater {
             case MAX -> "panel.bulk.labels.max";
         });
         return messages.component(mode == selected ? "panel.bulk.selected" : "panel.bulk.unselected",
-                Placeholder.component("label", name));
+                Placeholder.component("label", name)).insertion(LABEL + mode.name());
+    }
+
+    /** Width and label spans of a rendered toggle text (labels are tagged with a {@link #LABEL} insertion). */
+    static PanelLayout.ToggleBox toggleBox(Component toggle) {
+        Map<BulkMode, int[]> labels = new EnumMap<>(BulkMode.class);
+        TextWidth.spans(toggle, LABEL).forEach((insertion, span) ->
+                labels.put(BulkMode.valueOf(insertion.substring(LABEL.length())), span));
+        return new PanelLayout.ToggleBox(TextWidth.width(toggle, PanelLayout.SINGLE_LINE_WIDTH), labels);
+    }
+
+    /**
+     * A one-time upgrade's effect as the panel shows it: {@code upgrades.<id>.short} when configured, else the long
+     * {@code effect} (which stays for the shelf tooltip).
+     */
+    private Component shortEffect(String id, UpgradeRowState u) {
+        String path = "upgrades." + id + ".short";
+        if (!messages.has(path)) {
+            return messages.upgradeEffect(id, u.shownValue(), u.level());
+        }
+        return messages.component(path, messages.number("value", u.shownValue()),
+                Placeholder.unparsed("level", Integer.toString(u.level())));
     }
 }

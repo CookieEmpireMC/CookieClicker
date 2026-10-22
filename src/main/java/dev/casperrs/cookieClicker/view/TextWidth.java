@@ -4,9 +4,12 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Estimates how wide a text display renders a component, in font pixels at scale 1 (1 px = 1/40 block), the way
@@ -22,6 +25,10 @@ public final class TextWidth {
 
     /** Font pixels per block at display scale 1. */
     public static final float PIXELS_PER_BLOCK = 40f;
+    /** Height of one rendered line (font line height 9 + 1 px spacing), in pixels at scale 1. */
+    public static final int LINE_HEIGHT_PX = 10;
+    /** Advance of a plain space, the unit text padding is made of. */
+    public static final int SPACE_PX = 4;
 
     private static final PlainTextComponentSerializer PLAIN = PlainTextComponentSerializer.plainText();
 
@@ -139,5 +146,38 @@ public final class TextWidth {
      */
     public static float leftEdgeShift(int widthPx, float scale) {
         return widthPx / 2f * scale / PIXELS_PER_BLOCK;
+    }
+
+    /** Block size of {@code px} font pixels at display scale {@code scale}. */
+    public static double blocks(double px, float scale) {
+        return px * scale / PIXELS_PER_BLOCK;
+    }
+
+    /**
+     * Where the parts of a one-line component that carry an insertion starting with {@code prefix} are drawn:
+     * insertion -> {start, end} in pixels from the left of the line. Used to find the toggle's labels.
+     */
+    public static Map<String, int[]> spans(Component component, String prefix) {
+        Map<String, int[]> out = new HashMap<>();
+        walk(component, false, null, prefix, new int[1], out);
+        return out;
+    }
+
+    private static void walk(Component c, boolean parentBold, @Nullable String parentInsertion, String prefix,
+                             int[] x, Map<String, int[]> out) {
+        TextDecoration.State state = c.style().decoration(TextDecoration.BOLD);
+        boolean bold = state == TextDecoration.State.NOT_SET ? parentBold : state == TextDecoration.State.TRUE;
+        String insertion = c.insertion() != null ? c.insertion() : parentInsertion;
+        int start = x[0];
+        String own = c instanceof TextComponent t ? t.content() : PLAIN.serialize(c.children(List.of()));
+        own.codePoints().forEach(cp -> x[0] += cp == '\n' ? 0 : advance(cp, bold));
+        for (Component child : c.children()) {
+            walk(child, bold, insertion, prefix, x, out);
+        }
+        if (insertion != null && insertion.startsWith(prefix) && !insertion.equals(parentInsertion)) {
+            // a label split over several components (MiniMessage may compact styles onto the leaves) is one span
+            int end = x[0];
+            out.merge(insertion, new int[] {start, end}, (a, b) -> new int[] {Math.min(a[0], b[0]), Math.max(a[1], b[1])});
+        }
     }
 }

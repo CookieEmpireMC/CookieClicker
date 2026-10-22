@@ -1,0 +1,118 @@
+{
+  "model": {
+    "type": "minecraft:select",
+    "property": "minecraft:custom_model_data",
+    "index": 0,
+    "cases": [
+      {
+        "when": "wicker_0",
+        "model": {
+          "type": "minecraft:model",
+          "model": "cookieclicker:item/basket/wicker_0"
+        }
+      },
+      {
+        "when": "wicker_1",
+        "model": {
+          "type": "minecraft:model",
+          "model": "cookieclicker:item/basket/wicker_1"
+        }
+      },
+      {
+        "when": "wicker_2",
+        "model": {
+          "type": "minecraft:model",
+          "model": "cookieclicker:item/basket/wicker_2"
+        }
+      },
+      {
+        "when": "wicker_3",
+        "model": {
+          "type": "minecraft:model",
+          "model": "cookieclicker:item/basket/wicker_3"
+        }
+      },
+      {
+        "when": "wicker_4",
+        "model": {
+          "type": "minecraft:model",
+          "model": "cookieclicker:item/basket/wicker_4"
+        }
+      },
+      {
+        "when": "bushel_0",
+        "model": {
+          "type": "minecraft:model",
+          "model": "cookieclicker:item/basket/bushel_0"
+        }
+      },
+      {
+        "when": "bushel_1",
+        "model": {
+          "type": "minecraft:model",
+          "model": "cookieclicker:item/basket/bushel_1"
+        }
+      },
+      {
+        "when": "bushel_2",
+        "model": {
+          "type": "minecraft:model",
+          "model": "cookieclicker:item/basket/bushel_2"
+        }
+      },
+      {
+        "when": "bushel_3",
+        "model": {
+          "type": "minecraft:model",
+          "model": "cookieclicker:item/basket/bushel_3"
+        }
+      },
+      {
+        "when": "bushel_4",
+        "model": {
+          "type": "minecraft:model",
+          "model": "cookieclicker:item/basket/bushel_4"
+        }
+      },
+      {
+        "when": "golden_0",
+        "model": {
+          "type": "minecraft:model",
+          "model": "cookieclicker:item/basket/golden_0"
+        }
+      },
+      {
+        "when": "golden_1",
+        "model": {
+          "type": "minecraft:model",
+          "model": "cookieclicker:item/basket/golden_1"
+        }
+      },
+      {
+        "when": "golden_2",
+        "model": {
+          "type": "minecraft:model",
+          "model": "cookieclicker:item/basket/golden_2"
+        }
+      },
+      {
+        "when": "golden_3",
+        "model": {
+          "type": "minecraft:model",
+          "model": "cookieclicker:item/basket/golden_3"
+        }
+      },
+      {
+        "when": "golden_4",
+        "model": {
+          "type": "minecraft:model",
+          "model": "cookieclicker:item/basket/golden_4"
+        }
+      }
+    ],
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "cookieclicker:item/basket/wicker_0"
+    }
+  }
+}

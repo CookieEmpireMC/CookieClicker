@@ -25,6 +25,11 @@ public final class BulkModes {
         return next;
     }
 
+    /** A toggle label was clicked: that mode. */
+    public void set(UUID player, PanelKind panel, BulkMode mode) {
+        modes.computeIfAbsent(player, k -> new EnumMap<>(PanelKind.class)).put(panel, mode);
+    }
+
     public void forget(UUID player) {
         modes.remove(player);
     }

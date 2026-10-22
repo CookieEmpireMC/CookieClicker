@@ -50,8 +50,9 @@ import java.util.logging.Level;
  * others; each player is shown one set). Per player in a plot (and not watching their build cinematic): their own
  * cookies ride the belt, shown only to them, at a speed and interval from their CPS ({@link BeltCurve}), at most
  * {@code belt.max-cookies} at once ({@link BeltLane}). Each cookie is <b>one</b> interpolated transformation from the
- * hatch to the pedestal (no per-tick teleports); on arrival it is removed and {@code belt_arrive} plays. While their
- * belt runs, {@code belt_loop} plays every {@code belt.sound-every} ticks within {@code house.ambient.radius}.
+ * hatch to the pedestal (no per-tick teleports), lying flat ({@code belt.cookie-pitch}); on arrival it is removed and
+ * {@code belt_arrive} plays. While their belt runs, {@code belt_loop} plays every {@code belt.sound-every} ticks within
+ * {@code house.ambient.radius}, on a per-player clock that keeps its beat across restarts.
  * Purely visual: nothing here touches the economy. Main thread only.
  *
  * <p>Cost: one task; per tick only the riders' cookies (at most max-cookies each) are looked at; who rides, their
@@ -65,6 +66,9 @@ public final class ConveyorBelts implements Listener {
     static final int REFRESH_TICKS = 10;
     /** The belt rubber is 1/16 thick: cookies ride this far above the surface (design/conveyor-belt.md). */
     static final double RUBBER = 0.0625;
+    /** Thickness of our cookie model (z 6..10 of 16, design/cookie.md) and of a vanilla item sprite (1/16). */
+    static final double PACK_COOKIE_THICKNESS = 0.25;
+    static final double VANILLA_COOKIE_THICKNESS = 0.0625;
 
     private static final Key BELT_MODEL = Key.key("cookieclicker", "conveyor_belt");
     private static final Key COOKIE_MODEL = Key.key("cookieclicker", "cookie");
@@ -122,7 +126,6 @@ public final class ConveyorBelts implements Listener {
         final List<Ride> rides = new ArrayList<>();
         double cps;
         boolean withPack;
-        long nextSound;
         /** What {@link #cps} was computed from: buildings and upgrades only grow, so their totals show a purchase. */
         private @Nullable CookiePouch cpsPouch;
         private @Nullable Object cpsConfig;
@@ -158,12 +161,15 @@ public final class ConveyorBelts implements Listener {
         final ItemDisplay entity;
         final long spawnTick;
         final int rideTicks;
+        /** Model thickness of the item it shows (our 3D cookie or the vanilla sprite). */
+        final double thickness;
         long arriveTick = Long.MAX_VALUE;
 
-        Ride(ItemDisplay entity, long spawnTick, int rideTicks) {
+        Ride(ItemDisplay entity, long spawnTick, int rideTicks, double thickness) {
             this.entity = entity;
             this.spawnTick = spawnTick;
             this.rideTicks = rideTicks;
+            this.thickness = thickness;
         }
     }
 
@@ -337,7 +343,6 @@ public final class ConveyorBelts implements Listener {
             }
             if (rider == null) {
                 rider = new Rider(plotId, p.getWorld(), surface.path);
-                rider.nextSound = tick;
                 riders.put(id, rider);
             }
             if (rider.cpsChanged(pouch, economy.config())) { // CPS only changes with a purchase or a reload
@@ -349,7 +354,6 @@ public final class ConveyorBelts implements Listener {
 
     private void ride(Player p, Rider r) {
         BeltSettings s = settings.get();
-        double half = s.cookieScale() / 2;
         for (Iterator<Ride> it = r.rides.iterator(); it.hasNext(); ) {
             Ride ride = it.next();
             if (!ride.entity.isValid()) {
@@ -361,32 +365,38 @@ public final class ConveyorBelts implements Listener {
                 // the client has the spawn by now: one transformation, interpolated over the whole ride
                 ride.entity.setInterpolationDelay(0);
                 ride.entity.setInterpolationDuration(ride.rideTicks);
-                ride.entity.setTransformation(cookieTransform(r.path, s.cookieScale(), r.path.length()));
+                ride.entity.setTransformation(cookieTransform(r.path, s.cookieScale(), s.cookiePitch(),
+                        ride.thickness, r.path.length()));
                 ride.arriveTick = tick + ride.rideTicks;
             } else if (tick >= ride.arriveTick) {
                 double[] end = r.path.end();
                 ride.entity.remove();
                 it.remove();
                 r.lane.arrived();
+                double half = halfHeight(s.cookieScale(), s.cookiePitch(), ride.thickness);
                 effects.play(EFFECT_ARRIVE, new Location(r.world, end[0], end[1] + RUBBER + half, end[2]), p);
             }
         }
         int rideTicks = r.lane.trySpawn(tick, r.cps, s.curve(), r.path, s.maxCookies());
         if (rideTicks > 0) {
-            ItemDisplay cookie = spawnCookie(p, r, s);
+            double thickness = r.withPack ? PACK_COOKIE_THICKNESS : VANILLA_COOKIE_THICKNESS;
+            ItemDisplay cookie = spawnCookie(p, r, s, thickness);
             if (cookie == null) {
                 r.lane.arrived();
             } else {
-                r.rides.add(new Ride(cookie, tick, rideTicks));
+                r.rides.add(new Ride(cookie, tick, rideTicks, thickness));
             }
         }
-        if (s.soundEvery() > 0 && s.curve().running(r.cps) && tick >= r.nextSound) {
-            r.nextSound = tick + s.soundEvery();
+        // belt_loop: a fixed-period clock per player that survives rider restarts (re-entry, cinematic end, reload,
+        // belt start/stop), so a new rider never replays it over a play that is still sounding
+        int period = s.soundEvery();
+        long now = Bukkit.getCurrentTick();
+        if (period > 0 && s.curve().running(r.cps) && sounds.loopDelay(p.getUniqueId(), SOUND_LOOP, period, now) == 0) {
             double[] m = r.path.middle();
             Location at = new Location(r.world, m[0], m[1], m[2]);
             double radius = hearingRadius.getAsDouble();
             if (p.getLocation().distanceSquared(at) <= radius * radius) {
-                sounds.play(p, SOUND_LOOP, at);
+                sounds.playLoop(p, SOUND_LOOP, at, period, now);
             }
         }
     }
@@ -417,9 +427,11 @@ public final class ConveyorBelts implements Listener {
         }
         Surface surface = new Surface(path);
         Material fallback = fallbackItem(s);
-        // model north (-z) turned to the travel direction (+ belt.surface-yaw); our model's bottom is at its origin,
-        // a vanilla block item is centred on it, so the fallback is lifted half a block onto the frame
-        Quaternionf turn = new Quaternionf().rotateY((float) (Math.atan2(-path.dirX(), -path.dirZ())
+        // model north (-z) turned to the travel direction (+ belt.surface-yaw). An item display renders its item
+        // turned 180 degrees about y (in game the slats ran toward the hatch without this), so that turn is added
+        // back: the texture's slats roll toward model north = toward the pedestal. Our model's bottom is at its
+        // origin, a vanilla block item is centred on it, so the fallback is lifted half a block onto the frame.
+        Quaternionf turn = new Quaternionf().rotateY((float) (Math.atan2(-path.dirX(), -path.dirZ()) + Math.PI
                 - Math.toRadians(s.surfaceYaw())));
         Transformation model = new Transformation(new Vector3f(), turn, new Vector3f(1, 1, 1), new Quaternionf());
         Transformation vanilla = new Transformation(new Vector3f(0, 0.5f, 0), turn, new Vector3f(1, 1, 1),
@@ -439,26 +451,42 @@ public final class ConveyorBelts implements Listener {
         return surface;
     }
 
-    private @Nullable ItemDisplay spawnCookie(Player owner, Rider r, BeltSettings s) {
+    private @Nullable ItemDisplay spawnCookie(Player owner, Rider r, BeltSettings s, double thickness) {
         Location at = new Location(r.world, r.path.startX(), r.path.y(), r.path.startZ());
         if (!r.world.isChunkLoaded(at.getBlockX() >> 4, at.getBlockZ() >> 4)) {
             return null;
         }
         ItemStack stack = r.withPack ? item(Material.COOKIE, COOKIE_MODEL) : ItemStack.of(Material.COOKIE);
-        ItemDisplay d = display(r.world, at, stack, cookieTransform(r.path, s.cookieScale(), 0));
+        ItemDisplay d = display(r.world, at, stack, cookieTransform(r.path, s.cookieScale(), s.cookiePitch(),
+                thickness, 0));
         owner.showEntity(plugin, d);
         return d;
     }
 
     /**
-     * The cookie {@code along} blocks down the belt, standing on the rubber ({@link #RUBBER} above the surface), its
-     * face toward the pedestal.
+     * The cookie {@code along} blocks down the belt, its bottom on the rubber ({@link #RUBBER} above the surface).
+     * The item model is centred on the display (NONE transform) and stands upright with its face along z (ours and
+     * the vanilla sprite alike): it is turned to face the travel direction, then tipped {@code pitchDegrees} about
+     * the belt's cross axis (90 = lying flat, face up).
+     *
+     * @param thickness the model's thickness in blocks at scale 1 ({@link #PACK_COOKIE_THICKNESS} or
+     *                  {@link #VANILLA_COOKIE_THICKNESS})
      */
-    static Transformation cookieTransform(BeltPath path, double scale, double along) {
+    static Transformation cookieTransform(BeltPath path, double scale, double pitchDegrees, double thickness,
+                                          double along) {
         float sc = (float) scale;
+        float lift = (float) (RUBBER + halfHeight(scale, pitchDegrees, thickness));
+        Quaternionf rotation = new Quaternionf().rotateY((float) path.travelAngle())
+                .rotateX((float) Math.toRadians(pitchDegrees));
         return new Transformation(
-                new Vector3f((float) (path.dirX() * along), (float) RUBBER + sc / 2, (float) (path.dirZ() * along)),
-                new Quaternionf().rotateY((float) path.travelAngle()), new Vector3f(sc, sc, sc), new Quaternionf());
+                new Vector3f((float) (path.dirX() * along), lift, (float) (path.dirZ() * along)),
+                rotation, new Vector3f(sc, sc, sc), new Quaternionf());
+    }
+
+    /** Half the height of a cookie (a 1 x 1 x thickness slab at scale 1) tipped {@code pitchDegrees}. */
+    static double halfHeight(double scale, double pitchDegrees, double thickness) {
+        double p = Math.toRadians(pitchDegrees);
+        return scale * (Math.abs(Math.cos(p)) * 0.5 + Math.abs(Math.sin(p)) * thickness / 2);
     }
 
     /** Hidden from everyone at spawn (shown per player), non-persistent, tagged for the sweep. */
@@ -499,6 +527,7 @@ public final class ConveyorBelts implements Listener {
         UUID id = event.getPlayer().getUniqueId();
         stopRider(id);
         surfaces.values().forEach(s -> s.shown.remove(id));
+        sounds.forgetLoops(id); // the client stopped every sound (also the hum and crackle of ChimneySmoke)
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

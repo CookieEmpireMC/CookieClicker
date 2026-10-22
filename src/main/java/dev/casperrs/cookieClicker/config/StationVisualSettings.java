@@ -1,5 +1,7 @@
 package dev.casperrs.cookieClicker.config;
 
+import dev.casperrs.cookieClicker.view.PanelLayout;
+import dev.casperrs.cookieClicker.view.TextWidth;
 import org.bukkit.configuration.ConfigurationSection;
 
 import java.util.LinkedHashMap;
@@ -17,7 +19,7 @@ import java.util.function.Consumer;
 public record StationVisualSettings(double viewDistance, int refreshTicks, double clickDistance, boolean debugClicks,
                                     Cookie cookie, Pedestal pedestal, Panel panel, PanelSpot buildings,
                                     PanelSpot clicks, Bulk bulk, Tween tween, Shelf shelf,
-                                    Map<String, String> upgradeFallbacks) {
+                                    Map<String, String> upgradeFallbacks, BasketSettings basket) {
 
     /**
      * Where one hologram panel ({@code station.panels.<panel>}) stands: {@code offset} is its header's bottom centre
@@ -28,14 +30,10 @@ public record StationVisualSettings(double viewDistance, int refreshTicks, doubl
     }
 
     /**
-     * The ×1/×5/×10/Max toggle row under each panel header ({@code station.panel.bulk.*}).
-     *
-     * @param offset       centre of the toggle text, relative to the header anchor
-     * @param hitboxOffset bottom centre of its click box, relative to the toggle text
-     * @param rowsDrop     the panel rows sit this much lower than without a toggle row
+     * The ×1/×5/×10/Max toggle row under each panel header ({@code station.panel.bulk.*}): its text size. Where it
+     * stands follows from {@link Panel#headerGap()} (centred on the panel column).
      */
-    public record Bulk(Offset offset, float scale, Offset hitboxOffset, float hitboxWidth, float hitboxHeight,
-                       double rowsDrop) {
+    public record Bulk(float scale) {
     }
 
     /**
@@ -96,28 +94,43 @@ public record StationVisualSettings(double viewDistance, int refreshTicks, doubl
     }
 
     /**
+     * The looks and layout shared by both hologram panels ({@code station.panel.*}). Header, ×N toggle and rows are
+     * centred on one column under the panel anchor; the vertical gaps are air between the rendered text blocks.
+     *
      * @param offset        where the header text sits (its bottom centre)
      * @param textYawOffset degrees added to the text yaw (calibration if text shows mirrored)
      * @param iconYawOffset degrees added to the icon yaw (calibration for the FIXED item transform)
-     * @param firstRowDrop  first row's text anchor sits this far below the header anchor
-     * @param rowPitch      distance between row anchors
-     * @param textOffset    row text anchor relative to the row anchor: the left edge of the text background when
-     *                      {@code textLeftEdge}, else the centre of the text block
-     * @param iconOffset    row icon centre relative to the row anchor
-     * @param hitboxOffset  bottom centre of the row's Interaction relative to the row anchor
+     * @param textOffset    row text left edge, relative to the row's bottom; with {@link #iconOffset} it only sets
+     *                      how icon and text sit next to each other: the row (icon + text) is centred on the column
+     * @param iconOffset    row icon centre relative to the row's bottom (see textOffset)
      * @param colors        background colours as {@code #AARRGGBB}: header, affordable, unaffordable, locked
      * @param iconFallbacks building id -> vanilla material name shown to players without the pack
      * @param textBrightness block and sky light of the header and row texts (0-15)
      * @param textLeftEdge  shift each row text right by half its estimated rendered width so every row starts at
      *                      {@code textOffset} (a text display is otherwise centred on its position)
+     * @param textPadding   spaces added inside every text background, left and right
+     * @param sameWidth     pad the header, toggle and every row to the full column width
+     * @param headerGap     air between the header and the toggle (blocks)
+     * @param toggleGap     air between the toggle and the first row
+     * @param rowGap        air between two rows
+     * @param clickMargin   a click this close (blocks) outside a row's or the toggle's rendered text still counts
      */
     public record Panel(Offset offset, float textYawOffset, float iconYawOffset, float headerScale, float textScale,
-                        int lineWidth, double firstRowDrop, double rowPitch, Offset textOffset, Offset iconOffset,
-                        float iconScale, Offset hitboxOffset, float hitboxWidth, float hitboxHeight,
+                        int lineWidth, Offset textOffset, Offset iconOffset,
+                        float iconScale,
                         Map<String, Integer> colors, int iconBrightAffordable, int iconBrightUnaffordable,
                         float viewRange, Map<String, String> iconFallbacks, String defaultFallback,
                         int textBrightness, boolean textShadowed, boolean textSeeThrough,
-                        boolean textDefaultBackground, boolean textLeftEdge) {
+                        boolean textDefaultBackground, boolean textLeftEdge, int textPadding, boolean sameWidth,
+                        double headerGap, double toggleGap, double rowGap, double clickMargin) {
+
+        /**
+         * Distance between two row bottoms: a row of {@link PanelLayout#ROW_LINES} lines
+         * ({@link TextWidth#LINE_HEIGHT_PX} each) at {@code textScale}, plus {@link #rowGap}.
+         */
+        public double rowPitch() {
+            return TextWidth.blocks(PanelLayout.ROW_LINES * TextWidth.LINE_HEIGHT_PX, textScale) + rowGap;
+        }
 
         public int color(String state) {
             return colors.getOrDefault(state, 0x40000000);
@@ -178,14 +191,9 @@ public record StationVisualSettings(double viewDistance, int refreshTicks, doubl
                 (float) r.positive("station.panel.header-scale", 0.6),
                 (float) r.positive("station.panel.text-scale", 0.5),
                 (int) r.positive("station.panel.line-width", 120),
-                Math.max(0, c.getDouble("station.panel.first-row-drop", 0.45)),
-                r.positive("station.panel.row-pitch", 0.4),
                 r.offset("station.panel.row.text-offset", new Offset(-0.3, 0, 0)),
                 r.offset("station.panel.row.icon-offset", new Offset(-0.5, 0.13, -0.02)),
                 (float) r.positive("station.panel.row.icon-scale", 0.3),
-                r.offset("station.panel.row.hitbox-offset", new Offset(0.25, -0.02, 0)),
-                (float) r.positive("station.panel.row.hitbox-width", 1.7),
-                (float) r.positive("station.panel.row.hitbox-height", 0.34),
                 Map.copyOf(colors),
                 Math.clamp(c.getInt("station.panel.icon-brightness.affordable", 15), 0, 15),
                 Math.clamp(c.getInt("station.panel.icon-brightness.unaffordable", 5), 0, 15),
@@ -196,25 +204,25 @@ public record StationVisualSettings(double viewDistance, int refreshTicks, doubl
                 c.getBoolean("station.panel.text-shadow", true),
                 c.getBoolean("station.panel.text-see-through", false),
                 c.getBoolean("station.panel.text-default-background", false),
-                c.getBoolean("station.panel.row.text-left-edge", true));
+                c.getBoolean("station.panel.row.text-left-edge", true),
+                (int) Math.clamp(c.getInt("station.panel.text-padding", 1), 0, 8),
+                c.getBoolean("station.panel.same-width", true),
+                Math.max(0, c.getDouble("station.panel.gap-after-header", 0.2)),
+                Math.max(0, c.getDouble("station.panel.gap-after-toggle", 0.25)),
+                Math.max(0, c.getDouble("station.panel.row-gap", 0.17)),
+                Math.clamp(c.getDouble("station.panel.click-margin", 0.03), 0, 0.5));
 
         PanelSpot buildings = new PanelSpot(r.offset("station.panels.buildings.offset", panel.offset()),
                 r.rows("station.panels.buildings.max-rows", 8));
         PanelSpot clicks = new PanelSpot(r.offset("station.panels.clicks.offset", new Offset(-1.9, 3.2, 2.5)),
                 r.rows("station.panels.clicks.max-rows", 4));
-        Bulk bulk = new Bulk(
-                r.offset("station.panel.bulk.offset", new Offset(0, -0.32, 0)),
-                (float) r.positive("station.panel.bulk.scale", 0.45),
-                r.offset("station.panel.bulk.hitbox-offset", new Offset(0, -0.02, 0)),
-                (float) r.positive("station.panel.bulk.hitbox-width", 1.7),
-                (float) r.positive("station.panel.bulk.hitbox-height", 0.24),
-                Math.max(0, c.getDouble("station.panel.bulk.rows-drop", 0.3)));
+        Bulk bulk = new Bulk((float) r.positive("station.panel.bulk.scale", 0.45));
         Tween tween = new Tween(
                 (int) Math.clamp(r.positive("station.panel.tween.ticks", 8), 1, 100),
                 (int) Math.clamp(r.positive("station.panel.tween.step-ticks", 2), 1, 20),
                 (float) Math.clamp(r.positive("station.panel.tween.pulse-scale", 1.08), 1, 2));
         Shelf shelf = new Shelf(
-                r.offset("station.shelf.offset", new Offset(-0.28, -2.4, 0)),
+                r.offset("station.shelf.offset", new Offset(-0.55, -2.45, 0)),
                 (int) Math.clamp(r.positive("station.shelf.columns", 6), 1, 32),
                 r.positive("station.shelf.spacing", 0.22),
                 (float) r.positive("station.shelf.scale", 0.18),
@@ -238,7 +246,8 @@ public record StationVisualSettings(double viewDistance, int refreshTicks, doubl
                 (int) r.positive("station.refresh-ticks", 20),
                 r.positive("station.click-distance", 6),
                 c.getBoolean("debug.log-click-events", false),
-                cookie, pedestal, panel, buildings, clicks, bulk, tween, shelf, Map.copyOf(upgradeFallbacks));
+                cookie, pedestal, panel, buildings, clicks, bulk, tween, shelf, Map.copyOf(upgradeFallbacks),
+                BasketSettings.from(c, problems));
     }
 
     /** Reads with defaults and reports bad values. */

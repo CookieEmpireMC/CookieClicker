@@ -33,7 +33,7 @@ class HouseSettingsTest {
         assertEquals(24, c.maxFallingDisplays());
         assertEquals(3, c.hammerEvery());
         assertTrue(s.chimney().smoke());
-        assertEquals(6, s.chimney().crackleEvery());
+        assertEquals(60, s.chimney().crackleTicks());
         assertEquals(new HouseSettings.Steam(true, 7), s.steam());
         assertEquals(new HouseSettings.Ambient(true, 80, 24.0), s.ambient());
         assertTrue(problems.isEmpty());

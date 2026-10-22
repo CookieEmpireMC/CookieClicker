@@ -6,3 +6,7 @@
 - [Ledger: coder pass 2](ledger-coder-pass2.md) — cinematic + starter-house integration at b03c8e3; open LOWs; Sound#key() replacement; ownership-check --base tip
 - [Ledger: factory-makeover coder](ledger-factory-makeover-coder.md) — PlotSetup/fence/layout review at 55dbac1; fixtures; integration must un-skip shipped-file test
 - [Ledger: conveyor-belt coder](ledger-conveyor-belt-coder.md) — review at 8da4215 READY; open LOWs, integration to-dos, cross-branch asset test recipe
+- [Ledger: plot-polish coder](ledger-plot-polish-coder.md) — decor parser/keep-out, LoopPacer, belt cookie pose at f57fe49; shipped-file recipe; open LOWs
+- [Ledger: plot-polish panels](ledger-plot-polish-panels.md) — ray pick (PanelLayout/aim) at d2e33dd; text vertical anchor unverified (in-game); no server jar offline
+- [Ledger: plot-polish basket](ledger-plot-polish-basket.md) — BasketLook/tier-up/respawn at 9cea984 READY; tests b3f1b56; open LOWs (click-time look change, hitbox jump during glide)
+- [Ledger: plot-polish integration](ledger-plot-polish-integration.md) — feature-level review at 2d3805f READY; layout geometry facts, open LOWs, overlap-test recipe

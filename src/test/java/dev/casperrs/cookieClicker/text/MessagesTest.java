@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.casperrs.cookieClicker.format.RealMessages;
+import dev.casperrs.cookieClicker.view.TextWidth;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -63,6 +64,18 @@ class MessagesTest {
             checked++;
         }
         assertTrue(checked >= 20, "expected many messages, checked " + checked);
+    }
+
+    @Test
+    void panelRowTextsAreOneLineUnderTheTitleAndFitTheRowWidth() {
+        // a locked row is "???" plus one line; the requirement line must fit the row width (120 less padding)
+        TagResolver values = TagResolver.resolver(Placeholder.unparsed("needed", "250M"),
+                Placeholder.unparsed("owned", "10"), Placeholder.unparsed("building", "Wheat Farm"));
+        for (String path : List.of("panel.clicks.need-baked", "panel.clicks.need-building")) {
+            assertEquals(1, TextWidth.lineWidths(TextWidth.runs(messages.component(path, values)), 116).size(), path);
+        }
+        assertEquals(2, TextWidth.lineWidths(TextWidth.runs(messages.component("panel.row.locked", values)), 116)
+                .size(), "a locked row is two lines");
     }
 
     @Test

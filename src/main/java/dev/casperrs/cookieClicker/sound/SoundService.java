@@ -16,6 +16,7 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.logging.Logger;
 import java.util.random.RandomGenerator;
@@ -34,6 +35,8 @@ public final class SoundService {
     private Map<String, SoundDef> sounds = Map.of();
     /** Place sound key per block material ({@code @block} events); a block's sound group doesn't change. */
     private final Map<Material, Key> blockSounds = new EnumMap<>(Material.class);
+    /** Survives {@link #load} (reload): a reload must not restart a loop that is still sounding. */
+    private final LoopPacer loops = new LoopPacer();
 
     /** @param hasPack whether the player has our resource pack loaded (picks key vs fallback) */
     public SoundService(Logger log, RandomGenerator random, Predicate<Player> hasPack) {
@@ -67,6 +70,29 @@ public final class SoundService {
         if (sound != null) {
             player.playSound(sound, at.getX(), at.getY(), at.getZ());
         }
+    }
+
+    /**
+     * Plays the looping ambient {@code event} to {@code player} at {@code at}, unless its previous play for them is
+     * still sounding: {@code period} is the file's length in ticks at its fixed pitch, {@code now} the server tick.
+     * Callers replay it on a timer with that period ({@link LoopPacer}). Returns whether it played.
+     */
+    public boolean playLoop(Player player, String event, Location at, int period, long now) {
+        if (period <= 0 || !loops.tryPlay(player.getUniqueId(), event, period, now)) {
+            return false;
+        }
+        play(player, event, at);
+        return true;
+    }
+
+    /** Ticks until {@link #playLoop} would play {@code event} for {@code player} again: a new timer's first delay. */
+    public long loopDelay(UUID player, String event, int period, long now) {
+        return loops.delay(player, event, period, now);
+    }
+
+    /** The player quit: their client stopped every sound, so their loops start fresh next time. */
+    public void forgetLoops(UUID player) {
+        loops.forget(player);
     }
 
     /**

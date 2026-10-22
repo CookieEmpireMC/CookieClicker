@@ -93,7 +93,7 @@ class PanelUpdaterTest {
         Offset none = new Offset(0, 0, 0);
         List<String> ignored = new ArrayList<>();
         StationView.Row row = new StationView.Row(0, entity(ItemDisplay.class, ignored),
-                entity(TextDisplay.class, rowTexts), entity(Interaction.class, ignored), new double[3], new double[3]);
+                entity(TextDisplay.class, rowTexts), new double[3], new double[3]);
         StationView.Panel buildings = new StationView.Panel(PanelKind.BUILDINGS, frame, none, 0f,
                 entity(TextDisplay.class, ignored), entity(TextDisplay.class, ignored),
                 entity(Interaction.class, ignored), List.of(row));

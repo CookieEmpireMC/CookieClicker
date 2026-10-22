@@ -15,10 +15,12 @@ import java.util.function.Consumer;
  * @param curve        CPS -&gt; speed (blocks/second) and interval (ticks)
  * @param soundEvery   ticks between {@code belt_loop} plays (0 = silent)
  * @param fallbackItem vanilla item (a {@code Material} name) of the belt surface for players without our pack
- * @param surfaceYaw   degrees added to the belt surface's turn (180 flips it, if the slats run the wrong way)
+ * @param surfaceYaw   degrees added to the belt surface's turn (0 = slats move toward the pedestal; 180 flips it)
+ * @param cookiePitch  degrees a belt cookie is tipped about the belt's cross axis (90 = lying flat, face up;
+ *                     0 = standing upright)
  */
 public record BeltSettings(boolean enabled, int maxCookies, double cookieScale, BeltCurve curve, int soundEvery,
-                           String fallbackItem, double surfaceYaw) {
+                           String fallbackItem, double surfaceYaw, double cookiePitch) {
 
     public static final int MAX_COOKIES = 32;
 
@@ -47,6 +49,7 @@ public record BeltSettings(boolean enabled, int maxCookies, double cookieScale, 
                 new BeltCurve(speedMin, speedMax, intervalMin, intervalMax, scale),
                 Math.clamp(c.getInt("belt.sound-every", 100), 0, 6000),
                 c.getString("belt.fallback-item", "BLACK_CARPET").trim(),
-                c.getDouble("belt.surface-yaw", 0.0) % 360.0);
+                c.getDouble("belt.surface-yaw", 0.0) % 360.0,
+                Math.clamp(c.getDouble("belt.cookie-pitch", 90.0), -180.0, 180.0));
     }
 }
