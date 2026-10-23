@@ -32,6 +32,13 @@ Format: URL | confirmed | checked | stable/volatile
 - https://docs.papermc.io/paper/reference/spigot-configuration | moved-wrongly-threshold default 0.0625 | 2026-10-19 | stable
 - https://ayakael.net/mirrors/papermc/commit/9271ee7643614663a6d93323a9e8db2d52123166 | Paper "Don't resend blocks on interactions (#9413)": rollback sends block+neighbour+tile updates on cancelled interactions | 2026-10-19 | stable
 
+## paper-plugin.yml (checked 2026-10-23, see docs/research/paper-plugin.md)
+- https://docs.papermc.io/paper/dev/getting-started/paper-plugins/ | fields, dependencies load BEFORE/AFTER/OMIT, MavenLibraryResolver.MAVEN_CENTRAL_DEFAULT_MIRROR, experimental | stable
+- https://www.schemastore.org/paper-plugin.json | required: name,version,main,api-version; permissions/default-perm supported | stable
+- raw.githubusercontent.com/PaperMC/Paper/main/paper-server/.../provider/type/PluginFileType.java | paper-plugin.yml wins over plugin.yml | stable
+- BukkitScheduler 26.3 Javadoc: "async tasks should never access any API in Bukkit"; Player Javadoc has no thread notes; WG managers page: save/load any thread only
+- Dead ends: docs.papermc.io .../folia-support and .../getting-started/plugin-yml 404; PaperPluginMeta.java path 404
+
 ## Searches that worked
 - "WorldEdit FAWE Minecraft 26.3 support release" (found Hangar WE beta)
 - API endpoints beat HTML pages: Modrinth v2, Hangar v1 (WorldEdit only), GitHub API for IntellectualSites (EngineHub GitHub releases is empty)
