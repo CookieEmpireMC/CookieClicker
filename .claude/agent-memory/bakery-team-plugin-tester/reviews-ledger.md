@@ -14,7 +14,7 @@ Older per-feature ledgers (starter-house, upgrade-holograms, plot-polish, buildi
 | ui part (`view`, `economy`, `station`, `hud`, `session`, `sound`, `storage`, `text`) | `d2ae11c` | READY; U1-U5 verified, `JdbcPlayerStoreSkipTest`, `PanelTextTest` |
 | vfx part (`vfx/**`, `effects.yml`) | `4a6d3b1` | READY; parser output identical to pre-split; V1-V4 |
 | world part (`house`, `plot`, `belt`, `building`, `worldguard`) | tidy/plugin-tester-world | READY; `PlotRegistryBoundsTest` |
-| cleanup (`LoopPlayer`, `PlotRegistry` TTL, `BeltRider` key) + integration | `135f656` on tidy/plugin-tester-integration | NOT READY: MEDIUM-1 (`LoopPlayer` due arithmetic). Everything else READY; checks green at 392 tests / 93 asset files / 28 sounds / 19 balance targets / 73 tools tests |
+| cleanup (`LoopPlayer`, `PlotRegistry` TTL, `BeltRider` key) + integration | tip of tidy/plugin-tester-integration (includes `318f1d5`) | READY after the MEDIUM-1 fix; `LoopPlayerTest`; 395 tests / 93 asset files / 28 sounds / 19 balance targets / 73 tools tests |
 | older house/sound/balance designer assets | 2026-10-19..22 | asset-only branches, checked through `validate-assets`, `sound-check`, `balance-check`; Rick merges them without a branch review |
 
-Re-review after the MEDIUM-1 fix: read `git diff 135f656..HEAD -- src/main/java/dev/casperrs/cookieClicker/sound`.
+Re-review: `git diff 318f1d5..HEAD -- src/main/java/dev/casperrs/cookieClicker/sound`.

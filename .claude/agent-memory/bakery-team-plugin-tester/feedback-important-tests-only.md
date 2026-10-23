@@ -11,4 +11,4 @@ Test only the important parts (user, 2026-10-23): "There's no need for 600 tests
 
 **Drop:** getters/records/constructors, duplicates, tests of private helpers or source-text guards that pin private names, long case tables (keep 1-2 cases), config tests that only pin internal knobs.
 
-**Why:** lean suite; token cost and refactor churn. **How to apply:** default to few, value-based cases; when asked to prune aim at about half. Outcome: 686 -> 392 Java tests (vfx included), tools 146 -> 73.
+**Why:** lean suite; token cost and refactor churn. **How to apply:** default to few, value-based cases; when asked to prune aim at about half. Outcome: 686 -> 395 Java tests (vfx included), tools 146 -> 73.

@@ -1,4 +1,4 @@
 - [Testing recipes](testing-recipes.md) — offline test setup (Proxy fakes, golden values, perf test, tools), what needs a server, sandbox quirks
 - [Repo facts](repo-facts.md) — post-tidy class locations, economy/PlotRegistry/sound facts, panel geometry numbers, open items
 - [Review ledger](reviews-ledger.md) — per area the commit last verified + verdict; re-review only `git diff <commit>..HEAD`
-- [Test only the important parts](feedback-important-tests-only.md) — user rule 2026-10-23: keep/drop list; 686 -> 392 tests
+- [Test only the important parts](feedback-important-tests-only.md) — user rule 2026-10-23: keep/drop list; 686 -> 395 tests

@@ -5,11 +5,11 @@ metadata:
   type: reference
 ---
 
-Verified 2026-10-23 at tidy integration (392 Java tests, 73 tools tests). Re-check a recipe only if the named class moved.
+Verified 2026-10-23 at tidy integration (395 Java tests, 73 tools tests). Re-check a recipe only if the named class moved.
 
 **Setup**
 - Paper API (provided) puts Gson, SnakeYAML, Adventure + plain serializer on the test classpath. No Mockito/MockBukkit in `pom.xml`: test pure classes; Bukkit types via `java.lang.reflect.Proxy` (World with `getUID/equals/hashCode`, Plugin/Server/BukkitScheduler/BukkitTask for `EffectTicker`, a `Display` that records `setTransformation` for `PopJob`; see `PlotRegistryBoundsTest`, `EffectTickerTest`, `PopMotionTest`).
-- Not testable without a server: `StationViews`, `ClickRouter`, `HouseCinematics`, `ConveyorBelts` ride task, `LoopPlayer`/`PlotAmbience` (use `Bukkit.getCurrentTick()`/scheduler). Test their pure helpers.
+- Not testable without a server: `StationViews`, `ClickRouter`, `HouseCinematics`, `ConveyorBelts` ride task, `PlotAmbience` (`LoopPlayer` is testable through its package-private constructor). Test their pure helpers.
 - One class: `MAVEN_ARGS="-Dtest=X" mise run test`. `mise run test` output is ~250 KB: grep `Tests run:`. Per-class counts: `target/surefire-reports/*.txt`.
 - `YamlConfiguration.loadFromString` works without a server (config parser tests). Shipped files: `new File("src/main/resources/config.yml")`; messages via `RealMessages.yaml()` / `RealMessages.formatter()`. `getResource("plugin.yml")` finds WorldGuard's jar: check `Files.exists` on the source path.
 - Python one-offs needing PyYAML: `.venv/bin/python -I`. Ownership check from the branch itself: `mise run ownership-check <branch> --base feature/<name>`.
