@@ -221,46 +221,55 @@ public final class JdbcPlayerStore implements PlayerStore, HouseSeenStore {
                 baked = pouch;
             }
 
-            Map<String, Integer> owned = new HashMap<>();
-            try (PreparedStatement st = c.prepareStatement("SELECT building_id, owned FROM " + p + "buildings WHERE uuid = ?")) {
-                st.setString(1, id);
-                try (ResultSet rs = st.executeQuery()) {
-                    while (rs.next()) {
-                        String building = rs.getString(1);
-                        int n = rs.getInt(2);
-                        if (building == null || building.isBlank() || rs.wasNull() || n < 0) {
-                            problems.add("skipped bad building row '" + building + "' = " + n);
-                        } else if (n > 0) {
-                            owned.put(building, n);
-                        }
-                    }
-                }
-            }
-
-            Map<String, Integer> upgrades = new HashMap<>();
-            try (PreparedStatement st = c.prepareStatement("SELECT upgrade_id, upgrade_level FROM " + p + "upgrades WHERE uuid = ?")) {
-                st.setString(1, id);
-                try (ResultSet rs = st.executeQuery()) {
-                    while (rs.next()) {
-                        String upgrade = rs.getString(1);
-                        int level = rs.getInt(2);
-                        if (upgrade == null || upgrade.isBlank()) {
-                            problems.add("skipped blank upgrade row");
-                        } else if (rs.wasNull() || level < 1) {
-                            // a row only exists for a bought upgrade, so never lose it: repair to level 1
-                            problems.add("upgrade '" + upgrade + "' had level " + (rs.wasNull() ? "NULL" : level) + "; repaired to 1");
-                            upgrades.put(upgrade, 1);
-                        } else {
-                            upgrades.put(upgrade, level);
-                        }
-                    }
-                }
-            }
+            Map<String, Integer> owned = loadBuildings(c, id, problems);
+            Map<String, Integer> upgrades = loadUpgrades(c, id, problems);
             return Optional.of(new LoadedPouch(new PouchSnapshot(pouch, baked, owned, upgrades), problems));
         } catch (SQLException e) {
             invalidate();
             throw new StorageException("Could not load " + id, e);
         }
+    }
+
+    private Map<String, Integer> loadBuildings(Connection c, String id, List<String> problems) throws SQLException {
+        Map<String, Integer> owned = new HashMap<>();
+        try (PreparedStatement st = c.prepareStatement("SELECT building_id, owned FROM " + p + "buildings WHERE uuid = ?")) {
+            st.setString(1, id);
+            try (ResultSet rs = st.executeQuery()) {
+                while (rs.next()) {
+                    String building = rs.getString(1);
+                    int n = rs.getInt(2);
+                    if (building == null || building.isBlank() || rs.wasNull() || n < 0) {
+                        problems.add("skipped bad building row '" + building + "' = " + n);
+                    } else if (n > 0) {
+                        owned.put(building, n);
+                    }
+                }
+            }
+        }
+        return owned;
+    }
+
+    private Map<String, Integer> loadUpgrades(Connection c, String id, List<String> problems) throws SQLException {
+        Map<String, Integer> upgrades = new HashMap<>();
+        try (PreparedStatement st = c.prepareStatement("SELECT upgrade_id, upgrade_level FROM " + p + "upgrades WHERE uuid = ?")) {
+            st.setString(1, id);
+            try (ResultSet rs = st.executeQuery()) {
+                while (rs.next()) {
+                    String upgrade = rs.getString(1);
+                    int level = rs.getInt(2);
+                    if (upgrade == null || upgrade.isBlank()) {
+                        problems.add("skipped blank upgrade row");
+                    } else if (rs.wasNull() || level < 1) {
+                        // a row only exists for a bought upgrade, so never lose it: repair to level 1
+                        problems.add("upgrade '" + upgrade + "' had level " + (rs.wasNull() ? "NULL" : level) + "; repaired to 1");
+                        upgrades.put(upgrade, 1);
+                    } else {
+                        upgrades.put(upgrade, level);
+                    }
+                }
+            }
+        }
+        return upgrades;
     }
 
     private static double repaired(double v, boolean wasNull, String field, List<String> problems) {
