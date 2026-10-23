@@ -3,31 +3,23 @@ package dev.casperrs.cookieClicker.vfx;
 import java.util.function.Consumer;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
-import org.bukkit.World;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
-import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
 import org.jspecify.annotations.Nullable;
 
-/**
- * The only place the engine spawns entities. Everything is set up inside the spawn consumer (before the entity
- * joins the world, so no other player ever receives it): non-persistent, hidden by default when there is a viewer,
- * tagged with the {@code cookieclicker} scoreboard tag and the {@code cookieclicker:vfx} PDC key. Then it's shown
- * to the viewer only.
- */
+/** The engine's handle on {@link PrivateDisplays}: holds the plugin and the PDC key so jobs don't pass them around. */
 final class Spawner {
 
-    /** Shared sweep tag of every plugin entity (see docs/research/display-cookie.md). */
-    static final String SCOREBOARD_TAG = "cookieclicker";
+    static final String SCOREBOARD_TAG = PrivateDisplays.SCOREBOARD_TAG;
 
     private final Plugin plugin;
     private final NamespacedKey key;
 
     Spawner(Plugin plugin) {
         this.plugin = plugin;
-        this.key = new NamespacedKey(plugin, "vfx");
+        this.key = PrivateDisplays.key(plugin);
     }
 
     NamespacedKey key() {
@@ -35,27 +27,10 @@ final class Spawner {
     }
 
     <T extends Display> T spawn(Location at, Class<T> type, @Nullable Player viewer, Consumer<? super T> setup) {
-        World world = at.getWorld();
-        T entity = world.spawn(at, type, e -> {
-            e.setPersistent(false);
-            e.setVisibleByDefault(viewer == null);
-            e.addScoreboardTag(SCOREBOARD_TAG);
-            e.getPersistentDataContainer().set(key, PersistentDataType.BYTE, (byte) 1);
-            e.setBrightness(new Display.Brightness(15, 15));
-            setup.accept(e);
-        });
-        if (viewer != null) {
-            viewer.showEntity(plugin, entity);
-        }
-        return entity;
+        return PrivateDisplays.spawn(plugin, at, type, viewer, setup);
     }
 
-    /**
-     * True for entities spawned by {@link #spawn} (they always carry both the tag and the PDC key). The scoreboard
-     * tag is checked first because it's a cheap set lookup; only plugin entities pay for the PDC read.
-     */
     boolean isOurs(Entity entity) {
-        return entity.getScoreboardTags().contains(SCOREBOARD_TAG)
-                && entity.getPersistentDataContainer().has(key, PersistentDataType.BYTE);
+        return PrivateDisplays.isOurs(plugin, entity);
     }
 }
