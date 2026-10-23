@@ -31,7 +31,7 @@ public record UpgradeRowState(Style style, boolean repeatable, int level, int co
     public enum Style {
         AFFORDABLE, UNAFFORDABLE, LOCKED, MAXED;
 
-        /** Key under {@code station.panel.colors}. */
+        /** Key of the row background colour. */
         public String key() {
             return name().toLowerCase(Locale.ROOT);
         }

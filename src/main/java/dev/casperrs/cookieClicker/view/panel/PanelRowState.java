@@ -9,7 +9,7 @@ public sealed interface PanelRowState permits RowState, UpgradeRowState {
     /** The +CPS / +CPC shown (rolls smoothly to a new value). */
     double gain();
 
-    /** Key under {@code station.panel.colors} for the row background. */
+    /** Key of the row background colour. */
     String colorKey();
 
     /** Bright icon (affordable) or dimmed. */

@@ -30,7 +30,6 @@ import java.util.UUID;
  */
 public final class StationInteractions {
 
-    /** Effect/sound event names from the contract (effects.yml / sounds.yml). */
     static final String CLICK = "cookie_click";
     static final String CRIT = "cookie_crit";
     static final String PURCHASE = "purchase";
@@ -47,7 +46,7 @@ public final class StationInteractions {
     private final SoundService sounds;
     private final Hud hud;
     private final Messages messages;
-    /** Told after every building purchase that went through (the visible buildings, brief building-roster). */
+    /** Told after every building purchase that went through (the visible buildings). */
     private Consumer<Player> buildingsBought = player -> { };
 
     public StationInteractions(StationViews views, SessionManager sessions, Economy economy, Effects effects,
@@ -202,7 +201,6 @@ public final class StationInteractions {
         sounds.play(player, BASKET_TIER_UP, at);
     }
 
-    /** Forget per-player state (quit). */
     void forget(UUID player) {
         hud.forget(player);
     }

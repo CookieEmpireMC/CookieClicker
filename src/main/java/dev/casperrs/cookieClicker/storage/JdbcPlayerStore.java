@@ -385,8 +385,6 @@ public final class JdbcPlayerStore implements PlayerStore, HouseSeenStore {
         return !id.isBlank() && id.length() <= MAX_ID_LENGTH;
     }
 
-    // ---- house_seen (schema v2) -------------------------------------------------------------------------------
-
     @Override
     public boolean isHouseSeen(UUID player, String plotId) throws StorageException {
         try (PreparedStatement st = connection().prepareStatement(

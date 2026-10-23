@@ -10,9 +10,9 @@ import org.jspecify.annotations.Nullable;
  * @param x        position of the station's base
  * @param yaw      the station's facing; the cookie and panels are laid out relative to it
  * @param shop     with a plot layout: where the shop panel stands (and its facing); the cookie then stands right on
- *                 this station's position. Null: cookie and panel use the {@code station.*} offsets from here
- * @param clicks   with a plot layout: where the click upgrades panel stands; null = the
- *                 {@code station.panels.clicks} offset from here
+ *                 this station's position. Null: cookie and panels use the default offsets from here
+ * @param clicks   with a plot layout: where the click upgrades panel stands; null = the shop spot
+ *                 mirrored across the station
  */
 public record Station(String id, String worldKey, double x, double y, double z, float yaw, @Nullable Anchor shop,
                       @Nullable Anchor clicks) {

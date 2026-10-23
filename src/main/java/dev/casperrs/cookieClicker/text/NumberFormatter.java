@@ -20,7 +20,7 @@ public final class NumberFormatter {
      * @param scientificPattern template past the last suffix, with {@code {value}} and {@code {exponent}}
      * @param decimals          decimals shown for big numbers
      * @param smallDecimals     decimals shown below 1,000
-     * @param groupingSeparator unused since short suffixes start at 1,000; kept so existing settings stay valid
+     * @param groupingSeparator not shown (short suffixes start at 1,000); read so old messages.yml files stay valid
      */
     public record Settings(List<String> suffixes, String largePattern, String scientificPattern,
                            int decimals, int smallDecimals, String groupingSeparator,
