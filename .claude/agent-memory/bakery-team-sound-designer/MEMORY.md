@@ -1,2 +1,2 @@
-- [Sound tooling facts](tooling-facts.md) — Vorbis serial fix, validator quirks, synth helpers, loop seam rules, shared key/fallback pitch, resample loops, guard quirks
+- [Sound tooling facts](tooling-facts.md) — Vorbis serial fix, synth helpers, loudness/loop-seam rules, validators, SoundService fallback, worktree guard quirks
 - Style guide + lessons live in design/sound-style-guide.md and design/sound-lessons.md (read those first)
