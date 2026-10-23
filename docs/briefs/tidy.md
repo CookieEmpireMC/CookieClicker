@@ -108,14 +108,15 @@ none
 |---|---|---|---|
 | resource-pack-researcher | `docs/research/paper-plugin.md` | — | feature branch (docs) |
 | plugin-tester | architecture + standards + performance review: standards section, findings with PERF ratings, split plan for the big classes, before-measurements | — | `tidy/plugin-tester-review` |
-| plugin-coder (config) | `config.yml` shrink/reorder, `config/` package + `BakeryConfigLoader` + `CookieClicker.java` wiring, constants for moved knobs, comments in these files, **paper-plugin.yml + loader**, version 1.2.2 | review, research | `tidy/plugin-coder-config` |
+| plugin-coder (config) | `config.yml` shrink/reorder, `config/` package + `BakeryConfigLoader` + `CookieClicker.java` wiring, constants for moved knobs, comments in these files, **paper-plugin.yml + loader**, the shared helpers `log/WarnOnce`, `text/MarkerTemplate`, `TextWidth`/`TextPadding` → `text/`, version 1.2.2 | review, research | `tidy/plugin-coder-config` |
 | plugin-coder (world) | standards, structure, PERF fixes and comments in `house/`, `plot/`, `belt/`, `building/`, `worldguard/` | config part merged | `tidy/plugin-coder-world` |
 | plugin-coder (ui) | standards, structure, PERF fixes and comments in `view/`, `economy/`, `station/`, `hud/`, `session/`, `sound/`, `storage/`, `command/`, `format/`, `pack/`, `text/`, plus `messages.yml` / `plugin.yml` comments | config part merged | `tidy/plugin-coder-ui` |
-| vfx-designer | the same (incl. PERF fixes) for the `vfx` package and its tests, `effects.yml` comments | review | `tidy/vfx-designer` |
+| vfx-designer | the same (incl. PERF fixes) for the `vfx` package and its tests, `effects.yml` comments | config part merged | `tidy/vfx-designer` |
 | sound-designer | `sounds.yml` comments | — | `tidy/sound-designer` |
 | model-designer | `houses/*.yml` comments | — | `tidy/model-designer` |
 | balance-designer | outdated notes in `buildings.yml` / `upgrades.yml` | — | `tidy/balance-designer` |
 | orchestrator | after the integration review: CookieMemory PR (user merges) moving the lasting rules into the shared team knowledge (`bakery-context`): code standards + comment rule, performance rules (per-tick/per-player work, scheduled tasks, DB writes, async only with a spark profile + the thread-safety table), minimal config.yml (admin options only, resource pack first, defaults in code), paper-plugin.yml + loader pattern; and removes rules in the shared skills that tidy made outdated | integration READY | CookieMemory branch |
+| plugin-coder (cleanup) | prune `.claude/agent-memory/bakery-team-plugin-coder/` against the new structure; small leftovers | all coder parts merged | `tidy/plugin-coder-cleanup` |
 | plugin-tester | test comments; adapt tests to moved/renamed classes; review each code branch, then integration incl. after-measurements | owner DONE | (reviewed branch) |
 
 The world and ui parts only move classes inside their own packages; a move across the two goes into their report
@@ -127,8 +128,7 @@ instead. Neither changes `config/`.
 | | planned | | | |
 
 ## Merge order
-1. research note + plugin-tester review (docs), 2. model-designer, sound-designer, balance-designer, 3. vfx-designer,
-4. plugin-coder (config), 5. plugin-coder (world), 6. plugin-coder (ui)
+1. research note + plugin-tester review (docs), 2. model-designer, sound-designer, balance-designer, 3. plugin-coder (config, incl. shared helpers), 4. vfx-designer, plugin-coder (world), plugin-coder (ui) in parallel, merged one at a time, 5. plugin-coder (cleanup)
 
 ## Needs human review
 - [ ] Your server's `config.yml`: compare with the new default (removed keys are ignored; copy your url/sha1/database over)
