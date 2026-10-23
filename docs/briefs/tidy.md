@@ -23,6 +23,14 @@ commented only where the code can't explain itself.
 - [ ] Applies to `src/main/java` (incl. `vfx`), `src/test/java`, and every YAML in `src/main/resources`
       (incl. `houses/`). `buildings.yml` / `upgrades.yml` keep their short tuning notes (the balance reports refer
       to them) but lose anything outdated.
+### Memory (stale knowledge out, current knowledge in)
+- [ ] Every agent prunes its own `.claude/agent-memory/bakery-team-<agent>/`: delete facts that are outdated
+      (old ways replaced by a better one, classes/files that moved or no longer exist, per-feature notes whose
+      lesson is already in the code, docs or a later note), merge duplicates, and keep `MEMORY.md` an accurate
+      index. Coders, vfx-designer and plugin-tester do this at the end of their tidy run (after the refactor, so
+      new class names are right).
+- [ ] The CookieMemory PR (orchestrator, below) also removes outdated rules from the shared skills, not just adds
+      the new ones.
 ### config.yml
 - [ ] `resource-pack:` is the first section, then `database:`, then the rest.
 - [ ] Every key that no code reads is removed (e.g. `plot.chimney-reach`). Every remaining key is read by code
@@ -107,7 +115,7 @@ none
 | sound-designer | `sounds.yml` comments | — | `tidy/sound-designer` |
 | model-designer | `houses/*.yml` comments | — | `tidy/model-designer` |
 | balance-designer | outdated notes in `buildings.yml` / `upgrades.yml` | — | `tidy/balance-designer` |
-| orchestrator | after the integration review: CookieMemory PR (user merges) moving the lasting rules into the shared team knowledge (`bakery-context`): code standards + comment rule, performance rules (per-tick/per-player work, scheduled tasks, DB writes, async only with a spark profile + the thread-safety table), minimal config.yml (admin options only, resource pack first, defaults in code), paper-plugin.yml + loader pattern | integration READY | CookieMemory branch |
+| orchestrator | after the integration review: CookieMemory PR (user merges) moving the lasting rules into the shared team knowledge (`bakery-context`): code standards + comment rule, performance rules (per-tick/per-player work, scheduled tasks, DB writes, async only with a spark profile + the thread-safety table), minimal config.yml (admin options only, resource pack first, defaults in code), paper-plugin.yml + loader pattern; and removes rules in the shared skills that tidy made outdated | integration READY | CookieMemory branch |
 | plugin-tester | test comments; adapt tests to moved/renamed classes; review each code branch, then integration incl. after-measurements | owner DONE | (reviewed branch) |
 
 The world and ui parts only move classes inside their own packages; a move across the two goes into their report
