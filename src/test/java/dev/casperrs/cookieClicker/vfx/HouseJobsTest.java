@@ -4,12 +4,18 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import dev.casperrs.cookieClicker.vfx.shape.DisplayTrack;
 import dev.casperrs.cookieClicker.vfx.shape.DropTrack;
+import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.bukkit.Location;
+import org.bukkit.entity.Display;
+import org.bukkit.entity.Player;
+import org.bukkit.util.Transformation;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -100,6 +106,17 @@ class HouseJobsTest {
     }
 
     @Test
+    void displayVanishingWhileTheViewerIsThereLandsNow() {
+        DropJob job = drop();
+        run(job, 4);
+        body.valid = false; // chunk unloaded or removed by someone else
+        assertFalse(job.step());
+        assertEquals(List.of("send@2", "impact", "landed"), log, "the reveal never stalls");
+        assertTrue(job.landed());
+        assertEquals(1, ends.get());
+    }
+
+    @Test
     void viewerLeavingEndsTheDropWithoutCallbacks() {
         DropJob job = drop();
         run(job, 4);
@@ -135,6 +152,67 @@ class HouseJobsTest {
         assertFalse(loop.step());
         assertEquals(3, plays.get());
         assertEquals(1, ends.get());
+    }
+
+    @Test
+    void loopChecksTheViewerOnlyOnItsPlayTicks() {
+        AtomicBoolean valid = new AtomicBoolean(true);
+        AtomicInteger checks = new AtomicInteger();
+        AtomicInteger plays = new AtomicInteger();
+        LoopJob loop = new LoopJob(10, 0, () -> {
+            checks.incrementAndGet();
+            return valid.get();
+        }, plays::incrementAndGet, j -> ends.incrementAndGet());
+        run(loop, 25);
+        assertEquals(3, checks.get(), "checked on ticks 0, 10 and 20 only");
+        valid.set(false);
+        assertEquals(5, run(loop, 10), "ticks 25..29 are quiet");
+        assertFalse(loop.isActive(), "ends on the play tick 30, before playing");
+        assertEquals(3, plays.get(), "no play for a viewer who left");
+        assertEquals(4, checks.get());
+        assertEquals(1, ends.get());
+    }
+
+    @Test
+    void keyframesGoOutOnTheirTicksIncludingTwoOnOneTick() {
+        int[] now = {0};
+        List<Object> sent = new ArrayList<>();
+        UUID id = UUID.randomUUID();
+        Display display = (Display) Proxy.newProxyInstance(HouseJobsTest.class.getClassLoader(),
+                new Class<?>[] {Display.class}, (proxy, method, args) -> switch (method.getName()) {
+                    case "isValid" -> true;
+                    case "getUniqueId" -> id;
+                    case "setTransformation" -> {
+                        sent.add("@" + now[0] + ":" + (int) ((Transformation) args[0]).getTranslation().x);
+                        yield null;
+                    }
+                    case "remove" -> {
+                        sent.add("@" + now[0] + ":remove");
+                        yield null;
+                    }
+                    default -> null;
+                });
+        DisplayTrack track = new DisplayTrack(key(0), List.of(key(0), key(2), key(2), key(5), key(9)), List.of(), 10);
+        DisplayJob job = new DisplayJob(null, new DisplayRegistry(), null, null, 2) {
+            @Override
+            protected int entityCount() {
+                return 1;
+            }
+
+            @Override
+            protected void spawnAll(Location at, Player viewer) {
+                add(display, track);
+            }
+        };
+        for (; now[0] < 30 && job.step(); now[0]++) {
+            // one step per tick
+        }
+        assertEquals(List.of("@2:0", "@4:2", "@4:2", "@7:5", "@11:9", "@12:remove"), sent,
+                "each keyframe goes out on its own tick (after the delay), the duplicate tick too");
+    }
+
+    private static DisplayTrack.Keyframe key(int tick) {
+        return new DisplayTrack.Keyframe(tick, tick, 0, 0, 1, 0, 0, 1, 0, 1);
     }
 
     @Test

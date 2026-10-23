@@ -62,4 +62,15 @@ class MotionsTest {
         assertEquals(1.0, pop.steps().getLast().sy());
         assertEquals(5, pop.totalTicks());
     }
+
+    @Test
+    void floatingTextKeyframesAreInTickOrder() {
+        for (int life : new int[] {20, 40}) {
+            long previous = -1;
+            for (DisplayTrack.Keyframe k : Motions.floatingText(0.8, life, 1.0, 0.5, 1.15, 3, 6, 1).keyframes()) {
+                assertTrue(k.tick() >= previous, "DisplayJob relies on tick order (life " + life + ")");
+                previous = k.tick();
+            }
+        }
+    }
 }
