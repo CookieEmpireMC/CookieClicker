@@ -2,6 +2,8 @@ package dev.casperrs.cookieClicker.view;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import dev.casperrs.cookieClicker.view.panel.PanelLayout;
+import dev.casperrs.cookieClicker.view.panel.BulkMode;
 import dev.casperrs.cookieClicker.config.StationVisualSettings;
 import dev.casperrs.cookieClicker.config.StationVisualSettings.Offset;
 import java.util.List;

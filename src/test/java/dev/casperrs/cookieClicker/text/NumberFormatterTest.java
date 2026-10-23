@@ -1,9 +1,9 @@
-package dev.casperrs.cookieClicker.format;
+package dev.casperrs.cookieClicker.text;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import dev.casperrs.cookieClicker.format.NumberFormatter.Settings;
+import dev.casperrs.cookieClicker.text.NumberFormatter.Settings;
 import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.Test;
