@@ -1,6 +1,6 @@
 # tidy
 
-**Status:** planned  <!-- planned | in progress | review | done -->
+**Status:** review  <!-- planned | in progress | review | done -->
 **Created:** 2026-10-23 · **Depends on:** panel-align (merged, PR #14, 1.2.1)
 
 ## Goal
@@ -132,7 +132,17 @@ instead. Neither changes `config/`.
 ## Status
 | Agent | Status | Branch | Verdict | Notes |
 |---|---|---|---|---|
-| | planned | | | |
+| resource-pack-researcher | done | feature branch | — | docs/research/paper-plugin.md; memory pruned |
+| plugin-tester (review) | done | tidy/plugin-tester-review | — | standards, findings, before-numbers |
+| sound / model / balance-designer | done | tidy/*-designer (+ -memory) | asset-only | YAML comments, generators, memory pruned |
+| plugin-tester (prune) | done | tidy/plugin-tester-prune | — | 686 → 405 tests |
+| plugin-coder (config) | done | tidy/plugin-coder-config | READY | config.yml 414 → 79, paper-plugin.yml + loader, shared helpers, 1.2.2 |
+| vfx-designer | done | tidy/vfx-designer (+ -javadoc) | READY | Effects 756 → 407, PERF-V1–V4, tests 104 → 64 |
+| plugin-coder (ui) | done | tidy/plugin-coder-ui | READY | StationViews 1072 → 439, PERF-U1/U2/U3 |
+| plugin-coder (world) | done | tidy/plugin-coder-world | READY | house/ sub-packages, PlotSetup 843 → 264, PERF-W1–W3/W7/W8 |
+| plugin-coder (cleanup) | done | tidy/plugin-coder-cleanup (+ -javadoc) | READY | LoopPlayer, bounds TTL, revision(), memory 301 → 152 lines, no @param tags |
+| plugin-tester (integration) | done | tidy/plugin-tester-integration | READY | docs/reviews/2026-10-23-tidy-integration.md, 395 tests, memory 488 → 97 lines |
+| orchestrator | in progress | CookieMemory feature/tidy-rules | — | shared rules PR |
 
 ## Merge order
 1. research note + plugin-tester review (docs), 2. model-designer, sound-designer, balance-designer, 3. plugin-coder (config, incl. shared helpers), 4. vfx-designer, plugin-coder (world), plugin-coder (ui) in parallel, merged one at a time, 5. plugin-coder (cleanup)
