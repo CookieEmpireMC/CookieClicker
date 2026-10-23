@@ -1,8 +1,9 @@
-package dev.casperrs.cookieClicker.view;
+package dev.casperrs.cookieClicker.text;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import dev.casperrs.cookieClicker.config.StationVisualSettings.Offset;
+import dev.casperrs.cookieClicker.view.StationFrame;
 import java.util.List;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.junit.jupiter.api.Test;

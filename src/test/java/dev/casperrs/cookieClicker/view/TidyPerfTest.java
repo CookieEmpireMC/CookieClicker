@@ -10,6 +10,8 @@ import dev.casperrs.cookieClicker.economy.PouchSnapshot;
 import dev.casperrs.cookieClicker.format.RealMessages;
 import dev.casperrs.cookieClicker.hud.Hud;
 import dev.casperrs.cookieClicker.text.Messages;
+import dev.casperrs.cookieClicker.text.TextPadding;
+import dev.casperrs.cookieClicker.text.TextWidth;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;

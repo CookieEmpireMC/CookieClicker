@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.casperrs.cookieClicker.format.RealMessages;
-import dev.casperrs.cookieClicker.view.TextWidth;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
