@@ -7,9 +7,8 @@ import org.jspecify.annotations.Nullable;
  *
  * @param id       stable id ({@code station-1}, …)
  * @param worldKey world key as {@code namespace:value} (e.g. {@code minecraft:overworld}), never a world name
- * @param x        position of the station's base (block centre if {@code station.snap-to-block})
- * @param yaw      the admin's facing when placing it (snapped by {@code station.snap-yaw-degrees});
- *                 pass 2 decides how the cookie/panel are laid out relative to it
+ * @param x        position of the station's base
+ * @param yaw      the station's facing; the cookie and panels are laid out relative to it
  * @param shop     with a plot layout: where the shop panel stands (and its facing); the cookie then stands right on
  *                 this station's position. Null: cookie and panel use the {@code station.*} offsets from here
  * @param clicks   with a plot layout: where the click upgrades panel stands; null = the

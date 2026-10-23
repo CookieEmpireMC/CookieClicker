@@ -6,50 +6,30 @@ import org.bukkit.configuration.ConfigurationSection;
 import java.util.function.Consumer;
 
 /**
- * {@code config.yml} {@code belt.*}: the conveyor belt look and its CPS -&gt; speed/interval curve. Purely visual (no
- * economy value).
+ * The conveyor belt look and its CPS -&gt; speed/interval curve. Purely visual.
  *
- * @param enabled      belt surfaces and cookies on/off
- * @param maxCookies   cookies per player on the belt at once
- * @param cookieScale  size of a belt cookie (1.0 = one block)
- * @param curve        CPS -&gt; speed (blocks/second) and interval (ticks)
- * @param soundEvery   ticks between {@code belt_loop} plays (0 = silent)
- * @param fallbackItem vanilla item (a {@code Material} name) of the belt surface for players without our pack
- * @param surfaceYaw   degrees added to the belt surface's turn (0 = slats move toward the pedestal; 180 flips it)
- * @param cookiePitch  degrees a belt cookie is tipped about the belt's cross axis (90 = lying flat, face up;
- *                     0 = standing upright)
+ * @param soundEvery   ticks between {@code belt_loop} plays: the file's length at its fixed pitch (0 = silent)
+ * @param fallbackItem belt surface {@code Material} for players without our pack
+ * @param surfaceYaw   degrees added to the surface's turn (0 = slats move toward the pedestal)
+ * @param cookiePitch  degrees a belt cookie is tipped about the belt's cross axis (90 = lying flat, face up)
  */
 public record BeltSettings(boolean enabled, int maxCookies, double cookieScale, BeltCurve curve, int soundEvery,
                            String fallbackItem, double surfaceYaw, double cookiePitch) {
 
     public static final int MAX_COOKIES = 32;
 
+    private static final double COOKIE_SCALE = 0.45;
+    /** t = log(1 + cps) / log(1 + 1000): slow with a cookie now and then at first, full speed from 1000 CPS. */
+    private static final BeltCurve CURVE = new BeltCurve(0.6, 2.5, 8, 80, 1000.0);
+    private static final int SOUND_EVERY = 100;
+    private static final String FALLBACK_ITEM = "BLACK_CARPET";
+    private static final double SURFACE_YAW = 0.0;
+    private static final double COOKIE_PITCH = 90.0;
+
     public static BeltSettings from(ConfigurationSection c, Consumer<String> problems) {
-        double speedMin = Math.clamp(c.getDouble("belt.speed.min", 0.6), 0.05, 20.0);
-        double speedMax = Math.clamp(c.getDouble("belt.speed.max", 2.5), 0.05, 20.0);
-        if (speedMax < speedMin) {
-            problems.accept("config.yml: belt.speed.max is below belt.speed.min; using min for both");
-            speedMax = speedMin;
-        }
-        int intervalMin = Math.clamp(c.getInt("belt.interval.min", 8), 1, 1200);
-        int intervalMax = Math.clamp(c.getInt("belt.interval.max", 80), 1, 1200);
-        if (intervalMax < intervalMin) {
-            problems.accept("config.yml: belt.interval.max is below belt.interval.min; using min for both");
-            intervalMax = intervalMin;
-        }
-        double scale = c.getDouble("belt.cps-scale", 1000.0);
-        if (!(scale > 0) || Double.isInfinite(scale)) {
-            problems.accept("config.yml: belt.cps-scale must be > 0; using 1000");
-            scale = 1000.0;
-        }
         return new BeltSettings(
                 c.getBoolean("belt.enabled", true),
                 Math.clamp(c.getInt("belt.max-cookies", 8), 0, MAX_COOKIES),
-                Math.clamp(c.getDouble("belt.cookie-scale", 0.45), 0.05, 2.0),
-                new BeltCurve(speedMin, speedMax, intervalMin, intervalMax, scale),
-                Math.clamp(c.getInt("belt.sound-every", 100), 0, 6000),
-                c.getString("belt.fallback-item", "BLACK_CARPET").trim(),
-                c.getDouble("belt.surface-yaw", 0.0) % 360.0,
-                Math.clamp(c.getDouble("belt.cookie-pitch", 90.0), -180.0, 180.0));
+                COOKIE_SCALE, CURVE, SOUND_EVERY, FALLBACK_ITEM, SURFACE_YAW, COOKIE_PITCH);
     }
 }
