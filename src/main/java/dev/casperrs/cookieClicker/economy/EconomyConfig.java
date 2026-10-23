@@ -6,9 +6,7 @@ import java.util.Map;
 
 /**
  * The parsed balance config ({@code buildings.yml} + {@code upgrades.yml}). Immutable; every number
- * comes from those files, none is defined in code.
- *
- * @param buildings in file order (the panel shows them in this order)
+ * comes from those files, none is defined in code. Buildings keep file order (the panel order).
  */
 public record EconomyConfig(double costGrowth, double basePower, double critChance, double critMultiplier,
                             Map<String, BuildingDef> buildings, Map<String, UpgradeDef> upgrades) {

@@ -59,7 +59,6 @@ public final class HousePlacer {
                          Map<String, BlockData> byString, HouseBackup backup, byte[] structure) {
     }
 
-    /** @param maxBlocks the largest design box {@code place} accepts */
     public HousePlacer(JavaPlugin plugin, PlotRegistry plots, PlotFile plotFile, Messages messages, Executor io,
                        Executor main, IntSupplier maxBlocks) {
         this.plugin = plugin;

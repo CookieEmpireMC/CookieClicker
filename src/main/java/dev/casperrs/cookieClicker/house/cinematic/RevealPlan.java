@@ -25,13 +25,7 @@ public final class RevealPlan {
 
     public enum Phase { HIDING, REVEALING, DONE }
 
-    /**
-     * @param blocksPerTick   blocks started per tick (fractions accumulate, e.g. 0.5 = one every other tick)
-     * @param maxFalling      blocks falling at the same time
-     * @param layerDelayTicks pause before the first layer and between layers
-     * @param sendPerTick     fake-air blocks sent per tick (hiding and re-asserting together)
-     * @param refreshTicks    re-assert all hidden blocks this often (0 = only on request)
-     */
+    /** blocksPerTick accumulates fractions (0.5 = every other tick); refreshTicks 0 = re-assert only on request. */
     public record Pace(double blocksPerTick, int maxFalling, int layerDelayTicks, int sendPerTick, int refreshTicks) {
         public Pace {
             if (!(blocksPerTick > 0) || maxFalling < 1 || layerDelayTicks < 0 || sendPerTick < 1 || refreshTicks < 0) {

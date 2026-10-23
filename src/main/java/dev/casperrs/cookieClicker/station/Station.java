@@ -3,16 +3,9 @@ package dev.casperrs.cookieClicker.station;
 import org.jspecify.annotations.Nullable;
 
 /**
- * A bakery station from {@code stations.yml}. Pure data: no Bukkit types, so registry logic is testable.
- *
- * @param id       stable id ({@code station-1}, …)
- * @param worldKey world key as {@code namespace:value} (e.g. {@code minecraft:overworld}), never a world name
- * @param x        position of the station's base
- * @param yaw      the station's facing; the cookie and panels are laid out relative to it
- * @param shop     with a plot layout: where the shop panel stands (and its facing); the cookie then stands right on
- *                 this station's position. Null: cookie and panels use the default offsets from here
- * @param clicks   with a plot layout: where the click upgrades panel stands; null = the shop spot
- *                 mirrored across the station
+ * A bakery station from {@code stations.yml}. Pure data: no Bukkit types, so registry logic is testable. worldKey is
+ * {@code namespace:value}, never a world name. With a plot layout shop/clicks are the panel spots (cookie on the
+ * station); null shop = default offsets, null clicks = the shop spot mirrored across the station.
  */
 public record Station(String id, String worldKey, double x, double y, double z, float yaw, @Nullable Anchor shop,
                       @Nullable Anchor clicks) {

@@ -29,7 +29,7 @@ public record PluginSettings(DatabaseSettings database, int autosaveSeconds, int
                 house, belt);
     }
 
-    /** @param refreshSeconds how often the action bar is re-sent (production always ticks once per second) */
+    /** Action bar re-send period; production always ticks once per second. */
     public record Hud(boolean enabled, int refreshSeconds) {
     }
 

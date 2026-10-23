@@ -33,11 +33,7 @@ final class WorldOperation {
     /** Set by {@link #submit} while a {@link #step} runs: the operation continues on the IO thread. */
     private boolean handedOff;
 
-    /**
-     * @param busyPath   message when another operation runs
-     * @param failedPath message for an unexpected failure ({@code <problem>} placeholder)
-     * @param label      log text, e.g. "Plot setup"
-     */
+    /** Message paths for "busy" and "failed" ({@code <problem>} placeholder); {@code label} is log text. */
     WorldOperation(Logger log, Messages messages, Executor io, Executor main, String busyPath, String failedPath,
                    String label) {
         this.log = log;

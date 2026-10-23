@@ -41,7 +41,7 @@ public final class SoundService {
     /** Survives {@link #load} (reload): a reload must not restart a loop that is still sounding. */
     private final LoopPacer loops = new LoopPacer();
 
-    /** @param hasPack whether the player has our resource pack loaded (picks key vs fallback) */
+    /** {@code hasPack} picks the pack key or the vanilla fallback per player. */
     public SoundService(Logger log, RandomGenerator random, Predicate<Player> hasPack) {
         this.random = random;
         this.hasPack = hasPack;

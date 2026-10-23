@@ -61,8 +61,7 @@ final class BeltEntities {
      * The cookie {@code along} blocks down the belt, its bottom on the rubber. The item model is centred on the
      * display (NONE transform) and stands upright with its face along z (ours and the vanilla sprite alike): it is
      * turned to face the travel direction, then tipped {@code pitchDegrees} about the belt's cross axis (90 = flat).
-     *
-     * @param thickness the model's thickness in blocks at scale 1
+     * {@code thickness} is the model's thickness in blocks at scale 1.
      */
     static Transformation cookieTransform(BeltPath path, double scale, double pitchDegrees, double thickness,
                                           double along) {

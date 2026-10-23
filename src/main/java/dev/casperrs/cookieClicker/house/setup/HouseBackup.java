@@ -11,10 +11,7 @@ import java.util.Map;
 /**
  * Undo data of one {@code /bakery house place} (pure), stored next to a structure file of the same box that also
  * holds tile contents. Undo places the structure when it loads; {@link #cells} (old block data of every changed
- * block) is the fallback.
- *
- * @param corner          minimum corner of the pasted box
- * @param previousChimney the plot's first smoke point before the paste, or null
+ * block) is the fallback. corner is the pasted box's minimum corner.
  */
 public record HouseBackup(String plotId, String design, String worldKey, long createdAt, int[] corner, int[] size,
                           Plot.@Nullable Point previousChimney, List<Cell> cells, List<Plot.Point> previousSmoke,

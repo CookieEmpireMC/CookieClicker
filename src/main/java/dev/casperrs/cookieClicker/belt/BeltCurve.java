@@ -10,13 +10,8 @@ package dev.casperrs.cookieClicker.belt;
  * interval = intervalMax - (intervalMax - intervalMin) * t        ticks between two cookies
  * </pre>
  * So the belt starts slow with a cookie now and then, and reaches full speed and the shortest gap at
- * {@code cpsScale} CPS (and stays there above it).
- *
- * @param speedMin    blocks/second at the lowest CPS (&gt; 0)
- * @param speedMax    blocks/second at {@code cpsScale} CPS and above (&gt;= speedMin)
- * @param intervalMin ticks between cookies at {@code cpsScale} CPS and above (&gt;= 1)
- * @param intervalMax ticks between cookies at the lowest CPS (&gt;= intervalMin)
- * @param cpsScale    the CPS at which the belt is at full speed (&gt; 0)
+ * {@code cpsScale} CPS (and stays there above it). Requires speedMin &gt; 0, speedMax &gt;= speedMin,
+ * 1 &lt;= intervalMin &lt;= intervalMax and cpsScale &gt; 0.
  */
 public record BeltCurve(double speedMin, double speedMax, int intervalMin, int intervalMax, double cpsScale) {
 

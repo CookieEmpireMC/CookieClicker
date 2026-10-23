@@ -163,11 +163,8 @@ public record PanelLayout(StationVisualSettings.Panel p, float toggleScale, int 
     }
 
     /**
-     * The row or toggle a ray hits first, or null.
-     *
-     * @param eye  ray start, in the panel frame relative to the panel anchor
-     * @param dir  unit ray direction in the panel frame
-     * @param rows what every row slot shows now (index = slot)
+     * The row or toggle a ray hits first, or null. The ray ({@code eye}, unit {@code dir}) is in the panel frame
+     * relative to the anchor; {@code rows} are indexed by slot.
      */
     public @Nullable Hit pick(Offset eye, Offset dir, double maxDistance, List<RowBox> rows, @Nullable ToggleBox toggle) {
         double m = p.clickMargin();

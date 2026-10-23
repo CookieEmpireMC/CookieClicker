@@ -18,17 +18,13 @@ import java.util.function.Function;
  */
 public final class StationMigration {
 
-    /**
-     * @param plots     one plot per plot id that had a station, with the station as its pedestal
-     * @param leftovers stations outside every plot, or a second station in an already migrated plot
-     */
+    /** Plots get their station as pedestal; leftovers are outside every plot or a plot's second station. */
     public record Plan(List<Plot> plots, List<Station> leftovers) {
     }
 
     private StationMigration() {
     }
 
-    /** @param plotAt the plot id whose {@code bakery-plot} region contains the station, if any */
     public static Plan plan(Collection<Station> stations, Function<Station, Optional<String>> plotAt) {
         Map<String, Plot> plots = new LinkedHashMap<>();
         List<Station> leftovers = new ArrayList<>();

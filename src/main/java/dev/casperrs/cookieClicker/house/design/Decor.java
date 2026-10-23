@@ -18,9 +18,8 @@ import java.util.Set;
  * </pre>
  * {@code at} is a plot cell from the plot's min corner (the same frame as {@code layout:} in the house file), y 0 =
  * the first air layer above the ground. A bad entry is a problem and is skipped; the rest still counts. Which cells
- * may hold decor at all is {@link DecorKeepOut}'s job; block data is checked against the server when placing.
- *
- * @param blocks the decor blocks in file order, at most one per cell
+ * may hold decor at all is {@link DecorKeepOut}'s job; block data is checked against the server when placing. Blocks
+ * keep file order, at most one per cell.
  */
 public record Decor(List<Block> blocks) {
 

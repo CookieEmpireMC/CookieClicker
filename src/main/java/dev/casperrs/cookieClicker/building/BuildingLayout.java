@@ -17,12 +17,8 @@ public final class BuildingLayout {
     }
 
     /**
-     * What one building type shows before and after a change of its owned count.
-     *
-     * @param shownBefore instances shown before (0 when nothing was shown)
-     * @param shownAfter  instances to show now: {@code min(owned, slots)}
-     * @param stageBefore model stage before (0 when nothing was shown)
-     * @param stageAfter  model stage now (1..3; 0 when nothing is shown)
+     * What one building type shows before and after a change of its owned count. Stages are 1..3, or 0 when nothing
+     * is shown; {@code shownAfter = min(owned, slots)}.
      */
     public record Change(int shownBefore, int shownAfter, int stageBefore, int stageAfter) {
 
@@ -37,11 +33,7 @@ public final class BuildingLayout {
         }
     }
 
-    /**
-     * @param ownedBefore the owned count last shown, or -1 when this type was not shown yet
-     * @param ownedAfter  the owned count now
-     * @param slots       the slot count of this type (the visual cap)
-     */
+    /** {@code ownedBefore} is -1 when this type was not shown yet; {@code slots} is the visual cap. */
     public static Change change(int ownedBefore, int ownedAfter, int slots, BuildingVisualSettings s) {
         int before = ownedBefore < 0 ? 0 : Math.min(ownedBefore, slots);
         int after = Math.max(0, Math.min(ownedAfter, slots));

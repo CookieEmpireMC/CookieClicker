@@ -15,12 +15,8 @@ import java.util.Objects;
 public final class NumberFormatter {
 
     /**
-     * @param suffixes          suffixes for 10^3, 10^6, 10^9, … in order ("K", "M", "B", …)
-     * @param largePattern      template for big numbers, with {@code {value}} and {@code {suffix}}
-     * @param scientificPattern template past the last suffix, with {@code {value}} and {@code {exponent}}
-     * @param decimals          decimals shown for big numbers
-     * @param smallDecimals     decimals shown below 1,000
-     * @param groupingSeparator not shown (short suffixes start at 1,000); read so old messages.yml files stay valid
+     * Suffixes for 10^3, 10^6, … in order; scientificPattern is used past the last suffix; smallDecimals below 1,000;
+     * groupingSeparator is unused, read so old messages.yml files stay valid.
      */
     public record Settings(List<String> suffixes, String largePattern, String scientificPattern,
                            int decimals, int smallDecimals, String groupingSeparator,

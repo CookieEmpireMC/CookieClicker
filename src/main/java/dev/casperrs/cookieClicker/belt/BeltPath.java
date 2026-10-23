@@ -9,14 +9,8 @@ import java.util.List;
 /**
  * Geometry of a straight conveyor belt. Pure Java. A belt runs from its first cell (at the factory hatch) to its last
  * cell (right before the pedestal); cookies ride from the hatch edge of the first cell to the pedestal edge of the
- * last cell, on the belt surface.
- *
- * @param startX where a cookie appears (hatch edge of the first cell, block centre line), world x
- * @param startZ world z of that point
- * @param y      belt surface height (world y)
- * @param dirX   unit travel direction x (-1, 0 or 1)
- * @param dirZ   unit travel direction z (-1, 0 or 1)
- * @param length ride length in blocks (the number of cells)
+ * last cell, on the belt surface. World coordinates: (startX, startZ) is where a cookie appears (hatch edge, block
+ * centre line), y the belt surface; dirX/dirZ are -1, 0 or 1; length is in blocks (= cells).
  */
 public record BeltPath(double startX, double startZ, double y, int dirX, int dirZ, int length) {
 

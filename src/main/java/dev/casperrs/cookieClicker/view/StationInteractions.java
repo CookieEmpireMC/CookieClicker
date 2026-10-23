@@ -64,7 +64,7 @@ public final class StationInteractions {
         this.buildingsBought = buildingsBought;
     }
 
-    /** @param hit world position of the hit on the hitbox, or null (left click: the cookie centre is used) */
+    /** {@code hit} is the world hit position, or null (left click) for the cookie centre. */
     void clickCookie(Player player, StationView view, @Nullable Vector hit) {
         CookiePouch pouch = sessions.get(player.getUniqueId()).orElse(null);
         if (pouch == null) {

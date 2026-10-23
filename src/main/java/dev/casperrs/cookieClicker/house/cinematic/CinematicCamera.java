@@ -87,8 +87,7 @@ public final class CinematicCamera implements Listener {
 
     /**
      * Puts the player in the camera at {@code camera} (feet; the view is {@link #EYE_HEIGHT} above); afterwards they get their game mode back at {@code back}.
-     *
-     * @return false when nothing changed (already in it, or the camera point's chunk isn't loaded)
+     * False when nothing changed (already in it, or the camera point's chunk isn't loaded).
      */
     public boolean enter(Player player, Location camera, Location back) {
         UUID id = player.getUniqueId();
@@ -128,10 +127,7 @@ public final class CinematicCamera implements Listener {
     /**
      * Ends the camera: target off, game mode back, entity gone, stored return removed; and the player back at the
      * return spot when {@code online} and {@code goBack}. Not online (quit): only the game mode; the spot stays in
-     * the PDC and is used on the next join.
-     *
-     * @param goBack false when the player is being teleported somewhere else right now
-     * @return whether they were in the camera
+     * the PDC and is used on the next join. Returns whether they were in the camera.
      */
     public boolean exit(Player player, boolean online, boolean goBack) {
         Shot shot = shots.remove(player.getUniqueId());

@@ -195,9 +195,8 @@ public final class VisibleBuildings implements Listener, PlotPresenceListener, S
     }
 
     /**
-     * Brings {@code player}'s buildings in line with their pouch and the plot they are in.
-     *
-     * @param loud play the appear/milestone effects and one sound (a purchase only; never for a fresh view)
+     * Brings {@code player}'s buildings in line with their pouch and the plot they are in. {@code loud} plays the
+     * appear/milestone effects and one sound (a purchase only; never for a fresh view).
      */
     private void show(Player player, boolean loud) {
         UUID id = player.getUniqueId();

@@ -88,9 +88,7 @@ final class PanelUpdater {
     }
 
     /**
-     * Recomputes every row of both panels.
-     *
-     * @param pulse a player action (purchase, toggle) changed the values: rows that roll also pulse
+     * Recomputes every row of both panels; {@code pulse} (a purchase or toggle) makes rolling rows pulse too.
      */
     void update(StationView view, CookiePouch pouch, long now, boolean pulse) {
         for (StationView.Panel panel : view.panels()) {

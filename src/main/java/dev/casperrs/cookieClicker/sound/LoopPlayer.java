@@ -61,10 +61,7 @@ public final class LoopPlayer {
         this(sounds, Bukkit::getCurrentTick, r -> Bukkit.getScheduler().runTaskTimer(plugin, r, 0L, 1L));
     }
 
-    /**
-     * @param ticks     the server tick source
-     * @param everyTick schedules the shared task to run every tick (returns the task, or null in tests)
-     */
+    /** {@code everyTick} schedules the shared every-tick task (null in tests). */
     LoopPlayer(SoundService sounds, IntSupplier ticks, Function<Runnable, @Nullable BukkitTask> everyTick) {
         this.sounds = sounds;
         this.ticks = ticks;

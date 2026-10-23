@@ -35,13 +35,8 @@ public record StationVisualSettings(double viewDistance, int refreshTicks, doubl
     }
 
     /**
-     * The upgrade shelf under the click upgrades panel; each icon costs 2 entities per player.
-     *
-     * @param offset         centre of the first (top left) icon, relative to the click panel's header anchor
-     * @param spacing        distance between icon centres, right and down
-     * @param hitboxSize     width and height of each icon's click box
-     * @param flyTicks       how long a bought upgrade's icon glides from its row to its slot (1-59)
-     * @param tooltipSeconds how long the action bar shows an icon's name and effect before the HUD returns
+     * The upgrade shelf under the click upgrades panel; each icon costs 2 entities per player. offset is the first
+     * (top left) icon's centre relative to the click panel's header anchor; flyTicks 1-59.
      */
     public record Shelf(Offset offset, int columns, double spacing, float scale, int maxIcons, float hitboxSize,
                         int flyTicks, int tooltipSeconds) {
@@ -64,12 +59,7 @@ public record StationVisualSettings(double viewDistance, int refreshTicks, doubl
         public static final Offset ZERO = new Offset(0, 0, 0);
     }
 
-    /**
-     * @param spinSecondsPerRevolution one full turn takes this long (0 = no spin)
-     * @param segmentTicks             length of one interpolated motion segment
-     * @param brightness               block and sky light of the cookie display (0-15)
-     * @param clickEffectOffset        the click effect is pulled this far out of the cookie toward the player
-     */
+    /** spinSecondsPerRevolution 0 = no spin; brightness 0-15; clickEffectOffset pulls the effect toward the player. */
     public record Cookie(Offset offset, float scale, double bobAmplitude, int bobPeriodTicks,
                          double spinSecondsPerRevolution, int segmentTicks, double hitboxMargin, float viewRange,
                          int brightness, double clickEffectOffset) {
@@ -86,25 +76,10 @@ public record StationVisualSettings(double viewDistance, int refreshTicks, doubl
 
     /**
      * The looks and layout shared by both hologram panels. Header, ×N toggle and rows are centred on one column under
-     * the panel anchor; the vertical gaps are air between the rendered text blocks.
-     *
-     * @param offset        where the header text sits (its bottom centre)
-     * @param textYawOffset degrees added to the text yaw (calibration if text shows mirrored)
-     * @param iconYawOffset degrees added to the icon yaw (calibration for the FIXED item transform)
-     * @param textOffset    row text left edge, relative to the row's bottom; with {@link #iconOffset} it only sets
-     *                      how icon and text sit next to each other: the row (icon + text) is centred on the column
-     * @param iconOffset    row icon centre relative to the row's bottom (see textOffset)
-     * @param colors        row state -> background colour (ARGB)
-     * @param iconFallbacks building id -> vanilla material name shown to players without the pack
-     * @param textBrightness block and sky light of the header and row texts (0-15)
-     * @param textLeftEdge  shift each row text right by half its estimated rendered width so every row starts at
-     *                      {@code textOffset} (a text display is otherwise centred on its position)
-     * @param textPadding   spaces added inside every text background, left and right
-     * @param sameWidth     pad the header, toggle and every row to the full column width
-     * @param headerGap     air between the header and the toggle (blocks)
-     * @param toggleGap     air between the toggle and the first row
-     * @param rowGap        air between two rows
-     * @param clickMargin   a click this close (blocks) outside a row's or the toggle's rendered text still counts
+     * the panel anchor; the vertical gaps are air between the rendered text blocks. Gaps and clickMargin in blocks, yaw
+     * offsets in degrees (calibration), colours ARGB, brightness 0-15; offset is the header's bottom centre, text and
+     * icon offsets are relative to the row bottom (icon + text centred as one); textLeftEdge makes rows start at
+     * textOffset.
      */
     public record Panel(Offset offset, float textYawOffset, float iconYawOffset, float headerScale, float textScale,
                         int lineWidth, Offset textOffset, Offset iconOffset,

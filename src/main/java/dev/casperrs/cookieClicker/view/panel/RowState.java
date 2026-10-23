@@ -7,13 +7,8 @@ import dev.casperrs.cookieClicker.economy.Economy;
 /**
  * What one buildings panel row shows for the chosen bulk mode. The panel re-renders a row only when this changes
  * (cookies tick every second, but a row only changes when affordability flips or owned/count/cost/CPS change).
- * Pure Java.
- *
- * @param cost   cost of {@code count} more (the batch's bulk cost)
- * @param cps    what {@code count} more add to the CPS
- * @param needed baked cookies needed to unlock (shown on locked rows; static per building)
- * @param count  how many a click buys: the ×N of the mode, or for Max the most affordable now (1 when none is
- *               affordable: the row then shows the cost of 1 in the unaffordable look)
+ * Pure Java. cost and cps are for {@code count} more; for Max, count is the most affordable now (1 when none is,
+ * shown unaffordable); needed is the baked cookies to unlock.
  */
 public record RowState(Style style, int owned, double cost, double cps, double needed, int count)
         implements PanelRowState {

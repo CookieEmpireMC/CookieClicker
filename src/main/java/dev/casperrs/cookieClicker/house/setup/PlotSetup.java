@@ -43,11 +43,7 @@ public final class PlotSetup {
     private final SetupPlanner planner;
     private final WorldOperation ops;
 
-    /**
-     * @param store      saves a changed plot everywhere (registry, stations, plots.yml)
-     * @param maxBlocks  the largest design box and layout area accepted
-     * @param footprints building id → footprint side, kept free of decor
-     */
+    /** {@code store} saves a changed plot everywhere (registry, stations, plots.yml). */
     public PlotSetup(JavaPlugin plugin, PlotRegistry plots, Consumer<Plot> store, Messages messages, Executor io,
                      Executor main, IntSupplier maxBlocks, Supplier<Map<String, Double>> footprints) {
         this.plugin = plugin;

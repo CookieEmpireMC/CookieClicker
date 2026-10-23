@@ -5,10 +5,8 @@ import org.bukkit.configuration.ConfigurationSection;
 import java.util.function.Consumer;
 
 /**
- * Design limits, the first-visit build cinematic, chimney smoke, factory steam and the ambient oven hum.
- *
- * @param maxBlocks largest design box (x * y * z) {@code /bakery house place} accepts; also the largest house region
- *                  box the cinematic will hide
+ * Design limits, the first-visit build cinematic, chimney smoke, factory steam and the ambient oven hum. maxBlocks is a
+ * box volume (x * y * z), for {@code /bakery house place} and the house region the cinematic hides.
  */
 public record HouseSettings(int maxBlocks, Cinematic cinematic, Chimney chimney, Steam steam, Ambient ambient) {
 
@@ -17,14 +15,8 @@ public record HouseSettings(int maxBlocks, Cinematic cinematic, Chimney chimney,
     public enum KeepOut { HOLD, SLOW, NONE }
 
     /**
-     * @param blocksPerTick      blocks started per tick (0.5 = one every other tick); each landing is ~12 particles +
-     *                           3 sounds, tuned for the factory (~600-1200 blocks, about 17-30 s)
-     * @param maxFallingDisplays falling block displays alive per player (at most 24, the effects engine's cap)
-     * @param slowAmount         {@code keep-out: slow}: movement speed modifier (-1 = stand still, 0 = normal)
-     * @param refreshHiddenTicks re-send fake air for still-hidden blocks this often (0 = off)
-     * @param reassertRadius     after an interaction within this many blocks of the house, re-send fake air
-     * @param hammerEvery        play {@code house_hammer} on every n-th landing (0 = never)
-     * @param camera             watch the build in spectator mode from the plot's camera point (when it has one)
+     * blocksPerTick may be fractional (0.5 = every other tick); maxFallingDisplays at most 24 (effects engine cap);
+     * slowAmount -1 = stand still, 0 = normal; refreshHiddenTicks and hammerEvery 0 = off; reassertRadius in blocks.
      */
     public record Cinematic(boolean enabled, Trigger trigger, boolean teleportToViewpoint, double blocksPerTick,
                             int maxFallingDisplays, int layerDelayTicks, KeepOut keepOut, double slowAmount,
@@ -32,18 +24,15 @@ public record HouseSettings(int maxBlocks, Cinematic cinematic, Chimney chimney,
                             double viewpointRadius, double confettiHeight, boolean camera) {
     }
 
-    /** @param crackleTicks {@code house_chimney_crackle} period: the file's length at its fixed pitch (3 s) */
+    /** crackleTicks: the crackle file's length at its fixed pitch (3 s). */
     public record Chimney(boolean smoke, int crackleTicks) {
     }
 
-    /** @param every ticks between the start of one vent's loop and the next, so vents don't puff together */
+    /** {@code every}: ticks between two vents' loop starts, so vents don't puff together. */
     public record Steam(boolean enabled, int every) {
     }
 
-    /**
-     * @param every  {@code factory_ambient} period: the file's length at its fixed pitch (4 s)
-     * @param radius only for players within this many blocks of the first steam point (or the house centre)
-     */
+    /** {@code every} in ticks (the hum file's length, 4 s); radius in blocks from the first steam point. */
     public record Ambient(boolean enabled, int every, double radius) {
     }
 

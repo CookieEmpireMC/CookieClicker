@@ -22,10 +22,8 @@ import java.util.Map;
  * middle: [housing, roller]        # cell i in between: middle[(i - 1) % len(middle)]
  * </pre>
  * Only the belt cells change, from y 0 to surface-height - 1. Block data strings are checked against the server
- * when placing. Every problem is collected.
- *
- * @param surfaceHeight frame height in blocks (1 to {@link #MAX_HEIGHT}); the belt surface sits on top
- * @param columns       the named columns, each exactly {@code surfaceHeight} long
+ * when placing. Every problem is collected. surfaceHeight is 1 to {@link #MAX_HEIGHT} blocks;
+ * every column is that long.
  */
 public record BeltStyle(int surfaceHeight, Map<String, List<String>> columns, String first, String last,
                         List<String> middle) {

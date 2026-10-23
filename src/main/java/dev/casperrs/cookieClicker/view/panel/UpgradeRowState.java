@@ -11,18 +11,9 @@ import java.util.Locale;
 /**
  * What one click upgrades panel row shows for the chosen bulk mode. Repeatable upgrades show their level, the cost
  * of {@code count} more levels and the +CPC they add; one-time upgrades show their price and effect and ignore the
- * mode (always bought once). Pure Java.
- *
- * @param count          levels a click buys: the ×N of the mode cut to the levels left below {@code max-level}, or
- *                       for Max the most affordable now (1 when none is: cost of 1, unaffordable look); 0 when maxed
- * @param cost           cost of {@code count} levels (one-time: the price); 0 when maxed
- * @param gain           how much the click power grows with those levels; 0 when maxed
- * @param value          the effect of one level ({@code upgrades.yml effect.value}), for the effect text
- * @param type           the effect type (the effect text shows {@code click-cps-fraction} as a percentage)
- * @param neededBaked    baked cookies needed to unlock (locked rows)
- * @param neededBuilding building whose count unlocks it while that count isn't reached yet, else null (locked rows
- *                       then show {@code neededBaked})
- * @param neededOwned    how many of {@code neededBuilding}
+ * mode (always bought once). Pure Java. count, cost and gain are 0 when maxed; count is the mode's ×N cut to the
+ * levels left, or for Max the most affordable now (1 when none is, shown unaffordable); locked rows show
+ * neededBuilding/neededOwned until reached, else neededBaked.
  */
 public record UpgradeRowState(Style style, boolean repeatable, int level, int count, double cost, double gain,
                               double value, EffectType type, double neededBaked, @Nullable String neededBuilding,
