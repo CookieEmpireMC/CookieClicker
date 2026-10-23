@@ -43,12 +43,7 @@ final class DropJob extends Job {
     private boolean impacted;
     private boolean landed;
 
-    /**
-     * @param viewerPresent true while the viewer is online and in the target's world
-     * @param onImpact      engine impact effects plus the caller's impact callback
-     * @param onLanded      the caller's landing callback
-     * @param onEnd         called once from cleanup (releases the cap slot)
-     */
+    /** {@code onImpact} = engine impact effects plus the caller's callback; {@code onEnd} releases the cap slot. */
     DropJob(DropTrack track, Body body, BooleanSupplier viewerPresent, Runnable onImpact, Runnable onLanded,
             Consumer<DropJob> onEnd) {
         this.track = track;

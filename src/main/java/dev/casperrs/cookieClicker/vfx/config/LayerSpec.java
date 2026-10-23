@@ -117,11 +117,8 @@ public sealed interface LayerSpec {
 
     /**
      * {@code type: block-drop}: how {@code Effects.dropBlock} animates a falling block. Ignored by play.
-     *
-     * @param impactEffect    effect ID played for the viewer at the block's bottom centre on impact, or null
-     * @param impactParticles {@code block} particles of the dropped block itself on impact (0 = none)
-     * @param blockLight      fixed block light 0-15, or -1 for {@code brightness: auto}
-     * @param skyLight        fixed sky light 0-15, or -1 for {@code brightness: auto}
+     * {@code impactEffect} is an effect ID played for the viewer on impact (or null), {@code impactParticles} counts
+     * {@code block} particles on impact (0 = none), the lights are 0-15 or -1 for {@code brightness: auto}.
      */
     record BlockDrop(String label, DropTrack track, @Nullable String impactEffect, int impactParticles,
                      int blockLight, int skyLight, float viewRange) implements LayerSpec {

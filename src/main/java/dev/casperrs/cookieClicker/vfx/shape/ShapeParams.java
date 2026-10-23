@@ -3,23 +3,12 @@ package dev.casperrs.cookieClicker.vfx.shape;
 /**
  * Everything a shape needs, in blocks, degrees and ticks. Fields a shape doesn't use are ignored.
  *
- * @param points        points per tick (ring, sphere) or in total (burst, arc, line, helix per strand, fountain,
- *                      sparkles = number of sparks); ignored by {@link ShapeKind#POINT}
- * @param radius        radius in blocks (final radius when growing)
- * @param radiusStart   start radius for ring/sphere growth (equal to {@code radius} = no growth)
- * @param height        helix height or sparkle rise, blocks
- * @param turns         helix revolutions
- * @param angleDeg      arc length in degrees
- * @param startAngleDeg first angle for ring/arc/helix, degrees (0 = +x)
- * @param spreadDeg     fountain cone half-angle, degrees
- * @param upBias        burst only: 0 = full sphere, 1 = only straight up
- * @param toX           line end, relative to the origin
- * @param plane         ring/arc only: horizontal, vertical, or facing the viewer
- * @param durationTicks how many ticks the shape is drawn over (sparkles: life of one spark)
- * @param staggerTicks  sparkles only: start times spread over this many ticks
- * @param emitEvery     sparkles only: emit each spark every n ticks
- * @param direction     none (placed), outward (launched along the shape normal) or up
- * @param strands       helix strands
+ * <p>{@code points}: per tick (ring, sphere) or in total (burst, arc, line, helix per strand, fountain, sparkles);
+ * ignored by {@link ShapeKind#POINT}. {@code radiusStart} equal to {@code radius} = no growth. {@code upBias}
+ * (burst): 0 = full sphere, 1 = straight up. {@code toX/Y/Z}: line end relative to the origin. {@code plane}
+ * (ring/arc): horizontal, vertical or facing the viewer. {@code startAngleDeg}: 0 = +x. {@code direction}: none
+ * (placed), outward (along the shape normal) or up. {@code durationTicks}: draw time (sparkles: one spark's life);
+ * {@code staggerTicks}/{@code emitEvery}: sparkles only.
  */
 public record ShapeParams(
         ShapeKind kind,

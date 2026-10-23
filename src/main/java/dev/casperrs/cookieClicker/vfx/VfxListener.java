@@ -24,10 +24,6 @@ public final class VfxListener implements Listener {
     private final Predicate<UUID> tracked;
     private final Consumer<UUID> viewerQuit;
 
-    /**
-     * @param tracked    true for entity IDs of running effects (display effects and falling blocks)
-     * @param viewerQuit stops everything shown to that viewer (display effects, falling blocks, loops)
-     */
     VfxListener(DisplayRegistry registry, Spawner spawner, Predicate<UUID> tracked, Consumer<UUID> viewerQuit) {
         this.registry = registry;
         this.spawner = spawner;

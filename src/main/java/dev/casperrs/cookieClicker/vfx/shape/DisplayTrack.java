@@ -6,22 +6,14 @@ import java.util.List;
  * A precomputed display-entity animation: keyframes the server sends (one {@code setTransformation} each, with
  * interpolation delay 0 and the keyframe's duration), text-opacity steps, and the tick the entity is removed.
  * The client interpolates between keyframes, so nothing runs per tick. Plain maths, no Bukkit types.
- *
- * @param spawn       the transformation the entity spawns with (tick 0)
- * @param keyframes   targets sent at {@link Keyframe#tick()}, in tick order
- * @param opacity     text opacity steps (TextDisplay only; empty for items), in tick order
- * @param removeTick  the tick the entity is removed (after the last keyframe has finished)
+ * {@code opacity} is for TextDisplay only (empty for items); {@code removeTick} comes after the last keyframe ends.
  */
 public record DisplayTrack(Keyframe spawn, List<Keyframe> keyframes, List<OpacityStep> opacity, int removeTick) {
 
     /**
-     * One transformation target.
-     *
-     * @param tick     when to send it (ticks after spawn)
-     * @param tx       translation, blocks
-     * @param scale    uniform scale
-     * @param angleDeg left rotation around (ax, ay, az), degrees; keep steps between keyframes under 120
-     * @param duration interpolation duration in ticks (0 for the spawn state)
+     * One transformation target, sent {@code tick} ticks after spawn: translation in blocks, uniform scale, left
+     * rotation of {@code angleDeg} degrees around (ax, ay, az) (keep steps between keyframes under 120), and the
+     * interpolation {@code duration} in ticks (0 for the spawn state).
      */
     public record Keyframe(int tick, double tx, double ty, double tz, double scale,
                            double angleDeg, double ax, double ay, double az, int duration) {

@@ -34,9 +34,8 @@ public final class EffectsConfigParser {
     }
 
     /**
-     * @param root     the server's effects.yml
-     * @param defaults the effects.yml shipped in the jar, or null; presets missing from {@code root} are taken from
-     *                 here, and so are missing limit values, so new effects in a plugin update work with an old file
+     * Parses the server's effects.yml. Presets and limit values missing from it come from {@code defaults} (the
+     * jar's effects.yml, or null), so new effects in a plugin update work with an old file.
      */
     public static EffectsConfig parse(ConfigurationSection root, @Nullable ConfigurationSection defaults) {
         List<String> problems = new ArrayList<>();

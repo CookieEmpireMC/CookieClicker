@@ -32,8 +32,8 @@ final class PopJob extends Job {
     }
 
     /**
-     * @param motion if set, every step also sets translation and left rotation from it at the step's end tick, so
-     *               the caller's spin/bob travel in the same interpolation; null = keep the current ones
+     * With a {@code motion}, every step also sets translation and left rotation from it at the step's end tick, so
+     * the caller's spin/bob travel in the same interpolation; null = keep the current ones.
      */
     PopJob(Display display, Vector3f base, PopSequence sequence, @Nullable PopMotion motion, Consumer<PopJob> onEnd) {
         this.motion = motion;
