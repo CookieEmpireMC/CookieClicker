@@ -107,6 +107,7 @@ none
 | sound-designer | `sounds.yml` comments | — | `tidy/sound-designer` |
 | model-designer | `houses/*.yml` comments | — | `tidy/model-designer` |
 | balance-designer | outdated notes in `buildings.yml` / `upgrades.yml` | — | `tidy/balance-designer` |
+| orchestrator | after the integration review: CookieMemory PR (user merges) moving the lasting rules into the shared team knowledge (`bakery-context`): code standards + comment rule, performance rules (per-tick/per-player work, scheduled tasks, DB writes, async only with a spark profile + the thread-safety table), minimal config.yml (admin options only, resource pack first, defaults in code), paper-plugin.yml + loader pattern | integration READY | CookieMemory branch |
 | plugin-tester | test comments; adapt tests to moved/renamed classes; review each code branch, then integration incl. after-measurements | owner DONE | (reviewed branch) |
 
 The world and ui parts only move classes inside their own packages; a move across the two goes into their report
