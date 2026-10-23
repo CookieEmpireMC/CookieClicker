@@ -9,16 +9,12 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Undo data of one {@code /bakery house place} (pure). Stored as {@code house-backups/<plot>/<createdAt>.yml}, next to
- * a structure file ({@code .nbt}) of the same box that also holds tile-entity contents (chests, signs). Undo places
- * the structure when it loads; the {@link #cells} (old block data of every block the paste changed) are the fallback
- * and what the round-trip tests check.
+ * Undo data of one {@code /bakery house place} (pure), stored next to a structure file of the same box that also
+ * holds tile contents. Undo places the structure when it loads; {@link #cells} (old block data of every changed
+ * block) is the fallback.
  *
- * @param corner          minimum corner of the pasted box (world block coordinates)
- * @param size            size of that box
+ * @param corner          minimum corner of the pasted box
  * @param previousChimney the plot's first smoke point before the paste, or null
- * @param previousSmoke   every smoke point of the plot before the paste (restored on undo)
- * @param previousSteam   every steam point of the plot before the paste (restored on undo)
  */
 public record HouseBackup(String plotId, String design, String worldKey, long createdAt, int[] corner, int[] size,
                           Plot.@Nullable Point previousChimney, List<Cell> cells, List<Plot.Point> previousSmoke,
@@ -30,14 +26,13 @@ public record HouseBackup(String plotId, String design, String worldKey, long cr
         previousSteam = List.copyOf(previousSteam);
     }
 
-    /** A backup with at most one previous smoke point and no steam. */
     public HouseBackup(String plotId, String design, String worldKey, long createdAt, int[] corner, int[] size,
                        Plot.@Nullable Point previousChimney, List<Cell> cells) {
         this(plotId, design, worldKey, createdAt, corner, size, previousChimney, cells,
                 previousChimney == null ? List.of() : List.of(previousChimney), List.of());
     }
 
-    /** One changed block and the block data it had before the paste. */
+    /** One changed block and its block data before the change. */
     public record Cell(int x, int y, int z, String oldData) {
     }
 
@@ -48,7 +43,6 @@ public record HouseBackup(String plotId, String design, String worldKey, long cr
         void set(int x, int y, int z, String blockData);
     }
 
-    /** A block the paste will set: world position and new block data. */
     public record Change(int x, int y, int z, String newData) {
     }
 
@@ -63,7 +57,6 @@ public record HouseBackup(String plotId, String design, String worldKey, long cr
                 previousChimney == null ? List.of() : List.of(previousChimney), List.of(), changes, world);
     }
 
-    /** As above, remembering every smoke and steam point the plot had before the paste. */
     public static HouseBackup capture(String plotId, String design, String worldKey, long createdAt, int[] corner,
                                       int[] size, List<Plot.Point> previousSmoke, List<Plot.Point> previousSteam,
                                       List<Change> changes, BlockAccess world) {
@@ -78,11 +71,8 @@ public record HouseBackup(String plotId, String design, String worldKey, long cr
                 previousSmoke.isEmpty() ? null : previousSmoke.getFirst(), cells, previousSmoke, previousSteam);
     }
 
-    /** Puts every recorded block back (block data only; tile contents come from the structure file). */
     public void restoreCells(BlockAccess world) {
-        for (Cell c : cells) {
-            world.set(c.x(), c.y(), c.z(), c.oldData());
-        }
+        restore(cells, world);
     }
 
     public Map<String, Object> toMap() {
@@ -102,11 +92,7 @@ public record HouseBackup(String plotId, String design, String worldKey, long cr
         if (!previousSteam.isEmpty()) {
             m.put("previous-steam", triples(previousSteam));
         }
-        List<String> out = new ArrayList<>(cells.size());
-        for (Cell c : cells) {
-            out.add(c.x() + " " + c.y() + " " + c.z() + " " + c.oldData());
-        }
-        m.put("cells", out);
+        m.put("cells", encode(cells));
         return m;
     }
 
@@ -124,22 +110,8 @@ public record HouseBackup(String plotId, String design, String worldKey, long cr
         List<Plot.Point> smoke = m.get("previous-smoke") instanceof List<?> rawSmoke ? readTriples(rawSmoke)
                 : chimney == null ? List.of() : List.of(chimney);
         List<Plot.Point> steam = m.get("previous-steam") instanceof List<?> rawSteam ? readTriples(rawSteam) : List.of();
-        List<Cell> cells = new ArrayList<>();
-        if (m.get("cells") instanceof List<?> raw) {
-            for (Object o : raw) {
-                String[] parts = String.valueOf(o).split(" ", 4);
-                if (parts.length != 4) {
-                    throw new IllegalArgumentException("bad cell '" + o + "'");
-                }
-                try {
-                    cells.add(new Cell(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]),
-                            Integer.parseInt(parts[2]), parts[3]));
-                } catch (NumberFormatException e) {
-                    throw new IllegalArgumentException("bad cell '" + o + "'", e);
-                }
-            }
-        }
-        return new HouseBackup(plot, design, world, created.longValue(), corner, size, chimney, cells, smoke, steam);
+        return new HouseBackup(plot, design, world, created.longValue(), corner, size, chimney, decode(m.get("cells")),
+                smoke, steam);
     }
 
     private static List<List<Double>> triples(List<Plot.Point> points) {
@@ -169,14 +141,48 @@ public record HouseBackup(String plotId, String design, String worldKey, long cr
         return null;
     }
 
-    private static String string(Map<String, ?> m, String key) {
+    static void restore(List<Cell> cells, BlockAccess world) {
+        for (Cell c : cells) {
+            world.set(c.x(), c.y(), c.z(), c.oldData());
+        }
+    }
+
+    static List<String> encode(List<Cell> cells) {
+        List<String> out = new ArrayList<>(cells.size());
+        for (Cell c : cells) {
+            out.add(c.x() + " " + c.y() + " " + c.z() + " " + c.oldData());
+        }
+        return out;
+    }
+
+    static List<Cell> decode(@Nullable Object raw) {
+        List<Cell> cells = new ArrayList<>();
+        if (!(raw instanceof List<?> list)) {
+            return cells;
+        }
+        for (Object o : list) {
+            String[] parts = String.valueOf(o).split(" ", 4);
+            if (parts.length != 4) {
+                throw new IllegalArgumentException("bad cell '" + o + "'");
+            }
+            try {
+                cells.add(new Cell(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]),
+                        Integer.parseInt(parts[2]), parts[3]));
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("bad cell '" + o + "'", e);
+            }
+        }
+        return cells;
+    }
+
+    static String string(Map<String, ?> m, String key) {
         if (!(m.get(key) instanceof String s) || s.isBlank()) {
             throw new IllegalArgumentException(key + " missing");
         }
         return s;
     }
 
-    private static int[] ints(Object raw, String key) {
+    static int[] ints(@Nullable Object raw, String key) {
         if (!(raw instanceof List<?> l) || l.size() != 3) {
             throw new IllegalArgumentException(key + " must be [x, y, z]");
         }
