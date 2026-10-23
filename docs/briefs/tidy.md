@@ -31,6 +31,12 @@ commented only where the code can't explain itself.
       new class names are right).
 - [ ] The CookieMemory PR (orchestrator, below) also removes outdated rules from the shared skills, not just adds
       the new ones.
+### Tests (important only)
+- [ ] The suite tests what matters, not every class: economy formulas + golden values, save/load and schema
+      upgrades, config/asset/sound/effect contracts, permissions/commands, thread rules, the panel geometry pins,
+      and regressions for bugs that really happened. Trivial getter/record tests, duplicates, tests of private
+      details and long case tables (where 1–2 cases prove the rule) go. No coverage target. Roughly halve the
+      ~686 tests; the vfx tests are trimmed the same way by the vfx-designer.
 ### config.yml
 - [ ] `resource-pack:` is the first section, then `database:`, then the rest.
 - [ ] Every key that no code reads is removed (e.g. `plot.chimney-reach`). Every remaining key is read by code
@@ -108,14 +114,15 @@ none
 |---|---|---|---|
 | resource-pack-researcher | `docs/research/paper-plugin.md` | — | feature branch (docs) |
 | plugin-tester | architecture + standards + performance review: standards section, findings with PERF ratings, split plan for the big classes, before-measurements | — | `tidy/plugin-tester-review` |
+| plugin-tester (prune) | trim the test suite per "Tests (important only)" (all of src/test except `vfx/`, plus tool tests) | — | `tidy/plugin-tester-prune` |
 | plugin-coder (config) | `config.yml` shrink/reorder, `config/` package + `BakeryConfigLoader` + `CookieClicker.java` wiring, constants for moved knobs, comments in these files, **paper-plugin.yml + loader**, the shared helpers `log/WarnOnce`, `text/MarkerTemplate`, `TextWidth`/`TextPadding` → `text/`, version 1.2.2 | review, research | `tidy/plugin-coder-config` |
 | plugin-coder (world) | standards, structure, PERF fixes and comments in `house/`, `plot/`, `belt/`, `building/`, `worldguard/` | config part merged | `tidy/plugin-coder-world` |
 | plugin-coder (ui) | standards, structure, PERF fixes and comments in `view/`, `economy/`, `station/`, `hud/`, `session/`, `sound/`, `storage/`, `command/`, `format/`, `pack/`, `text/`, plus `messages.yml` / `plugin.yml` comments | config part merged | `tidy/plugin-coder-ui` |
-| vfx-designer | the same (incl. PERF fixes) for the `vfx` package and its tests, `effects.yml` comments | config part merged | `tidy/vfx-designer` |
+| vfx-designer | the same (incl. PERF fixes) for the `vfx` package, trims its tests per "Tests (important only)", `effects.yml` comments | config part merged | `tidy/vfx-designer` |
 | sound-designer | `sounds.yml` comments | — | `tidy/sound-designer` |
 | model-designer | `houses/*.yml` comments | — | `tidy/model-designer` |
 | balance-designer | outdated notes in `buildings.yml` / `upgrades.yml` | — | `tidy/balance-designer` |
-| orchestrator | after the integration review: CookieMemory PR (user merges) moving the lasting rules into the shared team knowledge (`bakery-context`): code standards + comment rule, performance rules (per-tick/per-player work, scheduled tasks, DB writes, async only with a spark profile + the thread-safety table), minimal config.yml (admin options only, resource pack first, defaults in code), paper-plugin.yml + loader pattern; and removes rules in the shared skills that tidy made outdated | integration READY | CookieMemory branch |
+| orchestrator | after the integration review: CookieMemory PR (user merges) moving the lasting rules into the shared team knowledge (`bakery-context`): code standards + comment rule, the "important tests only" rule, performance rules (per-tick/per-player work, scheduled tasks, DB writes, async only with a spark profile + the thread-safety table), minimal config.yml (admin options only, resource pack first, defaults in code), paper-plugin.yml + loader pattern; and removes rules in the shared skills that tidy made outdated | integration READY | CookieMemory branch |
 | plugin-coder (cleanup) | prune `.claude/agent-memory/bakery-team-plugin-coder/` against the new structure; small leftovers | all coder parts merged | `tidy/plugin-coder-cleanup` |
 | plugin-tester | test comments; adapt tests to moved/renamed classes; review each code branch, then integration incl. after-measurements | owner DONE | (reviewed branch) |
 
