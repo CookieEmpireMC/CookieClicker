@@ -8,9 +8,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.casperrs.cookieClicker.config.BuildingVisualSettings;
 import dev.casperrs.cookieClicker.config.YamlFiles;
-import dev.casperrs.cookieClicker.house.BuildingSlots;
-import dev.casperrs.cookieClicker.house.HouseDesign;
-import dev.casperrs.cookieClicker.house.HouseDesignParser;
+import dev.casperrs.cookieClicker.house.design.BuildingSlots;
+import dev.casperrs.cookieClicker.house.design.HouseDesign;
+import dev.casperrs.cookieClicker.house.design.HouseDesignParser;
 import dev.casperrs.cookieClicker.plot.Plot;
 import java.io.InputStream;
 import java.io.InputStreamReader;

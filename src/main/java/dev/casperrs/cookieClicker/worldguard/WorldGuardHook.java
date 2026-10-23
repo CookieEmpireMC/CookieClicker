@@ -12,6 +12,7 @@ import com.sk89q.worldguard.protection.flags.registry.FlagRegistry;
 import com.sk89q.worldguard.protection.managers.RegionManager;
 import com.sk89q.worldguard.protection.regions.ProtectedPolygonalRegion;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
+import dev.casperrs.cookieClicker.log.WarnOnce;
 import dev.casperrs.cookieClicker.plot.PlotRegions;
 import dev.casperrs.cookieClicker.plot.Presence;
 import dev.casperrs.cookieClicker.plot.RegionShape;
@@ -20,11 +21,9 @@ import org.bukkit.World;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
-import java.util.Set;
 import java.util.logging.Logger;
 
 /**
@@ -43,11 +42,10 @@ public final class WorldGuardHook implements PlotRegions {
     private static @Nullable StringFlag plotFlag;
     private static @Nullable StringFlag houseFlag;
 
-    private final Logger log;
-    private final Set<String> warned = new HashSet<>();
+    private final WarnOnce warnings;
 
     private WorldGuardHook(Logger log) {
-        this.log = log;
+        this.warnings = new WarnOnce(log);
     }
 
     /** Compares the leading dotted numbers ("7.0.20-SNAPSHOT;abc" -> 7, 0, 20). Unparseable = not older. */
@@ -105,7 +103,7 @@ public final class WorldGuardHook implements PlotRegions {
         ApplicableRegionSet set = WorldGuard.getInstance().getPlatform().getRegionContainer().createQuery()
                 .getApplicableRegions(BukkitAdapter.adapt(new Location(world, x, y, z)));
         if (set.isVirtual()) { // protection disabled or region data failed to load in this world
-            warnOnce("virtual:" + world.getKey(), "WorldGuard has no region data for " + world.getKey()
+            warnings.warn("virtual:" + world.getKey(), "WorldGuard has no region data for " + world.getKey()
                     + " (regions disabled or failed to load); no bakery plots there");
             return Presence.NONE;
         }
@@ -162,7 +160,7 @@ public final class WorldGuardHook implements PlotRegions {
     private @Nullable RegionManager manager(World world) {
         RegionManager rm = WorldGuard.getInstance().getPlatform().getRegionContainer().get(BukkitAdapter.adapt(world));
         if (rm == null) {
-            warnOnce("manager:" + world.getKey(), "WorldGuard has no region manager for " + world.getKey()
+            warnings.warn("manager:" + world.getKey(), "WorldGuard has no region manager for " + world.getKey()
                     + " (regions disabled there?); no bakery plots in that world");
         }
         return rm;
@@ -171,11 +169,5 @@ public final class WorldGuardHook implements PlotRegions {
     private static @Nullable String value(ProtectedRegion r, @Nullable StringFlag flag) {
         String v = flag == null ? null : r.getFlag(flag);
         return v == null || v.isBlank() ? null : v.trim().toLowerCase(Locale.ROOT);
-    }
-
-    private void warnOnce(String key, String message) {
-        if (warned.add(key)) {
-            log.warning(message);
-        }
     }
 }

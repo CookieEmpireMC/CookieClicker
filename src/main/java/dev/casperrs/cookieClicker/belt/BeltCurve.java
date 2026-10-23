@@ -1,7 +1,7 @@
 package dev.casperrs.cookieClicker.belt;
 
 /**
- * CPS -&gt; belt speed and cookie interval (brief conveyor-belt). Purely visual; no economy value. Pure Java.
+ * CPS -&gt; belt speed and cookie interval. Purely visual; no economy value. Pure Java.
  *
  * <p>The curve is logarithmic, because CPS spans many orders of magnitude:
  * <pre>

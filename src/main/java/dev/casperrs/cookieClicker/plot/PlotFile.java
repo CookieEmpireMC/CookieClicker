@@ -19,9 +19,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Reads {@code plots.yml} (enable/reload) and writes it on the IO thread after changes. Same rule as
- * {@code StationFile}: while a write is queued or running, {@link #load} returns the plots of the newest write, so a
- * {@code /bakery plot …} directly followed by {@code /bakery reload} never reads the old file.
+ * Reads {@code plots.yml} (enable/reload) and writes it on the IO thread after changes. While a write is queued or
+ * running, {@link #load} returns the plots of the newest write, so a {@code /bakery plot …} directly followed by
+ * {@code /bakery reload} never reads the old file.
  */
 public final class PlotFile {
 
