@@ -30,16 +30,16 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 
 /**
- * The raised camera of the build cinematic (brief conveyor-belt): the player is put in spectator mode and locked to
- * a camera entity (an empty item display only they can see) with {@link Player#setSpectatorTarget}. Sneaking out is
- * refused ({@link PlayerStopSpectatingEntityEvent} cancelled), and {@link HouseCinematics} refuses spectator
- * teleports. The original game mode and the return spot are stored on the player ({@link CameraReturn} in the PDC)
- * <b>before</b> the game mode changes, so a crash, quit or disable mid-build is undone: {@link #exit} on every abort
- * path, and {@link #onJoin} for anything left over. Main thread only; {@link HouseCinematics} drives it.
+ * The raised camera of the build cinematic: the player is put in spectator mode and locked to a camera entity (an
+ * empty item display only they can see) with {@link Player#setSpectatorTarget}. Sneaking out is refused, and
+ * {@link CinematicGuards} refuses spectator teleports. The original game mode and the return spot are stored in the
+ * player's PDC ({@link CameraReturn}) <b>before</b> the game mode changes, so a crash, quit or disable mid-build is
+ * undone ({@link #exit} on every abort path, {@link #onJoin} for leftovers). The only class that changes game modes.
+ * Main thread; {@link HouseCinematics} drives it.
  *
- * <p>Order on enter: game mode, teleport to the camera point (our own teleport), spawn + show the camera entity
- * (now within tracking range), and one tick later {@code setSpectatorTarget}, so the client knows the entity when
- * the camera packet arrives.
+ * <p>Order on enter: game mode, teleport to the camera point, spawn + show the camera entity (now within tracking
+ * range), and one tick later {@code setSpectatorTarget}, so the client knows the entity when the camera packet
+ * arrives.
  */
 public final class CinematicCamera implements Listener {
 
@@ -187,8 +187,6 @@ public final class CinematicCamera implements Listener {
         player.getPersistentDataContainer().remove(key);
     }
 
-    // ---- tick: target once the entity is known, keep it, notice losses ----------------------------------------
-
     private void ensureTask() {
         if (task == null) {
             task = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 1, 1);
@@ -229,8 +227,6 @@ public final class CinematicCamera implements Listener {
             stopTask();
         }
     }
-
-    // ---- events ----------------------------------------------------------------------------------------------
 
     /** Sneaking out of the camera is refused. */
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
@@ -277,8 +273,6 @@ public final class CinematicCamera implements Listener {
         restore(p, back, true);
     }
 
-    // ---- helpers -------------------------------------------------------------------------------------------
-
     private void setMode(Player player, GameMode mode) {
         if (player.getGameMode() == mode) {
             return;
@@ -318,7 +312,7 @@ public final class CinematicCamera implements Listener {
                 : new Location(world, back.x(), back.y(), back.z(), back.yaw(), back.pitch());
     }
 
-    /** Camera entities alive (for the tester / debug). */
+    /** Camera entities alive (debug). */
     public int activeCameras() {
         return shots.size();
     }

@@ -9,6 +9,7 @@ import org.bukkit.block.BlockState;
 import org.bukkit.block.TileState;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Player;
+import org.jspecify.annotations.Nullable;
 
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -16,20 +17,18 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * The <b>only</b> class that sends per-player fake blocks (research: fake-blocks Q5). Everything is a packet to one
- * player; the server world is never changed. Uses {@code sendMultiBlockChange} (one packet per chunk section, never a
- * packet per block) and {@code sendBlockUpdate} for tile entities (sign text) after their block is real again.
- * Positions are packed with {@link RegionShape#pack}. Nothing is sent to a player in another world, and blocks in
- * unloaded chunks are skipped (the client gets them with the chunk). {@link Position} is {@code @Experimental}, so it
- * stays in this one class. Main thread only.
+ * The only class that sends per-player fake blocks; the server world is never changed. {@code sendMultiBlockChange}
+ * sends one packet per chunk section, {@code sendBlockUpdate} restores tile data (sign text) once a block is real
+ * again. Blocks in unloaded chunks are skipped (the client gets them with the chunk). {@link Position} is
+ * {@code @Experimental}, so it stays in this one class. Main thread only.
  */
 public final class FakeBlocks {
 
-    private BlockData air;
+    private @Nullable BlockData air;
     /** Whether a material has a block entity (sign, chest, ...), found once per material. */
     private final Map<Material, Boolean> tileTypes = new EnumMap<>(Material.class);
 
-    /** Sends fake air at {@code packed[0..count)} to {@code player}. */
+    /** Sends fake air at {@code packed[0..count)} ({@link RegionShape#pack}) to {@code player}. */
     public void sendAir(Player player, World world, long[] packed, int count) {
         if (count <= 0 || !player.getWorld().equals(world)) {
             return;

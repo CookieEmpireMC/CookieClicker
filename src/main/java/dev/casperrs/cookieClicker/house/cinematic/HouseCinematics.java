@@ -10,29 +10,20 @@ import dev.casperrs.cookieClicker.plot.RegionShape;
 import dev.casperrs.cookieClicker.sound.SoundService;
 import dev.casperrs.cookieClicker.text.Messages;
 import dev.casperrs.cookieClicker.vfx.Effects;
-import io.papermc.paper.event.packet.PlayerChunkLoadEvent;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.OfflinePlayer;
-import org.bukkit.command.CommandSender;
-import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.World;
-import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
-import org.bukkit.event.player.PlayerInteractEntityEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.plugin.Plugin;
@@ -52,18 +43,13 @@ import java.util.function.Supplier;
 import java.util.logging.Level;
 
 /**
- * The first-visit build cinematic (starter-house): the player gets fake air over their plot's house, then the real
- * blocks drop in layer by layer ({@link RevealPlan}, {@link Effects#dropBlock}), only for them. The house is never
- * changed server-side. Also owns the chimney smoke lifecycle ({@link PlotAmbience}).
+ * The first-visit build cinematic: the player gets fake air over their plot's house, then the real blocks drop in
+ * layer by layer ({@link RevealPlan}, {@link Effects#dropBlock}), only for them; the world is never changed. Also
+ * starts and stops the idle {@link PlotAmbience} around a run.
  *
- * <p>Safety: quit, death, teleport, world change, leaving the plot, {@code /bakery reload} and disable all go through
- * {@link #abort}: {@code effects.cancelFor(player)} first, then every still-hidden block is sent real again right
- * away (when the player is still online), the keep-out modifiers are removed, and the house is not marked seen.
- * "Seen" is stored only on completion. Main thread only; one cinematic per player.
- *
- * <p>Camera (conveyor-belt): with {@code house.cinematic.camera} and a plot camera point, the build is watched in
- * spectator mode from that point ({@link CinematicCamera}); every end of the run (completion and every abort) ends
- * the camera too, giving back the game mode at the viewpoint.
+ * <p>Every exit (quit, death, teleport, world change, leaving the plot, reload, disable, a failing tick) goes through
+ * {@link #abort}: effects cancelled first, every still-hidden block sent real again, keep-out and camera ended, and
+ * the house not marked seen. "Seen" is stored only on completion. Main thread only; one cinematic per player.
  */
 public final class HouseCinematics implements Listener, PlotPresenceListener {
 
@@ -78,32 +64,13 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
     /** Why {@link #start} did or didn't start. */
     public enum Result { STARTED, NO_HOUSE, WRONG_WORLD, NOT_LOADED, INSIDE, NOTHING_TO_BUILD }
 
-    /** A house region's cached geometry ({@link RegionShape#blocks()} is computed once per plot and reload). */
+    /** A house region's geometry, computed once per plot and reload. */
     private record Shape(HouseBox box, long[] blocks) {
     }
 
-    /** One running cinematic. */
-    private static final class Run {
-        final UUID player;
-        final String plotId;
-        final World world;
-        final HouseBox box;
-        final RevealPlan plan;
-        final Set<Long> tiles;
-        final long[] sendBuffer;
-        int impacts;
-        boolean alive = true;
-        boolean camera;
-
-        Run(UUID player, String plotId, World world, HouseBox box, RevealPlan plan, Set<Long> tiles) {
-            this.player = player;
-            this.plotId = plotId;
-            this.world = world;
-            this.box = box;
-            this.plan = plan;
-            this.tiles = tiles;
-            this.sendBuffer = new long[2 * plan.size()]; // hide + re-assert in one tick
-        }
+    /** Where a run starts: the blocks to reveal and where the player watches from. */
+    private record Setup(World world, HouseBox box, RevealPlan plan, Set<Long> tiles, Location feet,
+                         @Nullable Location camera, boolean teleport) {
     }
 
     private final Plugin plugin;
@@ -116,17 +83,19 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
     private final Supplier<HouseSettings> settings;
     private final FakeBlocks fakeBlocks = new FakeBlocks();
     private final CinematicKeepOut keepOut;
-    private final PlotAmbience smoke;
+    private final PlotAmbience ambience;
     private final CinematicCamera camera;
+    private final CinematicGuards guards;
+    private final HouseRebuild rebuild;
 
-    private final Map<UUID, Run> running = new HashMap<>();
+    private final Map<UUID, CinematicRun> running = new HashMap<>();
     /** Players waiting for their {@code house_seen} answer, with the generation they asked in. */
     private final Map<UUID, Long> pending = new HashMap<>();
     private final Map<String, Optional<Shape>> shapes = new HashMap<>();
     /** Players we are teleporting ourselves right now (our own teleport must not abort anything). */
     private final Set<UUID> selfTeleport = new HashSet<>();
     private long generation;
-    private BukkitTask task;
+    private @Nullable BukkitTask task;
     private boolean registered;
 
     public HouseCinematics(Plugin plugin, PlotRegistry plots, PlotTracker tracker, HouseSeen seen, Effects effects,
@@ -140,17 +109,19 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
         this.messages = messages;
         this.settings = settings;
         this.keepOut = new CinematicKeepOut(plugin);
-        this.smoke = new PlotAmbience(plugin, effects, sounds, settings);
+        this.ambience = new PlotAmbience(plugin, effects, sounds, settings);
         this.camera = new CinematicCamera(plugin, selfTeleport, this::cameraLost);
+        this.guards = new CinematicGuards(running, selfTeleport, settings);
+        this.rebuild = new HouseRebuild(this, seen, tracker, messages);
     }
 
     /** The camera was lost from outside (another game mode, entity gone): end the run, or the camera on its own. */
     private void cameraLost(UUID id) {
         if (abort(id, true)) {
-            resumeSmokeLater(id);
+            resumeAmbienceLater(id);
             return;
         }
-        Player p = Bukkit.getPlayer(id); // a camera without a run
+        Player p = Bukkit.getPlayer(id);
         if (p != null) {
             guarded("end camera", () -> camera.exit(p, true, true));
         }
@@ -161,6 +132,7 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
         if (!registered) {
             plugin.getServer().getPluginManager().registerEvents(this, plugin);
             plugin.getServer().getPluginManager().registerEvents(camera, plugin);
+            plugin.getServer().getPluginManager().registerEvents(guards, plugin);
             tracker.addListener(this);
             registered = true;
         }
@@ -176,36 +148,32 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
         for (UUID id : new ArrayList<>(running.keySet())) {
             abort(id, true);
         }
-        smoke.stopAll();
+        ambience.stopAll();
         shapes.clear();
     }
 
-    /** {@code /bakery reload}, after effects, plots and the tracker: smoke again for everyone in a plot. */
+    /** {@code /bakery reload}, after effects, plots and the tracker: ambience again for everyone in a plot. */
     public void restart() {
         shapes.clear();
         for (Player p : Bukkit.getOnlinePlayers()) {
             String plot = tracker.presence(p.getUniqueId()).plot();
             if (plot != null) {
-                startSmoke(p, plot);
+                startAmbience(p, plot);
             }
         }
     }
 
-    /**
-     * {@code /bakery plot setup} (and its undo) changed a plot's house box or points: forget its cached shape and
-     * restart smoke/steam/hum for the players in it who aren't mid-cinematic.
-     */
+    /** A plot setup (or undo) changed a plot's house box or points: forget its shape, restart its ambience. */
     public void plotChanged(String plotId) {
         shapes.remove(plotId);
         for (Player p : Bukkit.getOnlinePlayers()) {
             if (plotId.equals(tracker.presence(p.getUniqueId()).plot()) && !running.containsKey(p.getUniqueId())) {
-                smoke.stop(p.getUniqueId());
-                startSmoke(p, plotId);
+                ambience.stop(p.getUniqueId());
+                startAmbience(p, plotId);
             }
         }
     }
 
-    /** Disable: everything off, every house restored. */
     public void shutdown() {
         abortAll();
         camera.exitAll();
@@ -213,12 +181,11 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
         if (registered) {
             HandlerList.unregisterAll(this);
             HandlerList.unregisterAll(camera);
+            HandlerList.unregisterAll(guards);
             tracker.removeListener(this);
             registered = false;
         }
     }
-
-    // ---- triggers ----------------------------------------------------------------------------------------------
 
     @Override
     public void onEnterPlot(Player player, String plotId) {
@@ -227,7 +194,7 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
                 && !selfTeleport.contains(player.getUniqueId())) { // back from our own camera: no new run
             request(player, plotId);
         } else {
-            startSmoke(player, plotId);
+            startAmbience(player, plotId);
         }
     }
 
@@ -235,14 +202,14 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
     public void onLeavePlot(Player player, String plotId) {
         UUID id = player.getUniqueId();
         pending.remove(id);
-        Run run = running.get(id);
+        CinematicRun run = running.get(id);
         if (run != null && run.plotId.equals(plotId) && !run.camera) { // the camera point may lie outside the plot
             abort(id, true);
         }
-        smoke.stop(id);
+        ambience.stop(id);
     }
 
-    /** Asks storage whether the player has seen this plot's house, then starts the cinematic or the smoke. */
+    /** Asks storage whether the player has seen this plot's house, then starts the cinematic or the ambience. */
     private void request(Player player, String plotId) {
         UUID id = player.getUniqueId();
         if (running.containsKey(id) || pending.containsKey(id)) {
@@ -265,12 +232,12 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
             boolean blocked = c.trigger() == HouseSettings.Trigger.ENTER_PLOT && where.inHouse(plotId)
                     && !c.teleportToViewpoint();
             if (answer || blocked || !c.enabled() || start(p, plotId) != Result.STARTED) {
-                startSmoke(p, plotId);
+                startAmbience(p, plotId);
             }
         });
     }
 
-    /** {@code trigger: viewpoint}: a teleport that ends at a plot's viewpoint starts the cinematic (checked a tick later). */
+    /** {@code trigger: viewpoint}: a teleport that ends at a plot's viewpoint starts the cinematic (a tick later). */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onTeleportToViewpoint(PlayerTeleportEvent event) {
         HouseSettings.Cinematic c = settings.get().cinematic();
@@ -286,93 +253,111 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
             if (plotId == null) {
                 return;
             }
-            Plot plot = plots.get(plotId).orElse(null);
-            Plot.Viewpoint v = plot == null ? null : plot.viewpoint();
+            Plot.Viewpoint v = plots.get(plotId).map(Plot::viewpoint).orElse(null);
             Location at = p.getLocation();
             if (v != null && square(at.getX() - v.x()) + square(at.getY() - v.y()) + square(at.getZ() - v.z())
                     <= square(c.viewpointRadius())) {
-                smoke.stop(id);
+                ambience.stop(id);
                 request(p, plotId);
             }
         });
     }
-
-    // ---- start -------------------------------------------------------------------------------------------------
 
     /**
      * Starts the cinematic for {@code player} at {@code plotId} now, without checking "seen" (also used by
      * {@code /bakery house rebuild}). A running one is aborted first.
      */
     public Result start(Player player, String plotId) {
-        UUID id = player.getUniqueId();
-        abort(id, true);
-        pending.remove(id);
+        forget(player.getUniqueId());
         Plot plot = plots.get(plotId).orElse(null);
         Shape shape = plot == null ? null : shape(plotId);
         World world = plot == null ? null : plots.world(plot).orElse(null);
         if (shape == null || world == null) {
             return Result.NO_HOUSE;
         }
-        HouseBox box = shape.box();
         if (!player.getWorld().equals(world)) {
             return Result.WRONG_WORLD;
         }
-        for (int cx = box.minX() >> 4; cx <= box.maxX() >> 4; cx++) {
-            for (int cz = box.minZ() >> 4; cz <= box.maxZ() >> 4; cz++) {
-                if (!world.isChunkLoaded(cx, cz)) {
-                    return Result.NOT_LOADED;
-                }
-            }
+        if (!loaded(world, shape.box())) {
+            return Result.NOT_LOADED;
         }
-        HouseSettings.Cinematic c = settings.get().cinematic();
-        // only blocks that are really there (air stays air), real data is read again when each one lands
-        long[] blocks = new long[shape.blocks().length];
-        int n = 0;
-        Set<Long> tiles = new HashSet<>();
-        for (long p : shape.blocks()) {
-            int x = RegionShape.unpackX(p);
-            int y = RegionShape.unpackY(p);
-            int z = RegionShape.unpackZ(p);
-            if (!world.getType(x, y, z).isAir()) {
-                blocks[n++] = p;
-                if (fakeBlocks.isTile(world, x, y, z)) {
-                    tiles.add(p);
-                }
-            }
-        }
-        if (n == 0) {
+        RevealPlan plan = plan(world, shape);
+        if (plan == null) {
             return Result.NOTHING_TO_BUILD;
         }
-        RevealPlan plan = new RevealPlan(RevealOrder.of(Arrays.copyOf(blocks, n)), new RevealPlan.Pace(
-                c.blocksPerTick(), c.maxFallingDisplays(), c.layerDelayTicks(), c.fakeAirPerTick(),
-                c.refreshHiddenTicks()));
-        Plot.Viewpoint cam = c.camera() ? plot.camera() : null;
-        Plot.Viewpoint v = c.teleportToViewpoint() || cam != null ? plot.viewpoint() : null;
-        Location feet = v != null ? new Location(world, v.x(), v.y(), v.z(), v.yaw(), v.pitch()) : player.getLocation();
+        Setup setup = setup(player, plot, world, shape, plan);
         // checked where they will stand, before any teleport: inside hidden blocks, or on one (they'd fall)
+        Location feet = setup.feet();
         if (HouseBox.bodyOverlaps(feet.getX(), feet.getY(), feet.getZ(), plan::isHidden)
                 || HouseBox.bodyOverlaps(feet.getX(), feet.getY() - 0.5, feet.getZ(), plan::isHidden)) {
             return Result.INSIDE;
         }
-        boolean filmed = cam != null && camera.enter(player,
-                new Location(world, cam.x(), cam.y(), cam.z(), cam.yaw(), cam.pitch()), feet);
-        if (v != null && !filmed) {
+        return begin(player, plotId, setup);
+    }
+
+    private static boolean loaded(World world, HouseBox box) {
+        for (int cx = box.minX() >> 4; cx <= box.maxX() >> 4; cx++) {
+            for (int cz = box.minZ() >> 4; cz <= box.maxZ() >> 4; cz++) {
+                if (!world.isChunkLoaded(cx, cz)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    /** Only blocks that are really there (air stays air); null when there are none. */
+    private @Nullable RevealPlan plan(World world, Shape shape) {
+        long[] blocks = new long[shape.blocks().length];
+        int n = 0;
+        for (long p : shape.blocks()) {
+            if (!world.getType(RegionShape.unpackX(p), RegionShape.unpackY(p), RegionShape.unpackZ(p)).isAir()) {
+                blocks[n++] = p;
+            }
+        }
+        if (n == 0) {
+            return null;
+        }
+        HouseSettings.Cinematic c = settings.get().cinematic();
+        return new RevealPlan(RevealOrder.of(Arrays.copyOf(blocks, n)), new RevealPlan.Pace(c.blocksPerTick(),
+                c.maxFallingDisplays(), c.layerDelayTicks(), c.fakeAirPerTick(), c.refreshHiddenTicks()));
+    }
+
+    private Setup setup(Player player, Plot plot, World world, Shape shape, RevealPlan plan) {
+        Set<Long> tiles = new HashSet<>();
+        for (int i = 0; i < plan.size(); i++) {
+            long p = plan.position(i);
+            if (fakeBlocks.isTile(world, RegionShape.unpackX(p), RegionShape.unpackY(p), RegionShape.unpackZ(p))) {
+                tiles.add(p);
+            }
+        }
+        HouseSettings.Cinematic c = settings.get().cinematic();
+        Plot.Viewpoint cam = c.camera() ? plot.camera() : null;
+        Plot.Viewpoint v = c.teleportToViewpoint() || cam != null ? plot.viewpoint() : null;
+        Location feet = v != null ? new Location(world, v.x(), v.y(), v.z(), v.yaw(), v.pitch()) : player.getLocation();
+        Location cameraAt = cam == null ? null : new Location(world, cam.x(), cam.y(), cam.z(), cam.yaw(), cam.pitch());
+        return new Setup(world, shape.box(), plan, tiles, feet, cameraAt, v != null);
+    }
+
+    /** Camera or teleport, keep-out, then the first step (the house disappears this tick). */
+    private Result begin(Player player, String plotId, Setup setup) {
+        UUID id = player.getUniqueId();
+        boolean filmed = setup.camera() != null && camera.enter(player, setup.camera(), setup.feet());
+        if (setup.teleport() && !filmed) {
             selfTeleport.add(id);
             try {
-                player.teleport(feet);
+                player.teleport(setup.feet());
             } finally {
                 selfTeleport.remove(id);
             }
-            if (!player.isOnline() || !player.getWorld().equals(world)) {
+            if (!player.isOnline() || !player.getWorld().equals(setup.world())) {
                 return Result.WRONG_WORLD;
             }
         }
-
-        Run run = new Run(id, plotId, world, box, plan, tiles);
-        run.camera = filmed;
         try {
-            smoke.stop(id);
+            ambience.stop(id);
             if (!filmed) {
+                HouseSettings.Cinematic c = settings.get().cinematic();
                 keepOut.apply(player, c.keepOut(), c.slowAmount());
             }
         } catch (RuntimeException e) { // no run yet: nothing else would end the camera or the keep-out
@@ -383,10 +368,12 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
             }
             return Result.NOTHING_TO_BUILD;
         }
+        CinematicRun run = new CinematicRun(id, plotId, setup.world(), setup.box(), setup.plan(), setup.tiles(),
+                filmed);
         running.put(id, run);
         ensureTask();
         try {
-            step(run, player); // the house disappears this tick
+            step(run, player);
         } catch (RuntimeException e) {
             plugin.getLogger().log(Level.SEVERE, "House cinematic of " + player.getName() + " failed; restoring", e);
             abort(id, true);
@@ -407,8 +394,6 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
         })).orElse(null);
     }
 
-    // ---- per tick ----------------------------------------------------------------------------------------------
-
     private void ensureTask() {
         if (task == null) {
             task = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 1, 1);
@@ -423,7 +408,7 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
     }
 
     private void tick() {
-        for (Run run : new ArrayList<>(running.values())) {
+        for (CinematicRun run : new ArrayList<>(running.values())) {
             if (!run.alive) {
                 continue;
             }
@@ -444,7 +429,7 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
         }
     }
 
-    private void step(Run run, Player p) {
+    private void step(CinematicRun run, Player p) {
         RevealPlan plan = run.plan;
         plan.beginTick();
         int[] n = {0};
@@ -461,7 +446,7 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
     }
 
     /** Starts one block's drop. The plan already marked it falling, so callbacks inside this call are fine. */
-    private void drop(Run run, Player p, int i) {
+    private void drop(CinematicRun run, Player p, int i) {
         long pos = run.plan.position(i);
         int x = RegionShape.unpackX(pos);
         int y = RegionShape.unpackY(pos);
@@ -481,7 +466,7 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
         }
     }
 
-    private void impact(Run run, Player p, Location foot, boolean bottom) {
+    private void impact(CinematicRun run, Player p, Location foot, boolean bottom) {
         if (!run.alive) {
             return;
         }
@@ -495,8 +480,8 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
         }
     }
 
-    /** onLanded: the display is gone; make the block real for this player. Re-entrant and idempotent. */
-    private void landed(Run run, Player p, int i) {
+    /** The falling display is gone: make the block real for this player. Re-entrant and idempotent. */
+    private void landed(CinematicRun run, Player p, int i) {
         if (!run.alive || !run.plan.landed(i)) {
             return;
         }
@@ -520,7 +505,7 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
         }
     }
 
-    private void complete(Run run, Player p) {
+    private void complete(CinematicRun run, Player p) {
         if (!run.alive) {
             return;
         }
@@ -539,14 +524,12 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
         p.showTitle(Title.title(messages.component("house.cinematic.title"),
                 messages.component("house.cinematic.subtitle")));
         if (tracker.presence(run.player).inPlot(run.plotId)) {
-            startSmoke(p, run.plotId);
+            startAmbience(p, run.plotId);
         }
     }
 
-    // ---- abort / safety ----------------------------------------------------------------------------------------
-
     /**
-     * Ends the player's cinematic without marking it seen: falling blocks and loops cancelled (no callbacks), every
+     * Ends the player's cinematic without marking it seen: falling blocks cancelled (no callbacks), every
      * still-hidden block sent real again right now if {@code online}, keep-out removed.
      *
      * @return whether a cinematic was running
@@ -557,7 +540,7 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
 
     /** @param goBack a camera run puts the player back at the viewpoint (false: they are being teleported away) */
     private boolean abort(UUID id, boolean online, boolean goBack) {
-        Run run = running.remove(id);
+        CinematicRun run = running.remove(id);
         if (run == null) {
             return false;
         }
@@ -578,6 +561,12 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
         return true;
     }
 
+    /** Aborts a running cinematic and drops a pending "seen" question. */
+    void forget(UUID id) {
+        abort(id, true);
+        pending.remove(id);
+    }
+
     private void guarded(String what, Runnable step) {
         try {
             step.run();
@@ -586,31 +575,32 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
         }
     }
 
-    /** After an abort that leaves the player in the plot (death, teleport): smoke again a tick later. */
-    private void resumeSmokeLater(UUID id) {
+    /** After an abort that leaves the player in the plot (death, teleport): ambience again a tick later. */
+    private void resumeAmbienceLater(UUID id) {
         long gen = generation;
         Bukkit.getScheduler().runTask(plugin, () -> {
             Player p = Bukkit.getPlayer(id);
             String plot = p == null || gen != generation || running.containsKey(id) ? null
                     : tracker.presence(id).plot();
             if (plot != null) {
-                startSmoke(p, plot);
+                startAmbience(p, plot);
             }
         });
     }
 
-    private void startSmoke(Player p, String plotId) {
+    /** Starts the plot's idle smoke, steam and hum for the player, unless they are mid-cinematic. */
+    void startAmbience(Player p, String plotId) {
         if (running.containsKey(p.getUniqueId())) {
-            return; // mid-cinematic: smoke comes at the end
+            return;
         }
-        plots.get(plotId).ifPresent(plot -> plots.world(plot).ifPresent(w -> smoke.start(p, plot, w,
-                plots.houseShape(plotId).map(h -> new org.bukkit.Location(w, (h.minX() + h.maxX() + 1) / 2.0,
+        plots.get(plotId).ifPresent(plot -> plots.world(plot).ifPresent(w -> ambience.start(p, plot, w,
+                plots.houseShape(plotId).map(h -> new Location(w, (h.minX() + h.maxX() + 1) / 2.0,
                         (h.minY() + h.maxY() + 1) / 2.0, (h.minZ() + h.maxZ() + 1) / 2.0)).orElse(null))));
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onJoin(PlayerJoinEvent event) {
-        keepOut.clear(event.getPlayer()); // stale modifiers (transient ones never survive, but be sure)
+        keepOut.clear(event.getPlayer()); // transient modifiers never survive a quit, but be sure
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -618,7 +608,7 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
         UUID id = event.getPlayer().getUniqueId();
         pending.remove(id);
         abort(id, false);
-        smoke.stop(id);
+        ambience.stop(id);
         selfTeleport.remove(id);
     }
 
@@ -626,30 +616,13 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
     public void onDeath(PlayerDeathEvent event) {
         UUID id = event.getPlayer().getUniqueId();
         if (abort(id, true)) {
-            resumeSmokeLater(id);
+            resumeAmbienceLater(id);
         }
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onWorldChange(PlayerChangedWorldEvent event) {
         abort(event.getPlayer().getUniqueId(), true); // nothing is sent to the new world; the client dropped them
-    }
-
-    /** Keep-out guard: no teleport into a still-hidden block. */
-    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
-    public void onTeleportGuard(PlayerTeleportEvent event) {
-        UUID id = event.getPlayer().getUniqueId();
-        Run run = running.get(id);
-        Location to = event.getTo();
-        if (run != null && !selfTeleport.contains(id) && run.camera
-                && event.getCause() == PlayerTeleportEvent.TeleportCause.SPECTATE) {
-            event.setCancelled(true); // locked to the camera: no spectator menu teleports
-            return;
-        }
-        if (run != null && !selfTeleport.contains(id) && run.world.equals(to.getWorld())
-                && HouseBox.bodyOverlaps(to.getX(), to.getY(), to.getZ(), run.plan::isHidden)) {
-            event.setCancelled(true);
-        }
     }
 
     /** Any real teleport ends the cinematic (tiny server position corrections don't). */
@@ -665,113 +638,14 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
             return;
         }
         abort(id, true, false); // they go where this teleport takes them, in their own game mode
-        resumeSmokeLater(id);
+        resumeAmbienceLater(id);
     }
 
-    /** Keep-out guard: no step into a still-hidden block (the client thinks it's air; the server would rubber-band). */
-    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
-    public void onMove(PlayerMoveEvent event) {
-        if (running.isEmpty()) {
-            return;
-        }
-        Run run = running.get(event.getPlayer().getUniqueId());
-        if (run == null) {
-            return;
-        }
-        Location from = event.getFrom();
-        Location to = event.getTo();
-        if (from.getX() == to.getX() && from.getY() == to.getY() && from.getZ() == to.getZ()) {
-            return; // only looking around
-        }
-        if (HouseBox.bodyOverlaps(to.getX(), to.getY(), to.getZ(), run.plan::isHidden)
-                && !HouseBox.bodyOverlaps(from.getX(), from.getY(), from.getZ(), run.plan::isHidden)) {
-            event.setCancelled(true);
-        }
-    }
-
-    // ---- re-assert fake air (the client loses it on interaction rollbacks and chunk resends) -------------------
-
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void onInteract(PlayerInteractEvent event) {
-        Block b = event.getClickedBlock();
-        if (b != null) {
-            reassertNear(event.getPlayer(), b.getWorld(), b.getX(), b.getY(), b.getZ());
-        }
-    }
-
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void onInteractEntity(PlayerInteractEntityEvent event) {
-        Location l = event.getRightClicked().getLocation();
-        reassertNear(event.getPlayer(), l.getWorld(), l.getBlockX(), l.getBlockY(), l.getBlockZ());
-    }
-
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void onBreak(BlockBreakEvent event) {
-        Block b = event.getBlock();
-        reassertNear(event.getPlayer(), b.getWorld(), b.getX(), b.getY(), b.getZ());
-    }
-
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void onPlace(BlockPlaceEvent event) {
-        Block b = event.getBlockPlaced();
-        reassertNear(event.getPlayer(), b.getWorld(), b.getX(), b.getY(), b.getZ());
-    }
-
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void onChunkSent(PlayerChunkLoadEvent event) {
-        Run run = running.get(event.getPlayer().getUniqueId());
-        if (run != null && run.world.equals(event.getWorld())
-                && run.box.overlapsChunk(event.getChunk().getX(), event.getChunk().getZ())) {
-            run.plan.requestResend(); // sent on the next tick, after the chunk
-        }
-    }
-
-    private void reassertNear(Player player, World world, int x, int y, int z) {
-        Run run = running.get(player.getUniqueId());
-        if (run != null && run.world.equals(world)
-                && run.box.near(x, y, z, settings.get().cinematic().reassertRadius())) {
-            run.plan.requestResend(); // next tick: after the server's rollback packets
-        }
-    }
-
-    // ---- /bakery house rebuild <player> ------------------------------------------------------------------------
-
-    /**
-     * Forgets that {@code name} has seen {@code plotId}'s house (aborting a running cinematic first, restoring the
-     * blocks) and plays the cinematic right away if they are online and in that plot.
-     */
+    /** {@code /bakery house rebuild <player>}: forgets "seen" and plays the cinematic now if they are in the plot. */
     public void rebuild(CommandSender sender, String plotId, String name) {
-        Player target = Bukkit.getPlayerExact(name);
-        OfflinePlayer offline = target != null ? target : Bukkit.getOfflinePlayerIfCached(name);
-        if (offline == null) {
-            messages.send(sender, "house.rebuild-unknown-player", Placeholder.unparsed("name", name));
-            return;
-        }
-        UUID id = offline.getUniqueId();
-        String shown = offline.getName() != null ? offline.getName() : name;
-        abort(id, true);
-        pending.remove(id);
-        seen.clear(id, plotId, () -> {
-            Player p = Bukkit.getPlayer(id);
-            if (p == null || !tracker.presence(id).inPlot(plotId)) {
-                messages.send(sender, "house.rebuild-cleared", Placeholder.unparsed("name", shown),
-                        Placeholder.unparsed("id", plotId));
-                return;
-            }
-            String key = switch (start(p, plotId)) {
-                case STARTED -> "house.rebuild-started";
-                case INSIDE -> "house.rebuild-inside";
-                case NOT_LOADED -> "house.rebuild-not-loaded";
-                case NO_HOUSE, WRONG_WORLD, NOTHING_TO_BUILD -> "house.rebuild-no-house";
-            };
-            if (!running.containsKey(id)) {
-                startSmoke(p, plotId);
-            }
-            messages.send(sender, key, Placeholder.unparsed("name", shown), Placeholder.unparsed("id", plotId));
-        });
+        rebuild.rebuild(sender, plotId, name);
     }
 
-    /** Whether the player is watching their cinematic right now. */
     public boolean isRunning(UUID player) {
         return running.containsKey(player);
     }

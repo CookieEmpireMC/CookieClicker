@@ -9,10 +9,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
 /**
- * Holds a player still (or slows them) while their house is invisible but solid (research: fake-blocks Q6): transient
- * {@code MOVEMENT_SPEED} / {@code JUMP_STRENGTH} modifiers under one fixed key. Transient modifiers are never saved
- * with the player, and {@link #clear} runs on every exit path and on join. No walk speed, no game mode changes.
- * Main thread only.
+ * Holds a player still (or slows them) while their house is invisible but solid: transient {@code MOVEMENT_SPEED} /
+ * {@code JUMP_STRENGTH} modifiers under one fixed key. Transient modifiers are never saved with the player, and
+ * {@link #clear} runs on every exit path and on join. Main thread only.
  */
 public final class CinematicKeepOut {
 
@@ -34,7 +33,6 @@ public final class CinematicKeepOut {
         }
     }
 
-    /** Removes our modifiers (safe when there are none). */
     public void clear(Player player) {
         remove(player, Attribute.MOVEMENT_SPEED);
         remove(player, Attribute.JUMP_STRENGTH);

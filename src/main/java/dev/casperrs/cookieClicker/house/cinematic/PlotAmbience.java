@@ -21,15 +21,11 @@ import java.util.UUID;
 import java.util.function.Supplier;
 
 /**
- * The living house for every player in a plot who isn't watching the cinematic: a {@code house_chimney_smoke} loop
- * at every smoke point, {@code house_chimney_crackle} at the first one every {@code house.chimney.crackle-ticks}
- * ticks (its own timer), a {@code factory_steam} loop at every steam point (vent starts staggered by
- * {@code house.steam.every} ticks) and the {@code factory_ambient} hum every {@code house.ambient.every} ticks while
- * the player is within {@code house.ambient.radius} of the first steam point (or the house centre). The two sounds
- * are fixed-period timers that keep their beat across restarts ({@link SoundService#playLoop}). One set per
- * player. The effects
- * engine ends loops by itself on quit, world change, reload and shutdown; {@link HouseCinematics} starts and stops
- * them. Main thread only.
+ * What a player in a plot sees and hears while idle: chimney smoke and crackle at the smoke points, staggered steam
+ * at the steam points, and the factory hum near the first steam point (or the house centre). The two sounds are
+ * fixed-period timers that keep their beat across restarts ({@link SoundService#playLoop}). One set per player;
+ * {@link HouseCinematics} starts and stops it, and the effects engine ends its loops on quit, world change, reload
+ * and shutdown. Main thread only.
  */
 public final class PlotAmbience {
 
