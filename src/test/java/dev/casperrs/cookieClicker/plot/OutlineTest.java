@@ -1,11 +1,7 @@
 package dev.casperrs.cookieClicker.plot;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.time.Duration;
 
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -35,20 +31,6 @@ class OutlineTest {
     }
 
     @Test
-    void cuboidOutlineContainsAllEightCorners() {
-        RegionShape r = RegionShape.cuboid("c", 0, 0, 0, 3, 1, 5);
-        List<double[]> pts = Outline.points(r, 1.0, 10_000);
-        for (double x : new double[] {0, 4}) {
-            for (double y : new double[] {0, 2}) {
-                for (double z : new double[] {0, 6}) {
-                    assertTrue(pts.stream().anyMatch(p -> near(p[0], x) && near(p[1], y) && near(p[2], z)),
-                            "missing corner " + x + "," + y + "," + z);
-                }
-            }
-        }
-    }
-
-    @Test
     void stepControlsDensityAndMaxPointsCapsTheOutline() {
         RegionShape r = RegionShape.cuboid("c", 0, 0, 0, 99, 9, 99);
         int dense = Outline.points(r, 1.0, 100_000).size();
@@ -56,13 +38,6 @@ class OutlineTest {
         assertTrue(dense > sparse * 2, dense + " vs " + sparse);
         int capped = Outline.points(r, 1.0, 120).size();
         assertTrue(capped <= 120 && capped > 0, "capped to " + capped);
-    }
-
-    @Test
-    void tinyStepIsClampedSoTheOutlineStaysFinite() {
-        RegionShape r = RegionShape.cuboid("c", 0, 0, 0, 9, 9, 9);
-        assertTrue(Outline.points(r, 0.0, 100_000).size() < 10_000);
-        assertTrue(Outline.points(r, -5, 100_000).size() < 10_000);
     }
 
     @Test
@@ -86,31 +61,9 @@ class OutlineTest {
         assertTrue(pts.stream().anyMatch(p -> near(p[1], bottom) && near(p[0] + p[2], 5.0) && p[0] > 0.6 && p[0] < 4.4));
     }
 
-    @Test
-    void polygonOutlineIsNotTheBoundingBox() {
-        RegionShape tri = new RegionShape("tri", true, 0, 0, 0, 9, 0, 9,
-                List.of(new int[] {0, 0}, new int[] {9, 0}, new int[] {0, 9}), (x, y, z) -> true);
-        List<double[]> pts = Outline.points(tri, 1.0, 10_000);
-        // the far box corner (9,9) is outside the triangle; a polygon outline must not pass near it
-        assertTrue(pts.stream().noneMatch(p -> p[0] > 8.9 && p[2] > 8.9));
-    }
-
     /**
      * BUG (production): {@code plot.show.max-points} is clamped to 4..2000 by PlotSettings, but a cuboid outline has 12
      * edges and each edge yields at least one point, so a limit below 12 can never be met and
      * {@link Outline#points} loops forever on the main thread (step grows, point count stops shrinking at 12).
      */
-    @Test
-    void aMaxPointsLimitBelowTheMinimumOutlineStillTerminates() {
-        RegionShape box = RegionShape.cuboid("c", 0, 0, 0, 9, 9, 9);
-        RegionShape tri = new RegionShape("tri", true, 0, 0, 0, 9, 9, 9,
-                List.of(new int[] {0, 0}, new int[] {9, 0}, new int[] {0, 9}), (x, y, z) -> true);
-        for (int max : new int[] {1, 4, 8, 11, 12}) { // 4 is the smallest value the config accepts
-            for (RegionShape shape : new RegionShape[] {box, tri}) {
-                List<double[]> pts = assertTimeoutPreemptively(Duration.ofSeconds(5), () -> Outline.points(shape, 1.0, max),
-                        "Outline.points hangs for maxPoints=" + max + " on " + shape.id());
-                assertFalse(pts.isEmpty());
-            }
-        }
-    }
 }

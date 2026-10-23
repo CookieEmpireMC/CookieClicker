@@ -4,10 +4,7 @@ import dev.casperrs.cookieClicker.config.StationVisualSettings;
 
 /**
  * Idle spin + bob of the giant cookie as a function of the server tick. The controller samples it once per
- * segment and lets the client interpolate in between (no teleports). Pure maths.
- *
- * @param revolutionTicks ticks per full turn (0 = no spin)
- * @param bobPeriodTicks  ticks per bob up-and-down
+ * segment and lets the client interpolate in between (no teleports). Pure maths. revolutionTicks 0 = no spin.
  */
 public record CookieMotion(double revolutionTicks, double bobAmplitude, int bobPeriodTicks, int segmentTicks) {
 

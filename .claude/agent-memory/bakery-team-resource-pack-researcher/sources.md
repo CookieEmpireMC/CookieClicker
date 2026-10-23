@@ -26,11 +26,17 @@ Format: URL | confirmed | checked | stable/volatile
 - https://api.github.com/repos/IntellectualSites/FastAsyncWorldEdit/releases?per_page=6 | FAWE 2.16.0 (2026-10-04, "26.3 Support"), 2.16.1 (2026-10-09) | 2026-10-19 | VOLATILE
 - https://maven.enginehub.org/repo/com/sk89q/{worldguard/worldguard-bukkit,worldedit/worldedit-bukkit}/maven-metadata.xml | release WG 7.0.20, WE 7.4.6 | 2026-10-19 | VOLATILE
 - https://worldguard.enginehub.org/en/latest/developer/{dependency,regions,regions/managers,regions/protected-region,regions/spatial-queries,regions/flag-calculation,regions/custom-flags,native-objects}/ and /regions/flags/ | developer API facts | 2026-10-19 | stable (docs are version-agnostic)
-- https://builds.enginehub.org/job/{worldguard,worldedit} | CI builds with relative dates ("2 days ago") only | 2026-10-19 | volatile
 
 ## Other
 - https://docs.papermc.io/paper/reference/spigot-configuration | moved-wrongly-threshold default 0.0625 | 2026-10-19 | stable
 - https://ayakael.net/mirrors/papermc/commit/9271ee7643614663a6d93323a9e8db2d52123166 | Paper "Don't resend blocks on interactions (#9413)": rollback sends block+neighbour+tile updates on cancelled interactions | 2026-10-19 | stable
+
+## paper-plugin.yml (checked 2026-10-23, see docs/research/paper-plugin.md)
+- https://docs.papermc.io/paper/dev/getting-started/paper-plugins/ | fields, dependencies load BEFORE/AFTER/OMIT, MavenLibraryResolver.MAVEN_CENTRAL_DEFAULT_MIRROR, experimental | stable
+- https://www.schemastore.org/paper-plugin.json | required: name,version,main,api-version; permissions/default-perm supported | stable
+- raw.githubusercontent.com/PaperMC/Paper/main/paper-server/.../provider/type/PluginFileType.java | paper-plugin.yml wins over plugin.yml | stable
+- BukkitScheduler 26.3 Javadoc: "async tasks should never access any API in Bukkit"; Player Javadoc has no thread notes; WG managers page: save/load any thread only
+- Dead ends: docs.papermc.io .../folia-support and .../getting-started/plugin-yml 404; PaperPluginMeta.java path 404
 
 ## Searches that worked
 - "WorldEdit FAWE Minecraft 26.3 support release" (found Hangar WE beta)
@@ -38,7 +44,5 @@ Format: URL | confirmed | checked | stable/volatile
 
 ## Dead ends
 - https://hangar.papermc.io/api/v1/projects/EngineHub/WorldGuard/versions 404 (WG is not on Hangar)
-- https://github.com/EngineHub/WorldGuard/releases (empty), api.github.com for EngineHub repos returned `[]`
-- https://worldguard.enginehub.org/en/latest/developer/requirements/ and .../regions/flag-queries/ 404
-- enginehub.org/worldguard page has no versions
-- search "moved wrongly" gives generic netcode junk; spigot.yml docs are the useful hit
+- EngineHub GitHub releases/API empty; builds.enginehub.org and enginehub.org/worldguard have no usable versions
+- worldguard developer/requirements/ and .../regions/flag-queries/ 404

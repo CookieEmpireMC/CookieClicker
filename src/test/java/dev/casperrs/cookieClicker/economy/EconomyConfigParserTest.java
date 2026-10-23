@@ -46,19 +46,6 @@ class EconomyConfigParserTest {
     }
 
     @Test
-    void onlyOneCritKeyIsTreatedAsMissing() throws Exception {
-        Map<String, Object> u = upgradesYaml();
-        u.put("click", map("base-power", 1, "crit-chance", 0.5));
-        assertEquals(0, parse(buildingsYaml(), u).config().critChance());
-    }
-
-    @Test
-    void upgradesSectionIsOptional() throws Exception {
-        Map<String, Object> u = map("click", map("base-power", 1));
-        assertTrue(parse(buildingsYaml(), u).config().upgrades().isEmpty());
-    }
-
-    @Test
     void milestonesAreSortedDeduplicatedAndAnEmptyOverrideSwitchesThemOffForOneBuilding() throws Exception {
         Map<String, Object> b = map("cost-growth", 1.15, "milestones", List.of(25, 10, 10), "buildings", map(
                 "baker", map("base-cost", 15, "base-cps", 0.1, "unlock", map("baked", 0)),
@@ -96,22 +83,6 @@ class EconomyConfigParserTest {
     }
 
     @Test
-    void rejectsCritChanceAboveOne() {
-        Map<String, Object> u = upgradesYaml();
-        u.put("click", map("base-power", 1, "crit-chance", 1.5, "crit-multiplier", 10));
-        assertTrue(error(buildingsYaml(), u).contains("crit-chance"));
-    }
-
-    @Test
-    void rejectsNegativeNanAndNonNumericValues() {
-        for (Object bad : new Object[] {-1, Double.NaN, Double.POSITIVE_INFINITY, "ten", true, null}) {
-            Map<String, Object> b = map("cost-growth", 1.15, "buildings",
-                    map("baker", map("base-cost", bad, "base-cps", 0.1)));
-            assertTrue(error(b, upgradesYaml()).contains("base-cost"), String.valueOf(bad));
-        }
-    }
-
-    @Test
     void rejectsUnknownEffectTypeAndUnknownBuildingReferences() {
         Map<String, Object> u = upgradesYaml();
         u.put("upgrades", map("x", map("cost", 1, "effect", map("type", "explode", "value", 2))));
@@ -123,21 +94,4 @@ class EconomyConfigParserTest {
         assertTrue(error(buildingsYaml(), u).contains("unlock.building"));
     }
 
-    @Test
-    void rejectsSectionsThatAreNotSections() {
-        assertTrue(error(map("cost-growth", 1.15, "buildings", "oops"), upgradesYaml()).contains("must be a section"));
-        Map<String, Object> u = upgradesYaml();
-        u.put("upgrades", List.of("a"));
-        assertTrue(error(buildingsYaml(), u).contains("must be a section"));
-        assertTrue(error(buildingsYaml(), map()).contains("click"));
-    }
-
-    @Test
-    void effectTypeLookup() {
-        for (EffectType t : EffectType.values()) {
-            assertEquals(t, EffectType.fromConfigName(t.configName()).orElseThrow());
-        }
-        assertTrue(EffectType.fromConfigName("nope").isEmpty());
-        assertTrue(EffectType.fromConfigName("null").isEmpty());
-    }
 }

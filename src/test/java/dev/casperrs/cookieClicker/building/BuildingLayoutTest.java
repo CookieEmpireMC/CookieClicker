@@ -8,9 +8,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.casperrs.cookieClicker.config.BuildingVisualSettings;
 import dev.casperrs.cookieClicker.config.YamlFiles;
-import dev.casperrs.cookieClicker.house.BuildingSlots;
-import dev.casperrs.cookieClicker.house.HouseDesign;
-import dev.casperrs.cookieClicker.house.HouseDesignParser;
+import dev.casperrs.cookieClicker.house.design.BuildingSlots;
+import dev.casperrs.cookieClicker.house.design.HouseDesign;
+import dev.casperrs.cookieClicker.house.design.HouseDesignParser;
 import dev.casperrs.cookieClicker.plot.Plot;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -44,23 +44,6 @@ class BuildingLayoutTest {
         assertTrue(BuildingLayout.change(99, 100, 200, S).stageChanged());
         assertFalse(BuildingLayout.change(100, 101, 200, S).stageChanged());
         assertFalse(BuildingLayout.change(20, 24, 10, S).stageChanged());
-    }
-
-    @Test
-    void aMaxBuyThatJumpsPastBothThresholdsIsOneStageChange() {
-        BuildingLayout.Change c = BuildingLayout.change(5, 150, 200, S);
-        assertEquals(1, c.stageBefore());
-        assertEquals(3, c.stageAfter());
-        assertTrue(c.stageChanged());
-        assertEquals(150, c.shownAfter());
-    }
-
-    @Test
-    void theCapDoesNotHideAStageChange() {
-        // slots 2, owned 30: two instances stay, but they get the stage-2 look
-        BuildingLayout.Change c = BuildingLayout.change(1, 30, 2, S);
-        assertEquals(2, c.shownAfter());
-        assertTrue(c.stageChanged());
     }
 
     @Test

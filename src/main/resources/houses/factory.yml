@@ -103,7 +103,7 @@ points:
 signs:
   - at: [10, 4, 1]
     lines: ["", "Cookie Works", "", ""]
-layout:                  # plot cells from the plot's min corner (see design/factory.md)
+layout:
   plot-size: [31, 30]
   house-at: [6, 0, 10]
   pedestal: {at: [18, 0, 6], yaw: 180}
@@ -112,4 +112,4 @@ layout:                  # plot cells from the plot's min corner (see design/fac
   viewpoint: {at: [15, 0, 2], yaw: 0, pitch: -14}
   entrance: [15, 0]
   belt: {from: [18, 0, 11], to: [18, 0, 7]}
-  camera: {at: [23, 12, -13], yaw: 20, pitch: 24}   # build cinematic eye point (feet cell, may lie outside the plot)
+  camera: {at: [23, 12, -13], yaw: 20, pitch: 24}

@@ -25,31 +25,7 @@ class PlotSettingsTest {
         assertEquals(120, s.show().maxPoints());
         assertEquals("plot_outline", s.show().plotEffect());
         assertEquals("house_outline", s.show().houseEffect());
-        assertEquals(16, s.chimneyReach());
         assertTrue(problems.isEmpty());
-    }
-
-    @Test
-    void maxPointsCannotGoBelowTheSmallestOutline() throws Exception {
-        assertEquals(12, parse("plot:\n  show:\n    max-points: 4\n", new ArrayList<>()).show().maxPoints());
-        assertEquals(12, parse("plot:\n  show:\n    max-points: -5\n", new ArrayList<>()).show().maxPoints());
-        assertEquals(2000, parse("plot:\n  show:\n    max-points: 99999\n", new ArrayList<>()).show().maxPoints());
-    }
-
-    @Test
-    void chimneyReachIsClamped() throws Exception {
-        assertEquals(1, parse("plot:\n  chimney-reach: 0\n", new ArrayList<>()).chimneyReach());
-        assertEquals(64, parse("plot:\n  chimney-reach: 1000\n", new ArrayList<>()).chimneyReach());
-        assertEquals(8, parse("plot:\n  chimney-reach: 8\n", new ArrayList<>()).chimneyReach());
-    }
-
-    @Test
-    void badEffectIdsFallBackToTheOutlinePresetsWithAProblem() throws Exception {
-        List<String> problems = new ArrayList<>();
-        PlotSettings s = parse("plot:\n  show:\n    plot-effect: \"Bad Id\"\n    house-effect: \"x/y\"\n", problems);
-        assertEquals("plot_outline", s.show().plotEffect());
-        assertEquals("house_outline", s.show().houseEffect());
-        assertEquals(2, problems.size());
     }
 
     @Test

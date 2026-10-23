@@ -41,8 +41,6 @@ public final class PlotOutlines implements Listener {
 
     /**
      * Starts (or restarts) the outline for {@code viewer}.
-     *
-     * @param house may be null when the plot has no house region
      */
     public void show(Player viewer, World world, RegionShape plot, @org.jspecify.annotations.Nullable RegionShape house) {
         if (!registered) {

@@ -1,8 +1,7 @@
-# Click values and upgrades (format: docs/balance/model.md). IDs only; display names live in messages.yml.
-# Tuned with tools/balance (mise run balance); see docs/balance/report-*.md.
+# Format: docs/balance/model.md. IDs only; display names live in messages.yml. Tuned with mise run balance.
 click:
-  base-power: 1              # cookies per click before upgrades
-  crit-chance: 0.05          # 5 % of clicks are crispy crits
+  base-power: 1
+  crit-chance: 0.05
   crit-multiplier: 10        # a crit multiplies the whole click value
 upgrades:
   # Repeatable: cost of the next level = ceil(cost × cost-growth ^ level); effect is per level.

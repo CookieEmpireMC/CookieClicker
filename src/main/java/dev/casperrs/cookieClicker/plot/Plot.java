@@ -10,25 +10,9 @@ import java.util.regex.Pattern;
 /**
  * A bakery plot from {@code plots.yml}. Pure data (no Bukkit types). The plot and house <b>areas</b> are WorldGuard
  * regions found through the {@code bakery-plot} / {@code bakery-house} flags (value = this id); the optional
- * {@code plotRegion} / {@code houseRegion} names are only a fallback when no region carries the flag.
- *
- * @param id          plot id, {@code [a-z0-9_-]+} (also the flag value and the {@code house_seen.plot_id})
- * @param worldKey    world key, e.g. {@code minecraft:overworld}
- * @param plotRegion  fallback region id of the plot area, or null
- * @param houseRegion fallback region id of the house area, or null
- * @param viewpoint   where the first-visit cinematic is watched from, or null
- * @param pedestal    the player's cookie/panel anchor (offsets in {@code station.*} are relative to it), or null
- * @param smoke       where chimney smoke starts (bottom centre of each smoke cell); empty = no smoke
- * @param steam       where {@code factory_steam} puffs start (roof vents); may be empty
- * @param entrance    centre of the fence gate at ground level ({@code /bakery plot setup}), or null
- * @param shop        where the shop panel stands ({@code layout.shop}); null = the {@code station.panel} offsets from
- *                    the pedestal (plots without a layout)
- * @param house       the house box placed by {@code /bakery plot setup}; when set it replaces the
- *                    {@code bakery-house} region, or null
- * @param belt        the conveyor belt placed by {@code /bakery plot setup}, or null
- * @param camera      the raised camera of the build cinematic ({@code layout.camera}), or null
- * @param clicks      where the click upgrades panel stands ({@code layout.clicks}); null = the
- *                    {@code station.panels.clicks} offset from the pedestal
+ * {@code plotRegion} / {@code houseRegion} names are only a fallback when no region carries the flag. id matches
+ * {@code [a-z0-9_-]+}; a set house box replaces the {@code bakery-house} region; null shop = beside the pedestal,
+ * null clicks = mirrored from the shop.
  */
 public record Plot(String id, String worldKey, @Nullable String plotRegion, @Nullable String houseRegion,
                    @Nullable Viewpoint viewpoint, @Nullable Pedestal pedestal, List<Point> smoke, List<Point> steam,
@@ -42,7 +26,7 @@ public record Plot(String id, String worldKey, @Nullable String plotRegion, @Nul
         steam = List.copyOf(steam);
     }
 
-    /** A plot without the click upgrades panel spot (the conveyor-belt shape). */
+    /** A plot without the click upgrades panel spot. */
     public Plot(String id, String worldKey, @Nullable String plotRegion, @Nullable String houseRegion,
                 @Nullable Viewpoint viewpoint, @Nullable Pedestal pedestal, List<Point> smoke, List<Point> steam,
                 @Nullable Point entrance, @Nullable Pedestal shop, @Nullable Box house, @Nullable Belt belt,
@@ -51,7 +35,7 @@ public record Plot(String id, String worldKey, @Nullable String plotRegion, @Nul
                 camera, null);
     }
 
-    /** A plot without belt and camera (the factory-makeover shape). */
+    /** A plot without belt, camera and click panel spot. */
     public Plot(String id, String worldKey, @Nullable String plotRegion, @Nullable String houseRegion,
                 @Nullable Viewpoint viewpoint, @Nullable Pedestal pedestal, List<Point> smoke, List<Point> steam,
                 @Nullable Point entrance, @Nullable Pedestal shop, @Nullable Box house) {
@@ -59,7 +43,7 @@ public record Plot(String id, String worldKey, @Nullable String plotRegion, @Nul
                 null);
     }
 
-    /** A plot with at most one smoke point (the starter-house shape), no steam and no entrance. */
+    /** A plot with at most one smoke point, no steam and no entrance. */
     public Plot(String id, String worldKey, @Nullable String plotRegion, @Nullable String houseRegion,
                 @Nullable Viewpoint viewpoint, @Nullable Pedestal pedestal, @Nullable Point chimney) {
         this(id, worldKey, plotRegion, houseRegion, viewpoint, pedestal, chimney == null ? List.of() : List.of(chimney),
@@ -88,10 +72,7 @@ public record Plot(String id, String worldKey, @Nullable String plotRegion, @Nul
     }
 
     /**
-     * A straight conveyor belt.
-     *
-     * @param cells  the belt cells in order, from the factory hatch to the cell before the pedestal (at least one)
-     * @param height the belt surface height above each cell's bottom (blocks)
+     * A straight conveyor belt: at least one cell, from the hatch to the cell before the pedestal; height in blocks.
      */
     public record Belt(List<Cell> cells, double height) {
         public Belt {

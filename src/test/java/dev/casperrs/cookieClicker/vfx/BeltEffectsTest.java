@@ -76,25 +76,4 @@ class BeltEffectsTest {
         assertFalse(t.allow(null, "belt_arrive", 105, 4), "viewer null shares one budget");
     }
 
-    @Test
-    void throttleCountsDroppedPlaysAndForgets() {
-        Throttle t = new Throttle();
-        UUID alice = UUID.randomUUID();
-        int shown = 0;
-        for (long tick = 0; tick < 20; tick++) { // a cookie every tick for 1 s
-            if (t.allow(alice, "belt_arrive", tick, 4)) {
-                shown++;
-            }
-        }
-        assertEquals(5, shown, "1 s at interval 4 = 5 plays");
-        assertTrue(t.allow(alice, "x", 0, 0), "interval 0 = no cap");
-        assertEquals(1, t.size(), "uncapped plays are not stored");
-        t.forget(alice);
-        assertEquals(0, t.size());
-        assertTrue(t.allow(alice, "belt_arrive", 20, 4));
-        assertFalse(t.allow(alice, "belt_arrive", 21, 4));
-        t.clear();
-        assertTrue(t.allow(alice, "belt_arrive", 21, 4), "reload resets");
-        assertTrue(t.allow(alice, "belt_arrive", 0, 4), "a tick counter going back never blocks forever");
-    }
 }

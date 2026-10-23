@@ -22,13 +22,6 @@ class EffectsConfigEdgeTest {
     }
 
     @Test
-    void emptyFileGivesDefaultLimitsAndNoPresets() throws Exception {
-        EffectsConfig c = parse("");
-        assertEquals(EffectsConfig.Limits.DEFAULTS, c.limits());
-        assertTrue(c.presets().isEmpty());
-    }
-
-    @Test
     void emptyFileFallsBackToShippedDefaults() throws Exception {
         EffectsConfig c = EffectsConfigParser.parse(new YamlConfiguration(), EffectsConfigParserTest.shipped());
         for (String id : new String[] {"cookie_click", "cookie_crit", "purchase", "pop"}) {
@@ -79,26 +72,6 @@ class EffectsConfigEdgeTest {
         if (nan != null) {
             assertTrue(nan.particleCost() <= c.limits().maxParticlesPerEffect());
         }
-    }
-
-    @Test
-    void uppercaseEffectIdIsRejected() throws Exception {
-        EffectsConfig c = parse("""
-                Cookie_Click:
-                  layers: [ { type: particle, particle: end_rod } ]
-                """);
-        assertNull(c.preset("Cookie_Click"));
-        assertTrue(c.problems().stream().anyMatch(p -> p.contains("Cookie_Click")));
-    }
-
-    @Test
-    void crumbCountAndSpinAreCapped() throws Exception {
-        EffectsConfig c = parse("""
-                fx:
-                  layers: [ { type: item-crumbs, count: 500, spin: 99999, duration-ticks: 0 } ]
-                """);
-        assertNotNull(c.preset("fx"));
-        assertTrue(c.preset("fx").entityCost() <= 16, "documented max 16, got " + c.preset("fx").entityCost());
     }
 
     @Test

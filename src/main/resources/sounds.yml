@@ -1,28 +1,18 @@
-# Cookie Empire sounds: game event -> sound. Retune here, no code changes needed.
-# Owned by the sound-designer; the plugin plays sounds only through these event names.
+# Game event -> sound. Retune here, no code changes needed.
 #
-# Fields per event:
-#   key        sound event from our resource pack's sounds.json (cookieclicker:...)
-#   fallback   vanilla minecraft:... sound, played when the player hasn't loaded the pack
-#   volume     0 < volume <= 1.0. Above 1.0 only widens the hearing range in Minecraft, it
-#              doesn't get louder; the .ogg files are already levelled, so keep this <= 1.0
-#   pitch-min  lowest random pitch (0.5 - 2.0); the plugin picks a random pitch per play
-#   pitch-max  highest random pitch (>= pitch-min, <= 2.0)
-#   source     sound category (lower case), i.e. which volume slider controls it:
-#              master, music, record, weather, block, hostile, neutral, player, ambient,
-#              voice, ui (ui exists on Paper 26.3, check the Javadocs for other versions)
+#   key        sound event from our sounds.json (cookieclicker:...), or "@block" (see below)
+#   fallback   vanilla minecraft:... sound, used when the pack isn't loaded
+#   volume     0 < volume <= 1.0 (above 1.0 only widens the hearing range; the files are already levelled)
+#   pitch-min / pitch-max   random pitch range per play (0.5 - 2.0, min <= max)
+#   source     sound category, lower case: master, music, record, weather, block, hostile,
+#              neutral, player, ambient, voice, ui
 #
-# Special key "@block": instead of a fixed sound, the plugin plays the vanilla *place* sound
-# of the block the event is about (BlockData#getSoundGroup().getPlaceSound()), e.g.
-# minecraft:block.wood.place for planks. Volume, pitch range and source still come from here;
-# `fallback` is used when the block's sound can't be resolved. It needs no sounds.json entry
-# and works with or without our resource pack. Only events that pass a block support it
-# (currently house_block_place).
-#
-# All sounds are mono, so they can also be played at a location in the world.
+# "@block" plays the vanilla place sound of the block the event is about; `fallback` is used
+# if it can't be resolved. Only events that pass a block support it (house_block_place).
+# All sounds are mono, so they can be played at a location.
 
 cookie_click:
-  key: "cookieclicker:ui.cookie_click"      # 4 variants, picked at random by the client
+  key: "cookieclicker:ui.cookie_click"
   fallback: "minecraft:block.wood.hit"
   volume: 0.6
   pitch-min: 0.92
@@ -53,19 +43,16 @@ cant_afford:
   pitch-max: 1.0
   source: ui
 
-# --- starter-house: the per-player build cinematic (design/sounds.md) ---
-# These repeat dozens of times in a 20-30 s build: soft levels, 4 variants each, pitch spread.
-
 house_hammer:
-  key: "cookieclicker:house.hammer"         # 4 variants: 2 single taps, tap-tap, tap-tap-tap
-  fallback: "minecraft:block.anvil.place"   # shares volume/pitch below: quiet and high = small hammer
+  key: "cookieclicker:house.hammer"
+  fallback: "minecraft:block.anvil.place"
   volume: 0.4
-  pitch-min: 1.15                           # files are authored for ~1.25
+  pitch-min: 1.15  # authored for ~1.25
   pitch-max: 1.35
   source: block
 
 house_block_land:
-  key: "cookieclicker:house.block_land"     # 4 variants: soft thunk + small bounce
+  key: "cookieclicker:house.block_land"
   fallback: "minecraft:block.wood.place"
   volume: 0.5
   pitch-min: 0.9
@@ -73,51 +60,44 @@ house_block_land:
   source: block
 
 house_block_place:
-  key: "@block"                             # special: the landed block's own vanilla place sound
-  fallback: "minecraft:block.stone.place"   # used if the block's sound can't be resolved
+  key: "@block"  # the landed block's own place sound
+  fallback: "minecraft:block.stone.place"
   volume: 0.45
-  pitch-min: 0.8                            # vanilla plays place sounds at ~0.8 pitch
+  pitch-min: 0.8
   pitch-max: 0.95
   source: block
 
 house_fanfare:
-  key: "cookieclicker:house.fanfare"        # 2.8 s, once when the roof is done
+  key: "cookieclicker:house.fanfare"  # fixed pitch: keeps the chord in tune
   fallback: "minecraft:ui.toast.challenge_complete"
   volume: 0.8
   pitch-min: 1.0
-  pitch-max: 1.0                            # a fixed key: don't detune the chord
+  pitch-max: 1.0
   source: ui
 
 house_chimney_crackle:
-  key: "cookieclicker:house.chimney_crackle" # 3.0 s seamless loop. REPLAY PERIOD: exactly 60 ticks, on its own
-                                            # fixed timer (not "every 6th smoke puff" of a timer that can skip/jitter)
+  key: "cookieclicker:house.chimney_crackle"  # 3.0 s loop: replay every 60 ticks, fixed pitch
   fallback: "minecraft:block.campfire.crackle"
   volume: 0.5
-  pitch-min: 1.0                            # FIXED 1.0: a random pitch p makes the file last 3.0/p s
-  pitch-max: 1.0                            # (2.91-3.09 s), which drifts against the 60-tick period = gaps/doubles
+  pitch-min: 1.0
+  pitch-max: 1.0
   source: ambient
-
-# --- factory-makeover ---
 
 factory_ambient:
-  key: "cookieclicker:factory.ambient"       # 4.0 s seamless loop. REPLAY PERIOD: exactly 80 ticks
-  fallback: "minecraft:block.furnace.fire_crackle"  # shares the quiet volume below
-  volume: 0.3                               # sits under house_chimney_crackle (0.5, file -19.1 LUFS)
-  pitch-min: 1.0                            # fixed pitch: a tonal hum would phase against itself
-  pitch-max: 1.0                            # if overlapping replays drifted in length
+  key: "cookieclicker:factory.ambient"  # 4.0 s loop: replay every 80 ticks, fixed pitch
+  fallback: "minecraft:block.furnace.fire_crackle"
+  volume: 0.3
+  pitch-min: 1.0
+  pitch-max: 1.0
   source: ambient
-
-# --- conveyor-belt ---
 
 belt_loop:
-  key: "cookieclicker:factory.belt_loop"     # 4.0 s file authored for pitch 0.8 -> 5.0 s seamless loop in game. REPLAY PERIOD: exactly 100 ticks
-  fallback: "minecraft:block.beehive.work"   # shares the low pitch below: a slow, soft buzz-rattle
-  volume: 0.2                               # sits under factory_ambient (0.3, file -19.5 LUFS; this file -19.9)
-  pitch-min: 0.8                            # FIXED 0.8: the file is designed for it. At 0.8 it lasts
-  pitch-max: 0.8                            # exactly 5.0 s = 100 ticks: replay every 100 ticks (belt.sound-every)
+  key: "cookieclicker:factory.belt_loop"  # authored for pitch 0.8 = 5.0 s: replay every 100 ticks, fixed pitch
+  fallback: "minecraft:block.beehive.work"
+  volume: 0.2
+  pitch-min: 0.8
+  pitch-max: 0.8
   source: ambient
-
-# --- upgrade-holograms ---
 
 upgrade_shelved:
   key: "cookieclicker:ui.upgrade_shelved"
@@ -135,20 +115,16 @@ bulk_toggle:
   pitch-max: 1.05
   source: ui
 
-# --- plot-polish ---
-
 basket_tier_up:
-  key: "cookieclicker:ui.basket_tier_up"     # 1.2 s chime + whoosh, played once for the owner on a basket tier-up
+  key: "cookieclicker:ui.basket_tier_up"
   fallback: "minecraft:entity.player.levelup"
   volume: 0.8
   pitch-min: 1.0
   pitch-max: 1.0
   source: ui
 
-# --- building-roster ---
-
 building_appear:
-  key: "cookieclicker:building.appear"       # 3 variants, ~0.4 s wooden plop + ding, plays often
+  key: "cookieclicker:building.appear"
   fallback: "minecraft:block.wood.place"
   volume: 0.6
   pitch-min: 0.95
@@ -156,7 +132,7 @@ building_appear:
   source: block
 
 building_milestone:
-  key: "cookieclicker:building.milestone"    # ~0.95 s celebratory chime when a building's look upgrades
+  key: "cookieclicker:building.milestone"
   fallback: "minecraft:ui.toast.challenge_complete"
   volume: 0.8
   pitch-min: 1.0

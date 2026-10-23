@@ -213,6 +213,7 @@ boolean animating = effects.dropBlock(viewer, data, target,
 // completion
 effects.play("house_confetti", houseTopCentre, viewer);
 EffectHandle smoke = effects.loop("house_chimney_smoke", chimneyTop, viewer);   // keep it per viewer
+EffectHandle late = effects.loop("factory_steam", ventTop, viewer, 12, null);       // first play after 12 ticks (startDelay)
 smoke.cancel();                                   // the viewer left the plot
 effects.cancelFor(viewer);                        // abort: all this viewer's drops and loops, no callbacks
 ```

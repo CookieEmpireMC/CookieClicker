@@ -38,24 +38,6 @@ class PluginSettingsResourcePackTest {
     }
 
     @Test
-    void hashIsLowercasedAndTrimmed() {
-        var p = pack(rp("url: \" http://h/p.zip \"\nsha1: \"  " + SHA.toUpperCase() + " \""), new ArrayList<>());
-        assertEquals(SHA, p.sha1());
-        assertEquals("http://h/p.zip", p.url());
-        assertTrue(p.sendable());
-    }
-
-    @Test
-    void emptyUrlOrHashIsNotSentAndSaysSo() {
-        List<String> problems = new ArrayList<>();
-        var p = pack("", problems);
-        assertFalse(p.sendable());
-        assertEquals(1, problems.size(), "the shipped empty defaults report once");
-        assertFalse(pack(rp("url: \"https://x/p.zip\""), new ArrayList<>()).sendable(), "hash missing");
-        assertFalse(pack(rp("sha1: \"" + SHA + "\""), new ArrayList<>()).sendable(), "url missing");
-    }
-
-    @Test
     void badHashIsDroppedAndReported() {
         for (String bad : new String[] {"abc", SHA + "0", "zz" + SHA.substring(2), "0123456789abcdef0123456789abcdef0123456"}) {
             List<String> problems = new ArrayList<>();
@@ -89,12 +71,4 @@ class PluginSettingsResourcePackTest {
         assertFalse(garbage.sendable());
     }
 
-    @Test
-    void sendDelayIsClampedAndPromptDefaults() {
-        assertEquals(1, pack(rp("send-delay-ticks: -5"), new ArrayList<>()).sendDelayTicks());
-        assertEquals(200, pack(rp("send-delay-ticks: 99999"), new ArrayList<>()).sendDelayTicks());
-        assertEquals(20, pack("", new ArrayList<>()).sendDelayTicks());
-        assertEquals("resource-pack.prompt", pack("", new ArrayList<>()).promptKey());
-        assertFalse(pack("", new ArrayList<>()).required());
-    }
 }

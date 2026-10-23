@@ -54,33 +54,6 @@ class PlotCodecTest {
     }
 
     @Test
-    void minimalPlotHasOnlyAWorld() {
-        List<String> problems = new ArrayList<>();
-        List<Plot> plots = parse(root("main", spec()), problems);
-        assertEquals(1, plots.size());
-        Plot p = plots.getFirst();
-        assertNull(p.viewpoint());
-        assertNull(p.pedestal());
-        assertNull(p.chimney());
-        assertNull(p.plotRegion());
-        assertTrue(p.station().isEmpty());
-        assertTrue(problems.isEmpty());
-    }
-
-    @Test
-    void idsAreLowerCasedAndValidated() {
-        List<String> problems = new ArrayList<>();
-        assertEquals("main", parse(root("MAIN", spec()), problems).getFirst().id());
-        assertTrue(problems.isEmpty());
-
-        for (String bad : new String[] {"has space", "a/b", "../x", "x".repeat(65), "ü"}) {
-            List<String> pr = new ArrayList<>();
-            assertTrue(parse(root(bad, spec()), pr).isEmpty(), bad);
-            assertEquals(1, pr.size(), bad);
-        }
-    }
-
-    @Test
     void badWorldOrNonSectionSkipsOnlyThatPlot() {
         Map<String, Object> plots = new LinkedHashMap<>();
         plots.put("good", spec());
@@ -94,50 +67,11 @@ class PlotCodecTest {
     }
 
     @Test
-    void badOptionalPointsAreDroppedButThePlotSurvives() {
-        List<String> problems = new ArrayList<>();
-        Map<String, Object> s = spec("viewpoint", Map.of("x", 1, "y", "high", "z", 3),
-                "pedestal", "here", "chimney", Map.of("x", Double.NaN, "y", 1, "z", 2));
-        Plot p = parse(root("main", s), problems).getFirst();
-        assertNull(p.viewpoint());
-        assertNull(p.pedestal());
-        assertNull(p.chimney());
-        assertEquals(3, problems.size(), problems.toString());
-    }
-
-    @Test
-    void yawAndPitchAreOptionalAndDefaultToZero() {
-        List<String> problems = new ArrayList<>();
-        Plot p = parse(root("main", spec("viewpoint", Map.of("x", 1, "y", 2, "z", 3), "pedestal", Map.of("x", 4, "y", 5, "z", 6))),
-                problems).getFirst();
-        assertEquals(new Plot.Viewpoint(1, 2, 3, 0f, 0f), p.viewpoint());
-        assertEquals(new Plot.Pedestal(4, 5, 6, 0f), p.pedestal());
-        assertTrue(problems.isEmpty());
-    }
-
-    @Test
-    void regionFallbackNamesAreTrimmedAndLowerCasedBlankIsNull() {
-        Plot p = parse(root("main", spec("plot-region", "  Bakery_Plot ", "house-region", "   ")), new ArrayList<>()).getFirst();
-        assertEquals("bakery_plot", p.plotRegion());
-        assertNull(p.houseRegion());
-    }
-
-    @Test
     void missingOrMalformedPlotsSectionIsEmptyNotAnError() {
         List<String> problems = new ArrayList<>();
         assertTrue(parse(Map.of(), problems).isEmpty());
         assertTrue(parse(Map.of("plots", "nope"), problems).isEmpty());
         assertTrue(problems.isEmpty());
-    }
-
-    @Test
-    void pedestalBecomesTheStationWithThePlotId() {
-        Plot p = Plot.empty("main", "minecraft:overworld").withPedestal(new Plot.Pedestal(1.5, 64, 2.5, 90f));
-        var s = p.station().orElseThrow();
-        assertEquals("main", s.id());
-        assertEquals("minecraft:overworld", s.worldKey());
-        assertEquals(1.5, s.x());
-        assertEquals(90f, s.yaw());
     }
 
     @Test

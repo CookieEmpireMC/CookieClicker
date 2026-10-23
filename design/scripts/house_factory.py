@@ -422,7 +422,7 @@ def layout_yaml() -> list[str]:
     v = lambda p: "[" + ", ".join(str(i) for i in p) + "]"  # noqa: E731
     L = LAYOUT
     return [
-        "layout:                  # plot cells from the plot's min corner (see design/factory.md)",
+        "layout:",
         f"  plot-size: {v(L['plot-size'])}",
         f"  house-at: {v(L['house-at'])}",
         f"  pedestal: {{at: {v(L['pedestal']['at'])}, yaw: {L['pedestal']['yaw']}}}",
@@ -432,8 +432,7 @@ def layout_yaml() -> list[str]:
         f"pitch: {L['viewpoint']['pitch']}}}",
         f"  entrance: {v(L['entrance'])}",
         f"  belt: {{from: {v(L['belt']['from'])}, to: {v(L['belt']['to'])}}}",
-        f"  camera: {{at: {v(L['camera']['at'])}, yaw: {L['camera']['yaw']}, pitch: {L['camera']['pitch']}}}"
-        "   # build cinematic eye point (feet cell, may lie outside the plot)",
+        f"  camera: {{at: {v(L['camera']['at'])}, yaw: {L['camera']['yaw']}, pitch: {L['camera']['pitch']}}}",
     ]
 
 

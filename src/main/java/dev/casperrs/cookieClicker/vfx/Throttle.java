@@ -21,9 +21,8 @@ final class Throttle {
     private final Map<Key, Long> lastPlay = new HashMap<>();
 
     /**
-     * @param interval minimum ticks between two plays; 0 or less = no cap (always true, nothing stored)
-     * @return true (and the play is recorded) when at least {@code interval} ticks passed since the last allowed
-     *         play of this effect for this viewer, or there was none
+     * True (and the play is recorded) when at least {@code interval} ticks passed since the last allowed play of
+     * this effect for this viewer, or there was none. An interval of 0 or less = no cap (nothing stored).
      */
     boolean allow(@Nullable UUID viewer, String effectId, long now, int interval) {
         if (interval <= 0) {

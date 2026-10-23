@@ -46,7 +46,7 @@ final class FloatingTextJob extends DisplayJob {
             d.setDefaultBackground(false);
             d.setBackgroundColor(layer.background());
             d.setViewRange(layer.viewRange());
-            d.setTransformation(transformation(track.spawn()));
+            d.setTransformation(Transformations.of(track.spawn()));
         });
         add(display, track);
     }

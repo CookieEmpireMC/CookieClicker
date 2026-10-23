@@ -22,16 +22,8 @@ public final class Motions {
     }
 
     /**
-     * Floating text: pops in (small, overshoot, settle), rises with ease-out, then shrinks and fades at the top.
-     *
-     * @param rise          blocks risen over the whole life
-     * @param duration      ticks until removal
-     * @param scale         text scale at rest
-     * @param popInScale    spawn scale as a share of {@code scale}
-     * @param overshoot     peak scale of the pop-in as a share of {@code scale} (1 = none)
-     * @param popInTicks    length of the pop-in (0 = no pop-in, starts at {@code scale})
-     * @param fadeTicks     length of the shrink/fade at the end
-     * @param startTick     first keyframe tick (the client needs the spawn state before it can interpolate)
+     * Floating text: pops in (small, overshoot, settle), rises with ease-out, then shrinks and fades at the top. Rise in blocks, durations in ticks; {@code popInScale} and {@code overshoot} are shares of
+     * {@code scale} (overshoot 1 = none); {@code popInTicks} 0 = no pop-in.
      */
     public static DisplayTrack floatingText(double rise, int duration, double scale, double popInScale,
                                             double overshoot, int popInTicks, int fadeTicks, int startTick) {
@@ -59,16 +51,8 @@ public final class Motions {
     }
 
     /**
-     * Crumb {@code i} of {@code n}: flies out along an upward cone, tumbles, then drops and shrinks away.
-     *
-     * @param distance  horizontal-ish distance travelled, blocks
-     * @param spreadDeg cone half-angle around straight up
-     * @param lift      extra height at the top of the arc, blocks
-     * @param drop      how far below the origin height it ends, blocks
-     * @param duration  ticks until removal
-     * @param scale     item scale
-     * @param spinDeg   total tumble in degrees (at most 200, sent in two steps)
-     * @param startTick first keyframe tick
+     * Crumb {@code i} of {@code n}: flies out along an upward cone, tumbles, then drops and shrinks away. Distance, lift and drop in blocks, spread (cone half-angle around up) and spin
+     * (total tumble, at most 200, sent in two steps) in degrees, duration in ticks.
      */
     public static DisplayTrack crumb(int i, int n, double distance, double spreadDeg, double lift, double drop,
                                      int duration, double scale, double spinDeg, int startTick) {

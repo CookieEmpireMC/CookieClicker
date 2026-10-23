@@ -27,11 +27,8 @@ public record EffectsConfig(Limits limits, Map<String, Preset> presets, List<Str
 
     /**
      * One effect ID and its layers, in config order.
-     *
-     * @param loopEvery ticks between two plays when run through {@code Effects.loop} ({@code loop-every}); 0 when
-     *                  the preset doesn't set it
-     * @param minIntervalTicks least ticks between two plays of this preset for one viewer
-     *                  ({@code min-interval-ticks}); plays in between are dropped. 0 = no cap
+     * {@code loopEvery} (ticks, {@code loop-every}) is 0 when unset; {@code minIntervalTicks}
+     * ({@code min-interval-ticks}) drops plays closer together for one viewer, 0 = no cap.
      */
     public record Preset(String id, List<LayerSpec> layers, int loopEvery, int minIntervalTicks) {
 

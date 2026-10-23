@@ -1,7 +1,13 @@
 package dev.casperrs.cookieClicker.view;
 
+import dev.casperrs.cookieClicker.view.panel.BulkMode;
+import dev.casperrs.cookieClicker.view.panel.PriceTween;
+import dev.casperrs.cookieClicker.view.panel.PanelRowState;
+import dev.casperrs.cookieClicker.view.panel.PanelKind;
+import dev.casperrs.cookieClicker.view.panel.PanelLayout;
 import dev.casperrs.cookieClicker.config.StationVisualSettings.Offset;
 import dev.casperrs.cookieClicker.station.Station;
+import dev.casperrs.cookieClicker.text.TextWidth;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Interaction;
@@ -35,9 +41,7 @@ final class StationView {
         final double[] centre;
         /** Icon centre in world space (where a bought upgrade's icon flies out from). */
         final double[] iconAt;
-        /** The building / upgrade shown, or null for an empty slot. */
         @Nullable String id;
-        /** The values the row shows (or rolls toward). */
         @Nullable PanelRowState state;
         PriceTween cost = PriceTween.fixed(0);
         PriceTween gain = PriceTween.fixed(0);
@@ -50,7 +54,7 @@ final class StationView {
         /** Estimated pixel width of the rendered text (for the left-edge shift). */
         int renderedWidth;
         /** Wrapped line count of the rendered text (for the click bounds). */
-        int renderedLines = PanelLayout.ROW_LINES;
+        int renderedLines = TextWidth.ROW_LINES;
         float sentShift = Float.NaN;
         float sentScale = Float.NaN;
         int sentColor;
@@ -83,7 +87,6 @@ final class StationView {
         final TextDisplay toggle;
         final Interaction hitbox;
         final List<Row> rows;
-        /** The mode the toggle currently shows. */
         @Nullable BulkMode shownMode;
         /** What the toggle line shows (mode + ▲ / ▼ state); null before its first text. */
         @Nullable String shownToggle;
@@ -160,14 +163,12 @@ final class StationView {
     double[] pedestalBottom = new double[3];
     /** Height of the pedestal bottom above the station point (the "up" of its offset). */
     double pedestalUp;
-    /** The basket look shown, or null without a basket. */
     @Nullable BasketLook basketLook;
     /** A tier-up waiting for its effect's peak: this look is shown at tick {@link #basketSwitchAt}. */
     @Nullable BasketLook pendingLook;
     long basketSwitchAt = Long.MIN_VALUE;
     final Panel buildings;
     final Panel clicks;
-    /** Upgrade id → its shelf icon (entities added and removed as upgrades are bought). */
     final Map<String, ShelfIcon> shelf = new LinkedHashMap<>();
     /** The fixed entities (cookie, pedestal, panels); the shelf comes on top. */
     private final List<Entity> fixed;

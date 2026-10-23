@@ -3,11 +3,8 @@ package dev.casperrs.cookieClicker.economy;
 import java.util.List;
 
 /**
- * One building from {@code buildings.yml}. Display names live in {@code messages.yml}.
- *
- * @param unlockBaked the building is visible and purchasable once {@code baked >= unlockBaked}
- * @param milestones  owned counts (ascending, distinct) at which this building's production doubles
- *                    ({@code buildings.yml: milestones}); empty = no milestones
+ * One building from {@code buildings.yml}. Display names live in {@code messages.yml}. Purchasable once
+ * {@code baked >= unlockBaked}; production doubles at each milestone count (ascending, distinct, may be empty).
  */
 public record BuildingDef(String id, double baseCost, double baseCps, double unlockBaked, List<Integer> milestones) {
 

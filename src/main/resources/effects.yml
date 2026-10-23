@@ -159,7 +159,6 @@ pop:
                                   { scale: [0.92, 1.10, 0.92], ticks: 2 },
                                   { scale: 1, ticks: 3 } ] }
 
-# ---- starter-house cinematic (all personal: viewer = the player watching their house go up) ----------------------
 # Per-block effects take the block's bottom centre: (x + 0.5, y, z + 0.5).
 
 # How effects.dropBlock animates each falling block: appears 4 blocks up, hangs 2 ticks, falls 6, pops up 0.25
@@ -223,13 +222,9 @@ house_chimney_smoke:
         force: true }
     - { type: particle, particle: smoke, count: 2, offset: 0.08, speed: 0.01, origin: [0, 0.25, 0], force: true }
 
-# ---- factory-makeover ------------------------------------------------------------------------------------------
 
-# Roof-vent steam, looped with effects.loop("factory_steam", ventTop, viewer) at every points.steam cell (location =
-# centre of the vent's top face, like chimneyTop). Short white puffs, not a column: a 37-tick cycle (prime, so it
-# never lines up with the 10-tick chimney smoke) with a big puff at 0, a small one at 5, a big one at 15 and a small
-# one at 24, then a pause; each puff sits a few cm off centre. Cloud puffs fade in ~1 s, white_smoke wisps linger a
-# little. Extended range (force) like the chimney. 8 particles per cycle = about 4.3 per second per vent.
+# Roof-vent steam, looped per vent with effects.loop (location = centre of the vent's top face). The 37-tick cycle is
+# prime so it never lines up with the 10-tick chimney smoke. force like the chimney. 8 particles per cycle.
 factory_steam:
   loop-every: 37
   layers:
@@ -245,7 +240,6 @@ factory_steam:
     - { type: particle, particle: cloud, direction: up, speed: 0.05, origin: [0.03, 0.15, 0.06], force: true,
         delay-ticks: 24 }
 
-# ---- conveyor-belt ---------------------------------------------------------------------------------------------
 
 # A belt cookie lands on the pedestal: a tiny spray of cookie crumbs hops up and falls, and a small warm-white ring
 # pops open around it (0.08 -> 0.22 over 2 ticks). Location = where the belt cookie vanishes (its centre at the
@@ -327,7 +321,6 @@ building_milestone:
     - { type: particle, particle: end_rod, shape: burst, points: 6, radius: 0.3, speed: 0.06, delay-ticks: 6,
         origin: [0, 0.8, 0] }
 
-# ---- admin tools (not seen by normal players) ----------------------------------------------------------------------
 # /bakery plot show: code plays one of these per outline point (up to ~120 points per region, redrawn every
 # 20 ticks), viewer = the admin. One fat dust mote per play, sent in the extended range so the whole outline shows
 # from across the plot. Sky blue = plot region, cookie gold = house region. 1 particle per play.

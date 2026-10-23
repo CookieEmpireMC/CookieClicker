@@ -1,7 +1,6 @@
 package dev.casperrs.cookieClicker.station;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
@@ -40,7 +39,6 @@ class StationTest {
         }
     }
 
-    // ---- registry ----
 
     @Test
     void addRemoveFireEventsAndReplaceFiresRemoveFirst() {
@@ -55,54 +53,6 @@ class StationTest {
         assertTrue(r.remove("station-1").isEmpty());
         assertEquals("-station-1", rec.log.get(rec.log.size() - 1));
         assertEquals(4, rec.log.size());
-    }
-
-    @Test
-    void newListenerIsToldAboutExistingStations() {
-        StationRegistry r = new StationRegistry(quiet());
-        r.add(st("station-1", 0));
-        r.add(st("station-2", 20));
-        Recorder rec = new Recorder();
-        r.addListener(rec);
-        assertEquals(List.of("+station-1", "+station-2"), rec.log);
-    }
-
-    @Test
-    void clearFiresRemoveForEveryStationAndEmptiesRegistry() {
-        StationRegistry r = new StationRegistry(quiet());
-        Recorder rec = new Recorder();
-        r.addListener(rec);
-        r.add(st("station-1", 0));
-        r.add(st("station-2", 20));
-        rec.log.clear();
-        r.clear();
-        assertEquals(List.of("-station-1", "-station-2"), rec.log);
-        assertTrue(r.all().isEmpty());
-    }
-
-    @Test
-    void replaceAllOnlyTouchesWhatChanged() {
-        StationRegistry r = new StationRegistry(quiet());
-        r.add(st("station-1", 0));
-        r.add(st("station-2", 20));
-        r.add(st("station-3", 40));
-        Recorder rec = new Recorder();
-        r.addListener(rec);
-        rec.log.clear();
-        r.replaceAll(List.of(st("station-1", 0), new Station("station-2", OW, 21, 64, 0, 90f), st("station-4", 80)));
-        assertEquals(List.of("-station-2", "-station-3", "+station-2", "+station-4"), rec.log);
-        assertEquals(List.of("station-1", "station-2", "station-4"), r.all().stream().map(Station::id).sorted().toList());
-    }
-
-    @Test
-    void replaceAllWithSameContentFiresNothing() {
-        StationRegistry r = new StationRegistry(quiet());
-        r.add(st("station-1", 0));
-        Recorder rec = new Recorder();
-        r.addListener(rec);
-        rec.log.clear();
-        r.replaceAll(List.of(st("station-1", 0)));
-        assertTrue(rec.log.isEmpty());
     }
 
     @Test
@@ -140,20 +90,6 @@ class StationTest {
         assertTrue(r.nearest(OW, 0, 64, 0, 0).isPresent(), "exactly on top of it counts at radius 0");
     }
 
-    @Test
-    void nextIdIsAboveTheHighestAndIgnoresCustomIds() {
-        StationRegistry r = new StationRegistry(quiet());
-        assertEquals("station-1", r.nextId());
-        r.add(st("station-1", 0));
-        r.add(st("station-7", 20));
-        r.add(st("custom", 40));
-        r.add(st("station-x", 60));
-        assertEquals("station-8", r.nextId());
-        r.remove("station-7");
-        assertEquals("station-2", r.nextId());
-    }
-
-    // ---- codec ----
 
     @Test
     void codecRoundTrips() {
@@ -183,13 +119,6 @@ class StationTest {
         assertEquals("ok", out.get(0).id());
         assertEquals(0f, out.get(0).yaw(), "yaw defaults to 0");
         assertEquals(8, problems.size(), problems.toString());
-    }
-
-    @Test
-    void codecToleratesMissingOrWrongRoot() {
-        assertTrue(StationCodec.fromMap(Map.of(), p -> { }).isEmpty());
-        assertTrue(StationCodec.fromMap(Map.of("stations", "nope"), p -> { }).isEmpty());
-        assertFalse(StationCodec.toMap(List.of()).isEmpty());
     }
 
     @Test

@@ -1,5 +1,7 @@
 package dev.casperrs.cookieClicker.economy;
 
+import org.jspecify.annotations.Nullable;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -21,7 +23,32 @@ public final class EconomyConfigParser {
 
     public static Result parse(Map<String, ?> buildingsYaml, Map<String, ?> upgradesYaml) throws EconomyConfigException {
         List<String> warnings = new ArrayList<>();
+        Map<String, BuildingDef> buildings = buildings(buildingsYaml);
+        Map<String, UpgradeDef> upgrades = new LinkedHashMap<>();
+        for (Map.Entry<String, ?> e : optionalMap(upgradesYaml.get("upgrades"), "upgrades.yml: upgrades").entrySet()) {
+            upgrades.put(e.getKey(), upgrade(e.getKey(), e.getValue(), buildings));
+        }
+        double growth = number(buildingsYaml.get("cost-growth"), "buildings.yml: cost-growth");
+        if (growth < 1) {
+            throw new EconomyConfigException("buildings.yml: cost-growth must be >= 1, got " + growth);
+        }
+        Map<String, ?> click = section(upgradesYaml, "click", "upgrades.yml");
+        double basePower = number(click.get("base-power"), "upgrades.yml: click.base-power");
+        double critChance = 0;
+        double critMultiplier = 1;
+        if (click.containsKey("crit-chance") && click.containsKey("crit-multiplier")) {
+            critChance = number(click.get("crit-chance"), "upgrades.yml: click.crit-chance");
+            if (critChance > 1) {
+                throw new EconomyConfigException("upgrades.yml: click.crit-chance must be between 0 and 1, got " + critChance);
+            }
+            critMultiplier = number(click.get("crit-multiplier"), "upgrades.yml: click.crit-multiplier");
+        } else {
+            warnings.add("upgrades.yml: click.crit-chance / click.crit-multiplier missing, crits are off");
+        }
+        return new Result(new EconomyConfig(growth, basePower, critChance, critMultiplier, buildings, upgrades), warnings);
+    }
 
+    private static Map<String, BuildingDef> buildings(Map<String, ?> buildingsYaml) throws EconomyConfigException {
         List<Integer> milestones = milestones(buildingsYaml.get("milestones"), "buildings.yml: milestones");
         Map<String, BuildingDef> buildings = new LinkedHashMap<>();
         for (Map.Entry<String, ?> e : section(buildingsYaml, "buildings", "buildings.yml").entrySet()) {
@@ -41,74 +68,57 @@ public final class EconomyConfigParser {
         if (buildings.isEmpty()) {
             throw new EconomyConfigException("buildings.yml has no buildings");
         }
+        return buildings;
+    }
 
-        Map<String, UpgradeDef> upgrades = new LinkedHashMap<>();
-        Object rawUpgrades = upgradesYaml.get("upgrades");
-        for (Map.Entry<String, ?> e : optionalMap(rawUpgrades, "upgrades.yml: upgrades").entrySet()) {
-            String id = e.getKey();
-            String where = "upgrades.yml: upgrades." + id;
-            Map<String, ?> spec = asMap(e.getValue(), where);
-            Map<String, ?> effect = optionalMap(spec.get("effect"), where + ".effect");
-            Map<String, ?> unlock = optionalMap(spec.get("unlock"), where + ".unlock");
-            Object typeName = effect.get("type");
-            EffectType type = EffectType.fromConfigName(String.valueOf(typeName)).orElseThrow(() ->
-                    new EconomyConfigException(where + ".effect.type '" + typeName + "' is not a known effect type"));
-            String target = effect.get("building") == null ? null : String.valueOf(effect.get("building"));
-            if (type == EffectType.BUILDING_MULTIPLIER && (target == null || !buildings.containsKey(target))) {
-                throw new EconomyConfigException(where + ".effect.building '" + target + "' is not a building");
-            }
-            String unlockBuilding = unlock.get("building") == null ? null : String.valueOf(unlock.get("building"));
-            if (unlockBuilding != null && !buildings.containsKey(unlockBuilding)) {
-                throw new EconomyConfigException(where + ".unlock.building '" + unlockBuilding + "' is not a building");
-            }
-            int unlockOwned = unlock.containsKey("owned") ? (int) number(unlock.get("owned"), where + ".unlock.owned") : 0;
-            double unlockBaked = unlock.containsKey("baked") ? number(unlock.get("baked"), where + ".unlock.baked") : 0;
-            double costGrowth = 0;
-            if (spec.get("cost-growth") != null) {
-                costGrowth = number(spec.get("cost-growth"), where + ".cost-growth");
-                if (costGrowth < 1) {
-                    throw new EconomyConfigException(where + ".cost-growth must be >= 1, got " + costGrowth);
-                }
-            }
-            int maxLevel = costGrowth > 0 ? Integer.MAX_VALUE : 1;
-            Object rawMax = spec.get("max-level");
-            if (rawMax != null) {
-                if (costGrowth == 0) {
-                    throw new EconomyConfigException(where + ".max-level needs cost-growth (only repeatable upgrades have levels)");
-                }
-                if (!(rawMax instanceof Integer || rawMax instanceof Long) || ((Number) rawMax).longValue() < 1
-                        || ((Number) rawMax).longValue() > Integer.MAX_VALUE) {
-                    throw new EconomyConfigException(where + ".max-level must be an integer >= 1, got " + rawMax);
-                }
-                maxLevel = ((Number) rawMax).intValue();
-            }
-            double cost = number(spec.get("cost"), where + ".cost");
-            if (cost <= 0) {
-                throw new EconomyConfigException(where + ".cost must be > 0");
-            }
-            upgrades.put(id, new UpgradeDef(id, cost, type, number(effect.get("value"), where + ".effect.value"),
-                    target, unlockBuilding, unlockOwned, unlockBaked, costGrowth, maxLevel));
+    private static UpgradeDef upgrade(String id, Object raw, Map<String, BuildingDef> buildings)
+            throws EconomyConfigException {
+        String where = "upgrades.yml: upgrades." + id;
+        Map<String, ?> spec = asMap(raw, where);
+        Map<String, ?> effect = optionalMap(spec.get("effect"), where + ".effect");
+        Map<String, ?> unlock = optionalMap(spec.get("unlock"), where + ".unlock");
+        Object typeName = effect.get("type");
+        EffectType type = EffectType.fromConfigName(String.valueOf(typeName)).orElseThrow(() ->
+                new EconomyConfigException(where + ".effect.type '" + typeName + "' is not a known effect type"));
+        String target = effect.get("building") == null ? null : String.valueOf(effect.get("building"));
+        if (type == EffectType.BUILDING_MULTIPLIER && (target == null || !buildings.containsKey(target))) {
+            throw new EconomyConfigException(where + ".effect.building '" + target + "' is not a building");
         }
+        String unlockBuilding = unlock.get("building") == null ? null : String.valueOf(unlock.get("building"));
+        if (unlockBuilding != null && !buildings.containsKey(unlockBuilding)) {
+            throw new EconomyConfigException(where + ".unlock.building '" + unlockBuilding + "' is not a building");
+        }
+        int unlockOwned = unlock.containsKey("owned") ? (int) number(unlock.get("owned"), where + ".unlock.owned") : 0;
+        double unlockBaked = unlock.containsKey("baked") ? number(unlock.get("baked"), where + ".unlock.baked") : 0;
+        double costGrowth = 0;
+        if (spec.get("cost-growth") != null) {
+            costGrowth = number(spec.get("cost-growth"), where + ".cost-growth");
+            if (costGrowth < 1) {
+                throw new EconomyConfigException(where + ".cost-growth must be >= 1, got " + costGrowth);
+            }
+        }
+        int maxLevel = maxLevel(spec.get("max-level"), costGrowth, where);
+        double cost = number(spec.get("cost"), where + ".cost");
+        if (cost <= 0) {
+            throw new EconomyConfigException(where + ".cost must be > 0");
+        }
+        return new UpgradeDef(id, cost, type, number(effect.get("value"), where + ".effect.value"),
+                target, unlockBuilding, unlockOwned, unlockBaked, costGrowth, maxLevel);
+    }
 
-        double growth = number(buildingsYaml.get("cost-growth"), "buildings.yml: cost-growth");
-        if (growth < 1) {
-            throw new EconomyConfigException("buildings.yml: cost-growth must be >= 1, got " + growth);
+    /** One-time upgrades have level 1; repeatable ones (with cost-growth) are unbounded unless max-level is set. */
+    private static int maxLevel(@Nullable Object rawMax, double costGrowth, String where) throws EconomyConfigException {
+        if (rawMax == null) {
+            return costGrowth > 0 ? Integer.MAX_VALUE : 1;
         }
-        Map<String, ?> click = section(upgradesYaml, "click", "upgrades.yml");
-        double basePower = number(click.get("base-power"), "upgrades.yml: click.base-power");
-
-        double critChance = 0;
-        double critMultiplier = 1;
-        if (click.containsKey("crit-chance") && click.containsKey("crit-multiplier")) {
-            critChance = number(click.get("crit-chance"), "upgrades.yml: click.crit-chance");
-            if (critChance > 1) {
-                throw new EconomyConfigException("upgrades.yml: click.crit-chance must be between 0 and 1, got " + critChance);
-            }
-            critMultiplier = number(click.get("crit-multiplier"), "upgrades.yml: click.crit-multiplier");
-        } else {
-            warnings.add("upgrades.yml: click.crit-chance / click.crit-multiplier missing, crits are off");
+        if (costGrowth == 0) {
+            throw new EconomyConfigException(where + ".max-level needs cost-growth (only repeatable upgrades have levels)");
         }
-        return new Result(new EconomyConfig(growth, basePower, critChance, critMultiplier, buildings, upgrades), warnings);
+        if (!(rawMax instanceof Integer || rawMax instanceof Long) || ((Number) rawMax).longValue() < 1
+                || ((Number) rawMax).longValue() > Integer.MAX_VALUE) {
+            throw new EconomyConfigException(where + ".max-level must be an integer >= 1, got " + rawMax);
+        }
+        return ((Number) rawMax).intValue();
     }
 
     /**

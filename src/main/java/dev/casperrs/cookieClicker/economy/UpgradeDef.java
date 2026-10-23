@@ -3,16 +3,9 @@ package dev.casperrs.cookieClicker.economy;
 import org.jspecify.annotations.Nullable;
 
 /**
- * One upgrade from {@code upgrades.yml} (model.md "Upgrades").
- *
- * @param cost           one-time: the price; repeatable: the cost of level 1
- * @param value          the effect of <b>one</b> level
- * @param building       target building for {@link EffectType#BUILDING_MULTIPLIER}, else null
- * @param unlockBuilding building whose owned count unlocks this upgrade, or null
- * @param unlockOwned    owned count of {@code unlockBuilding} needed
- * @param unlockBaked    baked cookies needed
- * @param costGrowth     cost multiplier per level already owned; {@code 0} = one-time upgrade
- * @param maxLevel       highest level: 1 for one-time, {@code max-level} or {@link Integer#MAX_VALUE} for repeatable
+ * One upgrade from {@code upgrades.yml} (model.md "Upgrades"). value is <b>one</b> level's effect. One-time:
+ * costGrowth 0, maxLevel 1, cost = the price; repeatable: cost of level 1, maxLevel {@code max-level} or
+ * {@link Integer#MAX_VALUE}.
  */
 public record UpgradeDef(String id, double cost, EffectType type, double value,
                          @Nullable String building, @Nullable String unlockBuilding,

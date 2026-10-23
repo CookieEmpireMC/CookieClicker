@@ -19,9 +19,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Reads {@code plots.yml} (enable/reload) and writes it on the IO thread after changes. Same rule as
- * {@code StationFile}: while a write is queued or running, {@link #load} returns the plots of the newest write, so a
- * {@code /bakery plot …} directly followed by {@code /bakery reload} never reads the old file.
+ * Reads {@code plots.yml} (enable/reload) and writes it on the IO thread after changes. While a write is queued or
+ * running, {@link #load} returns the plots of the newest write, so a {@code /bakery plot …} directly followed by
+ * {@code /bakery reload} never reads the old file.
  */
 public final class PlotFile {
 
@@ -66,9 +66,8 @@ public final class PlotFile {
     }
 
     /**
-     * Serialises on the calling (main) thread, writes atomically on {@code io}.
-     *
-     * @param afterWrite runs on {@code io} only when the write succeeded (e.g. backing up {@code stations.yml})
+     * Serialises on the calling (main) thread, writes atomically on {@code io}; {@code afterWrite} runs there only
+     * after a successful write.
      */
     public void saveAsync(Collection<Plot> plots, @Nullable Runnable afterWrite) {
         YamlConfiguration yaml = new YamlConfiguration();

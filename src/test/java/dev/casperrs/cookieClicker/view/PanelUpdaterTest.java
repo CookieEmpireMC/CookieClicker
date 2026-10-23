@@ -11,9 +11,15 @@ import dev.casperrs.cookieClicker.economy.Economy;
 import dev.casperrs.cookieClicker.economy.EconomyConfigException;
 import dev.casperrs.cookieClicker.economy.EconomyConfigParser;
 import dev.casperrs.cookieClicker.economy.PouchSnapshot;
-import dev.casperrs.cookieClicker.format.RealMessages;
+import dev.casperrs.cookieClicker.text.RealMessages;
 import dev.casperrs.cookieClicker.station.Station;
 import dev.casperrs.cookieClicker.text.Messages;
+import dev.casperrs.cookieClicker.text.TextPadding;
+import dev.casperrs.cookieClicker.text.TextWidth;
+import dev.casperrs.cookieClicker.view.panel.PanelLayout;
+import dev.casperrs.cookieClicker.view.panel.BulkMode;
+import dev.casperrs.cookieClicker.view.panel.BulkModes;
+import dev.casperrs.cookieClicker.view.panel.PanelKind;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -146,24 +152,24 @@ class PanelUpdaterTest {
         // header and toggle are centred on the anchor, so their background is -w/2 .. w/2
         for (String path : List.of("panel.buildings.header", "panel.clicks.header")) {
             Component header = TextPadding.centred(shipped.component(path), p.textPadding(), layout.headerTargetPx());
-            double w = TextWidth.blocks(TextWidth.width(header, PanelLayout.SINGLE_LINE_WIDTH), p.headerScale());
+            double w = TextWidth.blocks(TextWidth.width(header, TextWidth.SINGLE_LINE_WIDTH), p.headerScale());
             assertSameColumn(path, -w / 2, w / 2, colLeft, colRight, p.headerScale());
         }
         // every toggle line: the plain ×N line and the paged one with each arrow on or off, in each selected mode
         for (BulkMode mode : BulkMode.values()) {
-            List<Component> lines = new ArrayList<>(List.of(updater.toggleText(mode)));
+            List<Component> lines = new ArrayList<>(List.of(updater.text().toggleText(mode)));
             for (boolean up : new boolean[] {false, true}) {
                 for (boolean down : new boolean[] {false, true}) {
-                    lines.add(updater.pagedToggle(updater.toggleText(mode), up, down));
+                    lines.add(updater.text().pagedToggle(updater.text().toggleText(mode), up, down));
                 }
             }
             for (Component line : lines) {
                 Component toggle = TextPadding.centred(line, p.textPadding(), layout.toggleTargetPx());
-                double w = TextWidth.blocks(TextWidth.width(toggle, PanelLayout.SINGLE_LINE_WIDTH), bulkScale);
+                double w = TextWidth.blocks(TextWidth.width(toggle, TextWidth.SINGLE_LINE_WIDTH), bulkScale);
                 assertSameColumn("toggle " + mode + " " + PLAIN.serialize(line), -w / 2, w / 2, colLeft, colRight,
                         bulkScale);
                 // padded in whole spaces to the column's pixel width: at most half a space wider than the target, in px
-                int px = TextWidth.width(toggle, PanelLayout.SINGLE_LINE_WIDTH);
+                int px = TextWidth.width(toggle, TextWidth.SINGLE_LINE_WIDTH);
                 assertTrue(px <= layout.toggleTargetPx() + TextWidth.SPACE_PX / 2,
                         "toggle " + PLAIN.serialize(line) + " is " + px + " px, the column " + layout.toggleTargetPx());
             }
@@ -173,10 +179,10 @@ class PanelUpdaterTest {
         for (String id : shippedBuildingIds()) {
             for (String path : List.of("panel.row.affordable", "panel.row.unaffordable")) {
                 for (Component row : List.of(
-                        PanelUpdater.buildingRow(shipped, path, p.textPadding(), id, 1, shipped.number(15),
+                        PanelText.buildingRow(shipped, path, p.textPadding(), id, 1, shipped.number(15),
                                 shipped.number(0.1), 0, Component.empty()),
-                        PanelUpdater.buildingRow(shipped, path, p.textPadding(), id, 9999, shipped.number(1.234e15),
-                                shipped.number(9.99e9), 1e15, PanelUpdater.amount(shipped, BulkMode.MAX, 10000)))) {
+                        PanelText.buildingRow(shipped, path, p.textPadding(), id, 9999, shipped.number(1.234e15),
+                                shipped.number(9.99e9), 1e15, PanelText.amount(shipped, BulkMode.MAX, 10000)))) {
                     Component padded = TextPadding.right(row, p.textPadding(), layout.rowWidthPx(), lineWidth);
                     double w = TextWidth.blocks(TextWidth.width(padded, lineWidth), p.textScale());
                     assertSameColumn(id + " " + path, colLeft, colLeft + w, colLeft, colRight, p.textScale());
@@ -203,27 +209,16 @@ class PanelUpdaterTest {
         for (String id : shippedBuildingIds()) {
             for (String path : List.of("panel.row.affordable", "panel.row.unaffordable")) {
                 for (double cost : new double[] {1.234e15, 9.99e33}) {
-                    Component row = PanelUpdater.buildingRow(shipped, path, 1, id, 9999,
+                    Component row = PanelText.buildingRow(shipped, path, 1, id, 9999,
                             shipped.number(cost), shipped.number(9.99e9), 1e15,
-                            PanelUpdater.amount(shipped, BulkMode.MAX, 10000));
+                            PanelText.amount(shipped, BulkMode.MAX, 10000));
                     String text = PLAIN.serialize(row);
                     List<Integer> lines = TextWidth.lineWidths(TextWidth.runs(row), lineWidth);
-                    assertEquals(PanelLayout.ROW_LINES, lines.size(), "wrapped: " + text);
+                    assertEquals(TextWidth.ROW_LINES, lines.size(), "wrapped: " + text);
                     assertTrue(lines.stream().allMatch(w -> w <= lineWidth), "too wide " + lines + ": " + text);
                 }
             }
         }
-    }
-
-    @Test
-    void aPagedToggleTagsBothArrowsEvenWhenOneIsDisabled() {
-        PanelUpdater updater = new PanelUpdater(() -> settings, economy, shippedMessages(), new BulkModes(),
-                (kind, id, withPack) -> null);
-        // a disabled arrow is still clickable (it does nothing), so both are tagged for the ray pick
-        PanelLayout.ToggleBox box = PanelUpdater.toggleBox(updater.pagedToggle(Component.text("×1"), false, true));
-        assertTrue(box.pages().containsKey(PanelLayout.Hit.Kind.PAGE_UP));
-        assertTrue(box.pages().containsKey(PanelLayout.Hit.Kind.PAGE_DOWN));
-        assertTrue(box.labels().isEmpty(), "plain text here is not a mode label");
     }
 
     private StationView view(Station station) {

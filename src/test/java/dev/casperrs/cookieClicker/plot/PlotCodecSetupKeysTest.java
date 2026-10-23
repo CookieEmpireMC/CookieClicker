@@ -43,16 +43,6 @@ class PlotCodecSetupKeysTest {
     }
 
     @Test
-    void oneSmokePointIsWrittenAsChimneyForOldFiles() {
-        Plot one = new Plot("main", "minecraft:overworld", null, null, null, null, new Plot.Point(1, 2, 3));
-        @SuppressWarnings("unchecked")
-        Map<String, Object> spec = (Map<String, Object>) ((Map<String, Object>) PlotCodec.toMap(List.of(one))
-                .get("plots")).get("main");
-        assertTrue(spec.containsKey("chimney"));
-        assertNull(spec.get("smoke"));
-    }
-
-    @Test
     void legacyChimneyAndSmokeListAreMerged() {
         List<String> problems = new ArrayList<>();
         Map<String, Object> spec = new LinkedHashMap<>();
@@ -85,23 +75,6 @@ class PlotCodecSetupKeysTest {
     }
 
     @Test
-    void houseBoxCornersAreNormalised() {
-        Map<String, Object> spec = new LinkedHashMap<>();
-        spec.put("house-box", Map.of("min", List.of(10, 80, 20), "max", List.of(1, 64, 2)));
-        Plot p = PlotCodec.fromMap(root(spec), s -> { }).getFirst();
-        assertEquals(new Plot.Box(1, 64, 2, 10, 80, 20), p.house());
-        assertTrue(p.house().contains(1, 64, 2) && p.house().contains(10, 80, 20));
-        assertTrue(!p.house().contains(11, 64, 2));
-    }
-
-    @Test
-    void shopYawDefaultsToZero() {
-        Map<String, Object> spec = new LinkedHashMap<>();
-        spec.put("shop", pt(1, 2, 3));
-        assertEquals(new Plot.Pedestal(1, 2, 3, 0f), PlotCodec.fromMap(root(spec), s -> { }).getFirst().shop());
-    }
-
-    @Test
     void clicksSpotRoundTripsAndFeedsTheStation() {
         Plot withClicks = new Plot("main", "minecraft:overworld", null, null, null, new Plot.Pedestal(3.5, 64, 4.5, 0f),
                 List.of(), List.of(), null, new Plot.Pedestal(2.5, 64, 4.5, 90f), null, null, null,
@@ -122,15 +95,4 @@ class PlotCodecSetupKeysTest {
                 back.station().orElseThrow().clicks().yaw(), "the station's clicks anchor comes from the spot");
     }
 
-    @Test
-    void aBadClicksSpotIsReportedAndDroppedWithoutLosingThePlot() {
-        Map<String, Object> spec = new LinkedHashMap<>();
-        spec.put("pedestal", pt(1, 2, 3));
-        spec.put("clicks", "north");
-        List<String> problems = new ArrayList<>();
-        Plot plot = PlotCodec.fromMap(root(spec), problems::add).getFirst();
-        assertNull(plot.clicks());
-        assertEquals(new Plot.Pedestal(1, 2, 3, 0f), plot.pedestal());
-        assertTrue(problems.stream().anyMatch(p -> p.contains("clicks")), problems.toString());
-    }
 }

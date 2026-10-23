@@ -5,9 +5,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Immutable copy of a {@link CookiePouch}, safe to pass to other threads (saving).
- *
- * @param upgradeLevels upgrade ID → level (model.md "State per player"); only levels {@code > 0} are kept
+ * Immutable copy of a {@link CookiePouch}, safe to pass to other threads (saving). upgradeLevels keeps only levels
+ * {@code > 0}.
  */
 public record PouchSnapshot(double pouch, double baked, Map<String, Integer> owned, Map<String, Integer> upgradeLevels) {
 

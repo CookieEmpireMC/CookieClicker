@@ -18,6 +18,7 @@ public final class CookiePouch {
     private final Map<String, Integer> owned = new HashMap<>();
     /** Upgrade ID → level; only levels {@code >= 1} are stored. */
     private final Map<String, Integer> upgrades = new HashMap<>();
+    private int revision;
 
     public CookiePouch() {
     }
@@ -77,6 +78,11 @@ public final class CookiePouch {
         return Collections.unmodifiableMap(upgrades);
     }
 
+    /** Changes whenever a building or upgrade level is added: a cheap "did the CPS inputs change" key. */
+    public int revision() {
+        return revision;
+    }
+
     /** Adds to both pouch and baked (clicks, production). Negative or non-finite amounts are ignored. */
     void earn(double amount) {
         if (!(amount > 0) || !Double.isFinite(amount)) {
@@ -93,9 +99,11 @@ public final class CookiePouch {
 
     void addBuilding(String buildingId, int count) {
         owned.merge(buildingId, count, (a, b) -> (int) Math.min(Integer.MAX_VALUE, (long) a + b));
+        revision++;
     }
 
     void addUpgradeLevels(String upgradeId, int levels) {
         upgrades.merge(upgradeId, levels, (a, b) -> (int) Math.min(Integer.MAX_VALUE, (long) a + b));
+        revision++;
     }
 }

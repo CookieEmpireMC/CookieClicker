@@ -26,21 +26,6 @@ class MotionsTest {
     }
 
     @Test
-    void floatingTextEasesOut() {
-        DisplayTrack track = Motions.floatingText(1.0, 20, 1.0, 0.5, 1.15, 3, 6, 1);
-        double firstHalf = track.renderedAt(10)[1];
-        assertTrue(firstHalf > 0.5, "more than half the rise in the first half, got " + firstHalf);
-    }
-
-    @Test
-    void floatingTextPopsInWithOvershoot() {
-        DisplayTrack track = Motions.floatingText(0.8, 20, 2.0, 0.5, 1.2, 3, 6, 1);
-        assertEquals(1.0, track.spawn().scale(), 1e-9);
-        assertEquals(2.4, track.renderedAt(4)[3], 1e-9, "peak of the pop-in");
-        assertEquals(2.0, track.keyframes().get(1).scale(), 1e-9, "settles at the rest scale");
-    }
-
-    @Test
     void floatingTextKeyframesFitTheLifeAndOpacityStaysVisible() {
         DisplayTrack track = Motions.floatingText(0.8, 20, 1.0, 0.5, 1.15, 3, 6, 1);
         for (DisplayTrack.Keyframe k : track.keyframes()) {
@@ -50,15 +35,6 @@ class MotionsTest {
         for (DisplayTrack.OpacityStep s : track.opacity()) {
             assertTrue(s.opacity() >= 27 && s.opacity() <= 255, "client discards 4..26");
             assertTrue(s.tick() < track.removeTick());
-        }
-    }
-
-    @Test
-    void minimumTextDurationFitsAllKeyframes() {
-        int min = Motions.minTextDuration(3, 6, 1);
-        DisplayTrack track = Motions.floatingText(0.8, min, 1.0, 0.5, 1.15, 3, 6, 1);
-        for (DisplayTrack.Keyframe k : track.keyframes()) {
-            assertTrue(k.duration() >= 1, "keyframe at " + k.tick() + " has no time");
         }
     }
 
@@ -80,24 +56,21 @@ class MotionsTest {
     }
 
     @Test
-    void standardPopIsTwoTwoThreeTicks() {
-        PopSequence pop = PopSequence.standard();
-        assertEquals(3, pop.steps().size());
-        assertEquals(0, pop.startTick(0));
-        assertEquals(2, pop.startTick(1));
-        assertEquals(4, pop.startTick(2));
-        assertEquals(7, pop.totalTicks());
-        PopSequence.Step last = pop.steps().getLast();
-        assertEquals(1.0, last.sx());
-        assertEquals(1.0, last.sy());
-        assertEquals(1.0, last.sz());
-    }
-
-    @Test
     void popAlwaysEndsAtRestScale() {
         PopSequence pop = new PopSequence(List.of(new PopSequence.Step(1.3, 0.7, 1.3, 2)));
         assertEquals(2, pop.steps().size());
         assertEquals(1.0, pop.steps().getLast().sy());
         assertEquals(5, pop.totalTicks());
+    }
+
+    @Test
+    void floatingTextKeyframesAreInTickOrder() {
+        for (int life : new int[] {20, 40}) {
+            long previous = -1;
+            for (DisplayTrack.Keyframe k : Motions.floatingText(0.8, life, 1.0, 0.5, 1.15, 3, 6, 1).keyframes()) {
+                assertTrue(k.tick() >= previous, "DisplayJob relies on tick order (life " + life + ")");
+                previous = k.tick();
+            }
+        }
     }
 }

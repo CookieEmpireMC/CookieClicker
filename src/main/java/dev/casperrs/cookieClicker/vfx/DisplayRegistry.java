@@ -29,8 +29,7 @@ final class DisplayRegistry {
 
     /**
      * Makes room for {@code count} new entities for this viewer (evicting their oldest display effects if needed).
-     *
-     * @return false when the effect must be dropped
+     * Returns false when the effect must be dropped.
      */
     boolean reserve(@Nullable UUID viewer, int count) {
         if (globalEntities + count > limits.maxDisplayEntitiesGlobal()) {

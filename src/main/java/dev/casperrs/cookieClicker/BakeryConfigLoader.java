@@ -8,20 +8,19 @@ import dev.casperrs.cookieClicker.economy.EconomyConfigException;
 import dev.casperrs.cookieClicker.economy.EconomyConfigParser;
 import dev.casperrs.cookieClicker.sound.SoundConfigParser;
 import dev.casperrs.cookieClicker.sound.SoundService;
-import dev.casperrs.cookieClicker.plot.PlotService;
 import dev.casperrs.cookieClicker.text.Messages;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 
 /**
- * Loads every config file into its service, for enable and {@code /bakery reload}. Each file is
- * independent: a broken one is reported and keeps its previous (or disabled) state, the rest still load.
- * Reading these small files happens on the main thread at enable/reload only.
+ * Loads every config file into its service, for enable and {@code /bakery reload}. Each file is independent: a
+ * broken one is reported and keeps its previous (or disabled) state, the rest still load. Main thread, enable and
+ * reload only (small files).
  */
 final class BakeryConfigLoader {
 
@@ -36,8 +35,8 @@ final class BakeryConfigLoader {
         this.plugin = plugin;
     }
 
-    /** Problems are logged here and returned (for the reload command). */
-    private Consumer<String> collector(List<String> problems) {
+    /** Logs each problem and adds it to {@code problems} (shown by the reload command). */
+    Consumer<String> collector(List<String> problems) {
         return problem -> {
             plugin.getLogger().warning(problem);
             problems.add(problem);
@@ -64,7 +63,7 @@ final class BakeryConfigLoader {
             Optional<YamlConfiguration> yaml = YamlFiles.load(plugin, SOUNDS);
             if (yaml.isEmpty()) {
                 report.accept(SOUNDS + " not found (data folder or jar): no sounds will play until it is added");
-                sounds.load(java.util.Map.of());
+                sounds.load(Map.of());
                 return;
             }
             sounds.load(SoundConfigParser.parse(YamlFiles.toMap(yaml.get()), report));
@@ -97,14 +96,5 @@ final class BakeryConfigLoader {
         } catch (YamlFiles.BadYamlException | EconomyConfigException e) {
             report.accept(e.getMessage() + "; " + keep);
         }
-    }
-
-    /** plots.yml (migrating stations.yml on the first start), region resolution, and the stations from pedestals. */
-    void loadPlots(PlotService plots, List<String> problems) {
-        plots.load(collector(problems));
-    }
-
-    static List<String> newProblemList() {
-        return new ArrayList<>();
     }
 }

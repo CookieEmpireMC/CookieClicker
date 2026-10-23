@@ -1,5 +1,7 @@
 package dev.casperrs.cookieClicker.view;
 
+import dev.casperrs.cookieClicker.view.panel.BulkMode;
+import dev.casperrs.cookieClicker.view.panel.PanelKind;
 import dev.casperrs.cookieClicker.economy.BulkPurchase;
 import dev.casperrs.cookieClicker.economy.ClickResult;
 import dev.casperrs.cookieClicker.economy.CookiePouch;
@@ -28,7 +30,6 @@ import java.util.UUID;
  */
 public final class StationInteractions {
 
-    /** Effect/sound event names from the contract (effects.yml / sounds.yml). */
     static final String CLICK = "cookie_click";
     static final String CRIT = "cookie_crit";
     static final String PURCHASE = "purchase";
@@ -45,7 +46,7 @@ public final class StationInteractions {
     private final SoundService sounds;
     private final Hud hud;
     private final Messages messages;
-    /** Told after every building purchase that went through (the visible buildings, brief building-roster). */
+    /** Told after every building purchase that went through (the visible buildings). */
     private Consumer<Player> buildingsBought = player -> { };
 
     public StationInteractions(StationViews views, SessionManager sessions, Economy economy, Effects effects,
@@ -63,7 +64,7 @@ public final class StationInteractions {
         this.buildingsBought = buildingsBought;
     }
 
-    /** @param hit world position of the hit on the hitbox, or null (left click: the cookie centre is used) */
+    /** {@code hit} is the world hit position, or null (left click) for the cookie centre. */
     void clickCookie(Player player, StationView view, @Nullable Vector hit) {
         CookiePouch pouch = sessions.get(player.getUniqueId()).orElse(null);
         if (pouch == null) {
@@ -200,7 +201,6 @@ public final class StationInteractions {
         sounds.play(player, BASKET_TIER_UP, at);
     }
 
-    /** Forget per-player state (quit). */
     void forget(UUID player) {
         hud.forget(player);
     }

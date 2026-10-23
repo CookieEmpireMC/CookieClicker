@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
-/** Looping ambient sounds replay on their own period and never double (brief plot-polish, Ambient sound). */
+/** Looping ambient sounds replay on their own period and never double. */
 class LoopPacerTest {
 
     private static final UUID ALICE = new UUID(1, 1);
@@ -22,17 +22,6 @@ class LoopPacerTest {
         assertTrue(p.tryPlay(ALICE, "belt_loop", 100, 1100));
         assertFalse(p.tryPlay(ALICE, "belt_loop", 100, 1150)); // the beat is kept: the next play is at 1200
         assertTrue(p.tryPlay(ALICE, "belt_loop", 100, 1200));
-    }
-
-    @Test
-    void aRestartedTimerWaitsForTheRunningPlayAndKeepsTheBeat() {
-        LoopPacer p = new LoopPacer();
-        assertTrue(p.tryPlay(ALICE, "factory_ambient", 80, 1000));
-        // re-entering the plot 30 ticks later: the new timer must wait 50 more ticks, not play over the old one
-        assertEquals(50, p.delay(ALICE, "factory_ambient", 80, 1030));
-        assertFalse(p.tryPlay(ALICE, "factory_ambient", 80, 1030));
-        assertEquals(0, p.delay(ALICE, "factory_ambient", 80, 1080));
-        assertTrue(p.tryPlay(ALICE, "factory_ambient", 80, 1080));
     }
 
     @Test

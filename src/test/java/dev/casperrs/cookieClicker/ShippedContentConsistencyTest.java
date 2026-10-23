@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import dev.casperrs.cookieClicker.config.VisualFallbacks;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -61,7 +62,7 @@ class ShippedContentConsistencyTest {
             assertTrue(sounds.getString(event + ".fallback").startsWith("minecraft:"));
         }
         assertTrue(soundsJson.getAsJsonObject("ui.cookie_click").getAsJsonArray("sounds").size() >= 3,
-                "brief: 3+ click variants");
+                "3+ click variants");
     }
 
     @Test
@@ -148,14 +149,13 @@ class ShippedContentConsistencyTest {
     void everyBuildingHasNameAndFallbackIcon() throws IOException {
         YamlConfiguration buildings = yaml("buildings.yml");
         YamlConfiguration messages = yaml("messages.yml");
-        YamlConfiguration config = yaml("config.yml");
         ConfigurationSection list = buildings.getConfigurationSection("buildings");
         for (String id : list.getKeys(false)) {
             assertTrue(messages.isString("buildings." + id + ".name"), "messages.yml buildings." + id + ".name");
-            assertTrue(config.isString("station.panel.icons." + id + ".fallback-material"), "fallback icon for " + id);
+            assertTrue(VisualFallbacks.BUILDING_ICONS.containsKey(id), "fallback icon for " + id);
         }
         // The roster is complete: every icon entry names a building in buildings.yml.
-        List<String> stray = new ArrayList<>(config.getConfigurationSection("station.panel.icons").getKeys(false));
+        List<String> stray = new ArrayList<>(VisualFallbacks.BUILDING_ICONS.keySet());
         stray.removeAll(list.getKeys(false));
         assertTrue(stray.isEmpty(), "icon config for ids that are not in buildings.yml: " + stray);
         List<String> named = new ArrayList<>(messages.getConfigurationSection("buildings").getKeys(false));
@@ -166,14 +166,13 @@ class ShippedContentConsistencyTest {
     @Test
     void visibleBuildingsHaveSlotsConfigModelsStagesSoundsAndEffects() throws IOException {
         YamlConfiguration buildings = yaml("buildings.yml");
-        YamlConfiguration config = yaml("config.yml");
         YamlConfiguration slots = yaml("houses/building-slots.yml");
         Set<String> ids = slots.getConfigurationSection("slots").getKeys(false);
         assertEquals(6, ids.size(), "the six bakery buildings");
         for (String id : ids) {
             assertTrue(buildings.isConfigurationSection("buildings." + id), id + " is not in buildings.yml");
-            assertTrue(config.isString("plot.buildings.fallback-blocks." + id), "fallback block for " + id);
-            assertTrue(config.getDouble("plot.buildings.footprints." + id) > 0, "footprint for " + id);
+            assertTrue(VisualFallbacks.BUILDING_BLOCKS.containsKey(id), "fallback block for " + id);
+            assertTrue(VisualFallbacks.FOOTPRINTS.getOrDefault(id, 0.0) > 0, "footprint for " + id);
             Path def = PACK.resolve("items/building_world/" + id + ".json");
             assertTrue(Files.isRegularFile(def), "no item definition for building_world/" + id);
             Set<String> stages = new java.util.TreeSet<>();
@@ -187,7 +186,7 @@ class ShippedContentConsistencyTest {
                         "missing texture " + t.getValue().getAsString()));
             }
         }
-        assertEquals(ids, config.getConfigurationSection("plot.buildings.footprints").getKeys(false));
+        assertEquals(ids, VisualFallbacks.FOOTPRINTS.keySet());
         YamlConfiguration sounds = yaml("sounds.yml");
         YamlConfiguration effects = yaml("effects.yml");
         JsonObject soundsJson = json(PACK.resolve("sounds.json"));

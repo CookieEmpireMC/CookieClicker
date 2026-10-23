@@ -20,7 +20,7 @@ abstract class Job {
         return alive;
     }
 
-    /** @param age ticks since the effect played (0 = the play call itself) */
+    /** Runs once per tick; {@code age} is ticks since the effect played (0 = the play call itself). */
     protected abstract boolean tick(int age);
 
     /** Removes everything this job spawned. Called at most once per job. */

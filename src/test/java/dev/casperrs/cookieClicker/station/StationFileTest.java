@@ -61,7 +61,6 @@ class StationFileTest {
         assertEquals(List.of(A, B), file.load());
     }
 
-    // ---- helpers: a single IO thread whose first task blocks until released ----
 
     private static CountDownLatch BLOCK;
     private static ExecutorService io;

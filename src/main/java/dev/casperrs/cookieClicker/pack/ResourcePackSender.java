@@ -19,7 +19,7 @@ import java.util.function.Supplier;
 
 /**
  * Sends our resource pack (URL + SHA-1 from {@code config.yml}) a little after join, stacked next to other
- * plugins' packs ({@code replace(false)}, never the legacy {@code setResourcePack}). Main thread only.
+ * plugins' packs ({@code replace(false)}, not {@code setResourcePack}, which replaces them). Main thread only.
  */
 public final class ResourcePackSender implements Listener {
 
