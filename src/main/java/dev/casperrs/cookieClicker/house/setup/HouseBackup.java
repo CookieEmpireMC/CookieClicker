@@ -1,4 +1,4 @@
-package dev.casperrs.cookieClicker.house;
+package dev.casperrs.cookieClicker.house.setup;
 
 import dev.casperrs.cookieClicker.plot.Plot;
 import org.jspecify.annotations.Nullable;

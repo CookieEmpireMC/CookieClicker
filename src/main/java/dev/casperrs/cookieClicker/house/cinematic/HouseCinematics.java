@@ -1,4 +1,4 @@
-package dev.casperrs.cookieClicker.house;
+package dev.casperrs.cookieClicker.house.cinematic;
 
 import dev.casperrs.cookieClicker.config.HouseSettings;
 import dev.casperrs.cookieClicker.plot.Plot;
@@ -54,7 +54,7 @@ import java.util.logging.Level;
 /**
  * The first-visit build cinematic (starter-house): the player gets fake air over their plot's house, then the real
  * blocks drop in layer by layer ({@link RevealPlan}, {@link Effects#dropBlock}), only for them. The house is never
- * changed server-side. Also owns the chimney smoke lifecycle ({@link ChimneySmoke}).
+ * changed server-side. Also owns the chimney smoke lifecycle ({@link PlotAmbience}).
  *
  * <p>Safety: quit, death, teleport, world change, leaving the plot, {@code /bakery reload} and disable all go through
  * {@link #abort}: {@code effects.cancelFor(player)} first, then every still-hidden block is sent real again right
@@ -115,8 +115,8 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
     private final Messages messages;
     private final Supplier<HouseSettings> settings;
     private final FakeBlocks fakeBlocks = new FakeBlocks();
-    private final KeepOut keepOut;
-    private final ChimneySmoke smoke;
+    private final CinematicKeepOut keepOut;
+    private final PlotAmbience smoke;
     private final CinematicCamera camera;
 
     private final Map<UUID, Run> running = new HashMap<>();
@@ -139,8 +139,8 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
         this.sounds = sounds;
         this.messages = messages;
         this.settings = settings;
-        this.keepOut = new KeepOut(plugin);
-        this.smoke = new ChimneySmoke(plugin, effects, sounds, settings);
+        this.keepOut = new CinematicKeepOut(plugin);
+        this.smoke = new PlotAmbience(plugin, effects, sounds, settings);
         this.camera = new CinematicCamera(plugin, selfTeleport, this::cameraLost);
     }
 

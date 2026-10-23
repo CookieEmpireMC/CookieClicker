@@ -1,4 +1,4 @@
-package dev.casperrs.cookieClicker.house;
+package dev.casperrs.cookieClicker.house.cinematic;
 
 import org.jspecify.annotations.Nullable;
 

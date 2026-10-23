@@ -1,4 +1,4 @@
-package dev.casperrs.cookieClicker.house;
+package dev.casperrs.cookieClicker.house.cinematic;
 
 import dev.casperrs.cookieClicker.config.HouseSettings;
 import org.bukkit.NamespacedKey;
@@ -14,11 +14,11 @@ import org.bukkit.plugin.Plugin;
  * with the player, and {@link #clear} runs on every exit path and on join. No walk speed, no game mode changes.
  * Main thread only.
  */
-public final class KeepOut {
+public final class CinematicKeepOut {
 
     private final NamespacedKey key;
 
-    public KeepOut(Plugin plugin) {
+    public CinematicKeepOut(Plugin plugin) {
         this.key = new NamespacedKey(plugin, "house_cinematic");
     }
 

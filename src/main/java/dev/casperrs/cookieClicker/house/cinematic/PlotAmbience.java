@@ -1,4 +1,4 @@
-package dev.casperrs.cookieClicker.house;
+package dev.casperrs.cookieClicker.house.cinematic;
 
 import dev.casperrs.cookieClicker.config.HouseSettings;
 import dev.casperrs.cookieClicker.plot.Plot;
@@ -31,7 +31,7 @@ import java.util.function.Supplier;
  * engine ends loops by itself on quit, world change, reload and shutdown; {@link HouseCinematics} starts and stops
  * them. Main thread only.
  */
-public final class ChimneySmoke {
+public final class PlotAmbience {
 
     public static final String SMOKE = "house_chimney_smoke";
     public static final String CRACKLE = "house_chimney_crackle";
@@ -61,7 +61,7 @@ public final class ChimneySmoke {
         }
     }
 
-    public ChimneySmoke(Plugin plugin, Effects effects, SoundService sounds, Supplier<HouseSettings> settings) {
+    public PlotAmbience(Plugin plugin, Effects effects, SoundService sounds, Supplier<HouseSettings> settings) {
         this.plugin = plugin;
         this.effects = effects;
         this.sounds = sounds;

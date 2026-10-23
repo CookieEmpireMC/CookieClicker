@@ -1,5 +1,7 @@
-package dev.casperrs.cookieClicker.house;
+package dev.casperrs.cookieClicker.house.setup;
 
+import dev.casperrs.cookieClicker.house.design.HouseDesign;
+import dev.casperrs.cookieClicker.house.design.HouseDesignParser;
 import dev.casperrs.cookieClicker.config.YamlFiles;
 import dev.casperrs.cookieClicker.plot.Plot;
 import dev.casperrs.cookieClicker.plot.PlotFile;

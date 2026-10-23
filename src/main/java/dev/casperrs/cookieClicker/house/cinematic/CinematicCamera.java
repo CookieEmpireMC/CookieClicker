@@ -1,4 +1,4 @@
-package dev.casperrs.cookieClicker.house;
+package dev.casperrs.cookieClicker.house.cinematic;
 
 import com.destroystokyo.paper.event.player.PlayerStopSpectatingEntityEvent;
 import dev.casperrs.cookieClicker.plot.PlotService;

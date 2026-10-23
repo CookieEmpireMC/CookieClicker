@@ -527,7 +527,7 @@ public final class ConveyorBelts implements Listener {
         UUID id = event.getPlayer().getUniqueId();
         stopRider(id);
         surfaces.values().forEach(s -> s.shown.remove(id));
-        sounds.forgetLoops(id); // the client stopped every sound (also the hum and crackle of ChimneySmoke)
+        sounds.forgetLoops(id); // the client stopped every sound (also the hum and crackle of PlotAmbience)
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

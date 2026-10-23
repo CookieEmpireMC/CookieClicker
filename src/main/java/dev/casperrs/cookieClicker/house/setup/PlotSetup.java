@@ -1,5 +1,14 @@
-package dev.casperrs.cookieClicker.house;
+package dev.casperrs.cookieClicker.house.setup;
 
+import dev.casperrs.cookieClicker.house.design.BeltStyle;
+import dev.casperrs.cookieClicker.house.design.BuildingSlots;
+import dev.casperrs.cookieClicker.house.design.Decor;
+import dev.casperrs.cookieClicker.house.design.DecorKeepOut;
+import dev.casperrs.cookieClicker.house.design.FenceLayout;
+import dev.casperrs.cookieClicker.house.design.FenceStyle;
+import dev.casperrs.cookieClicker.house.design.HouseDesign;
+import dev.casperrs.cookieClicker.house.design.HouseDesignParser;
+import dev.casperrs.cookieClicker.house.design.HouseLayout;
 import dev.casperrs.cookieClicker.belt.BeltPath;
 import dev.casperrs.cookieClicker.config.YamlFiles;
 import dev.casperrs.cookieClicker.plot.Plot;

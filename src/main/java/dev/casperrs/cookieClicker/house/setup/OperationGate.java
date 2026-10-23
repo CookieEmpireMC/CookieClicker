@@ -1,4 +1,4 @@
-package dev.casperrs.cookieClicker.house;
+package dev.casperrs.cookieClicker.house.setup;
 
 /**
  * At most one house operation at a time, and a way to cancel it (pure, main thread only). {@link #begin()} hands
