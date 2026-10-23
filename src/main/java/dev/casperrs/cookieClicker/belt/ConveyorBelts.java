@@ -3,6 +3,7 @@ package dev.casperrs.cookieClicker.belt;
 import dev.casperrs.cookieClicker.config.BeltSettings;
 import dev.casperrs.cookieClicker.economy.CookiePouch;
 import dev.casperrs.cookieClicker.economy.Economy;
+import dev.casperrs.cookieClicker.log.WarnOnce;
 import dev.casperrs.cookieClicker.plot.Plot;
 import dev.casperrs.cookieClicker.plot.PlotRegistry;
 import dev.casperrs.cookieClicker.plot.PlotTracker;
@@ -10,13 +11,10 @@ import dev.casperrs.cookieClicker.session.SessionManager;
 import dev.casperrs.cookieClicker.sound.SoundService;
 import dev.casperrs.cookieClicker.vfx.Effects;
 import dev.casperrs.cookieClicker.view.StationViews;
-import io.papermc.paper.datacomponent.DataComponentTypes;
-import net.kyori.adventure.key.Key;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -28,9 +26,6 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitTask;
-import org.bukkit.util.Transformation;
-import org.joml.Quaternionf;
-import org.joml.Vector3f;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -45,33 +40,20 @@ import java.util.function.Supplier;
 import java.util.logging.Level;
 
 /**
- * The conveyor belts (brief conveyor-belt). Per plot with a belt: one moving-surface item display per cell, shared
- * (two sets: {@code cookieclicker:conveyor_belt} for players with our pack, {@code belt.fallback-item} for the
- * others; each player is shown one set). Per player in a plot (and not watching their build cinematic): their own
- * cookies ride the belt, shown only to them, at a speed and interval from their CPS ({@link BeltCurve}), at most
- * {@code belt.max-cookies} at once ({@link BeltLane}). Each cookie is <b>one</b> interpolated transformation from the
- * hatch to the pedestal (no per-tick teleports), lying flat ({@code belt.cookie-pitch}); on arrival it is removed and
- * {@code belt_arrive} plays. While their belt runs, {@code belt_loop} plays every {@code belt.sound-every} ticks within
- * {@code house.ambient.radius}, on a per-player clock that keeps its beat across restarts.
- * Purely visual: nothing here touches the economy. Main thread only.
+ * The conveyor belts. Per plot with a belt one shared moving surface ({@link BeltSurface}); per player in a plot (and
+ * not in their build cinematic) their own cookies ride it, shown only to them, at a speed and interval from their
+ * CPS ({@link BeltCurve}, {@link BeltLane}). Each cookie is one interpolated transformation from the hatch to the
+ * pedestal (no per-tick teleports); on arrival it is removed and {@code belt_arrive} plays. While a belt runs,
+ * {@code belt_loop} plays on a per-player clock that keeps its beat across restarts. Purely visual. Main thread.
  *
- * <p>Cost: one task; per tick only the riders' cookies (at most max-cookies each) are looked at; who rides, their
- * CPS and the surfaces are checked every {@value #REFRESH_TICKS} ticks. Entities are non-persistent and tagged
- * {@value StationViews#TAG} (the enable sweep removes crash leftovers).
+ * <p>Cost: who rides, their CPS and the surfaces are refreshed every {@value #REFRESH_TICKS} ticks; the 1-tick ride
+ * task only runs while someone rides. Entities are non-persistent and tagged {@value StationViews#TAG}.
  */
 public final class ConveyorBelts implements Listener {
 
     public static final String SOUND_LOOP = "belt_loop";
     public static final String EFFECT_ARRIVE = "belt_arrive";
     static final int REFRESH_TICKS = 10;
-    /** The belt rubber is 1/16 thick: cookies ride this far above the surface (design/conveyor-belt.md). */
-    static final double RUBBER = 0.0625;
-    /** Thickness of our cookie model (z 6..10 of 16, design/cookie.md) and of a vanilla item sprite (1/16). */
-    static final double PACK_COOKIE_THICKNESS = 0.25;
-    static final double VANILLA_COOKIE_THICKNESS = 0.0625;
-
-    private static final Key BELT_MODEL = Key.key("cookieclicker", "conveyor_belt");
-    private static final Key COOKIE_MODEL = Key.key("cookieclicker", "cookie");
 
     private final Plugin plugin;
     private final PlotRegistry plots;
@@ -84,98 +66,21 @@ public final class ConveyorBelts implements Listener {
     private final Predicate<UUID> inCinematic;
     private final Supplier<BeltSettings> settings;
     private final DoubleSupplier hearingRadius;
+    private final WarnOnce warnings;
 
-    private final Map<String, Surface> surfaces = new HashMap<>();
-    private final Map<UUID, Rider> riders = new HashMap<>();
-    private @Nullable BukkitTask task;
+    private final Map<String, BeltSurface> surfaces = new HashMap<>();
+    private final Map<UUID, BeltRider> riders = new HashMap<>();
+    /** Pack status per online player, refilled each refresh. */
+    private final Map<UUID, Boolean> packs = new HashMap<>();
+    private final List<Player> online = new ArrayList<>();
+    private @Nullable BukkitTask refreshTask;
+    private @Nullable BukkitTask rideTask;
     private boolean registered;
     private long tick;
-    private boolean warnedItem;
-
-    /** One plot's shared belt surface. */
-    private static final class Surface {
-        final BeltPath path;
-        final List<ItemDisplay> withPack = new ArrayList<>();
-        final List<ItemDisplay> vanilla = new ArrayList<>();
-        /** Which set each player was shown (true = pack set). */
-        final Map<UUID, Boolean> shown = new HashMap<>();
-
-        Surface(BeltPath path) {
-            this.path = path;
-        }
-
-        boolean healthy() {
-            return withPack.stream().allMatch(Entity::isValid) && vanilla.stream().allMatch(Entity::isValid);
-        }
-
-        void remove() {
-            withPack.forEach(Entity::remove);
-            vanilla.forEach(Entity::remove);
-            withPack.clear();
-            vanilla.clear();
-            shown.clear();
-        }
-    }
-
-    /** One player's cookies on the belt of the plot they are in. */
-    private static final class Rider {
-        final String plotId;
-        final World world;
-        final BeltPath path;
-        final BeltLane lane = new BeltLane();
-        final List<Ride> rides = new ArrayList<>();
-        double cps;
-        boolean withPack;
-        /** What {@link #cps} was computed from: buildings and upgrades only grow, so their totals show a purchase. */
-        private @Nullable CookiePouch cpsPouch;
-        private @Nullable Object cpsConfig;
-        private long cpsOwned = -1;
-        private int cpsUpgrades = -1;
-
-        /** Whether the pouch or the balance changed since {@link #cps} was computed (and remembers the new state). */
-        boolean cpsChanged(CookiePouch pouch, Object config) {
-            long owned = 0;
-            for (int n : pouch.ownedView().values()) {
-                owned += n;
-            }
-            int upgrades = pouch.upgradesView().size();
-            if (pouch == cpsPouch && config == cpsConfig && owned == cpsOwned && upgrades == cpsUpgrades) {
-                return false;
-            }
-            cpsPouch = pouch;
-            cpsConfig = config;
-            cpsOwned = owned;
-            cpsUpgrades = upgrades;
-            return true;
-        }
-
-        Rider(String plotId, World world, BeltPath path) {
-            this.plotId = plotId;
-            this.world = world;
-            this.path = path;
-        }
-    }
-
-    /** One cookie: spawned at {@code spawnTick}, starts moving the tick after, arrives {@code rideTicks} later. */
-    private static final class Ride {
-        final ItemDisplay entity;
-        final long spawnTick;
-        final int rideTicks;
-        /** Model thickness of the item it shows (our 3D cookie or the vanilla sprite). */
-        final double thickness;
-        long arriveTick = Long.MAX_VALUE;
-
-        Ride(ItemDisplay entity, long spawnTick, int rideTicks, double thickness) {
-            this.entity = entity;
-            this.spawnTick = spawnTick;
-            this.rideTicks = rideTicks;
-            this.thickness = thickness;
-        }
-    }
 
     /**
      * @param inCinematic   true while the player watches their build cinematic (no belt for them then)
-     * @param hearingRadius {@code house.ambient.radius}: {@code belt_loop} is heard within this many blocks
+     * @param hearingRadius {@code belt_loop} is heard within this many blocks
      */
     public ConveyorBelts(Plugin plugin, PlotRegistry plots, PlotTracker tracker, SessionManager sessions,
                          Economy economy, Effects effects, SoundService sounds, Predicate<Player> hasPack,
@@ -191,44 +96,44 @@ public final class ConveyorBelts implements Listener {
         this.inCinematic = inCinematic;
         this.settings = settings;
         this.hearingRadius = hearingRadius;
+        this.warnings = new WarnOnce(plugin.getLogger());
     }
-
-    // ---- lifecycle ------------------------------------------------------------------------------------------
 
     public void start() {
         if (!registered) {
             plugin.getServer().getPluginManager().registerEvents(this, plugin);
             registered = true;
         }
-        if (task == null) {
-            task = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 1, 1);
+        if (refreshTask == null) {
+            refreshTask = Bukkit.getScheduler().runTaskTimer(plugin, this::refreshSafely, 1, REFRESH_TICKS);
         }
     }
 
     /** {@code /bakery reload}: everything goes; the next refresh rebuilds it with the new plots and settings. */
     public void restart() {
         removeAll();
-        warnedItem = false;
+        warnings.clear();
     }
 
-    /** {@code /bakery plot setup} (or undo) changed a plot: its surface and riders are rebuilt on the next refresh. */
+    /** A plot setup (or undo) changed a plot: its surface and riders are rebuilt on the next refresh. */
     public void plotChanged(String plotId) {
-        Surface s = surfaces.remove(plotId);
+        BeltSurface s = surfaces.remove(plotId);
         if (s != null) {
             s.remove();
         }
-        for (UUID id : List.copyOf(riders.keySet())) {
-            if (riders.get(id).plotId.equals(plotId)) {
-                stopRider(id);
+        riders.entrySet().removeIf(e -> {
+            if (e.getValue().plotId.equals(plotId)) {
+                e.getValue().clearRides();
+                return true;
             }
-        }
+            return false;
+        });
     }
 
     public void shutdown() {
-        if (task != null) {
-            task.cancel();
-            task = null;
-        }
+        cancel(refreshTask);
+        refreshTask = null;
+        stopRideTask();
         removeAll();
         if (registered) {
             HandlerList.unregisterAll(this);
@@ -237,27 +142,32 @@ public final class ConveyorBelts implements Listener {
     }
 
     private void removeAll() {
-        surfaces.values().forEach(Surface::remove);
+        surfaces.values().forEach(BeltSurface::remove);
         surfaces.clear();
-        for (UUID id : List.copyOf(riders.keySet())) {
-            stopRider(id);
+        riders.values().forEach(BeltRider::clearRides);
+        riders.clear();
+    }
+
+    private void refreshSafely() {
+        try {
+            refresh();
+        } catch (RuntimeException ex) {
+            plugin.getLogger().log(Level.SEVERE, "Conveyor belt refresh failed; belts reset", ex);
+            removeAll();
+        }
+        if (!riders.isEmpty() && rideTask == null) {
+            rideTask = Bukkit.getScheduler().runTaskTimer(plugin, this::rideTick, 1, 1);
         }
     }
 
-    // ---- tick ----------------------------------------------------------------------------------------------
-
-    private void tick() {
+    private void rideTick() {
         tick++;
         try {
-            if (tick % REFRESH_TICKS == 1) {
-                refresh();
-            }
-            // ride() never changes the riders map, so no copy per tick
-            for (Iterator<Map.Entry<UUID, Rider>> it = riders.entrySet().iterator(); it.hasNext(); ) {
-                Map.Entry<UUID, Rider> e = it.next();
+            for (Iterator<Map.Entry<UUID, BeltRider>> it = riders.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<UUID, BeltRider> e = it.next();
                 Player p = Bukkit.getPlayer(e.getKey());
                 if (p == null) {
-                    clearRides(e.getValue());
+                    e.getValue().clearRides();
                     it.remove();
                 } else {
                     ride(p, e.getValue());
@@ -266,6 +176,20 @@ public final class ConveyorBelts implements Listener {
         } catch (RuntimeException ex) {
             plugin.getLogger().log(Level.SEVERE, "Conveyor belt tick failed; belts reset", ex);
             removeAll();
+        }
+        if (riders.isEmpty()) {
+            stopRideTask();
+        }
+    }
+
+    private void stopRideTask() {
+        cancel(rideTask);
+        rideTask = null;
+    }
+
+    private static void cancel(@Nullable BukkitTask task) {
+        if (task != null) {
+            task.cancel();
         }
     }
 
@@ -276,13 +200,23 @@ public final class ConveyorBelts implements Listener {
             removeAll();
             return;
         }
-        Map<UUID, Boolean> packs = new HashMap<>(); // hasPack once per player per refresh
+        online.clear();
+        packs.clear();
         for (Player p : Bukkit.getOnlinePlayers()) {
+            online.add(p);
             packs.put(p.getUniqueId(), hasPack.test(p));
         }
-        // surfaces
+        try {
+            refreshSurfaces(s);
+            refreshRiders(s);
+        } finally {
+            online.clear();
+        }
+    }
+
+    private void refreshSurfaces(BeltSettings s) {
         for (Plot plot : plots.all()) {
-            Surface surface = surfaces.get(plot.id());
+            BeltSurface surface = surfaces.get(plot.id());
             if (plot.belt() == null) {
                 if (surface != null) {
                     surfaces.remove(plot.id()).remove();
@@ -305,33 +239,44 @@ public final class ConveyorBelts implements Listener {
                 }
                 surfaces.put(plot.id(), surface);
             }
-            for (Player p : world.getPlayers()) {
-                boolean pack = packs.getOrDefault(p.getUniqueId(), false);
-                Boolean before = surface.shown.put(p.getUniqueId(), pack);
-                if (before == null || before != pack) {
-                    (pack ? surface.withPack : surface.vanilla).forEach(e -> p.showEntity(plugin, e));
-                    (pack ? surface.vanilla : surface.withPack).forEach(e -> p.hideEntity(plugin, e));
+            for (Player p : online) {
+                if (p.getWorld().equals(world)) {
+                    surface.showTo(plugin, p, packs.getOrDefault(p.getUniqueId(), false));
                 }
             }
         }
-        for (String id : List.copyOf(surfaces.keySet())) {
-            if (!plots.has(id)) {
-                surfaces.remove(id).remove();
+        surfaces.entrySet().removeIf(e -> {
+            if (!plots.has(e.getKey())) {
+                e.getValue().remove();
+                return true;
             }
-        }
+            return false;
+        });
+    }
 
-        // riders
-        for (UUID id : List.copyOf(riders.keySet())) {
-            if (Bukkit.getPlayer(id) == null) {
-                stopRider(id);
-            }
+    private @Nullable BeltSurface spawnSurface(Plot plot, World world, BeltSettings s) {
+        try {
+            return BeltSurface.spawn(plot, world, s, BeltEntities.fallbackItem(s, warnings));
+        } catch (RuntimeException e) {
+            plugin.getLogger().log(Level.WARNING, "Could not spawn the belt of plot " + plot.id(), e);
+            return null;
         }
-        for (Player p : Bukkit.getOnlinePlayers()) {
+    }
+
+    private void refreshRiders(BeltSettings s) {
+        riders.entrySet().removeIf(e -> {
+            if (!packs.containsKey(e.getKey())) {
+                e.getValue().clearRides();
+                return true;
+            }
+            return false;
+        });
+        for (Player p : online) {
             UUID id = p.getUniqueId();
             String plotId = tracker.presence(id).plot();
-            Surface surface = plotId == null ? null : surfaces.get(plotId);
+            BeltSurface surface = plotId == null ? null : surfaces.get(plotId);
             CookiePouch pouch = sessions.get(id).orElse(null);
-            Rider rider = riders.get(id);
+            BeltRider rider = riders.get(id);
             boolean eligible = surface != null && pouch != null && !inCinematic.test(id) && s.maxCookies() > 0
                     && plots.get(plotId).flatMap(plots::world).map(w -> w.equals(p.getWorld())).orElse(false);
             if (!eligible || (rider != null && !rider.plotId.equals(plotId))) {
@@ -342,7 +287,7 @@ public final class ConveyorBelts implements Listener {
                 continue;
             }
             if (rider == null) {
-                rider = new Rider(plotId, p.getWorld(), surface.path);
+                rider = new BeltRider(plotId, p.getWorld(), surface.path);
                 riders.put(id, rider);
             }
             if (rider.cpsChanged(pouch, economy.config())) { // CPS only changes with a purchase or a reload
@@ -352,10 +297,10 @@ public final class ConveyorBelts implements Listener {
         }
     }
 
-    private void ride(Player p, Rider r) {
+    private void ride(Player p, BeltRider r) {
         BeltSettings s = settings.get();
-        for (Iterator<Ride> it = r.rides.iterator(); it.hasNext(); ) {
-            Ride ride = it.next();
+        for (Iterator<BeltRider.Ride> it = r.rides.iterator(); it.hasNext(); ) {
+            BeltRider.Ride ride = it.next();
             if (!ride.entity.isValid()) {
                 it.remove();
                 r.lane.arrived();
@@ -365,7 +310,7 @@ public final class ConveyorBelts implements Listener {
                 // the client has the spawn by now: one transformation, interpolated over the whole ride
                 ride.entity.setInterpolationDelay(0);
                 ride.entity.setInterpolationDuration(ride.rideTicks);
-                ride.entity.setTransformation(cookieTransform(r.path, s.cookieScale(), s.cookiePitch(),
+                ride.entity.setTransformation(BeltEntities.cookieTransform(r.path, s.cookieScale(), s.cookiePitch(),
                         ride.thickness, r.path.length()));
                 ride.arriveTick = tick + ride.rideTicks;
             } else if (tick >= ride.arriveTick) {
@@ -373,22 +318,26 @@ public final class ConveyorBelts implements Listener {
                 ride.entity.remove();
                 it.remove();
                 r.lane.arrived();
-                double half = halfHeight(s.cookieScale(), s.cookiePitch(), ride.thickness);
-                effects.play(EFFECT_ARRIVE, new Location(r.world, end[0], end[1] + RUBBER + half, end[2]), p);
+                double half = BeltEntities.halfHeight(s.cookieScale(), s.cookiePitch(), ride.thickness);
+                effects.play(EFFECT_ARRIVE, new Location(r.world, end[0], end[1] + BeltEntities.RUBBER + half,
+                        end[2]), p);
             }
         }
         int rideTicks = r.lane.trySpawn(tick, r.cps, s.curve(), r.path, s.maxCookies());
         if (rideTicks > 0) {
-            double thickness = r.withPack ? PACK_COOKIE_THICKNESS : VANILLA_COOKIE_THICKNESS;
+            double thickness = r.withPack ? BeltEntities.PACK_COOKIE_THICKNESS : BeltEntities.VANILLA_COOKIE_THICKNESS;
             ItemDisplay cookie = spawnCookie(p, r, s, thickness);
             if (cookie == null) {
                 r.lane.arrived();
             } else {
-                r.rides.add(new Ride(cookie, tick, rideTicks, thickness));
+                r.rides.add(new BeltRider.Ride(cookie, tick, rideTicks, thickness));
             }
         }
-        // belt_loop: a fixed-period clock per player that survives rider restarts (re-entry, cinematic end, reload,
-        // belt start/stop), so a new rider never replays it over a play that is still sounding
+        playLoop(p, r, s);
+    }
+
+    /** A fixed-period clock per player that survives rider restarts, so a new rider never doubles a sounding loop. */
+    private void playLoop(Player p, BeltRider r, BeltSettings s) {
         int period = s.soundEvery();
         long now = Bukkit.getCurrentTick();
         if (period > 0 && s.curve().running(r.cps) && sounds.loopDelay(p.getUniqueId(), SOUND_LOOP, period, now) == 0) {
@@ -402,148 +351,51 @@ public final class ConveyorBelts implements Listener {
     }
 
     private void stopRider(UUID id) {
-        Rider r = riders.remove(id);
+        BeltRider r = riders.remove(id);
         if (r != null) {
-            clearRides(r);
+            r.clearRides();
         }
     }
 
-    private static void clearRides(Rider r) {
-        r.rides.forEach(ride -> ride.entity.remove());
-        r.rides.clear();
-    }
-
-    // ---- spawning --------------------------------------------------------------------------------------------
-
-    private @Nullable Surface spawnSurface(Plot plot, World world, BeltSettings s) {
-        BeltPath path = BeltPath.of(plot.belt(), plot.pedestal());
-        if (path == null) {
-            return null;
-        }
-        for (Plot.Cell c : plot.belt().cells()) {
-            if (!world.isChunkLoaded(c.x() >> 4, c.z() >> 4)) {
-                return null; // spawned once the belt's chunks are loaded
-            }
-        }
-        Surface surface = new Surface(path);
-        Material fallback = fallbackItem(s);
-        // model north (-z) turned to the travel direction (+ belt.surface-yaw). An item display renders its item
-        // turned 180 degrees about y (in game the slats ran toward the hatch without this), so that turn is added
-        // back: the texture's slats roll toward model north = toward the pedestal. Our model's bottom is at its
-        // origin, a vanilla block item is centred on it, so the fallback is lifted half a block onto the frame.
-        Quaternionf turn = new Quaternionf().rotateY((float) (Math.atan2(-path.dirX(), -path.dirZ()) + Math.PI
-                - Math.toRadians(s.surfaceYaw())));
-        Transformation model = new Transformation(new Vector3f(), turn, new Vector3f(1, 1, 1), new Quaternionf());
-        Transformation vanilla = new Transformation(new Vector3f(0, 0.5f, 0), turn, new Vector3f(1, 1, 1),
-                new Quaternionf());
-        try {
-            for (int i = 0; i < path.length(); i++) {
-                double[] c = path.cellCentre(i);
-                Location at = new Location(world, c[0], c[1], c[2]);
-                surface.withPack.add(display(world, at, item(fallback, BELT_MODEL), model));
-                surface.vanilla.add(display(world, at, ItemStack.of(fallback), vanilla));
-            }
-        } catch (RuntimeException e) {
-            surface.remove();
-            plugin.getLogger().log(Level.WARNING, "Could not spawn the belt of plot " + plot.id(), e);
-            return null;
-        }
-        return surface;
-    }
-
-    private @Nullable ItemDisplay spawnCookie(Player owner, Rider r, BeltSettings s, double thickness) {
+    private @Nullable ItemDisplay spawnCookie(Player owner, BeltRider r, BeltSettings s, double thickness) {
         Location at = new Location(r.world, r.path.startX(), r.path.y(), r.path.startZ());
         if (!r.world.isChunkLoaded(at.getBlockX() >> 4, at.getBlockZ() >> 4)) {
             return null;
         }
-        ItemStack stack = r.withPack ? item(Material.COOKIE, COOKIE_MODEL) : ItemStack.of(Material.COOKIE);
-        ItemDisplay d = display(r.world, at, stack, cookieTransform(r.path, s.cookieScale(), s.cookiePitch(),
-                thickness, 0));
+        ItemStack stack = r.withPack ? BeltEntities.item(Material.COOKIE, BeltEntities.COOKIE_MODEL)
+                : ItemStack.of(Material.COOKIE);
+        ItemDisplay d = BeltEntities.display(r.world, at, stack, BeltEntities.cookieTransform(r.path,
+                s.cookieScale(), s.cookiePitch(), thickness, 0));
         owner.showEntity(plugin, d);
         return d;
     }
-
-    /**
-     * The cookie {@code along} blocks down the belt, its bottom on the rubber ({@link #RUBBER} above the surface).
-     * The item model is centred on the display (NONE transform) and stands upright with its face along z (ours and
-     * the vanilla sprite alike): it is turned to face the travel direction, then tipped {@code pitchDegrees} about
-     * the belt's cross axis (90 = lying flat, face up).
-     *
-     * @param thickness the model's thickness in blocks at scale 1 ({@link #PACK_COOKIE_THICKNESS} or
-     *                  {@link #VANILLA_COOKIE_THICKNESS})
-     */
-    static Transformation cookieTransform(BeltPath path, double scale, double pitchDegrees, double thickness,
-                                          double along) {
-        float sc = (float) scale;
-        float lift = (float) (RUBBER + halfHeight(scale, pitchDegrees, thickness));
-        Quaternionf rotation = new Quaternionf().rotateY((float) path.travelAngle())
-                .rotateX((float) Math.toRadians(pitchDegrees));
-        return new Transformation(
-                new Vector3f((float) (path.dirX() * along), lift, (float) (path.dirZ() * along)),
-                rotation, new Vector3f(sc, sc, sc), new Quaternionf());
-    }
-
-    /** Half the height of a cookie (a 1 x 1 x thickness slab at scale 1) tipped {@code pitchDegrees}. */
-    static double halfHeight(double scale, double pitchDegrees, double thickness) {
-        double p = Math.toRadians(pitchDegrees);
-        return scale * (Math.abs(Math.cos(p)) * 0.5 + Math.abs(Math.sin(p)) * thickness / 2);
-    }
-
-    /** Hidden from everyone at spawn (shown per player), non-persistent, tagged for the sweep. */
-    private static ItemDisplay display(World world, Location at, ItemStack stack, Transformation t) {
-        return world.spawn(at, ItemDisplay.class, d -> {
-            d.setPersistent(false);
-            d.setVisibleByDefault(false);
-            d.addScoreboardTag(StationViews.TAG);
-            d.setItemStack(stack);
-            d.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.NONE);
-            d.setTransformation(t);
-        });
-    }
-
-    private static ItemStack item(Material base, Key model) {
-        ItemStack stack = ItemStack.of(base);
-        stack.setData(DataComponentTypes.ITEM_MODEL, model);
-        return stack;
-    }
-
-    private Material fallbackItem(BeltSettings s) {
-        Material m = Material.matchMaterial(s.fallbackItem());
-        if (m == null || !m.isItem() || m.isAir()) {
-            if (!warnedItem) {
-                warnedItem = true;
-                plugin.getLogger().warning("config.yml: belt.fallback-item '" + s.fallbackItem()
-                        + "' is not an item; using BLACK_CARPET");
-            }
-            return Material.BLACK_CARPET;
-        }
-        return m;
-    }
-
-    // ---- events -----------------------------------------------------------------------------------------------
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onQuit(PlayerQuitEvent event) {
         UUID id = event.getPlayer().getUniqueId();
         stopRider(id);
-        surfaces.values().forEach(s -> s.shown.remove(id));
-        sounds.forgetLoops(id); // the client stopped every sound (also the hum and crackle of ChimneySmoke)
+        surfaces.values().forEach(s -> s.forget(id));
+        sounds.forgetLoops(id); // the client stopped every sound, also the plot ambience loops
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onWorldChange(PlayerChangedWorldEvent event) {
         UUID id = event.getPlayer().getUniqueId();
         stopRider(id);
-        surfaces.values().forEach(s -> s.shown.remove(id));
+        surfaces.values().forEach(s -> s.forget(id));
     }
 
-    /** Riders right now (for the tester / debug). */
+    /** Riders right now (debug). */
     public int riders() {
         return riders.size();
     }
 
-    /** Belt cookies on all belts right now (for the tester / debug). */
+    /** Belt cookies on all belts right now (debug). */
     public int cookies() {
-        return riders.values().stream().mapToInt(r -> r.rides.size()).sum();
+        int n = 0;
+        for (BeltRider r : riders.values()) {
+            n += r.rides.size();
+        }
+        return n;
     }
 }

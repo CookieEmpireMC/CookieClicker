@@ -1,14 +1,14 @@
 package dev.casperrs.cookieClicker.building;
 
 import dev.casperrs.cookieClicker.config.BuildingVisualSettings;
-import dev.casperrs.cookieClicker.house.BuildingSlots;
-import dev.casperrs.cookieClicker.house.HouseDesign;
-import dev.casperrs.cookieClicker.house.HouseLayout;
+import dev.casperrs.cookieClicker.house.design.BuildingSlots;
+import dev.casperrs.cookieClicker.house.design.HouseDesign;
+import dev.casperrs.cookieClicker.house.design.HouseLayout;
 import dev.casperrs.cookieClicker.plot.Plot;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Pure maths of the visible buildings (brief building-roster): where a plot's layout frame starts in the world and
+ * Pure maths of the visible buildings: where a plot's layout frame starts in the world and
  * what one building type shows for an owned count.
  */
 public final class BuildingLayout {

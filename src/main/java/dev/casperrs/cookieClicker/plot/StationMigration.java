@@ -11,7 +11,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 /**
- * One-time migration of {@code stations.yml} to {@code plots.yml} (brief starter-house, Decision 2), as a pure plan:
+ * One-time migration of {@code stations.yml} to {@code plots.yml}, as a pure plan:
  * every station that stands inside a {@code bakery-plot} region becomes that plot's pedestal (the first one wins
  * when a plot has several); every other station is a leftover that is logged and stops working (the whole old file
  * is kept as {@code stations.yml.bak}).

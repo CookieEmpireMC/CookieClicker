@@ -44,6 +44,9 @@ public final class PedestalPrivacy implements Listener {
     private final Supplier<PlotSettings.HideOthers> settings;
     private final Supplier<Collection<Station>> pedestals;
     private final Set<Pair> hidden = new HashSet<>();
+    /** Scratch state of {@link #check}, reused every run. */
+    private final List<Pos> players = new ArrayList<>();
+    private final Map<UUID, Player> online = new HashMap<>();
     private @Nullable BukkitTask task;
     private boolean registered;
 
@@ -86,8 +89,11 @@ public final class PedestalPrivacy implements Listener {
     }
 
     private void check() {
-        List<Pos> players = new ArrayList<>();
-        Map<UUID, Player> online = new HashMap<>();
+        if (hidden.isEmpty() && Bukkit.getOnlinePlayers().size() < 2) {
+            return;
+        }
+        players.clear();
+        online.clear();
         for (Player p : Bukkit.getOnlinePlayers()) {
             Location l = p.getLocation();
             players.add(new Pos(p.getUniqueId(), p.getWorld().getKey().asString(), l.getX(), l.getY(), l.getZ()));
@@ -108,6 +114,7 @@ public final class PedestalPrivacy implements Listener {
                 }
             }
         }
+        online.clear();
     }
 
     /** Pure: every ordered pair of different players within {@code radius} of the same pedestal. */
@@ -132,20 +139,20 @@ public final class PedestalPrivacy implements Listener {
         return out;
     }
 
-    private void show(Pair pair, Map<UUID, Player> online) {
+    private void show(Pair pair, Map<UUID, Player> byId) {
         hidden.remove(pair);
-        Player viewer = online.get(pair.viewer());
-        Player other = online.get(pair.hidden());
+        Player viewer = byId.get(pair.viewer());
+        Player other = byId.get(pair.hidden());
         if (viewer != null && other != null) {
             viewer.showPlayer(plugin, other);
         }
     }
 
     private void showAll() {
-        Map<UUID, Player> online = new HashMap<>();
-        Bukkit.getOnlinePlayers().forEach(p -> online.put(p.getUniqueId(), p));
+        Map<UUID, Player> byId = new HashMap<>();
+        Bukkit.getOnlinePlayers().forEach(p -> byId.put(p.getUniqueId(), p));
         for (Pair pair : List.copyOf(hidden)) {
-            show(pair, online);
+            show(pair, byId);
         }
         hidden.clear();
     }
@@ -153,11 +160,11 @@ public final class PedestalPrivacy implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onQuit(PlayerQuitEvent event) {
         UUID id = event.getPlayer().getUniqueId();
-        Map<UUID, Player> online = new HashMap<>();
-        Bukkit.getOnlinePlayers().forEach(p -> online.put(p.getUniqueId(), p));
+        Map<UUID, Player> byId = new HashMap<>();
+        Bukkit.getOnlinePlayers().forEach(p -> byId.put(p.getUniqueId(), p));
         for (Pair pair : List.copyOf(hidden)) {
             if (pair.viewer().equals(id) || pair.hidden().equals(id)) {
-                show(pair, online); // plugin-hidden state is per session anyway; keep our set clean
+                show(pair, byId); // plugin-hidden state is per session anyway; keep our set clean
             }
         }
     }
