@@ -37,11 +37,19 @@ public final class JdbcPlayerStore implements PlayerStore, HouseSeenStore {
     /** Bump when adding a migration below. */
     public static final int SCHEMA_VERSION = 3;
     static final int MAX_ID_LENGTH = 64;
+    /** An unchanged player is still written this often, so {@code last_seen} stays roughly current. */
+    static final long UNCHANGED_SAVE_MS = 60 * 60 * 1000L;
+
+    /** What the database holds for a player after this store's last successful save. */
+    private record Saved(double pouch, double baked, Map<String, Integer> owned, Map<String, Integer> levels,
+                         long at) {
+    }
 
     private final ConnectionFactory connections;
     private final String p;
     private final LongSupplier clock;
     private Connection connection;
+    private final Map<UUID, Saved> lastSaved = new HashMap<>();
 
     public JdbcPlayerStore(ConnectionFactory connections, String tablePrefix) {
         this(connections, tablePrefix, System::currentTimeMillis);
@@ -191,6 +199,7 @@ public final class JdbcPlayerStore implements PlayerStore, HouseSeenStore {
 
     @Override
     public Optional<LoadedPouch> load(UUID player) throws StorageException {
+        lastSaved.remove(player);
         String id = player.toString();
         List<String> problems = new ArrayList<>();
         try {
@@ -264,9 +273,28 @@ public final class JdbcPlayerStore implements PlayerStore, HouseSeenStore {
 
     @Override
     public void save(UUID player, PouchSnapshot snapshot) throws StorageException {
+        write(player, snapshot, false);
+    }
+
+    @Override
+    public void saveFinal(UUID player, PouchSnapshot snapshot) throws StorageException {
+        write(player, snapshot, true);
+        lastSaved.remove(player);
+    }
+
+    /** Skips what equals the last save: the whole save for an idle player, the building/upgrade rows otherwise. */
+    private void write(UUID player, PouchSnapshot snapshot, boolean always) throws StorageException {
         String id = player.toString();
         double pouch = SafeMath.sanitize(snapshot.pouch());
         double baked = Math.max(pouch, SafeMath.sanitize(snapshot.baked()));
+        long now = clock.getAsLong();
+        Saved last = lastSaved.get(player);
+        boolean sameRows = last != null && last.owned().equals(snapshot.owned())
+                && last.levels().equals(snapshot.upgradeLevels());
+        if (!always && sameRows && last.pouch() == pouch && last.baked() == baked
+                && now - last.at() < UNCHANGED_SAVE_MS) {
+            return;
+        }
         try {
             Connection c = connection();
             c.setAutoCommit(false);
@@ -275,7 +303,7 @@ public final class JdbcPlayerStore implements PlayerStore, HouseSeenStore {
                 try (PreparedStatement st = c.prepareStatement("UPDATE " + p + "players SET pouch = ?, baked = ?, last_seen = ? WHERE uuid = ?")) {
                     st.setDouble(1, pouch);
                     st.setDouble(2, baked);
-                    st.setLong(3, clock.getAsLong());
+                    st.setLong(3, now);
                     st.setString(4, id);
                     updated = st.executeUpdate();
                 }
@@ -284,13 +312,16 @@ public final class JdbcPlayerStore implements PlayerStore, HouseSeenStore {
                         st.setString(1, id);
                         st.setDouble(2, pouch);
                         st.setDouble(3, baked);
-                        st.setLong(4, clock.getAsLong());
+                        st.setLong(4, now);
                         st.executeUpdate();
                     }
                 }
-                replaceBuildings(c, id, snapshot.owned());
-                replaceUpgrades(c, id, snapshot.upgradeLevels());
+                if (!sameRows) {
+                    replaceBuildings(c, id, snapshot.owned());
+                    replaceUpgrades(c, id, snapshot.upgradeLevels());
+                }
                 c.commit();
+                lastSaved.put(player, new Saved(pouch, baked, snapshot.owned(), snapshot.upgradeLevels(), now));
             } catch (SQLException e) {
                 c.rollback();
                 throw e;
