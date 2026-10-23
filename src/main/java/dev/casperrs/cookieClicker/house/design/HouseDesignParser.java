@@ -3,6 +3,7 @@ package dev.casperrs.cookieClicker.house.design;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -66,130 +67,150 @@ public final class HouseDesignParser {
             problems.add("origin must be [x, y, z] whole numbers inside size");
             origin = new int[3];
         }
-
-        Map<Character, String> palette = new HashMap<>();
-        if (!(yaml.get("palette") instanceof Map<?, ?> rawPalette) || rawPalette.isEmpty()) {
-            problems.add("palette must map characters to block data");
-        } else {
-            for (Map.Entry<?, ?> e : rawPalette.entrySet()) {
-                String key = String.valueOf(e.getKey());
-                if (key.length() != 1) {
-                    problems.add("palette key '" + key + "' must be exactly one character");
-                    continue;
-                }
-                if (isKeep(key.charAt(0))) {
-                    problems.add("palette key '" + key + "' is reserved for 'keep the world's block'");
-                    continue;
-                }
-                if (!(e.getValue() instanceof String data) || data.isBlank()) {
-                    problems.add("palette '" + key + "' needs block data like minecraft:oak_planks");
-                    continue;
-                }
-                palette.put(key.charAt(0), data.trim());
-            }
-        }
-
-        char[][][] grid = new char[size[1]][size[2]][size[0]];
-        if (!(yaml.get("layers") instanceof List<?> layers)) {
-            problems.add("layers must be a list of layers (bottom to top)");
-        } else if (layers.size() != size[1]) {
-            problems.add("layers has " + layers.size() + " layers but size y is " + size[1]);
-        } else {
-            for (int y = 0; y < size[1]; y++) {
-                if (!(layers.get(y) instanceof List<?> rows) || rows.size() != size[2]) {
-                    problems.add("layer " + y + " must be a list of " + size[2] + " rows");
-                    continue;
-                }
-                for (int z = 0; z < size[2]; z++) {
-                    if (!(rows.get(z) instanceof String row) || row.length() != size[0]) {
-                        problems.add("layer " + y + " row " + z + " must be a string of " + size[0] + " characters");
-                        continue;
-                    }
-                    for (int x = 0; x < size[0]; x++) {
-                        char c = row.charAt(x);
-                        if (!isKeep(c) && !palette.containsKey(c)) {
-                            problems.add("layer " + y + " row " + z + " uses '" + c + "', which is not in the palette");
-                        }
-                        grid[y][z][x] = c;
-                    }
-                }
-            }
-        }
-
+        Map<Character, String> palette = palette(yaml.get("palette"), problems);
+        char[][][] grid = grid(yaml.get("layers"), size, palette, problems);
         Map<String, int[]> points = new LinkedHashMap<>();
         List<int[]> smoke = new ArrayList<>();
         List<int[]> steam = new ArrayList<>();
-        if (yaml.get("points") instanceof Map<?, ?> rawPoints) {
-            for (Map.Entry<?, ?> e : rawPoints.entrySet()) {
-                String key = String.valueOf(e.getKey());
-                if (key.equals(SMOKE) || key.equals(STEAM)) {
-                    pointList(key, e.getValue(), size, key.equals(SMOKE) ? smoke : steam, problems);
-                    continue;
-                }
-                int[] p = ints(e.getValue(), 3);
-                if (p == null) {
-                    problems.add("points." + key + " must be [x, y, z] whole numbers");
-                } else if (!inside(p, size)) {
-                    problems.add("points." + key + " " + java.util.Arrays.toString(p) + " is outside size "
-                            + java.util.Arrays.toString(size));
-                } else {
-                    points.put(key, p);
-                }
-            }
-        } else if (yaml.get("points") != null) {
-            problems.add("points must be a section");
-        }
+        points(yaml.get("points"), size, points, smoke, steam, problems);
         if (smoke.isEmpty() && points.get(CHIMNEY) != null) {
-            smoke.add(points.get(CHIMNEY)); // the cottage's single chimney = a one-item smoke list
+            smoke.add(points.get(CHIMNEY)); // a single chimney = a one-item smoke list
         }
-
-        List<HouseDesign.SignText> signs = new ArrayList<>();
-        if (yaml.get("signs") instanceof List<?> rawSigns) {
-            for (int i = 0; i < rawSigns.size(); i++) {
-                String where = "signs[" + i + "]";
-                if (!(rawSigns.get(i) instanceof Map<?, ?> sign)) {
-                    problems.add(where + " must be a section with 'at' and 'lines'");
-                    continue;
-                }
-                int[] at = ints(sign.get("at"), 3);
-                if (at == null || !inside(at, size)) {
-                    problems.add(where + ".at must be [x, y, z] inside size " + java.util.Arrays.toString(size));
-                    continue;
-                }
-                if (!(sign.get("lines") instanceof List<?> rawLines) || rawLines.isEmpty() || rawLines.size() > 4) {
-                    problems.add(where + ".lines must be a list of 1 to 4 strings");
-                    continue;
-                }
-                List<String> lines = new ArrayList<>();
-                rawLines.forEach(l -> lines.add(l == null ? "" : String.valueOf(l)));
-                char c = grid[at[1]][at[2]][at[0]];
-                if (isKeep(c) || c == 0) {
-                    problems.add(where + ".at " + java.util.Arrays.toString(at) + " is not a palette block");
-                    continue;
-                }
-                signs.add(new HouseDesign.SignText(at, List.copyOf(lines)));
-            }
-        } else if (yaml.get("signs") != null) {
-            problems.add("signs must be a list");
-        }
-
-        HouseLayout layout = null;
-        if (yaml.get("layout") != null) {
-            layout = HouseLayout.parse(yaml.get("layout"), problems);
-            if (layout != null) {
-                int[] min = {layout.houseAt()[0] - origin[0], layout.houseAt()[2] - origin[2]};
-                if (min[0] < 1 || min[1] < 1 || min[0] + size[0] > layout.sizeX() - 1
-                        || min[1] + size[2] > layout.sizeZ() - 1) {
-                    problems.add("layout.house-at puts the house (" + size[0] + " x " + size[2]
-                            + ") outside the area inside the fence (plot-size minus the outer ring)");
-                }
-            }
-        }
-
+        List<HouseDesign.SignText> signs = signs(yaml.get("signs"), size, grid, problems);
+        HouseLayout layout = yaml.get("layout") == null ? null : layout(yaml.get("layout"), size, origin, problems);
         return problems.isEmpty()
                 ? new Result(new HouseDesign(name, size[0], size[1], size[2], origin, Map.copyOf(palette), grid,
                         points, List.copyOf(smoke), List.copyOf(steam), List.copyOf(signs), layout), List.of())
                 : new Result(null, problems);
+    }
+
+    private static Map<Character, String> palette(@Nullable Object raw, List<String> problems) {
+        Map<Character, String> palette = new HashMap<>();
+        if (!(raw instanceof Map<?, ?> rawPalette) || rawPalette.isEmpty()) {
+            problems.add("palette must map characters to block data");
+            return palette;
+        }
+        for (Map.Entry<?, ?> e : rawPalette.entrySet()) {
+            String key = String.valueOf(e.getKey());
+            if (key.length() != 1) {
+                problems.add("palette key '" + key + "' must be exactly one character");
+            } else if (isKeep(key.charAt(0))) {
+                problems.add("palette key '" + key + "' is reserved for 'keep the world's block'");
+            } else if (!(e.getValue() instanceof String data) || data.isBlank()) {
+                problems.add("palette '" + key + "' needs block data like minecraft:oak_planks");
+            } else {
+                palette.put(key.charAt(0), data.trim());
+            }
+        }
+        return palette;
+    }
+
+    private static char[][][] grid(@Nullable Object raw, int[] size, Map<Character, String> palette,
+                                   List<String> problems) {
+        char[][][] grid = new char[size[1]][size[2]][size[0]];
+        if (!(raw instanceof List<?> layers)) {
+            problems.add("layers must be a list of layers (bottom to top)");
+            return grid;
+        }
+        if (layers.size() != size[1]) {
+            problems.add("layers has " + layers.size() + " layers but size y is " + size[1]);
+            return grid;
+        }
+        for (int y = 0; y < size[1]; y++) {
+            if (!(layers.get(y) instanceof List<?> rows) || rows.size() != size[2]) {
+                problems.add("layer " + y + " must be a list of " + size[2] + " rows");
+                continue;
+            }
+            for (int z = 0; z < size[2]; z++) {
+                if (!(rows.get(z) instanceof String row) || row.length() != size[0]) {
+                    problems.add("layer " + y + " row " + z + " must be a string of " + size[0] + " characters");
+                    continue;
+                }
+                for (int x = 0; x < size[0]; x++) {
+                    char c = row.charAt(x);
+                    if (!isKeep(c) && !palette.containsKey(c)) {
+                        problems.add("layer " + y + " row " + z + " uses '" + c + "', which is not in the palette");
+                    }
+                    grid[y][z][x] = c;
+                }
+            }
+        }
+        return grid;
+    }
+
+    private static void points(@Nullable Object raw, int[] size, Map<String, int[]> points, List<int[]> smoke,
+                               List<int[]> steam, List<String> problems) {
+        if (!(raw instanceof Map<?, ?> rawPoints)) {
+            if (raw != null) {
+                problems.add("points must be a section");
+            }
+            return;
+        }
+        for (Map.Entry<?, ?> e : rawPoints.entrySet()) {
+            String key = String.valueOf(e.getKey());
+            if (key.equals(SMOKE) || key.equals(STEAM)) {
+                pointList(key, e.getValue(), size, key.equals(SMOKE) ? smoke : steam, problems);
+                continue;
+            }
+            int[] p = ints(e.getValue(), 3);
+            if (p == null) {
+                problems.add("points." + key + " must be [x, y, z] whole numbers");
+            } else if (!inside(p, size)) {
+                problems.add("points." + key + " " + Arrays.toString(p) + " is outside size " + Arrays.toString(size));
+            } else {
+                points.put(key, p);
+            }
+        }
+    }
+
+    private static List<HouseDesign.SignText> signs(@Nullable Object raw, int[] size, char[][][] grid,
+                                                    List<String> problems) {
+        List<HouseDesign.SignText> signs = new ArrayList<>();
+        if (!(raw instanceof List<?> rawSigns)) {
+            if (raw != null) {
+                problems.add("signs must be a list");
+            }
+            return signs;
+        }
+        for (int i = 0; i < rawSigns.size(); i++) {
+            String where = "signs[" + i + "]";
+            if (!(rawSigns.get(i) instanceof Map<?, ?> sign)) {
+                problems.add(where + " must be a section with 'at' and 'lines'");
+                continue;
+            }
+            int[] at = ints(sign.get("at"), 3);
+            if (at == null || !inside(at, size)) {
+                problems.add(where + ".at must be [x, y, z] inside size " + Arrays.toString(size));
+                continue;
+            }
+            if (!(sign.get("lines") instanceof List<?> rawLines) || rawLines.isEmpty() || rawLines.size() > 4) {
+                problems.add(where + ".lines must be a list of 1 to 4 strings");
+                continue;
+            }
+            List<String> lines = new ArrayList<>();
+            rawLines.forEach(l -> lines.add(l == null ? "" : String.valueOf(l)));
+            char c = grid[at[1]][at[2]][at[0]];
+            if (isKeep(c) || c == 0) {
+                problems.add(where + ".at " + Arrays.toString(at) + " is not a palette block");
+                continue;
+            }
+            signs.add(new HouseDesign.SignText(at, List.copyOf(lines)));
+        }
+        return signs;
+    }
+
+    /** The layout, which must leave the house inside the fence ring. */
+    private static @Nullable HouseLayout layout(Object raw, int[] size, int[] origin, List<String> problems) {
+        HouseLayout layout = HouseLayout.parse(raw, problems);
+        if (layout != null) {
+            int[] min = {layout.houseAt()[0] - origin[0], layout.houseAt()[2] - origin[2]};
+            if (min[0] < 1 || min[1] < 1 || min[0] + size[0] > layout.sizeX() - 1
+                    || min[1] + size[2] > layout.sizeZ() - 1) {
+                problems.add("layout.house-at puts the house (" + size[0] + " x " + size[2]
+                        + ") outside the area inside the fence (plot-size minus the outer ring)");
+            }
+        }
+        return layout;
     }
 
     /** {@code points.smoke} / {@code points.steam}: a list of [x, y, z], each inside size. */
@@ -203,8 +224,8 @@ public final class HouseDesignParser {
             if (p == null) {
                 problems.add("points." + key + "[" + i + "] must be [x, y, z] whole numbers");
             } else if (!inside(p, size)) {
-                problems.add("points." + key + "[" + i + "] " + java.util.Arrays.toString(p) + " is outside size "
-                        + java.util.Arrays.toString(size));
+                problems.add("points." + key + "[" + i + "] " + Arrays.toString(p) + " is outside size "
+                        + Arrays.toString(size));
             } else {
                 out.add(p);
             }
