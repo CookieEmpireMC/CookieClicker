@@ -19,3 +19,4 @@
 - [Test pruning: important parts only](feedback-important-tests-only.md) — user rule 2026-10-23: keep/drop list; 582->301 Java, 146->73 tools
 - [Prune tooling gotchas](prune-gotchas.md) — sandbox blocks loops/vars with git; Java/Python method-removal pitfalls; test counts after prune
 - [Ledger: tidy config](ledger-tidy-config.md) — coder config branch READY, 415 tests; paper-plugin classpath facts; new descriptor/old-config tests
+- [Ledger: tidy vfx](ledger-tidy-vfx.md) — vfx split READY at 4a6d3b1; parser equivalence probe recipe; gradient VirtualComponent identity-equals; open LOWs

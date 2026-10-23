@@ -56,44 +56,6 @@ class DropTrackTest {
     }
 
     @Test
-    void fallIsMonotonicAndNeverBelowTheTarget() {
-        double last = Double.MAX_VALUE;
-        for (int t = 0; t <= track.impactTick(); t++) {
-            double y = track.renderedAt(t)[1];
-            assertTrue(y <= last + EPS, "falls only down, tick " + t);
-            last = y;
-        }
-        for (int t = 0; t <= track.landTick() + 2; t++) {
-            for (double v : track.renderedAt(t)) {
-                assertFalse(Double.isNaN(v) || Double.isInfinite(v));
-            }
-            assertTrue(track.renderedAt(t)[1] >= -EPS, "never sinks into the ground, tick " + t);
-        }
-    }
-
-    @Test
-    void bouncePeakIsSquashedAndStaysCentred() {
-        int peak = track.impactTick() + 2;
-        double[] r = track.renderedAt(peak);
-        assertEquals(0.25, r[1], EPS);
-        assertEquals(1.08, r[3], EPS);
-        assertEquals(0.85, r[4], EPS);
-        assertEquals(1.08, r[5], EPS);
-        for (int t = 0; t <= track.landTick(); t++) {
-            double[] s = track.renderedAt(t);
-            assertEquals(0.5, s[0] + s[3] / 2, EPS, "x centre stays on the block, tick " + t);
-            assertEquals(0.5, s[2] + s[5] / 2, EPS, "z centre stays on the block, tick " + t);
-        }
-    }
-
-    @Test
-    void zeroBounceHeightIsAPureSquash() {
-        DropTrack flat = DropTrack.of(new DropTrack.Params(2, 4, 6, 0, 2, 1.1, 0.8, 1.1, 2));
-        assertEquals(0, flat.renderedAt(flat.impactTick() + 2)[1], EPS);
-        assertEquals(0.8, flat.renderedAt(flat.impactTick() + 2)[4], EPS);
-    }
-
-    @Test
     void invalidParamsAreRejected() {
         assertThrows(IllegalArgumentException.class, () -> new DropTrack.Params(0, 4, 6, 0.25, 2, 1, 1, 1, 2));
         assertThrows(IllegalArgumentException.class, () -> new DropTrack.Params(2, 4, 0, 0.25, 2, 1, 1, 1, 2));
