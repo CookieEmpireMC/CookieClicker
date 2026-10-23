@@ -2,6 +2,7 @@ package dev.casperrs.cookieClicker.view;
 
 import dev.casperrs.cookieClicker.config.StationVisualSettings;
 import dev.casperrs.cookieClicker.config.StationVisualSettings.Offset;
+import dev.casperrs.cookieClicker.text.TextWidth;
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;
@@ -24,10 +25,8 @@ import java.util.Map;
  */
 public record PanelLayout(StationVisualSettings.Panel p, float toggleScale, int rowCount) {
 
-    /** Lines every row is laid out for (the panel texts are written as two lines). */
-    public static final int ROW_LINES = 2;
-    /** Line width of the header and toggle displays: single lines that are never wrapped. */
-    static final int SINGLE_LINE_WIDTH = 1000;
+    public static final int ROW_LINES = TextWidth.ROW_LINES;
+    static final int SINGLE_LINE_WIDTH = TextWidth.SINGLE_LINE_WIDTH;
 
     static PanelLayout of(StationVisualSettings s, int rowCount) {
         return new PanelLayout(s.panel(), s.bulk().scale(), rowCount);

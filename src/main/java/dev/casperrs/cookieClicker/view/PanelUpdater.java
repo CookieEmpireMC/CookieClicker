@@ -4,6 +4,8 @@ import dev.casperrs.cookieClicker.config.StationVisualSettings;
 import dev.casperrs.cookieClicker.economy.CookiePouch;
 import dev.casperrs.cookieClicker.economy.Economy;
 import dev.casperrs.cookieClicker.text.Messages;
+import dev.casperrs.cookieClicker.text.TextPadding;
+import dev.casperrs.cookieClicker.text.TextWidth;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;

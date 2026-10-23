@@ -12,6 +12,7 @@ import dev.casperrs.cookieClicker.station.StationListener;
 import dev.casperrs.cookieClicker.station.StationRegistry;
 import dev.casperrs.cookieClicker.text.Messages;
 import dev.casperrs.cookieClicker.vfx.PopMotion;
+import dev.casperrs.cookieClicker.text.TextPadding;
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import io.papermc.paper.datacomponent.item.CustomModelData;
 import net.kyori.adventure.key.Key;
