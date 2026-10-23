@@ -1,5 +1,7 @@
 package dev.casperrs.cookieClicker.view;
 
+import dev.casperrs.cookieClicker.view.panel.BulkMode;
+import dev.casperrs.cookieClicker.view.panel.PanelKind;
 import dev.casperrs.cookieClicker.economy.BulkPurchase;
 import dev.casperrs.cookieClicker.economy.ClickResult;
 import dev.casperrs.cookieClicker.economy.CookiePouch;

@@ -1,7 +1,13 @@
 package dev.casperrs.cookieClicker.view;
 
+import dev.casperrs.cookieClicker.view.panel.BulkMode;
+import dev.casperrs.cookieClicker.view.panel.PriceTween;
+import dev.casperrs.cookieClicker.view.panel.PanelRowState;
+import dev.casperrs.cookieClicker.view.panel.PanelKind;
+import dev.casperrs.cookieClicker.view.panel.PanelLayout;
 import dev.casperrs.cookieClicker.config.StationVisualSettings.Offset;
 import dev.casperrs.cookieClicker.station.Station;
+import dev.casperrs.cookieClicker.text.TextWidth;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Interaction;
@@ -50,7 +56,7 @@ final class StationView {
         /** Estimated pixel width of the rendered text (for the left-edge shift). */
         int renderedWidth;
         /** Wrapped line count of the rendered text (for the click bounds). */
-        int renderedLines = PanelLayout.ROW_LINES;
+        int renderedLines = TextWidth.ROW_LINES;
         float sentShift = Float.NaN;
         float sentScale = Float.NaN;
         int sentColor;

@@ -1,6 +1,5 @@
 package dev.casperrs.cookieClicker.text;
 
-import dev.casperrs.cookieClicker.format.NumberFormatter;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;

@@ -1,5 +1,11 @@
 package dev.casperrs.cookieClicker.view;
 
+import dev.casperrs.cookieClicker.view.panel.BulkModes;
+import dev.casperrs.cookieClicker.view.panel.BulkMode;
+import dev.casperrs.cookieClicker.view.panel.PanelKind;
+import dev.casperrs.cookieClicker.view.panel.PanelPages;
+import dev.casperrs.cookieClicker.view.panel.PanelRows;
+import dev.casperrs.cookieClicker.view.panel.PanelLayout;
 import dev.casperrs.cookieClicker.config.BasketSettings;
 import dev.casperrs.cookieClicker.config.StationVisualSettings;
 import dev.casperrs.cookieClicker.config.StationVisualSettings.Offset;
@@ -13,6 +19,7 @@ import dev.casperrs.cookieClicker.station.StationRegistry;
 import dev.casperrs.cookieClicker.text.Messages;
 import dev.casperrs.cookieClicker.vfx.PopMotion;
 import dev.casperrs.cookieClicker.text.TextPadding;
+import dev.casperrs.cookieClicker.text.TextWidth;
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import io.papermc.paper.datacomponent.item.CustomModelData;
 import net.kyori.adventure.key.Key;
@@ -520,7 +527,7 @@ public final class StationViews implements Listener, StationListener, SessionLis
         float iconYaw = pf.facingViewers(p.iconYawOffset());
         TextDisplay header = spawn(world, pf.point(po), textYaw, TextDisplay.class, owner, spawned, t -> {
             styleText(t, p, p.headerScale(), p.color("header"));
-            t.setLineWidth(PanelLayout.SINGLE_LINE_WIDTH);
+            t.setLineWidth(TextWidth.SINGLE_LINE_WIDTH);
             t.setAlignment(TextDisplay.TextAlignment.CENTER);
             t.text(TextPadding.centred(messages.component(kind == PanelKind.BUILDINGS ? "panel.buildings.header"
                     : "panel.clicks.header"), p.textPadding(), layout.headerTargetPx()));
@@ -528,7 +535,7 @@ public final class StationViews implements Listener, StationListener, SessionLis
         TextDisplay toggle = spawn(world, pf.point(po, layout.toggleAt()), textYaw, TextDisplay.class, owner, spawned,
                 t -> {
                     styleText(t, p, s.bulk().scale(), p.color("toggle"));
-                    t.setLineWidth(PanelLayout.SINGLE_LINE_WIDTH);
+                    t.setLineWidth(TextWidth.SINGLE_LINE_WIDTH);
                     t.setAlignment(TextDisplay.TextAlignment.CENTER);
                 });
         float boxWidth = (float) layout.boxWidth();

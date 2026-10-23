@@ -1,5 +1,6 @@
 package dev.casperrs.cookieClicker.view;
 
+import dev.casperrs.cookieClicker.view.panel.PanelLayout;
 import dev.casperrs.cookieClicker.config.StationVisualSettings;
 import io.papermc.paper.event.player.PrePlayerAttackEntityEvent;
 import org.bukkit.Bukkit;

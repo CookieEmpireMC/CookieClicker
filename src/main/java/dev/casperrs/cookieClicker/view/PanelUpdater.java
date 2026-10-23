@@ -1,5 +1,15 @@
 package dev.casperrs.cookieClicker.view;
 
+import dev.casperrs.cookieClicker.view.panel.BulkModes;
+import dev.casperrs.cookieClicker.view.panel.BulkMode;
+import dev.casperrs.cookieClicker.view.panel.PriceTween;
+import dev.casperrs.cookieClicker.view.panel.UpgradeRowState;
+import dev.casperrs.cookieClicker.view.panel.RowState;
+import dev.casperrs.cookieClicker.view.panel.PanelRowState;
+import dev.casperrs.cookieClicker.view.panel.PanelKind;
+import dev.casperrs.cookieClicker.view.panel.PanelPages;
+import dev.casperrs.cookieClicker.view.panel.PanelRows;
+import dev.casperrs.cookieClicker.view.panel.PanelLayout;
 import dev.casperrs.cookieClicker.config.StationVisualSettings;
 import dev.casperrs.cookieClicker.economy.CookiePouch;
 import dev.casperrs.cookieClicker.economy.Economy;
@@ -415,7 +425,7 @@ final class PanelUpdater {
         Map<PanelLayout.Hit.Kind, int[]> pages = new EnumMap<>(PanelLayout.Hit.Kind.class);
         TextWidth.spans(toggle, PAGE).forEach((insertion, span) ->
                 pages.put(PanelLayout.Hit.Kind.valueOf(insertion.substring(PAGE.length())), span));
-        return new PanelLayout.ToggleBox(TextWidth.width(toggle, PanelLayout.SINGLE_LINE_WIDTH), labels, pages);
+        return new PanelLayout.ToggleBox(TextWidth.width(toggle, TextWidth.SINGLE_LINE_WIDTH), labels, pages);
     }
 
     /**

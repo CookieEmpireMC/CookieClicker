@@ -1,4 +1,4 @@
-package dev.casperrs.cookieClicker.format;
+package dev.casperrs.cookieClicker.text;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;

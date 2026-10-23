@@ -1,4 +1,4 @@
-package dev.casperrs.cookieClicker.view;
+package dev.casperrs.cookieClicker.view.panel;
 
 import dev.casperrs.cookieClicker.config.StationVisualSettings;
 import dev.casperrs.cookieClicker.config.StationVisualSettings.Offset;
@@ -10,7 +10,7 @@ import java.util.Map;
 
 /**
  * Where everything of one hologram panel sits, and which line an eye ray hits. Positions are in the panel's frame
- * ({@link StationFrame}: right, up, forward) relative to the panel anchor, the bottom centre of the header.
+ * (the station frame: right, up, forward) relative to the panel anchor, the bottom centre of the header.
  *
  * <p>One text column per panel, centred on the anchor and as wide as a full row background ({@link #rowWidthPx()}
  * at the row text scale): header, ×N toggle and every row text share its left edge and width (with
@@ -25,10 +25,8 @@ import java.util.Map;
  */
 public record PanelLayout(StationVisualSettings.Panel p, float toggleScale, int rowCount) {
 
-    public static final int ROW_LINES = TextWidth.ROW_LINES;
-    static final int SINGLE_LINE_WIDTH = TextWidth.SINGLE_LINE_WIDTH;
 
-    static PanelLayout of(StationVisualSettings s, int rowCount) {
+    public static PanelLayout of(StationVisualSettings s, int rowCount) {
         return new PanelLayout(s.panel(), s.bulk().scale(), rowCount);
     }
 
@@ -36,35 +34,35 @@ public record PanelLayout(StationVisualSettings.Panel p, float toggleScale, int 
      * What a ray hit on a panel: a row slot, a toggle label ({@code mode} set), the toggle between labels, or a
      * ▲ / ▼ page label on the toggle line.
      */
-    record Hit(Kind kind, int row, @Nullable BulkMode mode, double distance) {
-        enum Kind { ROW, TOGGLE, PAGE_UP, PAGE_DOWN }
+    public record Hit(Kind kind, int row, @Nullable BulkMode mode, double distance) {
+        public enum Kind { ROW, TOGGLE, PAGE_UP, PAGE_DOWN }
     }
 
     /** What a row slot renders now: whether it shows an item, its line count and background width (px). */
-    record RowBox(boolean present, int lines, int widthPx) {
+    public record RowBox(boolean present, int lines, int widthPx) {
     }
 
     /**
      * What the toggle renders now: its background width (px) and each label's {start, end} px from its left, the
      * ▲ / ▼ page labels ({@link Hit.Kind#PAGE_UP} / {@link Hit.Kind#PAGE_DOWN}) included when shown.
      */
-    record ToggleBox(int widthPx, Map<BulkMode, int[]> labels, Map<Hit.Kind, int[]> pages) {
+    public record ToggleBox(int widthPx, Map<BulkMode, int[]> labels, Map<Hit.Kind, int[]> pages) {
         /** Without page labels. */
-        ToggleBox(int widthPx, Map<BulkMode, int[]> labels) {
+        public ToggleBox(int widthPx, Map<BulkMode, int[]> labels) {
             this(widthPx, labels, Map.of());
         }
     }
 
-    double headerHeight() {
+    public double headerHeight() {
         return TextWidth.blocks(TextWidth.LINE_HEIGHT_PX, p.headerScale());
     }
 
-    double toggleHeight() {
+    public double toggleHeight() {
         return TextWidth.blocks(TextWidth.LINE_HEIGHT_PX, toggleScale);
     }
 
     /** Bottom of the toggle text (its display position's height). */
-    double toggleBottom() {
+    public double toggleBottom() {
         return -p.headerGap() - toggleHeight();
     }
 
@@ -72,36 +70,36 @@ public record PanelLayout(StationVisualSettings.Panel p, float toggleScale, int 
      * Lowest point of the toggle's click band: the toggle line is easy to hit, so its band reaches half-way into
      * the gaps above and below it (never less than {@code click-margin}); the other half stays air.
      */
-    double toggleHitBottom() {
+    public double toggleHitBottom() {
         return toggleBottom() - Math.max(p.clickMargin(), p.toggleGap() / 2.0);
     }
 
     /** Highest point of the toggle's click band (see {@link #toggleHitBottom()}). */
-    double toggleHitTop() {
+    public double toggleHitTop() {
         return toggleBottom() + toggleHeight() + Math.max(p.clickMargin(), p.headerGap() / 2.0);
     }
 
-    double rowHeight() {
-        return TextWidth.blocks(ROW_LINES * TextWidth.LINE_HEIGHT_PX, p.textScale());
+    public double rowHeight() {
+        return TextWidth.blocks(TextWidth.ROW_LINES * TextWidth.LINE_HEIGHT_PX, p.textScale());
     }
 
     /** Bottom of row {@code i}'s text block. */
-    double rowBottom(int i) {
+    public double rowBottom(int i) {
         return toggleBottom() - p.toggleGap() - rowHeight() - i * p.rowPitch();
     }
 
     /** Background width every row is padded to: the line width less one space, so padding never wraps. */
-    int rowWidthPx() {
+    public int rowWidthPx() {
         return p.lineWidth() - TextWidth.SPACE_PX;
     }
 
     /** Width of the text column: a full-width row background ({@link #rowWidthPx()} at the row text scale). */
-    double columnWidth() {
+    public double columnWidth() {
         return TextWidth.blocks(rowWidthPx(), p.textScale());
     }
 
     /** Left edge of the text column and of every row text: the column is centred on the panel anchor. */
-    double textLeft() {
+    public double textLeft() {
         return -columnWidth() / 2.0;
     }
 
@@ -115,29 +113,29 @@ public record PanelLayout(StationVisualSettings.Panel p, float toggleScale, int 
         return p.iconOffset().right() + shift() - p.iconScale() / 2.0;
     }
 
-    Offset iconAt(int i) {
+    public Offset iconAt(int i) {
         return new Offset(p.iconOffset().right() + shift(), rowBottom(i) + p.iconOffset().up(),
                 p.iconOffset().forward());
     }
 
     /** Position of row {@code i}'s text display: its left edge with text-left-edge, else the column centre. */
-    Offset textAt(int i) {
+    public Offset textAt(int i) {
         double right = p.textLeftEdge() ? textLeft() : textLeft() + columnWidth() / 2.0;
         return new Offset(right, rowBottom(i) + p.textOffset().up(), p.textOffset().forward());
     }
 
     /** The toggle line, centred on the text column. */
-    Offset toggleAt() {
+    public Offset toggleAt() {
         return new Offset(0, toggleBottom(), 0);
     }
 
     /** Pixel width (at its own scale) the header is padded to: the text column; 0 without same-width. */
-    int headerTargetPx() {
+    public int headerTargetPx() {
         return p.sameWidth() ? (int) Math.round(columnWidth() * TextWidth.PIXELS_PER_BLOCK / p.headerScale()) : 0;
     }
 
     /** Pixel width (at its own scale) the toggle is padded to: the text column; 0 without same-width. */
-    int toggleTargetPx() {
+    public int toggleTargetPx() {
         return p.sameWidth() ? (int) Math.round(columnWidth() * TextWidth.PIXELS_PER_BLOCK / toggleScale) : 0;
     }
 
@@ -151,16 +149,16 @@ public record PanelLayout(StationVisualSettings.Panel p, float toggleScale, int 
     }
 
     /** Bottom centre of the panel's one click box (it only triggers the ray check). */
-    Offset boxBottom() {
+    public Offset boxBottom() {
         double bottom = rowCount > 0 ? rowBottom(rowCount - 1) : toggleBottom();
         return new Offset((boxLeft() + boxRight()) / 2.0, bottom - p.clickMargin(), 0);
     }
 
-    double boxHeight() {
+    public double boxHeight() {
         return headerHeight() + p.clickMargin() - boxBottom().up();
     }
 
-    double boxWidth() {
+    public double boxWidth() {
         return boxRight() - boxLeft() + 2 * p.clickMargin();
     }
 
@@ -171,7 +169,7 @@ public record PanelLayout(StationVisualSettings.Panel p, float toggleScale, int 
      * @param dir  unit ray direction in the panel frame
      * @param rows what every row slot shows now (index = slot)
      */
-    @Nullable Hit pick(Offset eye, Offset dir, double maxDistance, List<RowBox> rows, @Nullable ToggleBox toggle) {
+    public @Nullable Hit pick(Offset eye, Offset dir, double maxDistance, List<RowBox> rows, @Nullable ToggleBox toggle) {
         double m = p.clickMargin();
         Hit best = null;
         double rowPlane = p.textOffset().forward();
