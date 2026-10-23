@@ -1,4 +1,4 @@
-- [Sandbox Bash limits](sandbox_bash.md) — no shell vars/loops in Bash; use literal paths, Edit/Write, scratch Python scripts
-- [Pack facts 26.3](project_pack_facts.md) — pack format 97.1, cookie model setup, asset tooling and spec locations
-- [House designs](house_designs.md) — houses/*.yml (cottage, factory, fence, belt), layout incl. camera, perspective renderer, verified 26.3 copper block ids
-- [Basket](basket.md) — cookie basket generator, spec and atlas facts
+- [Sandbox Bash limits](sandbox_bash.md) — no shell vars/loops/heredoc-python in Bash; use literal paths, Edit/Write, scratch scripts
+- [Pack facts 26.3](project_pack_facts.md) — pack format 97.1, ItemDisplay NONE rule, assets tooling, generators are deterministic
+- [House designs](house_designs.md) — houses/*.yml (factory, fence, belt, decor), layout/camera, perspective renderer, verified 26.3 block ids
+- [Basket and world buildings](basket.md) — basket.py, building_world.py generators, specs, size rules
