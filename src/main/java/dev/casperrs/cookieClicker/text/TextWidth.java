@@ -1,4 +1,4 @@
-package dev.casperrs.cookieClicker.view;
+package dev.casperrs.cookieClicker.text;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
@@ -29,6 +29,10 @@ public final class TextWidth {
     public static final int LINE_HEIGHT_PX = 10;
     /** Advance of a plain space, the unit text padding is made of. */
     public static final int SPACE_PX = 4;
+    /** Lines every panel row is laid out for (the panel texts are written as two lines). */
+    public static final int ROW_LINES = 2;
+    /** Line width of single-line displays (panel header, toggle) that are never wrapped. */
+    public static final int SINGLE_LINE_WIDTH = 1000;
 
     private static final PlainTextComponentSerializer PLAIN = PlainTextComponentSerializer.plainText();
 
