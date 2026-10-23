@@ -42,24 +42,4 @@ class StationMigrationTest {
         assertEquals(2, plan.leftovers().size());
     }
 
-    @Test
-    void severalPlotsEachGetOne() {
-        StationMigration.Plan plan = StationMigration.plan(List.of(st("a", 1), st("b", 2)),
-                s -> Optional.of(s.id().equals("a") ? "one" : "two"));
-        assertEquals(List.of("one", "two"), plan.plots().stream().map(Plot::id).toList());
-    }
-
-    @Test
-    void anInvalidFlagValueIsTreatedAsOutsideAPlot() {
-        StationMigration.Plan plan = StationMigration.plan(List.of(st("a", 1)), s -> Optional.of("Bad Id!"));
-        assertTrue(plan.plots().isEmpty());
-        assertEquals(1, plan.leftovers().size());
-    }
-
-    @Test
-    void noStationsNoPlots() {
-        StationMigration.Plan plan = StationMigration.plan(List.of(), s -> Optional.of("main"));
-        assertTrue(plan.plots().isEmpty());
-        assertTrue(plan.leftovers().isEmpty());
-    }
 }

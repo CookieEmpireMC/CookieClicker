@@ -38,28 +38,6 @@ class BuildingSlotsTest {
     }
 
     @Test
-    void badEntriesAreSkippedAndTheRestStillCounts() throws Exception {
-        BuildingSlots.Result r = parse("""
-                slots:
-                  villager_baker:
-                    - {at: [5, 0, 2], yaw: 270}
-                    - {at: [-1, 0, 2], yaw: 270}
-                    - {at: [5.5, 0, 2], yaw: 270}
-                    - {at: [5, 0, 2], yaw: 90}
-                  Bad-Id:
-                    - {at: [1, 0, 1], yaw: 0}
-                  beehive: nope
-                  alchemy_lab:
-                    - {at: [2, 0, 19], yaw: 270}
-                """);
-        // out of the plot, not whole numbers, a cell already used by villager_baker, bad id, not a list
-        assertEquals(5, r.problems().size(), r.problems().toString());
-        assertEquals(List.of(new BuildingSlots.Slot(5, 0, 2, 270f)), r.slots().of("villager_baker"));
-        assertTrue(r.slots().of("Bad-Id").isEmpty());
-        assertEquals(1, r.slots().of("alchemy_lab").size());
-    }
-
-    @Test
     void overTheCapKeepsTenPerTypeAndWarns() throws Exception {
         StringBuilder text = new StringBuilder("slots:\n  villager_baker:\n");
         for (int i = 0; i < 11; i++) {
@@ -68,20 +46,6 @@ class BuildingSlotsTest {
         BuildingSlots.Result r = parse(text.toString());
         assertEquals(BuildingSlots.MAX_PER_TYPE, r.slots().of("villager_baker").size());
         assertEquals(1, r.problems().size(), r.problems().toString());
-    }
-
-    @Test
-    void anOverCapCellIsNotReservedSoAnotherTypeCanUseIt() throws Exception {
-        StringBuilder text = new StringBuilder("slots:\n  villager_baker:\n");
-        for (int i = 0; i < 11; i++) {
-            text.append("    - {at: [").append(i).append(", 0, 0], yaw: 0}\n");
-        }
-        // the 11th baker cell (10,0,0) was dropped by the cap; the oven may take it
-        text.append("  industrial_oven:\n    - {at: [10, 0, 0], yaw: 0}\n");
-        BuildingSlots.Result r = parse(text.toString());
-        assertEquals(1, r.problems().size(), r.problems().toString());
-        assertTrue(r.problems().get(0).contains("more than"), r.problems().toString());
-        assertEquals(1, r.slots().of("industrial_oven").size());
     }
 
     @Test

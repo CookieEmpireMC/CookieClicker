@@ -47,23 +47,6 @@ class BuildingLayoutTest {
     }
 
     @Test
-    void aMaxBuyThatJumpsPastBothThresholdsIsOneStageChange() {
-        BuildingLayout.Change c = BuildingLayout.change(5, 150, 200, S);
-        assertEquals(1, c.stageBefore());
-        assertEquals(3, c.stageAfter());
-        assertTrue(c.stageChanged());
-        assertEquals(150, c.shownAfter());
-    }
-
-    @Test
-    void theCapDoesNotHideAStageChange() {
-        // slots 2, owned 30: two instances stay, but they get the stage-2 look
-        BuildingLayout.Change c = BuildingLayout.change(1, 30, 2, S);
-        assertEquals(2, c.shownAfter());
-        assertTrue(c.stageChanged());
-    }
-
-    @Test
     void theOriginIsTheFrameWorkedBackFromTheStoredHouseBox() throws Exception {
         YamlConfiguration y = new YamlConfiguration();
         try (InputStream in = getClass().getResourceAsStream("/houses/factory.yml")) {

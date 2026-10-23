@@ -155,17 +155,6 @@ class SessionManagerTest {
     }
 
     @Test
-    void doubleJoinLoadsOnce() throws Exception {
-        sessions.join(alice);
-        sessions.join(alice);
-        settle();
-        sessions.join(alice);
-        settle();
-        assertEquals(1, count("load"));
-        assertEquals(List.of("loaded"), events);
-    }
-
-    @Test
     void quitBeforeLoadCompletesCreatesNoSessionAndNoSave() throws Exception {
         CountDownLatch gate = new CountDownLatch(1);
         store.loadGate = gate;
@@ -217,22 +206,6 @@ class SessionManagerTest {
     }
 
     @Test
-    void failedInitMakesEveryLoadFail() throws Exception {
-        io.shutdown();
-        io = Executors.newSingleThreadExecutor();
-        FakeStore bad = new FakeStore();
-        bad.failInit = true;
-        Logger quiet = Logger.getAnonymousLogger();
-        quiet.setLevel(Level.OFF);
-        SessionManager m = new SessionManager(bad, io, mainQueue::add, quiet);
-        m.start();
-        m.join(alice);
-        settle();
-        assertFalse(m.isLoaded(alice));
-        assertEquals(0, bad.calls.stream().filter("load"::equals).count(), "load is not attempted on a broken store");
-    }
-
-    @Test
     void quitSavesTheSnapshotAndRemovesTheSession() throws Exception {
         store.data.put(alice, new PouchSnapshot(1, 1, Map.of(), Set.of()));
         sessions.join(alice);
@@ -262,18 +235,6 @@ class SessionManagerTest {
         int secondLoad = order.lastIndexOf("load");
         assertTrue(firstSave >= 0 && firstSave < secondLoad, "save must be queued before the rejoin load: " + order);
         assertTrue(sessions.isLoaded(alice));
-    }
-
-    @Test
-    void saveAllWritesEveryLoadedPlayer() throws Exception {
-        UUID bob = UUID.randomUUID();
-        sessions.join(alice);
-        sessions.join(bob);
-        settle();
-        sessions.saveAll();
-        settle();
-        assertEquals(2, count("save"));
-        assertTrue(store.data.containsKey(alice) && store.data.containsKey(bob));
     }
 
     @Test
@@ -335,28 +296,4 @@ class SessionManagerTest {
         assertEquals(1, count("save"));
     }
 
-    @Test
-    void joinAfterShutdownIsDroppedWithoutThrowingOrLeavingAPendingLoad() throws Exception {
-        sessions.shutdown(5);
-        sessions.join(alice); // pass-1 finding: used to throw RejectedExecutionException
-        assertEquals(0, mainQueue.size());
-        assertFalse(sessions.isLoaded(alice));
-        assertEquals(0, count("load"));
-    }
-
-    @Test
-    void removedListenersStopHearingEvents() throws Exception {
-        List<String> seen = new ArrayList<>();
-        SessionListener l = new SessionListener() {
-            @Override
-            public void onLoaded(UUID player, CookiePouch pouch) {
-                seen.add("x");
-            }
-        };
-        sessions.addListener(l);
-        sessions.removeListener(l);
-        sessions.join(alice);
-        settle();
-        assertTrue(seen.isEmpty());
-    }
 }

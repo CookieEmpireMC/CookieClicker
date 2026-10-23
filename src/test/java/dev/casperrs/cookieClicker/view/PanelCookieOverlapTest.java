@@ -12,7 +12,7 @@ import org.bukkit.util.Vector;
 import org.junit.jupiter.api.Test;
 
 /**
- * plot-polish integration: the shipped plot layout (factory.yml: pedestal 18,6, shop 20,6, clicks 16,6, viewpoint
+ * the shipped plot layout (factory.yml: pedestal 18,6, shop 20,6, clicks 16,6, viewpoint
  * 15,2) with the default cookie box. Does the floating cookie's box sit in front of the panels' clickable text, seen
  * from the viewpoint? Ground y = 0, frame yaw 0 (the viewer looks along +z), cookie and panels on the z = 0 plane.
  */

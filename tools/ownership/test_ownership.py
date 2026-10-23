@@ -55,21 +55,12 @@ class GlobTests(unittest.TestCase):
         self.assertTrue(lib.glob_match("docs/briefs/**", "docs/briefs/a.md"))
         self.assertFalse(lib.glob_match("docs/briefs/**", "docs/brief/a.md"))
 
-    def test_single_star_stays_in_one_segment(self):
-        self.assertTrue(lib.glob_match("design/*.md", "design/a.md"))
-        self.assertFalse(lib.glob_match("design/*.md", "design/x/a.md"))
-        self.assertTrue(lib.glob_match("resourcepack/assets/*/sounds/**", "resourcepack/assets/ns/sounds/a/b.ogg"))
-        self.assertFalse(lib.glob_match("resourcepack/assets/*/sounds/**", "resourcepack/assets/a/b/sounds/x.ogg"))
-
     def test_exclusion_and_last_match_wins(self):
         globs = ["a/**", "!a/b/**", "a/b/keep.txt"]
         self.assertTrue(lib.matches(globs, "a/x.txt"))
         self.assertFalse(lib.matches(globs, "a/b/x.txt"))
         self.assertTrue(lib.matches(globs, "a/b/keep.txt"))
         self.assertFalse(lib.matches(globs, "c.txt"))
-
-    def test_case_sensitive(self):
-        self.assertFalse(lib.glob_match("CLAUDE.md", "claude.md"))
 
     def test_validate_rejects_malformed_maps(self):
         for bad in ([], {}, {"orchestrator": {}, "agents": {}, "human_controlled": []},
@@ -103,15 +94,6 @@ class MapShapeTests(unittest.TestCase):
                           "or check out ../CookieMemory)")
         names = {f[:-3] for f in os.listdir(agent_dir) if f.endswith(".md")}
         self.assertEqual(names, set(lib.agents(DATA)))
-
-    def test_every_agent_owns_its_memory_folder(self):
-        for name, entry in lib.agents(DATA).items():
-            self.assertIn(f".claude/agent-memory/bakery-team-{name}/**", entry["paths"], name)
-
-    def test_emails_are_unique_and_bakery_domain(self):
-        emails = [DATA["orchestrator"]["email"]] + [a["email"] for a in lib.agents(DATA).values()]
-        self.assertEqual(len(emails), len(set(emails)))
-        self.assertTrue(all(e.endswith("@bakery.invalid") for e in emails))
 
     def test_no_file_in_repo_is_writable_by_two_agents_unintentionally(self):
         # Only the vfx tests may be shared (vfx-designer owns them, the tester may write tests).
@@ -168,35 +150,6 @@ class AgentDecisionTests(unittest.TestCase):
                           "design/sounds.md", "design/effects.md", "design/CREDITS.md",
                           "design/requirements.txt", "src/main/java/dev/x/Main.java")
 
-    def test_sound_designer(self):
-        self.assertAllowed(SOUND, "resourcepack/assets/cookie/sounds/click/a.ogg", "resourcepack/assets/cookie/sounds.json",
-                           "resourcepack/assets/cookie/lang/en_us.json", "src/main/resources/sounds.yml",
-                           "design/sound-scripts/a.py", "design/sound-tools/render.py", "design/sound-sources/x.wav",
-                           "design/sound-style-guide.md", "design/sound-lessons.md", "design/sounds.md",
-                           "design/CREDITS.md")
-        self.assertDenied(SOUND, "resourcepack/pack.mcmeta", "resourcepack/assets/cookie/textures/a.png",
-                          "src/main/resources/effects.yml", "design/effects.md", "design/test_cookie.md",
-                          "src/main/java/dev/x/Main.java")
-
-    def test_vfx_designer(self):
-        self.assertAllowed(VFX, "src/main/java/dev/x/vfx/Effects.java", "src/main/java/dev/x/vfx/shape/Ring.java",
-                           "src/test/java/dev/x/vfx/ShapeTest.java", "src/main/resources/effects.yml",
-                           "resourcepack/assets/minecraft/particles/p.json",
-                           "resourcepack/assets/minecraft/textures/particle/p.png", "design/vfx-scripts/a.py",
-                           "design/vfx-style-guide.md", "design/effects.md")
-        self.assertDenied(VFX, "src/main/java/dev/x/Main.java", "src/main/resources/sounds.yml",
-                          "resourcepack/pack.mcmeta", "design/sounds.md", "design/test_cookie.md")
-
-    def test_balance_designer(self):
-        self.assertAllowed(BALANCE, "src/main/resources/buildings.yml", "src/main/resources/upgrades.yml",
-                           "tools/balance/simulate.py", "docs/balance/model.md", "docs/balance/golden-values.json")
-        self.assertDenied(BALANCE, "tools/balance/test_model.py", "src/main/java/dev/x/Main.java",
-                          "src/test/java/dev/x/ATest.java", "src/main/resources/messages.yml", "docs/briefs/x.md")
-
-    def test_researcher(self):
-        self.assertAllowed(RESEARCH, "docs/research/topic.md")
-        self.assertDenied(RESEARCH, "docs/briefs/x.md", "src/main/java/A.java", "docs/reviews/x.md")
-
     def test_human_controlled_denied_for_every_agent(self):
         paths = [".claude/agents/plugin-coder.md", ".claude/skills/feature/SKILL.md", "docs/workflow.md",
                  ".claude/ownership.json", ".claude/ownership.local", ".claude/hooks/ownership.py",
@@ -208,17 +161,6 @@ class AgentDecisionTests(unittest.TestCase):
         for agent in ("general-purpose", "statusline-setup", "made-up"):
             self.assertDenied(agent, "src/main/java/A.java", "README.md", "docs/research/x.md")
             self.assertEqual(lib.decide(DATA, agent, None)[0], lib.ALLOW)
-
-    def test_deny_reason_names_the_owner(self):
-        decision, reason = lib.decide(DATA, CODER, "src/main/resources/sounds.yml")
-        self.assertEqual(decision, lib.DENY)
-        self.assertIn("sound-designer", reason)
-        _, reason = lib.decide(DATA, SOUND, "src/main/java/dev/x/vfx/Effects.java")
-        self.assertIn("vfx-designer", reason)
-        _, reason = lib.decide(DATA, CODER, ".claude/settings.json")
-        self.assertIn("human-controlled", reason)
-        _, reason = lib.decide(DATA, CODER, "some/unowned/file.txt")
-        self.assertIn("unowned", reason)
 
     def test_outside_repo_allowed_for_everyone(self):
         for agent in list(lib.agents(DATA)) + [None, ""]:
@@ -235,9 +177,6 @@ class OrchestratorTests(unittest.TestCase):
         for p in ("src/main/java/A.java", "src/test/java/ATest.java", "pom.xml", "mise.toml",
                   "resourcepack/pack.mcmeta", "docs/reviews/x.md", "tools/pack.py", "docs/research/x.md"):
             self.assertEqual(verdict(None, p), lib.DENY, p)
-
-    def test_empty_agent_type_is_orchestrator(self):
-        self.assertEqual(verdict("", "CLAUDE.md"), lib.ALLOW)
 
 
 class PathTests(unittest.TestCase):
@@ -258,23 +197,11 @@ class PathTests(unittest.TestCase):
         self.assertEqual(self.rel(f"{self.wt}/src/main/A.java"), "src/main/A.java")
         self.assertEqual(self.rel(f"{self.wt}/.claude/ownership.json"), ".claude/ownership.json")
 
-    def test_relative_paths_resolve_against_cwd(self):
-        self.assertEqual(self.rel("src/main/A.java", cwd=self.wt), "src/main/A.java")
-        self.assertEqual(self.rel("src/main/A.java", cwd=self.proj), "src/main/A.java")
-        self.assertEqual(self.rel("src/main/A.java"), "src/main/A.java")
-        self.assertEqual(self.rel("../../pom.xml", cwd=f"{self.wt}/src/main"), "pom.xml")
-
     def test_dotdot_cannot_escape_or_disguise(self):
         self.assertEqual(self.rel(f"{self.proj}/docs/briefs/../../src/main/A.java"), "src/main/A.java")
         self.assertEqual(self.rel(f"{self.wt}/docs/briefs/../../.claude/settings.json"), ".claude/settings.json")
         self.assertIsNone(self.rel(f"{self.proj}/../outside.txt"))
         self.assertIsNone(self.rel(f"{self.wt}/../../../../outside.txt"))
-
-    def test_outside_and_degenerate(self):
-        self.assertIsNone(self.rel("/etc/passwd"))
-        self.assertIsNone(self.rel(os.path.expanduser("~/.claude/x.md")))
-        self.assertIsNone(self.rel(""))
-        self.assertIsNone(self.rel(self.proj))
 
     def test_sibling_directory_with_same_prefix_is_outside(self):
         self.assertIsNone(self.rel(self.proj + "-other/src/A.java"))
@@ -323,19 +250,10 @@ class CheckLogicTests(unittest.TestCase):
         self.assertEqual((path, who), ("tools/ownership/test_ownership.py", CODER))
         self.assertIn("plugin-tester", owner)
 
-    def test_violation_among_good_files_is_listed_once(self):
-        res = self.run_check([commit("wesly@bakery.invalid", ["src/main/java/A.java", "src/main/resources/sounds.yml"])])
-        self.assertEqual([v[1] for v in res["violations"]], ["src/main/resources/sounds.yml"])
-        self.assertIn("sound-designer", res["violations"][0][3])
-
     def test_unknown_author_fails_for_every_file(self):
         res = self.run_check([commit("stranger@example.com", ["README.md", "src/main/java/A.java"])])
         self.assertEqual(len(res["violations"]), 2)
         self.assertTrue(all(v[2] == "unknown author" for v in res["violations"]))
-
-    def test_email_is_case_insensitive(self):
-        res = self.run_check([commit("Wesly@Bakery.Invalid", ["pom.xml"])])
-        self.assertEqual(res["violations"], [])
 
     def test_human_controlled(self):
         files = [".claude/hooks/ownership.py"]
@@ -348,12 +266,6 @@ class CheckLogicTests(unittest.TestCase):
         res = self.run_check([commit("rick@bakery.invalid", ["docs/workflow.md"])])
         self.assertEqual(res["violations"], [])
         self.assertEqual(len(res["human_review"]), 1)
-
-    def test_human_approved_does_not_excuse_ordinary_violations(self):
-        res = self.run_check([commit("wesly@bakery.invalid", ["src/main/resources/sounds.yml"])], approved=True)
-        self.assertEqual(len(res["violations"]), 1)
-        res = self.run_check([commit("stranger@example.com", [".claude/settings.json"])], approved=True)
-        self.assertEqual(len(res["violations"]), 1)
 
     def test_orchestrator_violation(self):
         res = self.run_check([commit("rick@bakery.invalid", ["src/main/java/A.java"])])
@@ -459,11 +371,6 @@ class CheckGitIntegrationTests(unittest.TestCase):
         for needle in ("sounds.yml", "wesly@bakery.invalid", "sound-designer", "coder touches sounds"):
             self.assertIn(needle, proc.stdout)
 
-    def test_unknown_author_fails(self):
-        proc = self.run_check("f/stranger", "--base", "feature/f")
-        self.assertEqual(proc.returncode, 1)
-        self.assertIn("unknown author", proc.stdout)
-
     def test_human_controlled_needs_flag(self):
         proc = self.run_check("f/human", "--base", "feature/f")
         self.assertEqual(proc.returncode, 1)
@@ -471,15 +378,6 @@ class CheckGitIntegrationTests(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, proc.stdout)
         self.assertIn("Needs human review", proc.stdout)
         self.assertIn(".claude/settings.json", proc.stdout)
-
-    def test_base_defaults_to_current_branch(self):
-        proc = self.run_check("f/bad")
-        self.assertEqual(proc.returncode, 1)
-        self.assertIn("feature/f..f/bad", proc.stdout)
-
-    def test_usage_errors_exit_2(self):
-        self.assertEqual(self.run_check("no/such-branch", "--base", "feature/f").returncode, 2)
-        self.assertEqual(self.run_check("f/bad", "--base", "no/such-base").returncode, 2)
 
     def test_rules_come_from_project_dir_first(self):
         other = tempfile.mkdtemp()

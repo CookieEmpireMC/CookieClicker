@@ -16,3 +16,5 @@
 - [Ledger: building-roster integration](ledger-building-roster-integration.md) — feature-level review at d158726 READY; tests added; open LOWs
 - [Ledger: panel-align](ledger-panel-align.md) — 1.2.1 text column: NOT READY at ff9f3e4, READY after 0190c7f + tests e8b5495 (683 green)
 - [Ledger: tidy review](ledger-tidy-review.md) — architecture/standards/perf review at 8940d31; TidyPerfTest recipe; open checks for branch reviews
+- [Test pruning: important parts only](feedback-important-tests-only.md) — user rule 2026-10-23: keep/drop list; 582->301 Java, 146->73 tools
+- [Prune tooling gotchas](prune-gotchas.md) — sandbox blocks loops/vars with git; Java/Python method-removal pitfalls; test counts after prune

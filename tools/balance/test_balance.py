@@ -53,55 +53,14 @@ class CritMathTest(TempDirCase):
         self.assertEqual(model.click_value(eco, s, True), 10.0)
         self.assertAlmostEqual(model.expected_click(eco, s), 1.45, places=12)
 
-    def test_crit_multiplies_cps_fraction_part(self):
-        d = write_config(self.tmp(), "base-power: 1\n  crit-chance: 0.1\n  crit-multiplier: 5", """upgrades:
-  u:
-    cost: 1
-    effect: { type: click-cps-fraction, value: 0.1 }
-""")
-        eco = model.load(d)
-        state = model.State(owned={"a": 20}, upgrades={"u"})
-        cps = 20 * 0.5
-        power = 1 + 0.1 * cps                       # 2.0
-        self.assertAlmostEqual(model.click_power(eco, state), power)
-        self.assertAlmostEqual(model.click_value(eco, state, True), power * 5)   # whole click, fraction included
-        self.assertAlmostEqual(model.expected_click(eco, state), power * (1 + 0.1 * 4))
-
-    def test_missing_crit_fields_mean_no_crits(self):
-        eco = model.load(write_config(self.tmp()))
-        self.assertEqual(eco.crit_chance, 0.0)
-        self.assertEqual(eco.crit_multiplier, 1.0)
-        self.assertEqual(model.crit_factor(eco), 1.0)
-        self.assertEqual(model.click_value(eco, model.State(), True), 1.0)
-
     def test_invalid_crit_chance(self):
         for bad in ("1.5", "-0.1"):
             with self.subTest(chance=bad), self.assertRaises(model.ConfigError):
                 model.load(write_config(self.tmp(), f"base-power: 1\n  crit-chance: {bad}"))
 
-    def test_invalid_crit_multiplier(self):
-        with self.assertRaises(model.ConfigError):
-            model.load(write_config(self.tmp(), "base-power: 1\n  crit-multiplier: 0.5"))
-
-    def test_boundary_values_accepted(self):
-        eco = model.load(write_config(self.tmp(), "base-power: 1\n  crit-chance: 1\n  crit-multiplier: 1"))
-        self.assertEqual(model.crit_factor(eco), 1.0)
-
-    def test_empty_upgrades_map_is_valid(self):
-        d = write_config(self.tmp())  # upgrades: {} (the shipped file now has upgrades)
-        self.assertEqual(model.load(d).upgrades, {})
-
 
 class SeriesMathTest(TempDirCase):
     """model.md "Bulk cost and Max": series_cost / series_max (the simulator side of the Java BulkMath)."""
-
-    def test_k1_is_the_single_cost_and_the_batch_is_rounded_once(self):
-        for base, growth in [(15, 1.15), (50, 1.15), (1, 1.25), (10, 1.0)]:
-            for owned in range(0, 101, 10):
-                self.assertEqual(model.series_cost(base, growth, owned, 1), math.ceil(base * growth ** owned))
-        # 15 × (1.15¹⁰ − 1) / 0.15 = 304.56 → 305 (ten singles rounded separately would be 306)
-        self.assertEqual(model.series_cost(15, 1.15, 0, 10), 305)
-        self.assertEqual(model.series_cost(15, 1.15, 0, 0), 0)
 
     def test_series_max_matches_a_brute_force_count(self):
         rnd = random.Random(20261021)
@@ -116,11 +75,6 @@ class SeriesMathTest(TempDirCase):
             got = model.series_max(base, growth, owned, cap, pouch)
             self.assertEqual(got, expected, (base, growth, owned, cap, pouch))
 
-    def test_series_max_stops_at_the_cap(self):
-        self.assertEqual(model.series_max(10, 1.15, 0, 3, 1e18), 3)
-        self.assertEqual(model.series_max(10, 1.15, 0, 0, 1e18), 0)  # at max-level
-        self.assertEqual(model.series_max(1, 1.0, 0, 10**9, 1e300), model.MAX_BULK)  # hard cap, linear costs
-
 
 class DeadZoneTest(unittest.TestCase):
     ZONES = [(10, 30), (850, 200), (1000, 500)]
@@ -133,13 +87,6 @@ class DeadZoneTest(unittest.TestCase):
 
     def test_windowed_cuts_zone_at_edge(self):
         self.assertEqual(bm.longest_dead_zone(self.result(self.ZONES), 15), 51)
-
-    def test_empty(self):
-        self.assertEqual(bm.longest_dead_zone(self.result([])), 0)
-        self.assertEqual(bm.longest_dead_zone(self.result([]), 15), 0)
-
-    def test_zone_fully_outside_window_ignored(self):
-        self.assertEqual(bm.longest_dead_zone(self.result([(2000, 99)]), 15), 0)
 
 
 class CliTest(TempDirCase):
@@ -172,12 +119,6 @@ class CliTest(TempDirCase):
         r = self.run_check(write_config(self.tmp(), "base-power: 1\n  crit-chance: 2"))
         self.assertEqual(r.returncode, 1)
         self.assertIn("Balance config error", r.stdout)
-
-    def test_check_writes_nothing(self):
-        before = sorted(p.name for p in (ROOT / "docs" / "balance").iterdir())
-        self.run_check(CONFIGS)
-        self.assertEqual(before, sorted(p.name for p in (ROOT / "docs" / "balance").iterdir()))
-
 
 
 class MilestoneTest(TempDirCase):
@@ -229,16 +170,6 @@ class MilestonePushTest(TempDirCase):
         self.assertEqual((total, kind, item, count), (22, "building", "a", 2))
         self.assertAlmostEqual(score, 5.5)
 
-    def test_no_push_beyond_the_lookahead(self):
-        _, total, _, _, count = self.best("milestones: [10]\n" + self.ONE)
-        self.assertEqual((total, count), (10, 1))
-
-    def test_push_uses_the_building_own_milestones(self):
-        # the top-level [10] is out of reach, the building's own [2] is not
-        text = "milestones: [10]\n" + self.ONE + "    milestones: [2]\n"
-        _, total, _, _, count = self.best(text)
-        self.assertEqual((total, count), (22, 2))
-
 
 class BakedAndMinSecondsTest(unittest.TestCase):
     """targets.md metrics `baked` (cookies baked in total) and the `min-seconds` floor."""
@@ -260,16 +191,10 @@ class BakedAndMinSecondsTest(unittest.TestCase):
         self.assertEqual(bm.baked_time(r, 5.5), 3)
         self.assertIsNone(bm.baked_time(r, 11.0))
 
-    def test_min_only_never_reached_passes(self):
-        self.assertTrue(self.ok({"metric": "baked", "cookies": 10, "min-seconds": 5}, [0.0] * 5))
-
     def test_min_only_reached_before_the_floor_fails(self):
         target = {"metric": "baked", "cookies": 10, "min-seconds": 5}
         self.assertFalse(self.ok(target, self.reached_at(4)))
         self.assertTrue(self.ok(target, self.reached_at(5)))   # the floor itself is allowed
-
-    def test_max_only_never_reached_fails(self):
-        self.assertFalse(self.ok({"metric": "baked", "cookies": 10, "max-seconds": 100}, [0.0] * 5))
 
     def test_min_and_max_window(self):
         target = {"metric": "baked", "cookies": 10, "min-seconds": 2, "max-seconds": 5}
@@ -277,11 +202,6 @@ class BakedAndMinSecondsTest(unittest.TestCase):
         self.assertFalse(self.ok(target, self.reached_at(1)))
         self.assertFalse(self.ok(target, self.reached_at(6)))
         self.assertFalse(self.ok(target, [0.0] * 5))
-
-    def test_target_needs_a_limit(self):
-        with self.assertRaises(bm.ConfigError):   # evaluate() raises the ConfigError that main.py imports
-            bm.evaluate(None, {"targets": [{"id": "t", "profiles": ["p"], "metric": "baked", "cookies": 10}]},
-                        {"p": bm.Result(profile=bm.Profile("p", 1), baked=[])})
 
 
 class GoldenValuesTest(unittest.TestCase):
@@ -297,22 +217,6 @@ class GoldenValuesTest(unittest.TestCase):
 
     def test_regenerates_identically(self):
         self.assertEqual(self.regenerated, self.committed)
-
-    def test_click_keys_present(self):
-        click = self.committed["click"]
-        for key in ("base-power", "crit-chance", "crit-multiplier", "expected-factor", "base-state"):
-            self.assertIn(key, click)
-        for key in ("click-power", "normal-click", "crit-click", "expected-click"):
-            self.assertIn(key, click["base-state"])
-        self.assertAlmostEqual(click["expected-factor"], 1.45, places=12)
-        self.assertEqual(click["base-state"]["crit-click"], 10.0)
-
-    def test_state_snapshots_have_click_keys(self):
-        self.assertTrue(self.committed["states"])
-        for s in self.committed["states"]:
-            for key in ("click-power", "normal-click", "crit-click", "expected-click"):
-                self.assertIn(key, s)
-            self.assertTrue(math.isclose(s["expected-click"], s["click-power"] * 1.45, rel_tol=1e-9))
 
     def test_costs_match_formula(self):
         for bid, b in self.eco.buildings.items():

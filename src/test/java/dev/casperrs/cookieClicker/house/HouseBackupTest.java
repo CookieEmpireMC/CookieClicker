@@ -2,9 +2,7 @@ package dev.casperrs.cookieClicker.house;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.casperrs.cookieClicker.plot.Plot;
 import java.util.ArrayList;
@@ -74,30 +72,6 @@ class HouseBackupTest {
     }
 
     @Test
-    void identicalBlocksAreNotBackedUp() {
-        FakeWorld w = new FakeWorld();
-        w.blocks.put("10,64,10", "minecraft:stone");
-        HouseBackup b = capture(w, List.of(new HouseBackup.Change(10, 64, 10, "minecraft:stone"),
-                new HouseBackup.Change(11, 64, 10, "minecraft:dirt")));
-        assertEquals(1, b.cells().size());
-        assertEquals(11, b.cells().getFirst().x());
-        assertEquals("minecraft:air", b.cells().getFirst().oldData());
-    }
-
-    @Test
-    void captureDoesNotModifyTheWorldAndCopiesItsArrays() {
-        FakeWorld w = new FakeWorld();
-        int[] corner = {1, 2, 3};
-        int[] size = {4, 5, 6};
-        HouseBackup b = HouseBackup.capture("p", "d", "minecraft:overworld", 1L, corner, size, null, List.of(), w);
-        corner[0] = 99;
-        size[0] = 99;
-        assertEquals(0, w.sets);
-        assertArrayEquals(new int[] {1, 2, 3}, b.corner());
-        assertArrayEquals(new int[] {4, 5, 6}, b.size());
-    }
-
-    @Test
     void survivesAYamlRoundTripThroughTheRealFileFormat() throws Exception {
         FakeWorld w = new FakeWorld();
         w.blocks.put("10,64,10", "minecraft:oak_stairs[facing=north,half=top,shape=straight,waterlogged=false]");
@@ -128,14 +102,6 @@ class HouseBackupTest {
     }
 
     @Test
-    void noPreviousChimneyStaysNull() {
-        HouseBackup b = HouseBackup.capture("p", "d", "minecraft:overworld", 1L, new int[3], new int[] {1, 1, 1}, null,
-                List.of(), new FakeWorld());
-        assertTrue(!b.toMap().containsKey("previous-chimney"));
-        assertNull(HouseBackup.fromMap(b.toMap()).previousChimney());
-    }
-
-    @Test
     void fromMapRejectsFilesThisClassDidNotWrite() {
         Map<String, Object> ok = new HouseBackup("p", "d", "minecraft:overworld", 5L, new int[3], new int[] {1, 1, 1}, null,
                 List.of(new HouseBackup.Cell(0, 0, 0, "minecraft:stone"))).toMap();
@@ -157,23 +123,4 @@ class HouseBackupTest {
         assertThrows(IllegalArgumentException.class, () -> HouseBackup.fromMap(badCorner));
     }
 
-    @Test
-    void largePasteBackupRoundTripsAllCells() {
-        FakeWorld w = new FakeWorld();
-        List<HouseBackup.Change> changes = new ArrayList<>();
-        for (int x = 0; x < 20; x++) {
-            for (int y = 0; y < 10; y++) {
-                for (int z = 0; z < 20; z++) {
-                    w.blocks.put(FakeWorld.key(x, y, z), (x + y + z) % 3 == 0 ? "minecraft:dirt" : "minecraft:stone");
-                    changes.add(new HouseBackup.Change(x, y, z, "minecraft:glass"));
-                }
-            }
-        }
-        Map<String, String> before = new HashMap<>(w.blocks);
-        HouseBackup b = capture(w, changes);
-        apply(w, changes);
-        HouseBackup viaYaml = HouseBackup.fromMap(b.toMap());
-        viaYaml.restoreCells(w);
-        assertEquals(before, w.blocks);
-    }
 }

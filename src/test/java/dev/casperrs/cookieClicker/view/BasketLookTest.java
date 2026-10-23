@@ -45,14 +45,6 @@ class BasketLookTest {
     }
 
     @Test
-    void aBigJumpShowsTheLookItReachesInOneStep() {
-        // up: wicker_0 straight to bushel_3 (no tier-by-tier stepping)
-        assertEquals(new BasketLook(1, 3), BasketLook.pick(2e8, new BasketLook(0, 0), B));
-        // down: golden_2 falls four looks to bushel_3 in one refresh
-        assertEquals(new BasketLook(1, 3), BasketLook.pick(1e8, new BasketLook(2, 2), B));
-    }
-
-    @Test
     void zeroNegativeNaNAndHugeValuesStayInRange() {
         assertEquals(0, BasketLook.level(0, B));
         assertEquals(0, BasketLook.level(-5, B));
@@ -64,22 +56,4 @@ class BasketLookTest {
         assertEquals(new BasketLook(2, 4), BasketLook.ofLevel(99));
     }
 
-    @Test
-    void idIsTheModelStringAndEveryLevelRoundTrips() {
-        assertEquals("golden_4", new BasketLook(2, 4).id());
-        assertEquals("bushel_0", new BasketLook(1, 0).id());
-        for (int level = 0; level < BasketLook.LEVELS; level++) {
-            assertEquals(level, BasketLook.ofLevel(level).level());
-        }
-    }
-
-    @Test
-    void cookieFloatsAboveTheLookAndIsCappedToStayClickable() {
-        // wicker_0 on the pedestal: top 0.281 + gap 0.1 + half the 1.4 cookie + bob 0.1
-        assertEquals(1.181, new BasketLook(0, 0).cookieCentre(B, 0, 1.4, 0.1), 1e-9);
-        // golden_4 (top 1.188) still clears the default 2.2 cap
-        assertEquals(2.088, new BasketLook(2, 4).cookieCentre(B, 0, 1.4, 0.1), 1e-9);
-        // a raised pedestal would float the cookie out of reach: capped at cookie-max-height
-        assertEquals(B.cookieMaxHeight(), new BasketLook(2, 4).cookieCentre(B, 1.5, 1.4, 0.1), 1e-9);
-    }
 }

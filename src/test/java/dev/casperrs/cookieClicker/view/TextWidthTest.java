@@ -1,12 +1,9 @@
 package dev.casperrs.cookieClicker.view;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.casperrs.cookieClicker.config.StationVisualSettings.Offset;
 import java.util.List;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.junit.jupiter.api.Test;
 
@@ -29,34 +26,10 @@ class TextWidthTest {
     }
 
     @Test
-    void boldAddsOnePixelPerGlyph() {
-        assertEquals(7, TextWidth.advance('A', true));
-        assertEquals(14, TextWidth.width(List.of(new TextWidth.Run("ab", true)), 1000));
-        assertEquals(12, TextWidth.width(plain("ab"), 1000));
-    }
-
-    @Test
-    void unknownGlyphsOverEstimate() {
-        assertEquals(6, TextWidth.advance('é', false));
-        assertEquals(9, TextWidth.advance('中', false));
-    }
-
-    @Test
-    void widthSumsAdvancesAndEmptyIsZero() {
-        assertEquals(24, TextWidth.width(plain("Hello"), 1000)); // 6+6+3+3+6
-        assertEquals(0, TextWidth.width(plain(""), 120));
-    }
-
-    @Test
     void wrapsAtTheLastSpaceAndDropsIt() {
         // "aaa bbb" at 20 px: 18, space makes 22 > 20 -> break at the space
         assertEquals(List.of(18, 18), TextWidth.lineWidths(plain("aaa bbb"), 20));
         assertEquals(18, TextWidth.width(plain("aaa bbb"), 20));
-    }
-
-    @Test
-    void textExactlyAtLineWidthDoesNotWrap() {
-        assertEquals(List.of(18), TextWidth.lineWidths(plain("aaa"), 18));
     }
 
     @Test
@@ -65,47 +38,12 @@ class TextWidthTest {
     }
 
     @Test
-    void singleGlyphWiderThanTheLineStillTakesTheLine() {
-        assertEquals(9, TextWidth.width(plain("中中"), 5)); // trailing empty line (width 0) is harmless
-    }
-
-    @Test
     void newlinesStartANewLine() {
         assertEquals(List.of(6, 12), TextWidth.lineWidths(plain("a\nab"), 120));
     }
 
-    @Test
-    void wrappedBlockIsAsWideAsItsWidestLine() {
-        assertEquals(24, TextWidth.width(plain("Hello wi"), 30)); // "Hello"=24, "wi"=8
-    }
-
-    @Test
-    void boldStateInheritsAndOverridesAcrossChildren() {
-        Component c = Component.text("a", Style(true))
-                .append(Component.text("b"))
-                .append(Component.text("c").decoration(TextDecoration.BOLD, false))
-                .append(Component.text("d", NamedTextColor.RED));
-        List<TextWidth.Run> runs = TextWidth.runs(c);
-        assertEquals(List.of(new TextWidth.Run("a", true), new TextWidth.Run("b", true),
-                new TextWidth.Run("c", false), new TextWidth.Run("d", true)).toString(), runs.toString());
-    }
-
     private static net.kyori.adventure.text.format.Style Style(boolean bold) {
         return net.kyori.adventure.text.format.Style.style(TextDecoration.BOLD.withState(bold));
-    }
-
-    @Test
-    void widthOfComponentUsesFlattenedText() {
-        Component c = Component.text("He").append(Component.text("llo"));
-        assertEquals(24, TextWidth.width(c, 120));
-    }
-
-    @Test
-    void shiftIsHalfWidthTimesScaleOver40() {
-        assertEquals(0f, TextWidth.leftEdgeShift(0, 0.5f));
-        assertEquals(60f / 2 * 0.5f / 40f, TextWidth.leftEdgeShift(60, 0.5f), 1e-6);
-        assertEquals(0.75f, TextWidth.leftEdgeShift(120, 0.5f), 1e-6); // a full line at scale 0.5
-        assertEquals(1.5f, TextWidth.leftEdgeShift(120, 1f), 1e-6);
     }
 
     @Test
@@ -130,15 +68,4 @@ class TextWidthTest {
         }
     }
 
-    @Test
-    void paddingNeverWrapsALineOrAddsOne() {
-        // the padded row must stay in its line width: the client would otherwise wrap the padding onto a new line
-        for (String s : List.of("Hello", "Bake 250M to unlock", "aaaa bbbb cccc dddd eeee", "中文字")) {
-            Component text = Component.text(s);
-            List<Integer> before = TextWidth.lineWidths(TextWidth.runs(text), 120);
-            List<Integer> after = TextWidth.lineWidths(TextWidth.runs(TextPadding.right(text, 1, 116, 120)), 120);
-            assertEquals(before.size(), after.size(), s);
-            assertTrue(after.stream().allMatch(w -> w <= 120), s + " " + after);
-        }
-    }
 }

@@ -61,7 +61,7 @@ class ShippedContentConsistencyTest {
             assertTrue(sounds.getString(event + ".fallback").startsWith("minecraft:"));
         }
         assertTrue(soundsJson.getAsJsonObject("ui.cookie_click").getAsJsonArray("sounds").size() >= 3,
-                "brief: 3+ click variants");
+                "3+ click variants");
     }
 
     @Test

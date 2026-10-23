@@ -7,7 +7,7 @@ import java.util.List;
 import org.joml.Quaternionf;
 import org.junit.jupiter.api.Test;
 
-/** upgrade-holograms: the spin/bob a pop step carries is the segment's value for the step's end tick. */
+/** the spin/bob a pop step carries is the segment's value for the step's end tick. */
 class CookiePopMotionTest {
 
     private static final CookieMotion MOTION = new CookieMotion(120, 0.05, 80, 10);

@@ -18,7 +18,6 @@ class EconomyTest {
 
     private final Economy economy = new Economy(config(), fixed(0.99));
 
-    // ---- costs ----
 
     @Test
     void firstCostIsBaseCostRoundedUp() {
@@ -42,23 +41,6 @@ class EconomyTest {
         assertEquals(0, economy.bulkCost("baker", 5, 0));
     }
 
-    @Test
-    void unknownBuildingCostsInfinity() {
-        assertEquals(Double.POSITIVE_INFINITY, economy.nextCost(new CookiePouch(), "nope"));
-    }
-
-    @Test
-    void costsAreWholeNumbersAndNonDecreasingForZeroToHundredOwned() {
-        double prev = 0;
-        for (int n = 0; n <= 100; n++) {
-            double c = economy.bulkCost("baker", n, 1);
-            assertEquals(Math.floor(c), c);
-            assertTrue(c >= prev, "cost went down at " + n);
-            prev = c;
-        }
-    }
-
-    // ---- CPS / click power ----
 
     @Test
     void cpsIsOwnedTimesBaseCps() {
@@ -93,14 +75,6 @@ class EconomyTest {
     }
 
     @Test
-    void unknownBuildingOrZeroOwnedHasNoCps() {
-        CookiePouch p = pouch(0, 0, Map.of("ghost", 5));
-        assertEquals(0, economy.buildingCps(p, "ghost"));
-        assertEquals(0, economy.buildingCps(p, "baker"));
-        assertEquals(0, economy.totalCps(p));
-    }
-
-    @Test
     void clickPowerCombinesAddMultiplierAndCpsFraction() {
         assertEquals(1, economy.clickPower(new CookiePouch()));
         assertEquals(2, economy.clickPower(pouch(0, 0, Map.of(), "plus")));
@@ -110,15 +84,6 @@ class EconomyTest {
         assertEquals(4.1, economy.clickPower(p), 1e-12);
     }
 
-    @Test
-    void upgradeIdsMissingFromConfigAreIgnoredButKept() {
-        CookiePouch p = pouch(0, 0, Map.of("ghost", 3), "removed_upgrade");
-        assertEquals(1, economy.clickPower(p));
-        assertTrue(p.hasUpgrade("removed_upgrade"));
-        assertEquals(3, p.owned("ghost"));
-    }
-
-    // ---- clicks and crits ----
 
     @Test
     void normalClickAddsToPouchAndBaked() {
@@ -142,29 +107,6 @@ class EconomyTest {
     }
 
     @Test
-    void critBoundaryIsExclusive() {
-        assertTrue(new Economy(config(), fixed(0.0499999)).click(new CookiePouch()).crit());
-        assertFalse(new Economy(config(), fixed(0.05)).click(new CookiePouch()).crit());
-    }
-
-    @Test
-    void critIncludesTheCpsFraction() {
-        Economy e = new Economy(config(), fixed(0.0));
-        CookiePouch p = pouch(0, 0, Map.of("baker", 10), "plus", "mitts", "frac");
-        ClickResult r = e.click(p);
-        assertTrue(r.crit());
-        assertEquals(41.0, r.amount(), 1e-9);
-        assertEquals(41.0, p.pouch(), 1e-9);
-    }
-
-    @Test
-    void zeroCritChanceNeverCritsEvenWithLowRandom() {
-        EconomyConfig c = config();
-        EconomyConfig noCrit = new EconomyConfig(c.costGrowth(), c.basePower(), 0, 10, c.buildings(), c.upgrades());
-        assertFalse(new Economy(noCrit, fixed(0.0)).click(new CookiePouch()).crit());
-    }
-
-    @Test
     void purchasesDoNotTouchBaked() {
         CookiePouch p = pouch(100, 100, Map.of());
         assertEquals(PurchaseResult.BOUGHT, economy.buyBuilding(p, "baker"));
@@ -173,7 +115,6 @@ class EconomyTest {
         assertEquals(1, p.owned("baker"));
     }
 
-    // ---- production ----
 
     @Test
     void produceAddsCpsToPouchAndBaked() {
@@ -185,14 +126,6 @@ class EconomyTest {
         assertEquals(3.5, p.pouch(), 1e-12);
     }
 
-    @Test
-    void produceWithNoBuildingsAddsNothing() {
-        CookiePouch p = new CookiePouch();
-        assertEquals(0, economy.produce(p, 1));
-        assertEquals(0, p.pouch());
-    }
-
-    // ---- unlocks and buying ----
 
     @Test
     void buildingUnlocksAtBakedThresholdAndStaysUnlockedByBaked() {
@@ -219,14 +152,6 @@ class EconomyTest {
     }
 
     @Test
-    void exactlyEnoughCookiesBuys() {
-        CookiePouch p = pouch(15, 15, Map.of());
-        assertTrue(economy.canAfford(p, "baker"));
-        assertEquals(PurchaseResult.BOUGHT, economy.buyBuilding(p, "baker"));
-        assertEquals(0, p.pouch());
-    }
-
-    @Test
     void upgradeUnlockRulesAndOneTimePurchase() {
         CookiePouch p = pouch(1000, 100, Map.of());
         assertFalse(economy.upgradeUnlocked(p, "mitts")); // needs 1 baker
@@ -242,7 +167,6 @@ class EconomyTest {
         assertEquals(PurchaseResult.CANT_AFFORD, economy.buyUpgrade(pouch(10, 100, Map.of()), "plus"));
     }
 
-    // ---- disabled / reload ----
 
     @Test
     void disabledConfigGivesNothingAndSellsNothing() {
@@ -267,7 +191,6 @@ class EconomyTest {
         assertSame(e.config(), e.config());
     }
 
-    // ---- saturation / NaN ----
 
     @Test
     void pouchSaturatesInsteadOfOverflowing() {
@@ -276,18 +199,6 @@ class EconomyTest {
         assertEquals(Double.MAX_VALUE, p.pouch());
         assertEquals(Double.MAX_VALUE, p.baked());
         assertTrue(Double.isFinite(p.pouch()));
-    }
-
-    @Test
-    void hugeMultipliersStayFinite() {
-        EconomyConfig c = config();
-        EconomyConfig big = new EconomyConfig(c.costGrowth(), 1e308, 1, 1e10, c.buildings(), c.upgrades());
-        Economy e = new Economy(big, fixed(0.0));
-        CookiePouch p = new CookiePouch();
-        ClickResult r = e.click(p);
-        assertEquals(Double.MAX_VALUE, r.amount());
-        assertTrue(Double.isFinite(p.pouch()));
-        assertTrue(Double.isFinite(e.clickPower(p)));
     }
 
     @Test
@@ -303,17 +214,6 @@ class EconomyTest {
     }
 
     @Test
-    void safeMathBehaviour() {
-        assertEquals(0, SafeMath.sanitize(Double.NaN));
-        assertEquals(0, SafeMath.sanitize(-1));
-        assertEquals(Double.MAX_VALUE, SafeMath.sanitize(Double.POSITIVE_INFINITY));
-        assertEquals(5, SafeMath.add(2, 3));
-        assertEquals(Double.MAX_VALUE, SafeMath.add(Double.MAX_VALUE, Double.MAX_VALUE));
-        assertEquals(2, SafeMath.add(2, Double.NaN));
-        assertEquals(0, SafeMath.multiply(Double.POSITIVE_INFINITY, 0));
-    }
-
-    @Test
     void snapshotIsADetachedCopy() {
         CookiePouch p = pouch(10, 10, Map.of("baker", 1));
         PouchSnapshot s = p.snapshot();
@@ -322,7 +222,6 @@ class EconomyTest {
         assertEquals(1, s.owned().get("baker"));
     }
 
-    // ---- bulk buys, Max and repeatable upgrades (model.md "Bulk cost and Max") ----
 
     private final Economy repeatable = new Economy(EconomyTestSupport.repeatableConfig(), fixed(0.99));
 
@@ -350,18 +249,6 @@ class EconomyTest {
     }
 
     @Test
-    void badCountsLockedAndUnknownChangeNothing() {
-        CookiePouch p = pouch(1_000_000, 1_000_000, Map.of());
-        assertEquals(PurchaseResult.BAD_COUNT, economy.buyBuildings(p, "baker", 0).result());
-        assertEquals(PurchaseResult.BAD_COUNT, economy.buyBuildings(p, "baker", -3).result());
-        assertEquals(PurchaseResult.BAD_COUNT, economy.buyBuildings(p, "baker", BulkMath.MAX_BULK + 1).result());
-        assertEquals(PurchaseResult.LOCKED, economy.buyBuildings(pouch(1e6, 10, Map.of()), "farm", 1).result()); // needs baked 50
-        assertEquals(PurchaseResult.UNKNOWN, economy.buyBuildings(p, "nope", 1).result());
-        assertEquals(1_000_000, p.pouch());
-        assertEquals(0, p.owned("baker"));
-    }
-
-    @Test
     void maxBuysTheMostAffordableOrReportsWhyNothingWas() {
         CookiePouch p = pouch(100, 100, Map.of());
         assertEquals(4, economy.maxAffordableBuildings(p, "baker")); // ×4 costs 75, ×5 costs 102
@@ -375,19 +262,6 @@ class EconomyTest {
         assertEquals(PurchaseResult.CANT_AFFORD, none.result());
         assertEquals(5, poor.pouch());
         assertEquals(0, poor.owned("baker"));
-    }
-
-    @Test
-    void oneTimeUpgradeIsBoughtOnceWhateverTheCount() {
-        CookiePouch p = pouch(1000, 100, Map.of("baker", 1));
-        BulkPurchase r = economy.buyUpgrades(p, "mitts", 5);
-        assertEquals(PurchaseResult.BOUGHT, r.result());
-        assertEquals(1, r.count());
-        assertEquals(100, r.cost());
-        assertEquals(900, p.pouch());
-        assertEquals(1, p.upgradeLevel("mitts"));
-        assertEquals(PurchaseResult.ALREADY_OWNED, economy.buyUpgrades(p, "mitts", 5).result());
-        assertEquals(900, p.pouch());
     }
 
     @Test
@@ -406,17 +280,6 @@ class EconomyTest {
         assertEquals(313, repeatable.buyUpgrades(p, "strength", 1).cost());
         assertEquals(3, p.upgradeLevel("strength"));
         assertEquals(PurchaseResult.MAX_LEVEL, repeatable.buyUpgrades(p, "strength", 1).result());
-    }
-
-    @Test
-    void maxUpgradeStopsAtMaxLevelAndThenReportsMaxLevel() {
-        CookiePouch p = CookiePouch.fromSnapshot(new PouchSnapshot(1e9, 1e9, Map.of("baker", 1), Map.of("strength", 1)));
-        assertEquals(2, repeatable.maxAffordableUpgrade(p, "strength")); // 3 − level 1
-        BulkPurchase r = repeatable.buyMaxUpgrades(p, "strength");
-        assertEquals(2, r.count());
-        assertEquals(3, p.upgradeLevel("strength"));
-        assertEquals(0, repeatable.maxAffordableUpgrade(p, "strength"));
-        assertEquals(PurchaseResult.MAX_LEVEL, repeatable.buyMaxUpgrades(p, "strength").result());
     }
 
     @Test

@@ -63,48 +63,6 @@ class HouseDesignParserTest {
     }
 
     @Test
-    void cellsComeBottomLayerFirstThenRowsThenColumns() {
-        List<HouseDesign.Cell> cells = parse(base()).design().cells();
-        int lastY = 0;
-        for (HouseDesign.Cell c : cells) {
-            assertTrue(c.y() >= lastY, "layers must not go back down");
-            lastY = c.y();
-        }
-        assertEquals(0, cells.getFirst().y());
-        assertEquals(1, cells.getLast().y());
-    }
-
-    @Test
-    void spaceCountsAsKeepToo() {
-        Map<String, Object> m = base();
-        m.put("layers", List.of(List.of("PP ", "P_P"), List.of("PPP", "___")));
-        assertEquals(11, parse(m).design().cells().size());
-    }
-
-    @Test
-    void quotedSpecialCharactersWorkAsPaletteKeys() {
-        YamlConfiguration yaml = new YamlConfiguration();
-        try {
-            yaml.loadFromString("""
-                    size: [4, 1, 1]
-                    palette:
-                      "-": "minecraft:glass_pane"
-                      "|": "minecraft:glass_pane"
-                      "^": "minecraft:dark_oak_stairs[facing=north]"
-                      "=": "minecraft:dark_oak_slab"
-                    layers:
-                      - ["-|^="]
-                    """);
-        } catch (Exception e) {
-            throw new AssertionError(e);
-        }
-        HouseDesign d = HouseDesignParser.parse("q", YamlFiles.toMap(yaml)).design();
-        assertNotNull(d);
-        assertEquals(4, d.cells().size());
-        assertEquals("minecraft:dark_oak_stairs[facing=north]", d.cells().get(2).blockData());
-    }
-
-    @Test
     void wrongRowLengthIsReportedWithLayerAndRow() {
         Map<String, Object> m = base();
         m.put("layers", List.of(List.of("PP.", "P_"), List.of("PPP", "___")));
@@ -114,55 +72,11 @@ class HouseDesignParserTest {
     }
 
     @Test
-    void wrongRowCountAndLayerCountAreReported() {
-        Map<String, Object> rows = base();
-        rows.put("layers", List.of(List.of("PP."), List.of("PPP", "___")));
-        assertTrue(problems(rows).contains("layer 0 must be a list of 2 rows"));
-
-        Map<String, Object> layers = base();
-        layers.put("layers", List.of(List.of("PP.", "P_P")));
-        assertTrue(problems(layers).contains("1 layers but size y is 2"));
-
-        Map<String, Object> none = base();
-        none.remove("layers");
-        assertTrue(problems(none).contains("layers must be a list"));
-    }
-
-    @Test
     void unknownCharacterNamesTheCharacterAndPlace() {
         Map<String, Object> m = base();
         m.put("layers", List.of(List.of("PQ.", "P_P"), List.of("PPP", "___")));
         String p = problems(m);
         assertTrue(p.contains("'Q'") && p.contains("layer 0 row 0") && p.contains("not in the palette"), p);
-    }
-
-    @Test
-    void dotAndSpaceCannotBeInThePalette() {
-        for (String key : new String[] {".", " "}) {
-            Map<String, Object> m = base();
-            @SuppressWarnings("unchecked")
-            Map<String, Object> palette = (Map<String, Object>) m.get("palette");
-            palette.put(key, "minecraft:stone");
-            assertTrue(problems(m).contains("reserved"), "key '" + key + "'");
-        }
-    }
-
-    @Test
-    void badPaletteEntriesAreAllReported() {
-        Map<String, Object> m = base();
-        Map<String, Object> palette = new LinkedHashMap<>();
-        palette.put("PP", "minecraft:stone"); // two chars
-        palette.put("P", " "); // blank data
-        palette.put("_", 5); // not a string
-        m.put("palette", palette);
-        String p = problems(m);
-        assertTrue(p.contains("exactly one character"), p);
-        assertTrue(p.contains("palette 'P' needs block data"), p);
-        assertTrue(p.contains("palette '_' needs block data"), p);
-
-        Map<String, Object> empty = base();
-        empty.put("palette", Map.of());
-        assertTrue(problems(empty).contains("palette must map"));
     }
 
     @Test
@@ -183,13 +97,6 @@ class HouseDesignParserTest {
     }
 
     @Test
-    void wholeDoubleSizesAreAcceptedFromYaml() {
-        Map<String, Object> m = base();
-        m.put("size", List.of(3.0, 2.0, 2.0));
-        assertNotNull(parse(m).design());
-    }
-
-    @Test
     void originOutOfBoundsOrMalformedIsReported() {
         for (Object bad : new Object[] {List.of(3, 0, 0), List.of(0, 2, 0), List.of(0, 0, 2), List.of(-1, 0, 0), List.of(0, 0), "x"}) {
             Map<String, Object> m = base();
@@ -199,28 +106,6 @@ class HouseDesignParserTest {
         Map<String, Object> ok = base();
         ok.put("origin", List.of(2, 1, 1));
         assertArrayEquals(new int[] {2, 1, 1}, parse(ok).design().origin());
-    }
-
-    @Test
-    void pointsMustBeInsideSizeButAreOptional() {
-        assertTrue(parse(base()).design().points().isEmpty());
-
-        Map<String, Object> ok = base();
-        ok.put("points", Map.of("chimney", List.of(2, 1, 1)));
-        assertArrayEquals(new int[] {2, 1, 1}, parse(ok).design().points().get("chimney"));
-
-        Map<String, Object> out = base();
-        out.put("points", Map.of("chimney", List.of(3, 1, 1)));
-        String p = problems(out);
-        assertTrue(p.contains("points.chimney") && p.contains("outside size"), p);
-
-        Map<String, Object> bad = base();
-        bad.put("points", Map.of("door", "front"));
-        assertTrue(problems(bad).contains("points.door must be [x, y, z]"));
-
-        Map<String, Object> notSection = base();
-        notSection.put("points", List.of(1, 2, 3));
-        assertTrue(problems(notSection).contains("points must be a section"));
     }
 
     @Test
@@ -264,26 +149,6 @@ class HouseDesignParserTest {
         lines.add(null);
         m.put("signs", List.of(Map.of("at", List.of(0, 0, 0), "lines", lines)));
         assertEquals(List.of("<red>hi</red>", ""), parse(m).design().signs().getFirst().lines());
-    }
-
-    @Test
-    void everyProblemIsCollectedNotJustTheFirst() {
-        Map<String, Object> m = base();
-        m.put("layers", List.of(List.of("PQ.", "P_"), List.of("PPP", "___")));
-        m.put("points", Map.of("chimney", List.of(9, 9, 9)));
-        HouseDesignParser.Result r = parse(m);
-        assertNull(r.design());
-        assertTrue(r.problems().size() >= 3, r.problems().toString());
-    }
-
-    @Test
-    void toWorldPutsTheOriginOnTheRegionMinimumCorner() {
-        Map<String, Object> m = base();
-        m.put("origin", List.of(1, 0, 1));
-        HouseDesign d = parse(m).design();
-        assertArrayEquals(new int[] {100, 64, 200}, d.toWorld(new int[] {100, 64, 200}, 1, 0, 1));
-        assertArrayEquals(new int[] {99, 64, 199}, d.toWorld(new int[] {100, 64, 200}, 0, 0, 0));
-        assertArrayEquals(new int[] {101, 65, 201}, d.toWorld(new int[] {100, 64, 200}, 2, 1, 2));
     }
 
     @Test

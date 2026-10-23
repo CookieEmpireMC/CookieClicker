@@ -30,23 +30,10 @@ class PedestalPrivacyPairsTest {
     }
 
     @Test
-    void aPlayerFarAwayIsNeitherHiddenNorHiding() {
-        Set<Pair> pairs = PedestalPrivacy.pairs(List.of(at(A, 1, 1), at(B, 2, 2), at(C, 50, 50)), List.of(PED), 6);
-        assertEquals(2, pairs.size());
-        assertTrue(pairs.stream().noneMatch(p -> p.viewer().equals(C) || p.hidden().equals(C)));
-    }
-
-    @Test
     void aLonePlayerHidesNobodyAndNobodyIsNeverAPlayerWithThemselves() {
         assertTrue(PedestalPrivacy.pairs(List.of(at(A, 0, 0)), List.of(PED), 6).isEmpty());
         assertTrue(PedestalPrivacy.pairs(List.of(), List.of(PED), 6).isEmpty());
         assertTrue(PedestalPrivacy.pairs(List.of(at(A, 0, 0), at(B, 0, 0)), List.of(), 6).isEmpty());
-    }
-
-    @Test
-    void radiusIsInclusive() {
-        assertEquals(2, PedestalPrivacy.pairs(List.of(at(A, 6, 0), at(B, 0, 6)), List.of(PED), 6).size());
-        assertTrue(PedestalPrivacy.pairs(List.of(at(A, 6.01, 0), at(B, 0, 6)), List.of(PED), 6).isEmpty());
     }
 
     @Test
@@ -63,16 +50,4 @@ class PedestalPrivacyPairsTest {
         assertEquals(Set.of(new Pair(A, B), new Pair(B, A)), pairs);
     }
 
-    @Test
-    void nearbyPlayersOfOnePedestalFormAllOrderedPairs() {
-        UUID d = UUID.randomUUID();
-        Set<Pair> pairs = PedestalPrivacy.pairs(List.of(at(A, 0, 0), at(B, 1, 0), at(C, 2, 0), at(d, 3, 0)), List.of(PED), 6);
-        assertEquals(4 * 3, pairs.size());
-    }
-
-    @Test
-    void verticalDistanceCounts() {
-        Pos high = new Pos(B, W, 0, 64 + 20, 0);
-        assertTrue(PedestalPrivacy.pairs(List.of(at(A, 0, 0), high), List.of(PED), 6).isEmpty());
-    }
 }

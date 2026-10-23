@@ -2,7 +2,6 @@ package dev.casperrs.cookieClicker.text;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.casperrs.cookieClicker.format.RealMessages;
@@ -11,7 +10,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
@@ -79,19 +77,6 @@ class MessagesTest {
     }
 
     @Test
-    void prefixIsPresentAndParses() {
-        assertTrue(yaml.isString("prefix"));
-        assertDoesNotThrow(() -> STRICT.deserialize(yaml.getString("prefix")));
-    }
-
-    @Test
-    void numberSettingsListsAreStringsAndNotEmpty() {
-        assertFalse(yaml.getStringList("numbers.suffixes").isEmpty());
-        assertEquals(33, yaml.getStringList("numbers.suffixes").size()); // K … Tg, UTg, DTg (10^3 … 10^99)
-        assertEquals("DTg", yaml.getStringList("numbers.suffixes").get(32));
-    }
-
-    @Test
     void everyPathUsedInSourceExistsInMessagesYml() throws Exception {
         java.nio.file.Path root = java.nio.file.Path.of("src/main/java");
         java.util.regex.Pattern p = java.util.regex.Pattern.compile("\"((?:commands|storage|hud|panel|click|resource-pack|plot|house)\\.[a-z0-9.-]+)\"");
@@ -127,52 +112,4 @@ class MessagesTest {
                 .forEach(x -> assertEquals(null, x.clickEvent(), "no click events anywhere"));
     }
 
-    @Test
-    void reloadProblemTextWithTagsIsShownLiterally() {
-        Component c = messages.component("commands.reload.problem", Placeholder.unparsed("problem", "buildings.yml: <bad> tag"));
-        assertTrue(PLAIN.serialize(c).contains("<bad> tag"));
-    }
-
-    @Test
-    void sendAddsThePrefixAndKeepsInputLiteral() {
-        List<Component> sent = new ArrayList<>();
-        Audience audience = new Audience() {
-            @Override
-            public void sendMessage(Component message) {
-                sent.add(message);
-            }
-        };
-        messages.send(audience, "plot.chimney-no-target", Placeholder.unparsed("radius", "<gold>8"));
-        assertEquals(1, sent.size());
-        String text = PLAIN.serialize(sent.get(0));
-        assertTrue(text.contains("Cookie Empire"), text);
-        assertTrue(text.contains("<gold>8"), text);
-    }
-
-    @Test
-    void missingPathReturnsThePathAndDoesNotThrow() {
-        assertEquals("nope.nothing", messages.raw("nope.nothing"));
-        assertEquals("nope.nothing", PLAIN.serialize(messages.component("nope.nothing")));
-    }
-
-    @Test
-    void buildingNamesComeFromMessagesWithIdFallback() {
-        assertEquals("Baker's Apprentice", PLAIN.serialize(messages.buildingName("villager_baker")));
-        assertEquals("unknown_id", PLAIN.serialize(messages.buildingName("unknown_id")));
-    }
-
-    @Test
-    void numbersAreInsertedUnparsed() {
-        Component c = messages.component("hud.action-bar-no-pack", messages.number("cookies", 1_234_567), messages.number("cps", 0.1));
-        String text = PLAIN.serialize(c);
-        assertTrue(text.contains("1.2M"), text);
-        assertTrue(text.contains("0.1"), text);
-    }
-
-    @Test
-    void hudWithPackUsesTheHudFont() {
-        String raw = yaml.getString("hud.action-bar");
-        assertTrue(raw.contains("<font:cookieclicker:hud>"));
-        assertFalse(yaml.getString("hud.action-bar-no-pack").contains("<font"));
-    }
 }

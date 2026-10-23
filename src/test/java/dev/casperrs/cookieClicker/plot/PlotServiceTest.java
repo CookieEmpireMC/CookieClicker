@@ -169,15 +169,6 @@ class PlotServiceTest {
     }
 
     @Test
-    void aPlotInAnUnloadedWorldIsReportedNotCrashing() {
-        plotFile.saveAsync(List.of(Plot.empty("far", "minecraft:the_end")));
-        service.load(problems::add);
-        assertTrue(problems.stream().anyMatch(p -> p.contains("not loaded")), problems.toString());
-        assertEquals(PlotResolver.Resolved.NONE, service.registry().resolved("far"));
-        assertTrue(service.registry().houseShape("far").isEmpty());
-    }
-
-    @Test
     void settingAPedestalUpdatesTheRegistryStationsAndFile() {
         service.load(problems::add);
         Plot p = service.getOrCreate("main", WORLD2());

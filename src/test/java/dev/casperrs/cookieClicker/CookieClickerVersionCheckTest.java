@@ -28,17 +28,4 @@ class CookieClickerVersionCheckTest {
         assertFalse(CookieClicker.olderThan("7.0.100", MIN), "100 > 20 numerically");
     }
 
-    @Test
-    void buildSuffixesAreIgnored() {
-        assertFalse(CookieClicker.olderThan("7.0.20-SNAPSHOT;abc123", MIN));
-        assertTrue(CookieClicker.olderThan("7.0.19-SNAPSHOT", MIN));
-        assertFalse(CookieClicker.olderThan("7.0.20+build.5", MIN));
-    }
-
-    @Test
-    void unparseableVersionsAreNotOlder() {
-        assertFalse(CookieClicker.olderThan("", MIN));
-        assertFalse(CookieClicker.olderThan("abc", MIN));
-        assertFalse(CookieClicker.olderThan("unknown", MIN));
-    }
 }

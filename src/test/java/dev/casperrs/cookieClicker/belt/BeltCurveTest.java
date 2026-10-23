@@ -2,7 +2,6 @@ package dev.casperrs.cookieClicker.belt;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
@@ -43,36 +42,4 @@ class BeltCurveTest {
         }
     }
 
-    @Test
-    void fullSpeedAtTheScaleAndAbove() {
-        assertEquals(2.5, C.speed(1000), 1e-12);
-        assertEquals(8, C.interval(1000));
-        assertEquals(2.5, C.speed(1e12), 1e-12);
-        assertEquals(1.0, C.progress(1000), 0);
-    }
-
-    @Test
-    void lowCpsIsSlowWithSparseCookies() {
-        assertTrue(C.speed(0.1) < 0.9);
-        assertTrue(C.interval(0.1) > 70);
-    }
-
-    @Test
-    void intervalIsAtLeastOneTick() {
-        BeltCurve tight = new BeltCurve(1, 1, 1, 1, 10);
-        assertEquals(1, tight.interval(1e6));
-        assertEquals(1, tight.interval(0.5));
-    }
-
-    @Test
-    void rejectsBadCurves() {
-        assertThrows(IllegalArgumentException.class, () -> new BeltCurve(0, 1, 1, 2, 10));
-        assertThrows(IllegalArgumentException.class, () -> new BeltCurve(2, 1, 1, 2, 10));
-        assertThrows(IllegalArgumentException.class, () -> new BeltCurve(1, 2, 0, 2, 10));
-        assertThrows(IllegalArgumentException.class, () -> new BeltCurve(1, 2, 5, 2, 10));
-        assertThrows(IllegalArgumentException.class, () -> new BeltCurve(1, 2, 1, 2, 0));
-        assertThrows(IllegalArgumentException.class, () -> new BeltCurve(1, 2, 1, 2, Double.NaN));
-        assertThrows(IllegalArgumentException.class, () -> new BeltCurve(Double.NaN, 2, 1, 2, 5));
-        assertThrows(IllegalArgumentException.class, () -> new BeltCurve(1, Double.POSITIVE_INFINITY, 1, 2, 5));
-    }
 }
