@@ -1,13 +1,32 @@
 ---
 name: repo-tooling-facts
-description: Ownership-check matcher location, GitHub repo name, worktree-guard Bash quirks (verified 2026-10-20)
+description: Build/test command lines, scratch smoke-test recipes, ownership check, and the worktree Bash guard quirks (verified 2026-10-18..23)
 metadata:
-  type: project
+  type: reference
 ---
 
-- Ownership merge check loads the matcher from `tools/ownership/ownership_lib.py` (repo copy of the bakery-team plugin's hook lib, one header line extra) and the map from `.claude/ownership.json`, root = $CLAUDE_PROJECT_DIR > main checkout > this checkout. Stable; source: commit 86affef.
-- GitHub repo moved to `CookieEmpireMC/CookieClicker` (`tools/github_app/app.py` DEFAULT_REPO). Volatile; 2026-10-20.
-- `.claude/hooks/`, `.claude/agents/`, `docs/workflow.md`, `docs/game-design.md` move to the `bakery-team` plugin (skills bakery-context, game-design; command /bakery-team:feature). Don't make tooling depend on them.
-- Worktree guard rejects Bash with `{ ...; } >`, shell variables in sed/cp args, or `&&`-chains mixing python heredocs: use plain commands with literal absolute paths, or Edit.
-- Quick self-check: `CLAUDE_PROJECT_DIR=<worktree> mise exec -- python tools/ownership/check.py <branch> --base <sha>`.
-- 2026-10-21 (stable): `mise run check-quiet` prints only test totals/BUILD result/<=40 [ERROR] lines, full log in .check.log; pass extra mvn flags via `MAVEN_ARGS` env (Maven 3.9 reads it). Bash guard also refuses python heredocs whose text mentions .gitignore; use Edit instead.
+**Build / test** (stable)
+- `mise run check-quiet`: only test totals, BUILD result and up to 40 [ERROR] lines; full log `.check.log`. Extra mvn flags via `MAVEN_ARGS`.
+- `mise run build` = `mvn package` incl. tests. With tester-owned tests known red: `mise exec -- mvn -B -q package -DskipTests`,
+  or skip one: `mise exec -- mvn -B -q package '-Dtest=!Class#method' -Dsurefire.failIfNoSpecifiedTests=false`
+  (run it as the only command; `!` with cd/redirects is refused). A test-compile error can't be skipped with -Dtest.
+- Run a `@Disabled` test unedited: `-Dtest=X '-Djunit.jupiter.conditions.deactivate=org.junit.*DisabledCondition'`.
+- Fresh worktree: `mise trust` + `mise install` first (creates .venv).
+
+**Smoke tests without src/test** (coder may not write src/test, even when asked)
+- Classpath: `mise exec -- mvn -B -q dependency:build-classpath -Dmdep.outputFile=<scratch>/cp.txt`, then
+  `-cp "target/classes:$(cat <scratch>/cp.txt)"` (that `$(cat)` is allowed).
+- Pure classes, default package: single-file launch `mise exec -- java -cp ... <ABSOLUTE>/Smoke.java` from the worktree.
+- Package-private access: same package needs `javac -d out` + `java @argfile` (single-file launch hits split-package IllegalAccessError).
+- Other agents' files: `git show feature/<name>:<path> > <scratch>/x` (branches are deleted after merge); `git worktree list` shows their paths.
+
+**Ownership / repo** (stable)
+- Merge gate matcher is `tools/ownership/ownership_lib.py` (copy of the plugin's hook lib) + `.claude/ownership.json`.
+  Self-check: `CLAUDE_PROJECT_DIR=<worktree> mise exec -- python tools/ownership/check.py <branch> --base <sha>`.
+- GitHub repo `CookieEmpireMC/CookieClicker` (volatile, 2026-10-20).
+
+**Worktree Bash guard** (refuses with "names git in a form too complex"; the repo path contains "GitHub", so many commands trip it)
+- Refused: `for` loops over files or tasks, `$VAR` / `$(ls ..)` in paths, brace expansion, `{ ..; } >`, cd chains ending in git,
+  heredoc edits combined with sed/grep/git in one call, multi-heredoc file writes, heredocs mentioning `.gitignore`.
+- Works: `cd <worktree> && python3 - <<'EOF' ... EOF` doing str.replace edits plus a following grep (2026-10-23);
+  `grep -n pattern file1 file2 ...` instead of a loop; Edit/Write tools; git add/commit as plain commands with literal paths.

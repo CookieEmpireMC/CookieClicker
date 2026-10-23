@@ -37,8 +37,7 @@ final class BeltRider {
     boolean withPack;
     private @Nullable CookiePouch cpsPouch;
     private @Nullable Object cpsConfig;
-    private long cpsOwned = -1;
-    private int cpsUpgrades = -1;
+    private int cpsRevision = -1;
 
     BeltRider(String plotId, World world, BeltPath path) {
         this.plotId = plotId;
@@ -48,21 +47,16 @@ final class BeltRider {
 
     /**
      * Whether the pouch or the balance changed since {@link #cps} was computed (and remembers the new state).
-     * Buildings and upgrades only grow, so their totals show a purchase.
+     * Every building or upgrade level added bumps {@link CookiePouch#revision()}, so that shows a purchase.
      */
     boolean cpsChanged(CookiePouch pouch, Object config) {
-        long owned = 0;
-        for (int n : pouch.ownedView().values()) {
-            owned += n;
-        }
-        int upgrades = pouch.upgradesView().size();
-        if (pouch == cpsPouch && config == cpsConfig && owned == cpsOwned && upgrades == cpsUpgrades) {
+        int revision = pouch.revision();
+        if (pouch == cpsPouch && config == cpsConfig && revision == cpsRevision) {
             return false;
         }
         cpsPouch = pouch;
         cpsConfig = config;
-        cpsOwned = owned;
-        cpsUpgrades = upgrades;
+        cpsRevision = revision;
         return true;
     }
 

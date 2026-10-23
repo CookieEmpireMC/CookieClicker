@@ -14,11 +14,14 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.LongSupplier;
 
 /**
  * All plots from {@code plots.yml} plus the region ids they resolved to (flags first, names as fallback). Region ids
  * and the per-world plot bounds are re-resolved on every {@link #replaceAll} ({@code /bakery reload}) and
- * {@link #put}, so {@code /rg redefine} + reload moves or resizes a plot without a restart. Main thread only.
+ * {@link #put}, so {@code /rg redefine} + reload moves or resizes a plot without a restart; the bounds also expire after
+ * {@value #BOUNDS_TTL_MILLIS} ms, so a new {@code /rg flag} or a region loaded late is picked up without a reload.
+ * Main thread only.
  */
 public final class PlotRegistry {
 
@@ -26,8 +29,15 @@ public final class PlotRegistry {
     private final Function<String, Optional<World>> worlds;
     private final Map<String, Plot> plots = new LinkedHashMap<>();
     private final Map<String, PlotResolver.Resolved> resolved = new HashMap<>();
+    /** How long a world's cached plot bounds are trusted before they are read from the regions again. */
+    public static final long BOUNDS_TTL_MILLIS = 30_000;
+
+    private final LongSupplier clockMillis;
     /** Per world UID: the bounding box of every region whose flag names a known plot (lazy, cleared on change). */
-    private final Map<UUID, Bounds> bounds = new HashMap<>();
+    private final Map<UUID, CachedBounds> bounds = new HashMap<>();
+
+    private record CachedBounds(Bounds bounds, long readAt) {
+    }
 
     private record Bounds(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
         static final Bounds EMPTY = new Bounds(0, 0, 0, -1, -1, -1);
@@ -47,8 +57,14 @@ public final class PlotRegistry {
 
     /** @param worlds world by key ({@code minecraft:overworld}), empty when not loaded */
     public PlotRegistry(PlotRegions regions, Function<String, Optional<World>> worlds) {
+        this(regions, worlds, () -> System.nanoTime() / 1_000_000);
+    }
+
+    /** @param clockMillis a monotonic clock in milliseconds (the bounds expiry) */
+    public PlotRegistry(PlotRegions regions, Function<String, Optional<World>> worlds, LongSupplier clockMillis) {
         this.regions = regions;
         this.worlds = worlds;
+        this.clockMillis = clockMillis;
     }
 
     public PlotRegions regions() {
@@ -108,7 +124,13 @@ public final class PlotRegistry {
      * covers it, so the WorldGuard query can be skipped. Cheap enough for every block change of every player.
      */
     public boolean mayContainPlot(World world, int x, int y, int z) {
-        return bounds.computeIfAbsent(world.getUID(), k -> boundsOf(world)).contains(x, y, z);
+        long now = clockMillis.getAsLong();
+        CachedBounds cached = bounds.get(world.getUID());
+        if (cached == null || now - cached.readAt() >= BOUNDS_TTL_MILLIS) {
+            cached = new CachedBounds(boundsOf(world), now);
+            bounds.put(world.getUID(), cached);
+        }
+        return cached.bounds().contains(x, y, z);
     }
 
     private Bounds boundsOf(World world) {
