@@ -1,4 +1,4 @@
-package dev.casperrs.cookieClicker.house;
+package dev.casperrs.cookieClicker.house.cinematic;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -17,8 +17,6 @@ import org.junit.jupiter.api.Test;
 class HouseCinematicsCameraSourceTest {
 
     private static final Path MAIN = Path.of("src/main/java/dev/casperrs/cookieClicker");
-    private static final String CINEMATICS = read(MAIN.resolve("house/HouseCinematics.java"));
-    private static final String CAMERA = read(MAIN.resolve("house/CinematicCamera.java"));
 
     private static String read(Path p) {
         try {

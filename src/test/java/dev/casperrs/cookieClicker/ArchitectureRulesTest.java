@@ -126,9 +126,15 @@ class ArchitectureRulesTest {
 
     @Test
     void theWorldIsNeverModifiedByTheCinematicClasses() throws IOException {
-        for (String cls : new String[] {"HouseCinematics", "FakeBlocks", "KeepOut", "ChimneySmoke", "RevealPlan",
-                "RevealOrder", "HouseBox"}) {
-            String text = Files.readString(MAIN.resolve("dev/casperrs/cookieClicker/house/" + cls + ".java"));
+        // every class of the cinematic sub-package (incl. FakeBlocks, CinematicKeepOut, PlotAmbience, RevealPlan, HouseBox, RunPlanner ...)
+        List<Path> classes;
+        try (var s = Files.list(MAIN.resolve("dev/casperrs/cookieClicker/house/cinematic"))) {
+            classes = s.filter(p -> p.toString().endsWith(".java")).toList();
+        }
+        assertTrue(classes.size() >= 15, "cinematic package not found: " + classes);
+        for (Path file : classes) {
+            String cls = file.getFileName().toString();
+            String text = Files.readString(file);
             for (String bad : new String[] {".setType(", ".setBlockData(", ".breakNaturally(", ".applyPhysics(",
                     "getState().update(", ".setBlock("}) {
                 assertTrue(!text.contains(bad), cls + " modifies the world via " + bad);
@@ -160,8 +166,8 @@ class ArchitectureRulesTest {
     @Test
     void ioExecutorWorkIsKeptOffBukkitInThePlotAndHouseFiles() throws IOException {
         // file/DB classes must not call the Bukkit world from the io lambda; spot check: HouseSeen and PlotFile have no Bukkit imports
-        for (String name : new String[] {"house/HouseSeen.java", "plot/PlotFile.java", "plot/PlotCodec.java", "plot/RegionShape.java",
-                "plot/Outline.java", "house/HouseBackup.java", "house/HouseDesignParser.java", "plot/PlotResolver.java"}) {
+        for (String name : new String[] {"house/cinematic/HouseSeen.java", "plot/PlotFile.java", "plot/PlotCodec.java", "plot/RegionShape.java",
+                "plot/Outline.java", "house/setup/HouseBackup.java", "house/design/HouseDesignParser.java", "plot/PlotResolver.java"}) {
             String text = Files.readString(MAIN.resolve("dev/casperrs/cookieClicker/" + name));
             assertTrue(!text.contains("import org.bukkit.entity") && !text.contains("import org.bukkit.Bukkit;")
                     && !text.contains("import org.bukkit.World;") && !text.contains("import org.bukkit.Location;"), name + " must stay pure");

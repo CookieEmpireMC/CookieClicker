@@ -1,7 +1,7 @@
-package dev.casperrs.cookieClicker.house;
+package dev.casperrs.cookieClicker.house.cinematic;
 
-import dev.casperrs.cookieClicker.house.RevealPlan.Phase;
-import dev.casperrs.cookieClicker.house.RevealPlan.Pace;
+import dev.casperrs.cookieClicker.house.cinematic.RevealPlan.Phase;
+import dev.casperrs.cookieClicker.house.cinematic.RevealPlan.Pace;
 import dev.casperrs.cookieClicker.plot.RegionShape;
 import org.junit.jupiter.api.Test;
 
