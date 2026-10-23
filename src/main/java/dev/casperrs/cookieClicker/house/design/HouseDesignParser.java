@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Parses a house design file (brief starter-house, Contract "house design"). Pure Java over the YAML as plain maps:
+ * Parses a house design file. Pure Java over the YAML as plain maps:
  * <pre>
  * size: [9, 7, 7]            # x (row length), y (number of layers), z (rows per layer)
  * origin: [0, 0, 0]          # optional: the design cell placed on the house region's minimum corner

@@ -75,7 +75,7 @@ public final class PlotService {
         stations.replaceAll(registry.stations());
     }
 
-    /** Decision 2: stations inside a bakery-plot region become that plot's pedestal; the old file becomes .bak. */
+    /** Stations inside a bakery-plot region become that plot's pedestal; the old file becomes .bak. */
     private List<Plot> migrate(Consumer<String> problems) {
         Path old = dataFolder.resolve(StationFile.NAME);
         if (!Files.isRegularFile(old)) {

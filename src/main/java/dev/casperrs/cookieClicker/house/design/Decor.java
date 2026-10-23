@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * The plot decoration set ({@code houses/decor.yml}, brief plot-polish; spec design/decor.md). Pure data and parser
+ * The plot decoration set ({@code houses/decor.yml}, spec design/decor.md). Pure data and parser
  * over the YAML as plain maps:
  * <pre>
  * blocks:

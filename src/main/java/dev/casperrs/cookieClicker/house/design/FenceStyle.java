@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * The look of the plot fence ({@code houses/fence.yml}, brief factory-makeover, Contract "fence style"). Pure data and
+ * The look of the plot fence ({@code houses/fence.yml}). Pure data and
  * parser over the YAML as plain maps:
  * <pre>
  * rail: "minecraft:spruce_fence"                        # every ring cell that is nothing else (y 0)

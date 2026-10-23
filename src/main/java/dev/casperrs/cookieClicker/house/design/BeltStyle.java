@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * The conveyor belt frame ({@code houses/belt.yml}, brief conveyor-belt; spec design/conveyor-belt.md). Pure data
+ * The conveyor belt frame ({@code houses/belt.yml}, spec design/conveyor-belt.md). Pure data
  * and parser over the YAML as plain maps:
  * <pre>
  * direction: north                 # the belt runs this way; block states are written for it (only north)

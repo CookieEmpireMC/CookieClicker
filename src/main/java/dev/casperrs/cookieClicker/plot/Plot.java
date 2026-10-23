@@ -17,18 +17,18 @@ import java.util.regex.Pattern;
  * @param plotRegion  fallback region id of the plot area, or null
  * @param houseRegion fallback region id of the house area, or null
  * @param viewpoint   where the first-visit cinematic is watched from, or null
- * @param pedestal    the player's cookie/panel anchor (offsets in {@code station.*} are relative to it), or null
+ * @param pedestal    the player's cookie/panel anchor, or null
  * @param smoke       where chimney smoke starts (bottom centre of each smoke cell); empty = no smoke
  * @param steam       where {@code factory_steam} puffs start (roof vents); may be empty
  * @param entrance    centre of the fence gate at ground level ({@code /bakery plot setup}), or null
- * @param shop        where the shop panel stands ({@code layout.shop}); null = the {@code station.panel} offsets from
+ * @param shop        where the shop panel stands ({@code layout.shop}); null = the default spot beside
  *                    the pedestal (plots without a layout)
  * @param house       the house box placed by {@code /bakery plot setup}; when set it replaces the
  *                    {@code bakery-house} region, or null
  * @param belt        the conveyor belt placed by {@code /bakery plot setup}, or null
  * @param camera      the raised camera of the build cinematic ({@code layout.camera}), or null
- * @param clicks      where the click upgrades panel stands ({@code layout.clicks}); null = the
- *                    {@code station.panels.clicks} offset from the pedestal
+ * @param clicks      where the click upgrades panel stands ({@code layout.clicks}); null = mirrored
+ *                    from the shop spot
  */
 public record Plot(String id, String worldKey, @Nullable String plotRegion, @Nullable String houseRegion,
                    @Nullable Viewpoint viewpoint, @Nullable Pedestal pedestal, List<Point> smoke, List<Point> steam,
@@ -42,7 +42,7 @@ public record Plot(String id, String worldKey, @Nullable String plotRegion, @Nul
         steam = List.copyOf(steam);
     }
 
-    /** A plot without the click upgrades panel spot (the conveyor-belt shape). */
+    /** A plot without the click upgrades panel spot. */
     public Plot(String id, String worldKey, @Nullable String plotRegion, @Nullable String houseRegion,
                 @Nullable Viewpoint viewpoint, @Nullable Pedestal pedestal, List<Point> smoke, List<Point> steam,
                 @Nullable Point entrance, @Nullable Pedestal shop, @Nullable Box house, @Nullable Belt belt,
@@ -51,7 +51,7 @@ public record Plot(String id, String worldKey, @Nullable String plotRegion, @Nul
                 camera, null);
     }
 
-    /** A plot without belt and camera (the factory-makeover shape). */
+    /** A plot without belt, camera and click panel spot. */
     public Plot(String id, String worldKey, @Nullable String plotRegion, @Nullable String houseRegion,
                 @Nullable Viewpoint viewpoint, @Nullable Pedestal pedestal, List<Point> smoke, List<Point> steam,
                 @Nullable Point entrance, @Nullable Pedestal shop, @Nullable Box house) {
@@ -59,7 +59,7 @@ public record Plot(String id, String worldKey, @Nullable String plotRegion, @Nul
                 null);
     }
 
-    /** A plot with at most one smoke point (the starter-house shape), no steam and no entrance. */
+    /** A plot with at most one smoke point, no steam and no entrance. */
     public Plot(String id, String worldKey, @Nullable String plotRegion, @Nullable String houseRegion,
                 @Nullable Viewpoint viewpoint, @Nullable Pedestal pedestal, @Nullable Point chimney) {
         this(id, worldKey, plotRegion, houseRegion, viewpoint, pedestal, chimney == null ? List.of() : List.of(chimney),

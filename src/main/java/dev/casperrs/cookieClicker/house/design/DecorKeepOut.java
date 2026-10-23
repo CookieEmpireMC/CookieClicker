@@ -7,8 +7,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * The plot columns (plot cells from the plot's min corner, the frame of {@code layout:}) where decor may never go,
- * brief plot-polish "Decoration". Pure. A column is out, at every height, when it lies on:
+ * The plot columns (plot cells from the plot's min corner, the frame of {@code layout:}) where decor may never go.
+ * Pure. A column is out, at every height, when it lies on:
  * <ul>
  *   <li>the fence ring (the layout's outer ring, gate included);</li>
  *   <li>the factory: the whole design box plus {@link #MARGIN} (door, hatch, porch);</li>
@@ -62,7 +62,7 @@ public final class DecorKeepOut {
     }
 
     /**
-     * The keep-out of {@code design}'s plot layout plus every building slot cell (brief building-roster: decor never
+     * The keep-out of {@code design}'s plot layout plus every building slot cell (decor never
      * stands where a bought building appears); null when the design has no layout.
      */
     public static @Nullable DecorKeepOut of(HouseDesign design, BuildingSlots slots) {

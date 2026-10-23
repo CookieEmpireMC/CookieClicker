@@ -10,8 +10,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Where the bought bakery buildings stand on the factory plot ({@code houses/building-slots.yml}, brief
- * building-roster "Visible buildings"; spec design/buildings-world.md). Pure data and parser over the YAML as plain
+ * Where the bought bakery buildings stand on the factory plot ({@code houses/building-slots.yml}, spec
+ * design/buildings-world.md). Pure data and parser over the YAML as plain
  * maps:
  * <pre>
  * slots:
@@ -28,7 +28,7 @@ import java.util.Set;
  */
 public record BuildingSlots(Map<String, List<Slot>> slots) {
 
-    /** The visual cap per building type (brief: ≤ 10). */
+    /** The visual cap per building type. */
     public static final int MAX_PER_TYPE = 10;
     private static final int MIN_Y = -16;
     private static final int MAX_Y = 64;

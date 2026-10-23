@@ -8,7 +8,7 @@ import dev.casperrs.cookieClicker.plot.Plot;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Pure maths of the visible buildings (brief building-roster): where a plot's layout frame starts in the world and
+ * Pure maths of the visible buildings: where a plot's layout frame starts in the world and
  * what one building type shows for an owned count.
  */
 public final class BuildingLayout {
