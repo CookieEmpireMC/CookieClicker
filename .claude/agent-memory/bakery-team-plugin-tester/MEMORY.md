@@ -1,24 +1,4 @@
-- [Testing GitHub App tools](testing-github-app-tools.md) — offline test recipe for tools/github_app (fake server, throwaway key, config gotcha)
-- [bakery-core test recipes](testing-bakery-core.md) — golden-values dry run, classpath libs, formatter bug note
-- [Review ledger](reviews-ledger.md) — per reviewed area: the commit it was verified at + what passed; re-review only `git diff <commit>..HEAD`
-- [Ledger: vfx](ledger-vfx.md) — vfx package verified for starter-house; Proxy-based ticker test trick
-- [Ledger: coder pass 1](ledger-coder-pass1.md) — starter-house plot/house/worldguard review at 57df6ec; open Outline hang; Proxy World trick
-- [Ledger: coder pass 2](ledger-coder-pass2.md) — cinematic + starter-house integration at b03c8e3; open LOWs; Sound#key() replacement; ownership-check --base tip
-- [Ledger: factory-makeover coder](ledger-factory-makeover-coder.md) — PlotSetup/fence/layout review at 55dbac1; fixtures; integration must un-skip shipped-file test
-- [Ledger: conveyor-belt coder](ledger-conveyor-belt-coder.md) — review at 8da4215 READY; open LOWs, integration to-dos, cross-branch asset test recipe
-- [Ledger: plot-polish coder](ledger-plot-polish-coder.md) — decor parser/keep-out, LoopPacer, belt cookie pose at f57fe49; shipped-file recipe; open LOWs
-- [Ledger: plot-polish panels](ledger-plot-polish-panels.md) — ray pick (PanelLayout/aim) at d2e33dd; text vertical anchor unverified (in-game); no server jar offline
-- [Ledger: plot-polish basket](ledger-plot-polish-basket.md) — BasketLook/tier-up/respawn at 9cea984 READY; tests b3f1b56; open LOWs (click-time look change, hitbox jump during glide)
-- [Ledger: plot-polish integration](ledger-plot-polish-integration.md) — feature-level review at 2d3805f READY; layout geometry facts, open LOWs, overlap-test recipe
-- [Ledger: building-roster world](ledger-building-roster-world.md) — VisibleBuildings/BuildingSlots at c11df8d READY, tests f97cfe5; footprint keep-out LOW; effect fan-out PERF-LOW
-- [Ledger: building-roster economy](ledger-building-roster-economy.md) — milestones/paging/row-fit at 6ce0d9a READY; row pick geometry (-1.2 beside icon); scroll pulse LOW
-- [Ledger: building-roster balance](ledger-building-roster-balance.md) — milestones/override/buyer/baked targets at b7613e3; tools-test 146; CLI mutation recipe
-- [Ledger: building-roster integration](ledger-building-roster-integration.md) — feature-level review at d158726 READY; tests added; open LOWs
-- [Ledger: panel-align](ledger-panel-align.md) — 1.2.1 text column: NOT READY at ff9f3e4, READY after 0190c7f + tests e8b5495 (683 green)
-- [Ledger: tidy review](ledger-tidy-review.md) — architecture/standards/perf review at 8940d31; TidyPerfTest recipe; open checks for branch reviews
-- [Test pruning: important parts only](feedback-important-tests-only.md) — user rule 2026-10-23: keep/drop list; 582->301 Java, 146->73 tools
-- [Prune tooling gotchas](prune-gotchas.md) — sandbox blocks loops/vars with git; Java/Python method-removal pitfalls; test counts after prune
-- [Ledger: tidy config](ledger-tidy-config.md) — coder config branch READY, 415 tests; paper-plugin classpath facts; new descriptor/old-config tests
-- [Ledger: tidy vfx](ledger-tidy-vfx.md) — vfx split READY at 4a6d3b1; parser equivalence probe recipe; gradient VirtualComponent identity-equals; open LOWs
-- [Ledger: tidy ui](ledger-tidy-ui.md) — ui branch READY at d2ae11c; U3 audit, PanelText/JdbcSkip tests, sandbox quirks
-- [Ledger: tidy world](ledger-tidy-world.md) — world branch READY, 390 tests; house test-move recipe; W1 bounds facts, open LOWs
+- [Testing recipes](testing-recipes.md) — offline test setup (Proxy fakes, golden values, perf test, tools), what needs a server, sandbox quirks
+- [Repo facts](repo-facts.md) — post-tidy class locations, economy/PlotRegistry/sound facts, panel geometry numbers, open items
+- [Review ledger](reviews-ledger.md) — per area the commit last verified + verdict; re-review only `git diff <commit>..HEAD`
+- [Test only the important parts](feedback-important-tests-only.md) — user rule 2026-10-23: keep/drop list; 686 -> 392 tests

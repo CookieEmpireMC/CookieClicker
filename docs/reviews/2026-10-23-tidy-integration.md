@@ -36,7 +36,7 @@ Fix (one line, in `tick()`): after a due tick set `l.due = now + l.period;` (no 
 | Criterion | State | Evidence / why |
 |---|---|---|
 | Comments removed/kept per rule (Java, tests, YAML) | done | spot-checks over the tree: no history narration left in `src/main` (4 grep hits are real behaviour text); comment/Javadoc lines are 12 % of `src/main/java` (21 377 lines), 2 % of `src/test/java`; YAML headers hold only admin-facing notes. Old-version fixture `config-1.2.1.yml` keeps old comments on purpose |
-| Memory pruned per agent | done | coder 13 files/301 lines -> 4/152, vfx-designer 4/96, tester 26/488 -> see below, designers 2-5 small files. The CookieMemory PR is the orchestrator's task (open) |
+| Memory pruned per agent | done | coder 13 files/301 lines -> 4/152, vfx-designer 4/96, tester 26 files/488 lines -> 5/97, designers 2-5 small files. The CookieMemory PR is the orchestrator's task (open) |
 | Tests: important only | done | 686 -> 392 Java (vfx included), 146 -> 73 tools; kept: economy/golden, JDBC round trips and schema, shipped-file/ID/asset contracts, ArchitectureRulesTest, descriptor/permission, geometry pins, safety paths |
 | `config.yml`: resource-pack, database first | done | 79 lines |
 | Unread keys removed, defaults in code | done | config review (415 tests then) + `PluginSettingsOldConfigTest` (value-equal old vs new) |
@@ -81,4 +81,4 @@ Earlier features still open (from their reviews): in-game check of the panel tex
 7. Autosave with several players: no main-thread stall (IO thread `CookieClicker-IO` only).
 
 ## Memory
-`.claude/agent-memory/bakery-team-plugin-tester/`: 26 files / 488 lines -> 5 files (index + testing recipes, repo facts, test rule, review ledger).
+`.claude/agent-memory/bakery-team-plugin-tester/`: 26 files / 488 lines -> 5 files / 97 lines (index + testing recipes, repo facts, test rule, review ledger).
