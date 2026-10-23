@@ -1,6 +1,6 @@
 # Architecture
 
-Maintained by the plugin-tester. Last updated: 2026-10-22 (building-roster integration).
+Maintained by the plugin-tester. Last updated: 2026-10-23 (tidy review: Standards section, config row).
 
 **Target:** Paper 26.3 (`26.3.build.205-stable`), Java 25, Maven, `api-version: '26.3'`. JDBC drivers (H2, MariaDB) are `provided` and loaded by Paper from `plugin.yml` `libraries:`. **WorldGuard 7.0.20 + WorldEdit 7.4.6 (or FAWE 2.16)** are `provided` and a hard `depend` (since starter-house).
 
@@ -31,7 +31,7 @@ Maintained by the plugin-tester. Last updated: 2026-10-22 (building-roster integ
 | `hud` | `BakeryTicker` (1 Hz production, then HUD and the panel refresh hook), `Hud` (action bar), `HudTemplate` (template parsed once; marker swap, used only when provably equal to a real parse) | main |
 | `pack` | `ResourcePackSender` (stacked pack, stable UUID, `replace(false)`), `ResourcePackTracker` (status of **our** pack UUID only) | main |
 | `text` | `Messages` (MiniMessage from `messages.yml`, placeholders unparsed) | main |
-| `config`, `command` | `PluginSettings`, `PlotSettings`, `HouseSettings`, `StationVisualSettings` (layout/looks only, no balance) and `BasketSettings` (`station.basket`: tier/fill thresholds, heights per look, cookie gap, hysteresis; visual only), `YamlFiles`; Brigadier `/bakery plot ...|house place|undo|reload` (`/bakery station` is gone) | main |
+| `config`, `command` | `PluginSettings`, `PlotSettings`, `HouseSettings`, `BeltSettings`, `BuildingVisualSettings`, `StationVisualSettings` (layout/looks only, no balance) and `BasketSettings` (tier/fill thresholds, heights per look; visual only), `YamlFiles`. After tidy the looks/geometry are code constants and `config.yml` keeps only admin options (see `docs/reviews/2026-10-23-tidy-architecture.md`); Brigadier `/bakery plot ...|house place|undo|reload` (`/bakery station` is gone) | main |
 
 ## Rules
 - Load: `onLoad` registers the WorldGuard flags (impossible later: WG locks its registry on enable). Needs `depend: [WorldGuard]`; with `paper-plugin.yml` (feature `optimize`) WG must keep loading first.
@@ -56,3 +56,71 @@ Maintained by the plugin-tester. Last updated: 2026-10-22 (building-roster integ
 - Decor rule (plot-polish): decor cells come from `houses/decor.yml` (`Decor`), are filtered by `DecorKeepOut` (fence ring, factory + 1, gate/pedestal/panel zone, walk to the door, belt + 1) and placed by `PlotSetup` through its `change()` list, so backup/undo cover them exactly like the house and fence.
 - Visible-buildings rule (building-roster): bought buildings are client-side per player. Their displays are spawned with `setVisibleByDefault(false)` inside the spawn consumer and shown to the owner only, effects take the owner as viewer and the sound goes through `SoundService.play(player, ...)`, so other players in the (shared) plot see nothing. Nothing runs per tick; the only triggers are purchase, join, plot enter/leave, plot change, pack swap, reload. Slots, decor and `DecorKeepOut` all read the same `houses/building-slots.yml`; the stage thresholds (25/100) live in `config.yml` and are visual only (not the economy milestones in `buildings.yml`).
 - Roster rule (building-roster): `buildings.yml` ids = `messages.yml buildings.<id>.name` = `config.yml station.panel.icons.<id>` = item model `cookieclicker:building/<id>`; the six visible ones also have `plot.buildings.fallback-blocks/footprints.<id>`, `houses/building-slots.yml` slots and `building_world/<id>` stage models. `ShippedContentConsistencyTest` enforces all of it.
+
+## Standards
+Rules every coder, designer and the tester apply. Where the code already breaks one, fix it only when you touch the class
+(the tidy feature touches all of them). `ArchitectureRulesTest` stays the enforcement for the hard rules above.
+
+**Naming**
+- Packages: one lower-case noun per feature (`belt`, `view`); no `util`/`common`/`misc`. Classes: UpperCamelCase nouns that say
+  what they own (`PanelLayout`, `BeltLane`); no `Manager`/`Helper`/`Util`/`Impl` in new names. Pure value types are records;
+  a class that only holds static functions is `final` with a private constructor and named after what it computes
+  (`BulkMath`, `Shapes`).
+- Methods are verbs (`spawn`, `refresh`); queries that return boolean read as a question (`isRunning`, `hasPack`,
+  `canSee`), records use plain accessors. Event handlers are `onXxx(XxxEvent)`. Constants `UPPER_SNAKE_CASE`, config paths and
+  message ids are constants, never repeated string literals.
+- Tests: `<Class>Test`, in the class's package; test methods are sentences (`aStaleTokenRunsNothing`).
+
+**Structure**
+- One responsibility per class: describe it in one sentence without "and". Target at most ~400 lines, at most 15 fields;
+  500 lines is a stop sign (split along the responsibilities, not by line count). A class that mixes pure maths with
+  Bukkit calls is split into the pure part (unit-tested) and the Bukkit part.
+- Methods: target at most 40 lines, hard limit 60; nesting at most 3 levels; more than 6 parameters means a record.
+  Extract named steps instead of commenting sections.
+- Package by feature. A package with more than ~15 classes gets sub-packages by sub-feature (not by layer). No package
+  cycles (`config` must not import `view`/`house`; shared constants live in the lower package). `com.sk89q` only in
+  `worldguard`; `spawnParticle` only in `vfx`; `playSound` only in `sound`.
+- Wiring: constructor injection, no `plugin.getX()` service-locator getters, no static mutable state. `CookieClicker` only
+  builds the parts and passes them to a lifecycle list (`start` / `reload` / `shutdown` in order); it holds no feature logic.
+- Duplicate code that appears in two classes moves to one shared class in the lower package (see the review's list).
+
+**Types and nulls**
+- Classes `final` unless designed for extension; fields `final` unless the state is the class's job; return
+  `List.copyOf` / unmodifiable views, never your own mutable collection. Prefer records and `enum` over string/int codes;
+  `switch` on enums and sealed types without a `default` where all cases are covered.
+- Null: `@Nullable` (`org.jspecify.annotations`) on a field, parameter or return that may be null; no `@NonNull` noise.
+  `Optional` only as the return type of a lookup that can find nothing (`PlotRegistry.get`), never as a field or parameter
+  and never inside a collection. No null elements in collections; empty collections instead of null.
+- Imports: no wildcard imports (the tree is clean, keep it), no unused imports. `var` only when the type is on the same line.
+
+**Logging and errors**
+- Inject the plugin's `java.util.logging.Logger`. SEVERE = data loss or a feature that had to switch itself off; WARNING =
+  something an admin can fix (config, asset, region), logged once per cause (`warnOnce`); INFO = lifecycle only (the enable
+  summary); FINE = diagnostics. Never log per tick, per click or per player move. No `System.out`, no `printStackTrace`.
+- Catch the narrowest exception; a catch that swallows must say why in one line. A failure in one part (an effect, a view)
+  is contained and never skips cleanup of the rest.
+
+**Threads and the server tick**
+- Bukkit/WorldGuard/world/entity calls on the main thread only; DB and file work on the IO thread; hop back with the injected
+  `main` executor. Nothing blocks the main thread (no `Future.get`, JDBC, file reads) outside enable, reload and command start.
+- Scheduling: one repeating task per concern, period as long as the data's change rate, started when the first thing needs it
+  and cancelled when nothing is left (no per-player `BukkitTask`). A task that finds no player near its plot returns first.
+  Every task is cancelled in `shutdown` and the class can be started again after it.
+- Hot paths (per tick, per click, per player move, per second per player): no MiniMessage parse, `String.format`, stream,
+  `List.copyOf`, `new Location` or map rebuild when the input did not change; compare a cheap key/revision and skip. Events:
+  `ignoreCancelled = true`, `MONITOR` for observers, and `PlayerMoveEvent` starts with `hasChangedBlock()`.
+- Entities: spawn hidden-by-default inside the consumer, non-persistent, tagged; send a metadata/transform packet only when
+  the value changed; keep the per-player entity counts under the `effects.yml` limits.
+
+**Comments (the tidy rule)**
+- Default is no comment: a name or a small method says it. Keep a comment only for a non-obvious *why*: a version or client
+  quirk, a thread rule, maths behind a formula, a format note in a file an admin edits.
+- Never: restating the code, history ("since 1.1.0", "was ...", "unused since ..."), section banners, commented-out code,
+  per-field Javadoc on records whose component names are clear.
+- Javadoc only on a public type or method whose name does not tell the contract; one or two lines, no `@param` that repeats
+  the parameter name. Applies to `src/main`, `src/test` and every YAML in `src/main/resources`.
+
+**Config**
+- `config.yml` holds only what an admin really sets: resource pack first, then database, then toggles and ranges that matter
+  for server load. Every key has a built-in default in code (a missing key never breaks) and is read somewhere. Looks,
+  geometry, timings and colours are constants in code; balance only in `buildings.yml` / `upgrades.yml`.
