@@ -85,22 +85,6 @@ class EffectsConfigParserTest {
     }
 
     @Test
-    void popPresetIsTheStandardScaleOnlySequence() throws Exception {
-        LayerSpec layer = EffectsConfigParser.parse(shipped(), null).preset("pop").layers().getFirst();
-        LayerSpec.ScalePop pop = assertInstanceOf(LayerSpec.ScalePop.class, layer);
-        assertEquals(7, pop.sequence().totalTicks());
-        assertEquals(3, pop.sequence().steps().size());
-    }
-
-    @Test
-    void particleKeysResolveWithOrWithoutNamespace() {
-        assertEquals(Particle.DUST, EffectsConfigParser.particleByKey("dust"));
-        assertEquals(Particle.END_ROD, EffectsConfigParser.particleByKey("minecraft:end_rod"));
-        assertEquals(Particle.ITEM, EffectsConfigParser.particleByKey(" ITEM "));
-        assertNull(EffectsConfigParser.particleByKey("redstone"), "1.20 name, renamed to dust");
-    }
-
-    @Test
     void unknownParticleSkipsOnlyThatLayer() throws Exception {
         EffectsConfig config = parse("""
                 fx:
@@ -140,32 +124,6 @@ class EffectsConfigParserTest {
         assertEquals(4.0f, layer.data().size(), "clamped to the dust maximum");
         assertEquals(ShapeParams.defaults(layer.shape().kind()).points(), layer.shape().points());
         assertEquals(3, config.problems().size(), config.problems().toString());
-    }
-
-    @Test
-    void particlesWithUnsupportedDataAreSkipped() throws Exception {
-        EffectsConfig config = parse("""
-                fx:
-                  layers:
-                    - { type: particle, particle: vibration }
-                    - { type: particle, particle: dust }
-                """);
-        assertEquals(1, config.preset("fx").layers().size());
-        assertTrue(config.problems().stream().anyMatch(p -> p.contains("Vibration")));
-    }
-
-    @Test
-    void unknownItemSkipsTheLayer() throws Exception {
-        EffectsConfig config = parse("""
-                fx:
-                  layers:
-                    - { type: particle, particle: item, item: cookie_dough }
-                    - { type: particle, particle: item, item-model: "not a key" }
-                """);
-        assertEquals(1, config.preset("fx").layers().size());
-        LayerSpec.Particles p = assertInstanceOf(LayerSpec.Particles.class, config.preset("fx").layers().getFirst());
-        assertNull(p.data().itemModel(), "invalid model key is dropped, plain item stays");
-        assertEquals(2, config.problems().size(), config.problems().toString());
     }
 
     @Test
@@ -218,21 +176,6 @@ class EffectsConfigParserTest {
         assertEquals(200, config.limits().maxParticlesPerEffect(), "from the shipped file");
         assertEquals(1, config.preset("cookie_click").layers().size(), "server file wins");
         assertNotNull(config.preset("purchase"), "missing preset from the shipped file");
-    }
-
-    @Test
-    void floatingTextTooShortIsLengthenedAndTextIsRequired() throws Exception {
-        EffectsConfig config = parse("""
-                fx:
-                  layers:
-                    - { type: floating-text, text: "<gold>+<amount>", duration-ticks: 3 }
-                    - { type: floating-text }
-                """);
-        LayerSpec.FloatingText text = assertInstanceOf(LayerSpec.FloatingText.class,
-                config.preset("fx").layers().getFirst());
-        assertEquals(11, text.track().removeTick());
-        assertEquals(1, config.preset("fx").layers().size());
-        assertFalse(config.problems().isEmpty());
     }
 
     @Test

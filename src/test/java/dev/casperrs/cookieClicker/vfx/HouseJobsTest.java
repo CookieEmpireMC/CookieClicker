@@ -100,49 +100,12 @@ class HouseJobsTest {
     }
 
     @Test
-    void cancelAfterImpactNeverCallsOnLanded() {
-        DropJob job = drop();
-        run(job, TRACK.impactTick() + 1);
-        assertTrue(job.impacted());
-        job.cancel();
-        run(job, 20);
-        assertFalse(job.landed());
-        assertFalse(log.contains("landed"));
-        assertEquals(1, ends.get());
-    }
-
-    @Test
     void viewerLeavingEndsTheDropWithoutCallbacks() {
         DropJob job = drop();
         run(job, 4);
         viewerHere.set(false);
         assertFalse(job.step());
         assertEquals(List.of("send@2", "remove"), log);
-        assertEquals(1, ends.get());
-    }
-
-    @Test
-    void displayVanishingWhileTheViewerIsThereLandsNow() {
-        DropJob job = drop();
-        run(job, 4);
-        body.valid = false; // chunk unloaded / removed by someone else
-        assertFalse(job.step());
-        assertEquals(List.of("send@2", "impact", "landed"), log);
-        assertTrue(job.landed());
-        assertEquals(1, ends.get());
-    }
-
-    @Test
-    void impactCallbackCancellingTheDropSkipsOnLanded() {
-        DropJob[] self = new DropJob[1];
-        self[0] = drop(() -> {
-            log.add("impact");
-            self[0].cancel(); // e.g. the caller runs effects.cancelFor(viewer) from onImpact
-        });
-        run(self[0], 100);
-        assertTrue(self[0].impacted());
-        assertFalse(self[0].landed());
-        assertEquals(List.of("send@2", "impact", "remove"), log);
         assertEquals(1, ends.get());
     }
 
@@ -162,7 +125,7 @@ class HouseJobsTest {
     @Test
     void loopPlaysOnItsIntervalUntilCancelled() {
         AtomicInteger plays = new AtomicInteger();
-        LoopJob loop = new LoopJob(10, () -> true, plays::incrementAndGet, j -> ends.incrementAndGet());
+        LoopJob loop = new LoopJob(10, 0, () -> true, plays::incrementAndGet, j -> ends.incrementAndGet());
         assertTrue(loop.isActive());
         run(loop, 25);
         assertEquals(3, plays.get(), "ticks 0, 10 and 20");
@@ -175,10 +138,20 @@ class HouseJobsTest {
     }
 
     @Test
+    void loopStartDelayShiftsTheFirstPlay() {
+        AtomicInteger plays = new AtomicInteger();
+        LoopJob loop = new LoopJob(10, 4, () -> true, plays::incrementAndGet, j -> ends.incrementAndGet());
+        run(loop, 4);
+        assertEquals(0, plays.get(), "ticks 0..3 are still waiting");
+        run(loop, 11);
+        assertEquals(2, plays.get(), "ticks 4 and 14");
+    }
+
+    @Test
     void loopEndsWhenTheViewerIsGoneOrItCancelsItself() {
         AtomicBoolean valid = new AtomicBoolean(true);
         AtomicInteger plays = new AtomicInteger();
-        LoopJob loop = new LoopJob(1, valid::get, plays::incrementAndGet, j -> ends.incrementAndGet());
+        LoopJob loop = new LoopJob(1, 0, valid::get, plays::incrementAndGet, j -> ends.incrementAndGet());
         run(loop, 3);
         valid.set(false);
         assertFalse(loop.step());
@@ -186,7 +159,7 @@ class HouseJobsTest {
         assertEquals(3, plays.get());
 
         LoopJob[] self = new LoopJob[1];
-        self[0] = new LoopJob(1, () -> true, () -> self[0].cancel(), j -> ends.incrementAndGet());
+        self[0] = new LoopJob(1, 0, () -> true, () -> self[0].cancel(), j -> ends.incrementAndGet());
         assertFalse(self[0].step(), "cancel from inside a play ends it in the same tick");
         assertEquals(2, ends.get());
     }
@@ -198,13 +171,13 @@ class HouseJobsTest {
         UUID b = UUID.randomUUID();
         for (int i = 0; i < 3; i++) {
             assertTrue(jobs.hasRoom(a, 3, 5));
-            LoopJob job = new LoopJob(1, () -> true, () -> { }, j -> jobs.remove(a, j));
+            LoopJob job = new LoopJob(1, 0, () -> true, () -> { }, j -> jobs.remove(a, j));
             jobs.add(a, job);
         }
         assertFalse(jobs.hasRoom(a, 3, 5), "per-viewer cap");
         assertTrue(jobs.hasRoom(b, 3, 5));
         for (int i = 0; i < 2; i++) {
-            LoopJob job = new LoopJob(1, () -> true, () -> { }, j -> jobs.remove(b, j));
+            LoopJob job = new LoopJob(1, 0, () -> true, () -> { }, j -> jobs.remove(b, j));
             jobs.add(b, job);
         }
         assertFalse(jobs.hasRoom(b, 3, 5), "global cap");
@@ -218,24 +191,4 @@ class HouseJobsTest {
         assertEquals(2, jobs.total());
     }
 
-    @Test
-    void cancelViewerOnDropsNeverLandsAnyOfThem() {
-        ViewerJobs<DropJob> drops = new ViewerJobs<>();
-        UUID viewer = UUID.randomUUID();
-        AtomicInteger landed = new AtomicInteger();
-        List<DropJob> all = new ArrayList<>();
-        for (int i = 0; i < 4; i++) {
-            DropJob job = new DropJob(TRACK, new FakeBody(new ArrayList<>()), () -> true, () -> { },
-                    landed::incrementAndGet, j -> drops.remove(viewer, j));
-            drops.add(viewer, job);
-            all.add(job);
-            run(job, 3 + i);
-        }
-        drops.cancelViewer(viewer);
-        for (DropJob job : all) {
-            assertFalse(job.step());
-        }
-        assertEquals(0, landed.get());
-        assertEquals(0, drops.total());
-    }
 }

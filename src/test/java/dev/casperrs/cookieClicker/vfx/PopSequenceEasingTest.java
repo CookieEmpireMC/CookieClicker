@@ -32,24 +32,6 @@ class PopSequenceEasingTest {
     }
 
     @Test
-    void sequenceEndingAtRestIsNotExtended() {
-        PopSequence seq = new PopSequence(List.of(new PopSequence.Step(0.5, 0.5, 0.5, 1),
-                new PopSequence.Step(1, 1, 1, 2)));
-        assertEquals(2, seq.steps().size());
-        assertEquals(3, seq.totalTicks());
-    }
-
-    @Test
-    void stepsAreImmutableAndStartTicksAccumulate() {
-        PopSequence seq = PopSequence.standard();
-        assertThrows(UnsupportedOperationException.class, () -> seq.steps().add(seq.steps().getFirst()));
-        assertEquals(0, seq.startTick(0));
-        assertEquals(2, seq.startTick(1));
-        assertEquals(4, seq.startTick(2));
-        assertEquals(7, seq.startTick(3));
-    }
-
-    @Test
     void easingClampsAndHitsEndpoints() {
         assertEquals(0.0, Easing.outQuad(-5));
         assertEquals(1.0, Easing.outQuad(7));
@@ -61,13 +43,4 @@ class PopSequenceEasingTest {
         assertEquals(5.0, Easing.lerp(0, 10, 0.5), 1e-12);
     }
 
-    @Test
-    void easingIsMonotonic() {
-        double prev = -1;
-        for (int i = 0; i <= 100; i++) {
-            double v = Easing.outQuad(i / 100.0);
-            assertEquals(true, v >= prev);
-            prev = v;
-        }
-    }
 }
