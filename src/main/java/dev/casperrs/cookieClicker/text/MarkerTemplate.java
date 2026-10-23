@@ -10,10 +10,12 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 /**
- * A MiniMessage template with {@code Placeholder.unparsed} values, parsed once with marker texts in place of the
- * values; {@link #render} swaps the markers for the values instead of parsing again. The fast path is only used when,
+ * A MiniMessage template with {@code Placeholder.unparsed} values (or any parse function of plain-text values),
+ * parsed once with marker texts in place of the values; {@link #render} swaps the markers for the values instead of
+ * parsing again. The fast path is only used when,
  * for probe values, the swap gives exactly the same component as a real parse; otherwise (tags that reshape text
  * such as gradients, a placeholder inside a click event) and for empty values, {@link #render} parses. So its output
  * always equals {@link #parse}. Immutable.
@@ -26,36 +28,47 @@ public final class MarkerTemplate {
     private static final String[] PROBE_VALUES = {"0", "1.5 million", "12,345.6", "1e45", "999"};
     private static final int PROBE_ROUNDS = 3;
 
-    private final MiniMessage mm;
-    private final String template;
     private final List<String> names;
+    private final Function<String[], Component> parser;
     private final String[] markers;
     private final @Nullable Component parsed;
 
-    private MarkerTemplate(MiniMessage mm, String template, List<String> names) {
-        this.mm = mm;
-        this.template = template;
+    private MarkerTemplate(List<String> names, Function<String[], Component> parser, boolean usable) {
         this.names = List.copyOf(names);
+        this.parser = parser;
         this.markers = new String[names.size()];
         for (int i = 0; i < markers.length; i++) {
             markers[i] = OPEN + names.get(i) + CLOSE;
         }
-        this.parsed = template.indexOf(OPEN) >= 0 ? null : verified();
+        this.parsed = usable ? verified() : null;
     }
 
     /** @param names the placeholder names, in the order {@link #render} takes their values */
     public static MarkerTemplate of(MiniMessage mm, String template, String... names) {
-        return new MarkerTemplate(mm, template, List.of(names));
+        List<String> list = List.of(names);
+        return new MarkerTemplate(list, values -> {
+            TagResolver[] resolvers = new TagResolver[values.length];
+            for (int i = 0; i < values.length; i++) {
+                resolvers[i] = Placeholder.unparsed(list.get(i), values[i]);
+            }
+            return mm.deserialize(template, resolvers);
+        }, template.indexOf(OPEN) < 0);
     }
 
-    /** A real MiniMessage parse with every value as an unparsed placeholder. */
+    /**
+     * A template over any parse function whose values only ever end up as plain text (unparsed placeholders, also
+     * inside component placeholders it builds). The probe check still decides whether the swap is used.
+     *
+     * @param names one name per value, in the order {@link #render} takes them
+     */
+    public static MarkerTemplate of(List<String> names, Function<String[], Component> parser) {
+        return new MarkerTemplate(names, parser, true);
+    }
+
+    /** The real parse. */
     public Component parse(String... values) {
         checkCount(values);
-        TagResolver[] resolvers = new TagResolver[values.length];
-        for (int i = 0; i < values.length; i++) {
-            resolvers[i] = Placeholder.unparsed(names.get(i), values[i]);
-        }
-        return mm.deserialize(template, resolvers);
+        return parser.apply(values);
     }
 
     public Component render(String... values) {

@@ -26,6 +26,7 @@ public final class Messages {
     private final Set<String> warned = new HashSet<>();
     private ConfigurationSection yaml = new YamlConfiguration();
     private NumberFormatter numbers = new NumberFormatter(numberSettings(new YamlConfiguration()));
+    private int revision;
 
     public Messages(Logger log) {
         this.log = log;
@@ -40,6 +41,12 @@ public final class Messages {
         this.yaml = messages;
         this.numbers = new NumberFormatter(numberSettings(messages));
         warned.clear();
+        revision++;
+    }
+
+    /** Changes with every {@link #load}: caches of parsed texts compare it. */
+    public int revision() {
+        return revision;
     }
 
     public NumberFormatter numbers() {
