@@ -1,4 +1,4 @@
-package dev.casperrs.cookieClicker.view;
+package dev.casperrs.cookieClicker.view.panel;
 
 /**
  * A panel value rolling from {@code from} to {@code to} over {@code duration} ticks from {@code start}, eased

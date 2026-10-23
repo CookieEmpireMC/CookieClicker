@@ -1,5 +1,6 @@
 package dev.casperrs.cookieClicker.sound;
 
+import dev.casperrs.cookieClicker.log.WarnOnce;
 import net.kyori.adventure.key.InvalidKeyException;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.sound.Sound;
@@ -12,27 +13,29 @@ import org.bukkit.entity.Player;
 import org.jspecify.annotations.Nullable;
 
 import java.util.EnumMap;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.logging.Logger;
 import java.util.random.RandomGenerator;
 
 /**
- * The <b>only</b> place in the plugin that plays sounds. Plays events by name from {@code sounds.yml};
- * players who haven't loaded our resource pack hear the vanilla fallback. Unknown events are logged
- * once and skipped. Sounds go to one player only (per-player bakery). Main thread only.
+ * The <b>only</b> place in the plugin that plays sounds. Plays events by name from {@code sounds.yml}; players without
+ * our resource pack hear the vanilla fallback. Unknown events are logged once and skipped. Sounds go to one player only
+ * (per-player bakery). Main thread only.
  */
 public final class SoundService {
 
-    private final Logger log;
+    /** An event with its keys parsed once at load; a null key is {@code @block} or invalid (warned when played). */
+    private record Compiled(SoundDef def, @Nullable Key key, @Nullable Key fallback, Sound.Source source) {
+    }
+
     private final RandomGenerator random;
     private final Predicate<Player> hasPack;
-    private final Set<String> warned = new HashSet<>();
-    private Map<String, SoundDef> sounds = Map.of();
+    private final WarnOnce warnings;
+    private Map<String, Compiled> sounds = Map.of();
     /** Place sound key per block material ({@code @block} events); a block's sound group doesn't change. */
     private final Map<Material, Key> blockSounds = new EnumMap<>(Material.class);
     /** Survives {@link #load} (reload): a reload must not restart a loop that is still sounding. */
@@ -40,15 +43,18 @@ public final class SoundService {
 
     /** @param hasPack whether the player has our resource pack loaded (picks key vs fallback) */
     public SoundService(Logger log, RandomGenerator random, Predicate<Player> hasPack) {
-        this.log = log;
         this.random = random;
         this.hasPack = hasPack;
+        this.warnings = new WarnOnce(log);
     }
 
     /** Swap in a freshly parsed {@code sounds.yml} (enable / reload). */
     public void load(Map<String, SoundDef> sounds) {
-        this.sounds = Map.copyOf(sounds);
-        warned.clear();
+        Map<String, Compiled> compiled = new HashMap<>();
+        sounds.forEach((event, def) -> compiled.put(event,
+                new Compiled(def, parse(def.key()), parse(def.fallback()), source(def.source()))));
+        this.sounds = Map.copyOf(compiled);
+        warnings.clear();
         blockSounds.clear();
     }
 
@@ -113,22 +119,23 @@ public final class SoundService {
     }
 
     private @Nullable Sound resolve(Player player, String event, @Nullable BlockData block) {
-        SoundDef def = sounds.get(event);
-        if (def == null) {
-            warnOnce(event, "Unknown sound event '" + event + "' (not in sounds.yml); skipped");
+        Compiled c = sounds.get(event);
+        if (c == null) {
+            warnings.warn(event, "Unknown sound event '" + event + "' (not in sounds.yml); skipped");
             return null;
         }
+        SoundDef def = c.def();
         Key key;
         if (def.blockSound()) {
             key = block == null ? null : blockSound(block);
             if (key == null) {
                 if (block == null) {
-                    warnOnce(event, "Sound event '" + event + "' is an @block sound but was played without a block");
+                    warnings.warn(event, "Sound event '" + event + "' is an @block sound but was played without a block");
                 }
-                key = parse(event, def.fallback());
+                key = checked(event, c.fallback(), def.fallback());
             }
         } else {
-            key = parse(event, hasPack.test(player) ? def.key() : def.fallback());
+            key = hasPack.test(player) ? checked(event, c.key(), def.key()) : checked(event, c.fallback(), def.fallback());
         }
         if (key == null) {
             return null;
@@ -136,17 +143,23 @@ public final class SoundService {
         float pitch = def.pitchMax() > def.pitchMin()
                 ? def.pitchMin() + random.nextFloat() * (def.pitchMax() - def.pitchMin())
                 : def.pitchMin();
-        return Sound.sound(key, source(def.source()), def.volume(), pitch);
+        return Sound.sound(key, c.source(), def.volume(), pitch);
     }
 
-    private @Nullable Key parse(String event, String keyString) {
+    private @Nullable Key checked(String event, @Nullable Key key, String keyString) {
+        if (key == null && !SoundDef.BLOCK_KEY.equals(keyString)) { // @block without a usable fallback: silent
+            warnings.warn(event, "sounds.yml: '" + event + "' has an invalid key '" + keyString + "'; skipped");
+        }
+        return key;
+    }
+
+    private static @Nullable Key parse(String keyString) {
         if (SoundDef.BLOCK_KEY.equals(keyString)) {
-            return null; // @block without a usable fallback: silent
+            return null;
         }
         try {
             return Key.key(keyString);
         } catch (InvalidKeyException e) {
-            warnOnce(event, "sounds.yml: '" + event + "' has an invalid key '" + keyString + "'; skipped");
             return null;
         }
     }
@@ -158,19 +171,13 @@ public final class SoundService {
             // SOUND_EVENT is the same registry as the @Obsolete SOUNDS alias; sounds can exist without a key
             NamespacedKey key = Registry.SOUND_EVENT.getKey(block.getSoundGroup().getPlaceSound());
             if (key == null) {
-                warnOnce("@block:" + material, "No place sound for " + material + "; using the fallback");
+                warnings.warn("@block:" + material, "No place sound for " + material + "; using the fallback");
                 return null;
             }
             cached = key;
             blockSounds.put(material, cached);
         }
         return cached;
-    }
-
-    private void warnOnce(String event, String message) {
-        if (warned.add(event)) {
-            log.warning(message);
-        }
     }
 
     static Sound.Source source(String name) {

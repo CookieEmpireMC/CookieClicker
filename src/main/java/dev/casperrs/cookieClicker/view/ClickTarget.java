@@ -1,5 +1,6 @@
 package dev.casperrs.cookieClicker.view;
 
+import dev.casperrs.cookieClicker.view.panel.PanelKind;
 import org.jspecify.annotations.Nullable;
 
 import java.util.UUID;

@@ -17,10 +17,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Reads {@code stations.yml} (enable/reload) and writes it off the main thread after changes.
- * While a write is still queued or running, {@link #load()} returns the stations of the newest write instead
- * of reading the file, so {@code /bakery station set} directly followed by {@code /bakery reload} can never
- * read the old file and drop the new station.
+ * Migration only (the one-time {@code stations.yml} to {@code plots.yml} move in {@code PlotService}; delete with it):
+ * reads {@code stations.yml} and writes it off the main thread. While a write is queued or running, {@link #load()}
+ * returns the newest written stations instead of the file.
  */
 public final class StationFile {
 

@@ -2,10 +2,10 @@ package dev.casperrs.cookieClicker.hud;
 
 import dev.casperrs.cookieClicker.economy.CookiePouch;
 import dev.casperrs.cookieClicker.economy.Economy;
+import dev.casperrs.cookieClicker.text.MarkerTemplate;
 import dev.casperrs.cookieClicker.text.Messages;
 import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
-import org.jspecify.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -13,10 +13,8 @@ import java.util.UUID;
 import java.util.function.Predicate;
 
 /**
- * The action-bar HUD: cookie glyph + cookies + CPS from {@code messages.yml}
- * ({@code hud.action-bar}, or {@code hud.action-bar-no-pack} for players without our resource pack,
- * whose glyph would render as a box). Each template is parsed once per text (see {@link HudTemplate}), not on
- * every refresh. Main thread only.
+ * The action-bar HUD from {@code hud.action-bar}, or {@code hud.action-bar-no-pack} for players without our pack
+ * (the glyph would render as a box). Each template is compiled once per text ({@link MarkerTemplate}). Main thread.
  */
 public final class Hud {
 
@@ -24,12 +22,12 @@ public final class Hud {
     private final Economy economy;
     private final Predicate<Player> hasPack;
     private boolean enabled = true;
-    /** messages.yml path -> the template compiled from its current text (recompiled when a reload changes it). */
+    /** messages.yml path -> the template of its current text (recompiled when a reload changes it). */
     private final Map<String, Compiled> compiled = new HashMap<>();
     /** Players whose action bar shows something else (a shelf tooltip) until this time (ms): the 1 Hz HUD waits. */
     private final Map<UUID, Long> heldUntil = new HashMap<>();
 
-    private record Compiled(String raw, @Nullable HudTemplate template) {
+    private record Compiled(String raw, MarkerTemplate template) {
     }
 
     public Hud(Messages messages, Economy economy, Predicate<Player> hasPack) {
@@ -54,11 +52,8 @@ public final class Hud {
         String cps = messages.number(economy.totalCps(pouch));
         Compiled c = compiled.get(path);
         if (c == null || !c.raw().equals(raw)) {
-            c = new Compiled(raw, HudTemplate.compile(Messages.miniMessage(), raw));
+            c = new Compiled(raw, MarkerTemplate.of(Messages.miniMessage(), raw, "cookies", "cps"));
             compiled.put(path, c);
-        }
-        if (c.template() == null || cookies.isEmpty() || cps.isEmpty()) {
-            return HudTemplate.parse(Messages.miniMessage(), raw, cookies, cps);
         }
         return c.template().render(cookies, cps);
     }

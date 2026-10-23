@@ -5,7 +5,7 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * One look of the cookie basket: tier (0 wicker, 1 bushel, 2 golden) and fill (0..4), picked from the cookies in
- * the pouch with {@code station.basket.tier-starts} (each tier's range split into 5 fill steps on a log scale) and
+ * the pouch with the basket tier starts (each tier's range split into 5 fill steps on a log scale) and
  * a small hysteresis so a pouch hovering at a boundary never flickers. Pure maths.
  */
 record BasketLook(int tier, int fill) {

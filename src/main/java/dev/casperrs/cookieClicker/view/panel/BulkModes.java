@@ -1,4 +1,4 @@
-package dev.casperrs.cookieClicker.view;
+package dev.casperrs.cookieClicker.view.panel;
 
 import java.util.EnumMap;
 import java.util.HashMap;

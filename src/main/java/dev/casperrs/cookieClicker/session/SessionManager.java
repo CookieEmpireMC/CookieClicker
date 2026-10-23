@@ -128,23 +128,27 @@ public final class SessionManager {
         CookiePouch pouch = sessions.remove(player);
         if (pouch != null) {
             listeners.forEach(l -> l.onUnloaded(player));
-            saveAsync(player, pouch.snapshot());
+            saveAsync(player, pouch.snapshot(), true);
         }
     }
 
-    /** Autosave: snapshot every session now (main thread), write async. */
+    /** Autosave: snapshot every session now (main thread), write async; the store skips unchanged players. */
     public void saveAll() {
-        sessions.forEach((player, pouch) -> saveAsync(player, pouch.snapshot()));
+        sessions.forEach((player, pouch) -> saveAsync(player, pouch.snapshot(), false));
     }
 
-    private void saveAsync(UUID player, PouchSnapshot snapshot) {
+    private void saveAsync(UUID player, PouchSnapshot snapshot, boolean last) {
         if (io.isShutdown()) {
             log.severe("Storage thread already stopped; could not save " + player);
             return;
         }
         io.execute(() -> {
             try {
-                store.save(player, snapshot);
+                if (last) {
+                    store.saveFinal(player, snapshot);
+                } else {
+                    store.save(player, snapshot);
+                }
             } catch (StorageException | RuntimeException e) {
                 log.log(Level.SEVERE, "Could not save cookies for " + player, e);
             }
@@ -157,7 +161,7 @@ public final class SessionManager {
      * executor (the plugin is disabled).
      */
     public void shutdown(long timeoutSeconds) {
-        saveAll();
+        sessions.forEach((player, pouch) -> saveAsync(player, pouch.snapshot(), true));
         sessions.clear();
         pending.clear();
         io.execute(store::close);

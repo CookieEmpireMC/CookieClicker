@@ -17,7 +17,13 @@ public interface PlayerStore extends AutoCloseable {
     /** Empty when the player has no saved data yet. Repairs bad values (see {@link LoadedPouch#problems()}). */
     Optional<LoadedPouch> load(UUID player) throws StorageException;
 
+    /** Autosave: may skip writes when nothing changed since this store's last save of the player. */
     void save(UUID player, PouchSnapshot snapshot) throws StorageException;
+
+    /** The last save of a session (quit, disable): always writes. */
+    default void saveFinal(UUID player, PouchSnapshot snapshot) throws StorageException {
+        save(player, snapshot);
+    }
 
     @Override
     void close();

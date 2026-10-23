@@ -1,4 +1,4 @@
-package dev.casperrs.cookieClicker.view;
+package dev.casperrs.cookieClicker.view.panel;
 
 import dev.casperrs.cookieClicker.economy.CookiePouch;
 import dev.casperrs.cookieClicker.economy.Economy;
@@ -31,7 +31,7 @@ public record UpgradeRowState(Style style, boolean repeatable, int level, int co
     public enum Style {
         AFFORDABLE, UNAFFORDABLE, LOCKED, MAXED;
 
-        /** Key under {@code station.panel.colors}. */
+        /** Key of the row background colour. */
         public String key() {
             return name().toLowerCase(Locale.ROOT);
         }
