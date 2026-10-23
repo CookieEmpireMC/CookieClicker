@@ -6,18 +6,9 @@ import java.util.Map;
 /**
  * The cookie basket on the pedestal. Visual thresholds only (not economy values): which look
  * ({@code <tier>_<fill>}) the pouch shows, how high each look is, where the cookie floats and when a tier-up switches
- * the look.
- *
- * @param tierStarts        cookies in the pouch where wicker, bushel and golden start, then where golden is full;
- *                          each tier's 5 fill steps split its range on a log scale
- * @param hysteresis        a look changes only once the pouch is this fraction past the boundary (no flicker)
- * @param heights           tier -&gt; top height of the look per fill 0..4 (blocks above the basket bottom; the
- *                          highest point the cookie must clear, e.g. golden's corner posts)
- * @param cookieGap         air between the basket top and the cookie's lowest point (bob included)
- * @param cookieMaxHeight   the cookie centre never goes higher than this above the ground (eye level 1.62 + 0.6),
- *                          so it stays clickable
- * @param moveTicks         the cookie glides to a new height over this many ticks (0..59, teleport duration)
- * @param tierUpSwitchTicks on a tier-up the look switches this many ticks after the effect starts (its peak)
+ * the look. tierStarts are pouch cookies (each tier's 5 fills split on a log scale); hysteresis is a fraction past the
+ * boundary; heights in blocks (above the basket bottom, per fill 0..4; cookieMaxHeight 1.62 + 0.6 keeps it
+ * clickable); times in ticks (moveTicks 0..59).
  */
 public record BasketSettings(List<Double> tierStarts, double hysteresis, Map<String, List<Double>> heights,
                              double cookieGap, double cookieMaxHeight, int moveTicks, int tierUpSwitchTicks) {

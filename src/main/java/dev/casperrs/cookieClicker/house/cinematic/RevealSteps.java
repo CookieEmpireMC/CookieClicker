@@ -28,10 +28,7 @@ final class RevealSteps {
     private final BiConsumer<CinematicRun, Player> complete;
     private final Consumer<CinematicRun> fail;
 
-    /**
-     * @param complete called once every block landed
-     * @param fail     aborts the run after a block could not be made real
-     */
+    /** {@code complete} runs once every block landed; {@code fail} aborts after a block could not be made real. */
     RevealSteps(Logger log, FakeBlocks fakeBlocks, Effects effects, SoundService sounds,
                 Supplier<HouseSettings> settings, BiConsumer<CinematicRun, Player> complete,
                 Consumer<CinematicRun> fail) {

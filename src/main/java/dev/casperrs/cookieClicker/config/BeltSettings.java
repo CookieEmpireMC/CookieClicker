@@ -6,12 +6,8 @@ import org.bukkit.configuration.ConfigurationSection;
 import java.util.function.Consumer;
 
 /**
- * The conveyor belt look and its CPS -&gt; speed/interval curve. Purely visual.
- *
- * @param soundEvery   ticks between {@code belt_loop} plays: the file's length at its fixed pitch (0 = silent)
- * @param fallbackItem belt surface {@code Material} for players without our pack
- * @param surfaceYaw   degrees added to the surface's turn (0 = slats move toward the pedestal)
- * @param cookiePitch  degrees a belt cookie is tipped about the belt's cross axis (90 = lying flat, face up)
+ * The conveyor belt look and its CPS -&gt; speed/interval curve. Purely visual. soundEvery in ticks (0 = silent);
+ * angles in degrees (surfaceYaw 0 = slats move toward the pedestal, cookiePitch 90 = lying flat).
  */
 public record BeltSettings(boolean enabled, int maxCookies, double cookieScale, BeltCurve curve, int soundEvery,
                            String fallbackItem, double surfaceYaw, double cookiePitch) {

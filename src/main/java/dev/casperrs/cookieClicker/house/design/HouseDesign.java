@@ -8,17 +8,9 @@ import java.util.Map;
 
 /**
  * A parsed house design ({@code houses/<name>.yml}), in design-local block coordinates: x = column within a row
- * (west to east), y = layer (bottom to top), z = row within a layer (north to south). Pure data.
- *
- * @param origin  the design cell that lands on the house region's minimum corner
- * @param palette char -&gt; block data string (validated against the server when pasting)
- * @param grid    {@code grid[y][z][x]}; {@link HouseDesignParser#KEEP} = leave the world's block alone
- * @param points  named single points ({@code chimney}, {@code door}, {@code belt_out}, ...) as design-local
- *                {@code [x, y, z]}; {@code chimney} is the cell above the chimney top where the smoke starts
- * @param smoke   every smoke start cell ({@code points.smoke}, or the one {@code points.chimney}); may be empty
- * @param steam   every steam vent cell ({@code points.steam}); may be empty
- * @param signs   text for sign blocks, set on their front side after pasting
- * @param layout  the fixed plot layout ({@code /bakery plot setup}), or null (place-only designs like the cottage)
+ * (west to east), y = layer (bottom to top), z = row within a layer (north to south). Pure data. {@code grid[y][z][x]}
+ * ({@link HouseDesignParser#KEEP} = leave the world's block); origin lands on the house region's minimum corner;
+ * {@code chimney} is the cell above the chimney top; smoke/steam may be empty; layout is null for place-only designs.
  */
 public record HouseDesign(String name, int sizeX, int sizeY, int sizeZ, int[] origin, Map<Character, String> palette,
                           char[][][] grid, Map<String, int[]> points, List<int[]> smoke, List<int[]> steam,

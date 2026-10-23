@@ -43,7 +43,7 @@ public final class MarkerTemplate {
         this.parsed = usable ? verified() : null;
     }
 
-    /** @param names the placeholder names, in the order {@link #render} takes their values */
+    /** Placeholder names in the order {@link #render} takes their values. */
     public static MarkerTemplate of(MiniMessage mm, String template, String... names) {
         List<String> list = List.of(names);
         return new MarkerTemplate(list, values -> {
@@ -57,9 +57,8 @@ public final class MarkerTemplate {
 
     /**
      * A template over any parse function whose values only ever end up as plain text (unparsed placeholders, also
-     * inside component placeholders it builds). The probe check still decides whether the swap is used.
-     *
-     * @param names one name per value, in the order {@link #render} takes them
+     * inside component placeholders it builds). The probe check still decides whether the swap is used. One name per
+     * value, in {@link #render} order.
      */
     public static MarkerTemplate of(List<String> names, Function<String[], Component> parser) {
         return new MarkerTemplate(names, parser, true);

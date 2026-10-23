@@ -24,7 +24,7 @@ public final class Economy {
     private final RandomGenerator random;
     private EconomyConfig config;
 
-    /** @param random source for crit rolls; inject a seeded/fixed one in tests */
+    /** {@code random} drives crit rolls; tests inject a seeded/fixed one. */
     public Economy(EconomyConfig config, RandomGenerator random) {
         this.config = Objects.requireNonNull(config);
         this.random = Objects.requireNonNull(random);

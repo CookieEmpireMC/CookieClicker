@@ -7,10 +7,8 @@ import java.util.Locale;
 /**
  * What a player gets back after the cinematic camera: their own game mode and where they stand afterwards. Stored on
  * the player (PDC string) while they are in the camera, so a quit, crash or disable mid-build is undone on the next
- * join. Pure Java; format {@code <MODE>;<world key>;<x>;<y>;<z>;<yaw>;<pitch>}.
- *
- * @param gameMode the original game mode's name ({@code SURVIVAL}, ...); never {@code SPECTATOR} unless it was
- * @param worldKey world key of the return spot, e.g. {@code minecraft:overworld}
+ * join. Pure Java; format {@code <MODE>;<world key>;<x>;<y>;<z>;<yaw>;<pitch>}. gameMode is never {@code SPECTATOR}
+ * unless it was.
  */
 public record CameraReturn(String gameMode, String worldKey, double x, double y, double z, float yaw, float pitch) {
 

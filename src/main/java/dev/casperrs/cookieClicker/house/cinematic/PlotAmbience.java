@@ -63,9 +63,8 @@ public final class PlotAmbience {
     }
 
     /**
-     * Starts the player's smoke, steam and hum for {@code plot} (no-op when they already run).
-     *
-     * @param houseCentre where the hum plays when the plot has no steam point, or null (then the first smoke point)
+     * Starts the player's smoke, steam and hum for {@code plot} (no-op when they already run). Without a steam point
+     * the hum plays at {@code houseCentre}, or at the first smoke point when that is null.
      */
     public void start(Player player, Plot plot, World world, @Nullable Location houseCentre) {
         if (!player.getWorld().equals(world)) {

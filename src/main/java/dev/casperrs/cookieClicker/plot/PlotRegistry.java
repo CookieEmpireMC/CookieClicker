@@ -55,12 +55,12 @@ public final class PlotRegistry {
         }
     }
 
-    /** @param worlds world by key ({@code minecraft:overworld}), empty when not loaded */
+    /** {@code worlds} looks a world up by key; empty when not loaded. */
     public PlotRegistry(PlotRegions regions, Function<String, Optional<World>> worlds) {
         this(regions, worlds, () -> System.nanoTime() / 1_000_000);
     }
 
-    /** @param clockMillis a monotonic clock in milliseconds (the bounds expiry) */
+    /** {@code clockMillis} must be monotonic (bounds expiry). */
     public PlotRegistry(PlotRegions regions, Function<String, Optional<World>> worlds, LongSupplier clockMillis) {
         this.regions = regions;
         this.worlds = worlds;

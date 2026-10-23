@@ -164,11 +164,9 @@ public final class StationViews implements Listener, StationListener, SessionLis
     }
 
     /**
-     * Removes leftover station entities in loaded worlds (ours by PDC key, not part of a live view).
-     *
-     * @param anyTagged also remove everything else tagged {@value #TAG} (enable only, before the vfx engine starts,
-     *                  so crash leftovers of effect entities go too)
-     * @return how many were removed
+     * Removes leftover station entities in loaded worlds (ours by PDC key, not part of a live view) and returns the
+     * count. {@code anyTagged} (enable only, before the vfx engine starts) also removes
+     * everything tagged {@value #TAG}.
      */
     public int sweep(boolean anyTagged) {
         int removed = 0;
@@ -298,7 +296,7 @@ public final class StationViews implements Listener, StationListener, SessionLis
         refreshPanels(player, pouch, false);
     }
 
-    /** @param pulse a player action (purchase, toggle) changed the values: rolling rows also pulse */
+    /** {@code pulse} (a purchase or toggle) makes rolling rows pulse too. */
     void refreshPanels(Player player, CookiePouch pouch, boolean pulse) {
         for (StationView v : List.copyOf(index.viewsOf(player.getUniqueId()))) {
             update(player, v, pouch, pulse);

@@ -15,7 +15,7 @@ public final class WarnOnce {
         this.log = log;
     }
 
-    /** @return true when this call logged (the first time for {@code key}) */
+    /** True when this call logged (the first time for {@code key}). */
     public boolean warn(String key, String message) {
         if (!warned.add(key)) {
             return false;
@@ -24,7 +24,7 @@ public final class WarnOnce {
         return true;
     }
 
-    /** @return true when this call logged (the first time for {@code key}) */
+    /** True when this call logged (the first time for {@code key}). */
     public boolean warn(String key, String message, Throwable error) {
         if (!warned.add(key)) {
             return false;

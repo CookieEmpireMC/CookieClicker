@@ -66,9 +66,8 @@ public final class PlotFile {
     }
 
     /**
-     * Serialises on the calling (main) thread, writes atomically on {@code io}.
-     *
-     * @param afterWrite runs on {@code io} only when the write succeeded (e.g. backing up {@code stations.yml})
+     * Serialises on the calling (main) thread, writes atomically on {@code io}; {@code afterWrite} runs there only
+     * after a successful write.
      */
     public void saveAsync(Collection<Plot> plots, @Nullable Runnable afterWrite) {
         YamlConfiguration yaml = new YamlConfiguration();

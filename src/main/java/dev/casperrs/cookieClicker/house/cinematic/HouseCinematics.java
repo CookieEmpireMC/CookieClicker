@@ -390,15 +390,14 @@ public final class HouseCinematics implements Listener, PlotPresenceListener {
 
     /**
      * Ends the player's cinematic without marking it seen: falling blocks cancelled (no callbacks), every
-     * still-hidden block sent real again right now if {@code online}, keep-out removed.
-     *
-     * @return whether a cinematic was running
+     * still-hidden block sent real again right now if {@code online}, keep-out removed. Returns whether one
+     * was running.
      */
     public boolean abort(UUID id, boolean online) {
         return abort(id, online, online);
     }
 
-    /** @param goBack a camera run puts the player back at the viewpoint (false: they are being teleported away) */
+    /** {@code goBack} false: they are being teleported away, so a camera run does not return them. */
     boolean abort(UUID id, boolean online, boolean goBack) {
         CinematicRun run = running.remove(id);
         if (run == null) {

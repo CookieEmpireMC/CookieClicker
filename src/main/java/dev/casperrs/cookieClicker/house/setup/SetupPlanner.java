@@ -52,9 +52,8 @@ final class SetupPlanner {
     private final Supplier<Map<String, Double>> footprints;
 
     /**
-     * Everything {@link #check} verified; {@code ax}/{@code az} is the layout's corner, centred on the region.
-     *
-     * @param old the previous setup to undo first, or null
+     * Everything {@link #check} verified; {@code ax}/{@code az} is the layout's corner, centred on the region; the
+     * {@code old} setup is undone first.
      */
     record Checked(Plot plot, HouseDesign design, HouseLayout layout, FenceStyle fence, Map<String, BlockData> known,
                    @Nullable SetupBackup old, World world, RegionShape region, int ax, int az) {
@@ -64,7 +63,6 @@ final class SetupPlanner {
         }
     }
 
-    /** @param footprints building id → footprint side, kept free of decor */
     SetupPlanner(Logger log, PlotRegistry plots, IntSupplier maxBlocks, Supplier<Map<String, Double>> footprints) {
         this.log = log;
         this.plots = plots;

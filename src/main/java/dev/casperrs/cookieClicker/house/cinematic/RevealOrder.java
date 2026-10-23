@@ -8,10 +8,8 @@ import java.util.Comparator;
 /**
  * The order the build cinematic reveals a house in: layer by layer from the bottom up, and inside every layer outward
  * from the centre of the house (the centre of all blocks' XZ bounding box). Ties are broken by angle around the centre
- * (a gentle spiral), then by x and z, so the order is fully deterministic. Pure.
- *
- * @param positions   the blocks in reveal order, packed with {@link RegionShape#pack}
- * @param layerStarts index into {@code positions} where each layer (one y level) starts; ascending, first is 0
+ * (a gentle spiral), then by x and z, so the order is fully deterministic. Pure. Positions are packed with
+ * {@link RegionShape#pack}; layerStarts index each y layer's first block (ascending, from 0).
  */
 public record RevealOrder(long[] positions, int[] layerStarts) {
 

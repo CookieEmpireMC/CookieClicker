@@ -17,11 +17,7 @@ public final class BulkMath {
     /**
      * {@code bulk_cost(base, g, n, k) = ceil(base × g^n × ratio)}, with {@code ratio = (g^k − 1)/(g − 1)}
      * ({@code k} when {@code g == 1}). Rounded up <b>once</b> for the whole batch; {@code k <= 0} costs 0.
-     *
-     * @param base  {@code base-cost} (building) or {@code cost} (upgrade)
-     * @param growth the matching {@code cost-growth} ({@code >= 1})
-     * @param owned buildings owned, or the upgrade's current level
-     * @param count how many to buy
+     * {@code g = growth >= 1}, {@code n = owned} (or the upgrade's level), {@code k = count}.
      */
     public static double bulkCost(double base, double growth, int owned, int count) {
         if (count <= 0) {

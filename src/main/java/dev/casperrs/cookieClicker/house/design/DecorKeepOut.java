@@ -71,8 +71,7 @@ public final class DecorKeepOut {
 
     /**
      * As {@link #of(HouseDesign, BuildingSlots)}, with every slot's footprint square kept out instead of its cell.
-     *
-     * @param footprints building id → footprint side in blocks; a missing id keeps only the slot cell
+     * Footprint sides in blocks; a missing id keeps only the slot cell.
      */
     public static @Nullable DecorKeepOut of(HouseDesign design, BuildingSlots slots, Map<String, Double> footprints) {
         DecorKeepOut base = layoutOnly(design);

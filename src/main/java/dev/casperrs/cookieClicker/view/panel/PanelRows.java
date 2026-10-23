@@ -50,9 +50,7 @@ public final class PanelRows {
     /**
      * Click upgrades panel: the repeatable upgrades pinned on top ({@code upgrades.yml} order, also when maxed), then
      * the one-time upgrades not bought yet, cheapest first (ties in file order), at most {@code maxRows} in all.
-     * Bought one-time upgrades leave the list, so the rest move up.
-     *
-     * @param levels upgrade id → level (missing = 0)
+     * Bought one-time upgrades leave the list, so the rest move up. Missing levels count as 0.
      */
     public static List<String> clicks(EconomyConfig config, Map<String, Integer> levels, int maxRows) {
         List<String> out = new ArrayList<>();

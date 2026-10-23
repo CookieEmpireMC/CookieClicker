@@ -4,11 +4,8 @@ import java.util.List;
 
 /**
  * A snapshot of a region's shape in block coordinates (inclusive min/max). Pure, so outline and bounding-box maths
- * are testable without WorldGuard.
- *
- * @param polygon  true for a WorldGuard polygon region (else a cuboid)
- * @param points   the 2D outline vertices as {@code [x, z]} block coordinates, in order (cuboids: their 4 corners)
- * @param contains whether a block lies inside (polygons are tested against the real region, not the box)
+ * are testable without WorldGuard. points are the ordered {@code [x, z]} outline vertices (a cuboid's 4 corners);
+ * contains tests polygons against the real region, not the box.
  */
 public record RegionShape(String id, boolean polygon, int minX, int minY, int minZ, int maxX, int maxY, int maxZ,
                           List<int[]> points, BlockTest contains) {

@@ -23,8 +23,6 @@ import java.util.Set;
  * first air layer above the ground; {@code yaw} is the way the building faces (180 = north, like the layout spots).
  * Instance <i>i</i> of a building stands on slot <i>i</i>; the slot count is the visual cap (at most
  * {@link #MAX_PER_TYPE}). A bad entry is a problem and is skipped; the rest still counts.
- *
- * @param slots building id → its slots in file order
  */
 public record BuildingSlots(Map<String, List<Slot>> slots) {
 

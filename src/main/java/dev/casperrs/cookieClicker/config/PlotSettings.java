@@ -8,12 +8,8 @@ import java.util.function.Consumer;
 public record PlotSettings(Show show, HideOthers hideOthers, BuildingVisualSettings buildings) {
 
     /**
-     * {@code /bakery plot show}.
-     *
-     * @param particleStep blocks between outline points (grows automatically past {@code maxPoints})
-     * @param maxPoints    at least 12: a cuboid outline keeps one point per edge
-     * @param plotEffect   effects.yml preset played at every plot outline point
-     * @param houseEffect  effects.yml preset played at every house outline point
+     * {@code /bakery plot show}. particleStep in blocks (grows past maxPoints); maxPoints &gt;= 12; the effects are
+     * effects.yml preset IDs.
      */
     public record Show(double particleStep, int durationSeconds, int redrawTicks, int maxPoints, String plotEffect,
                        String houseEffect) {

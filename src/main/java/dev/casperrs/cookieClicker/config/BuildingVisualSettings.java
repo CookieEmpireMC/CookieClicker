@@ -7,15 +7,8 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 /**
- * The bought buildings on the factory plot. The stage thresholds pick the model look; they are not economy values.
- *
- * @param stage2                owned count from which the stage-2 look shows ({@code custom_model_data} "2")
- * @param stage3                owned count from which the stage-3 look shows ("3")
- * @param effectStaggerTicks    ticks between the effects of several instances that change at once
- * @param fallbackBlocks        building id -&gt; vanilla block shown without our pack
- * @param maxEffectsPerPurchase most effects one purchase plays (a ×Max buy crossing a stage for many types); the
- *                              rest plays none (the one sound stays)
- * @param footprints            building id -&gt; side of its centred footprint square (blocks), for the decor keep-out
+ * The bought buildings on the factory plot. The stage thresholds (owned counts) pick the model look; they are not
+ * economy values. Footprint sides in blocks; past maxEffectsPerPurchase a purchase plays no more effects (sound stays).
  */
 public record BuildingVisualSettings(boolean enabled, int stage2, int stage3, float viewRange, int effectStaggerTicks,
                                      float yawOffset, float fallbackScale, Map<String, String> fallbackBlocks,
@@ -39,7 +32,7 @@ public record BuildingVisualSettings(boolean enabled, int stage2, int stage3, fl
         return withEnabled(true);
     }
 
-    /** @param c the {@code plot.buildings} section, or null (all defaults) */
+    /** A null {@code plot.buildings} section gives all defaults. */
     public static BuildingVisualSettings from(@Nullable ConfigurationSection c, Consumer<String> problems) {
         return withEnabled(c == null || c.getBoolean("enabled", true));
     }

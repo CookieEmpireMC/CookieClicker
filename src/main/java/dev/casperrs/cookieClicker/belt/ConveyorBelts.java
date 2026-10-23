@@ -78,10 +78,7 @@ public final class ConveyorBelts implements Listener {
     private boolean registered;
     private long tick;
 
-    /**
-     * @param inCinematic   true while the player watches their build cinematic (no belt for them then)
-     * @param hearingRadius {@code belt_loop} is heard within this many blocks
-     */
+    /** {@code hearingRadius} in blocks; {@code inCinematic}: watching their build cinematic (no belt then). */
     public ConveyorBelts(Plugin plugin, PlotRegistry plots, PlotTracker tracker, SessionManager sessions,
                          Economy economy, Effects effects, SoundService sounds, Predicate<Player> hasPack,
                          Predicate<UUID> inCinematic, Supplier<BeltSettings> settings, DoubleSupplier hearingRadius) {

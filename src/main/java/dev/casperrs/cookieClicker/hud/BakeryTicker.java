@@ -25,7 +25,7 @@ public final class BakeryTicker implements Runnable {
     private int hudEverySeconds = 1;
     private long seconds;
 
-    /** @param onlinePlayer {@code Bukkit::getPlayer} in the plugin; tests can return null to skip the HUD */
+    /** {@code onlinePlayer} is {@code Bukkit::getPlayer}; tests can return null to skip the HUD. */
     public BakeryTicker(SessionManager sessions, Economy economy, Hud hud, Function<UUID, Player> onlinePlayer) {
         this.sessions = sessions;
         this.economy = economy;

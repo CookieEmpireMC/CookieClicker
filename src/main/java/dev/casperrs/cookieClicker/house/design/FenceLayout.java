@@ -46,10 +46,7 @@ public final class FenceLayout {
     public enum Role { RAIL, POST, CORNER, TOPPER, GATE_LEFT, GATE_RIGHT, ARCH }
 
     /**
-     * One block to set.
-     *
-     * @param level     index into the role's column (bottom = 0); 0 for rails and toppers
-     * @param faces     for fence pieces: the neighbours it connects to
+     * One block to set; level indexes the role's column from the bottom (0 for rails and toppers).
      */
     public record Piece(int x, int y, int z, Role role, int level, Set<Face> faces) {
 
@@ -67,11 +64,7 @@ public final class FenceLayout {
         }
     }
 
-    /**
-     * @param pieces   every block to set
-     * @param entrance centre column of the gate opening at its ground height ({x, y, z}), or null when there is no
-     *                 border at all
-     */
+    /** entrance: the gate opening's centre column at ground height ({x, y, z}), or null without any border. */
     public record Plan(List<Piece> pieces, int @Nullable [] entrance) {
     }
 

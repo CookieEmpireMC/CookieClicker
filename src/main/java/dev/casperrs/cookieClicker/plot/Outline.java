@@ -14,10 +14,8 @@ public final class Outline {
     }
 
     /**
-     * @param step      distance between points along an edge (blocks)
-     * @param maxPoints the step grows until the outline fits (keeps huge regions cheap). Every edge keeps at least
-     *                  one point, so an outline never gets below its edge count (12 for a cuboid, 3 per polygon
-     *                  vertex): then the coarsest outline is returned
+     * Step in blocks; it grows until the outline fits maxPoints, but every edge keeps a point (12 per cuboid, 3 per
+     * polygon vertex), so the coarsest outline may still exceed it.
      */
     public static List<double[]> points(RegionShape shape, double step, int maxPoints) {
         double s = Math.max(0.25, step);
