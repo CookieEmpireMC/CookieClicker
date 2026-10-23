@@ -18,3 +18,4 @@
 - [Ledger: tidy review](ledger-tidy-review.md) — architecture/standards/perf review at 8940d31; TidyPerfTest recipe; open checks for branch reviews
 - [Test pruning: important parts only](feedback-important-tests-only.md) — user rule 2026-10-23: keep/drop list; 582->301 Java, 146->73 tools
 - [Prune tooling gotchas](prune-gotchas.md) — sandbox blocks loops/vars with git; Java/Python method-removal pitfalls; test counts after prune
+- [Ledger: tidy config](ledger-tidy-config.md) — coder config branch READY, 415 tests; paper-plugin classpath facts; new descriptor/old-config tests
