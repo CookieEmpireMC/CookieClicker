@@ -26,7 +26,6 @@ Format: URL | confirmed | checked | stable/volatile
 - https://api.github.com/repos/IntellectualSites/FastAsyncWorldEdit/releases?per_page=6 | FAWE 2.16.0 (2026-10-04, "26.3 Support"), 2.16.1 (2026-10-09) | 2026-10-19 | VOLATILE
 - https://maven.enginehub.org/repo/com/sk89q/{worldguard/worldguard-bukkit,worldedit/worldedit-bukkit}/maven-metadata.xml | release WG 7.0.20, WE 7.4.6 | 2026-10-19 | VOLATILE
 - https://worldguard.enginehub.org/en/latest/developer/{dependency,regions,regions/managers,regions/protected-region,regions/spatial-queries,regions/flag-calculation,regions/custom-flags,native-objects}/ and /regions/flags/ | developer API facts | 2026-10-19 | stable (docs are version-agnostic)
-- https://builds.enginehub.org/job/{worldguard,worldedit} | CI builds with relative dates ("2 days ago") only | 2026-10-19 | volatile
 
 ## Other
 - https://docs.papermc.io/paper/reference/spigot-configuration | moved-wrongly-threshold default 0.0625 | 2026-10-19 | stable
@@ -45,7 +44,5 @@ Format: URL | confirmed | checked | stable/volatile
 
 ## Dead ends
 - https://hangar.papermc.io/api/v1/projects/EngineHub/WorldGuard/versions 404 (WG is not on Hangar)
-- https://github.com/EngineHub/WorldGuard/releases (empty), api.github.com for EngineHub repos returned `[]`
-- https://worldguard.enginehub.org/en/latest/developer/requirements/ and .../regions/flag-queries/ 404
-- enginehub.org/worldguard page has no versions
-- search "moved wrongly" gives generic netcode junk; spigot.yml docs are the useful hit
+- EngineHub GitHub releases/API empty; builds.enginehub.org and enginehub.org/worldguard have no usable versions
+- worldguard developer/requirements/ and .../regions/flag-queries/ 404
