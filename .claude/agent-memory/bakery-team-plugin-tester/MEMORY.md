@@ -15,3 +15,4 @@
 - [Ledger: building-roster balance](ledger-building-roster-balance.md) — milestones/override/buyer/baked targets at b7613e3; tools-test 146; CLI mutation recipe
 - [Ledger: building-roster integration](ledger-building-roster-integration.md) — feature-level review at d158726 READY; tests added; open LOWs
 - [Ledger: panel-align](ledger-panel-align.md) — 1.2.1 text column: NOT READY at ff9f3e4, READY after 0190c7f + tests e8b5495 (683 green)
+- [Ledger: tidy review](ledger-tidy-review.md) — architecture/standards/perf review at 8940d31; TidyPerfTest recipe; open checks for branch reviews
