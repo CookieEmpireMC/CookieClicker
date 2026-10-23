@@ -14,9 +14,6 @@ import java.util.List;
  *       when the display is removed and the real block takes its place</li>
  * </ol>
  * One {@code setTransformation} per keyframe tick, never two in the same tick. Plain maths, no Bukkit types.
- *
- * @param spawn     the transformation the display spawns with (tick 0, duration 0)
- * @param keyframes fall, bounce and settle, in tick order
  */
 public record DropTrack(Keyframe spawn, List<Keyframe> keyframes) {
 
@@ -28,17 +25,9 @@ public record DropTrack(Keyframe spawn, List<Keyframe> keyframes) {
     }
 
     /**
-     * Config values of a drop, already range-checked by the loader.
-     *
-     * @param startTick    first keyframe tick (≥ 1: the client must have the spawn state first)
-     * @param dropHeight   blocks above the target the display starts
-     * @param fallTicks    fall duration
-     * @param bounceHeight how high it pops back up after the impact (0 = squash only)
-     * @param bounceTicks  bounce duration
-     * @param squashX      width multiplier at the top of the bounce (x)
-     * @param squashY      height multiplier at the top of the bounce
-     * @param squashZ      width multiplier at the top of the bounce (z)
-     * @param settleTicks  settle duration
+     * Config values of a drop, already range-checked by the loader. Heights are in blocks, durations in ticks;
+     * {@code startTick} is at least 1 (the client needs the spawn state first); {@code bounceHeight} 0 = squash only;
+     * {@code squashX/Y/Z} are scale multipliers at the top of the bounce.
      */
     public record Params(int startTick, double dropHeight, int fallTicks, double bounceHeight, int bounceTicks,
                          double squashX, double squashY, double squashZ, int settleTicks) {

@@ -76,7 +76,7 @@ public final class Effects {
         this(plugin, MiniMessage.miniMessage());
     }
 
-    /** @param miniMessage the plugin's shared MiniMessage instance (floating text is parsed with it) */
+    /** Uses the plugin's shared MiniMessage instance to parse floating text. */
     public Effects(Plugin plugin, MiniMessage miniMessage) {
         this.plugin = plugin;
         this.miniMessage = miniMessage;
@@ -263,9 +263,7 @@ public final class Effects {
      *   <li><b>false, nothing ran</b>: called off the main thread, or the viewer is offline or in another world
      *       than {@code target}. The caller restores the block itself.</li>
      * </ul>
-     *
-     * @param onImpact run when the block first touches the ground (before the bounce), or null
-     * @return true when the block is animating, false when it landed instantly or was skipped (see above)
+     * {@code onImpact} (nullable) runs when the block first touches the ground, before the bounce.
      */
     public boolean dropBlock(Player viewer, BlockData data, Location target, @Nullable Runnable onImpact,
                              Runnable onLanded) {
@@ -282,11 +280,9 @@ public final class Effects {
      * first play right now. Plays are skipped while the location's chunk isn't loaded. The loop ends on
      * {@link EffectHandle#cancel()}, {@link #cancelFor}, viewer quit or world change, {@link #reload()} and
      * {@link #shutdown()}; start it again after a reload.
-     *
-     * @param onRepeat run right after every play (e.g. to replay a crackle sound every n-th cycle), or null
-     * @return the running loop, or {@link EffectHandle#NONE} (already inactive) when the ID is unknown, the viewer
-     *         is offline or in another world, {@code limits.max-loops-per-player} is reached (logged once), or the
-     *         engine isn't loaded / not on the main thread
+     * {@code onRepeat} (nullable) runs right after every play. Returns {@link EffectHandle#NONE} (already inactive)
+     * when the ID is unknown, the viewer is offline or in another world, {@code limits.max-loops-per-player} is
+     * reached (logged once), or the engine isn't loaded / not on the main thread.
      */
     public EffectHandle loop(String effectId, Location loc, Player viewer, @Nullable Runnable onRepeat) {
         return loops.start(effectId, loc, viewer, 0, onRepeat);

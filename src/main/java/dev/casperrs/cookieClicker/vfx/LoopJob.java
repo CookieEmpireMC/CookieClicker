@@ -15,13 +15,7 @@ final class LoopJob extends Job implements EffectHandle {
     private final Runnable playOnce;
     private final Consumer<LoopJob> onEnd;
 
-    /**
-     * @param every      ticks between plays (at least 1)
-     * @param startDelay ticks before the first play (0 = now)
-     * @param stillValid checked before each play; false ends the loop
-     * @param playOnce   plays the preset once (plus any per-cycle callback)
-     * @param onEnd      called once when the loop ends for any reason
-     */
+    /** {@code every} ticks between plays (at least 1), {@code startDelay} ticks before the first (0 = now). */
     LoopJob(int every, int startDelay, BooleanSupplier stillValid, Runnable playOnce, Consumer<LoopJob> onEnd) {
         this.every = Math.max(1, every);
         this.startDelay = Math.max(0, startDelay);
