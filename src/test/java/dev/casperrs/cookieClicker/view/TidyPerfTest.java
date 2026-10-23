@@ -178,7 +178,10 @@ class TidyPerfTest {
         median("economy.click (clickPower + crit roll)", () -> sink = e.click(pouch).amount());
         median("Hud.render (2 number formats + template swap)", () -> sink = hud.render(pouch, true).children().size());
         var mm = Messages.miniMessage();
-        median("floating text '<#f5c542>+<amount>' MiniMessage parse (cookie_click)", () ->
+        var template = dev.casperrs.cookieClicker.text.MarkerTemplate.of(mm, "<#f5c542>+<amount>", "amount");
+        median("floating text cookie_click via MarkerTemplate.render (Effects.floatingText)", () ->
+                sink = template.render(m.number(1234.5)).children().size());
+        median("floating text '<#f5c542>+<amount>' MiniMessage parse (reference, before)", () ->
                 sink = mm.deserialize("<#f5c542>+<amount>", Placeholder.unparsed("amount", m.number(1234.5)))
                         .children().size());
         assertTrue(Files.isRegularFile(Path.of("pom.xml")));
