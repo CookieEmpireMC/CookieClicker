@@ -113,4 +113,36 @@ class PlotRegistryBoundsTest {
         registry.put(Plot.empty("second", "minecraft:the_nether"), p -> { });
         assertTrue(registry.mayContainPlot(nether, 1, 1, 1));
     }
+
+    private PlotRegistry withClock(long[] now) {
+        PlotRegistry r = new PlotRegistry(regions, key -> "minecraft:overworld".equals(key) ? Optional.of(overworld)
+                : Optional.empty(), () -> now[0]);
+        r.replaceAll(List.of(Plot.empty("main", "minecraft:overworld")), p -> { });
+        return r;
+    }
+
+    @Test
+    void staleBoundsRefreshAfterTheTtlWithoutAPut() {
+        long[] now = {1_000};
+        PlotRegistry timed = withClock(now);
+        assertFalse(timed.mayContainPlot(overworld, 200, 70, 200));
+        regions.shapes.put("plot_area", RegionShape.cuboid("plot_area", 0, 60, 0, 300, 90, 300));
+
+        now[0] += PlotRegistry.BOUNDS_TTL_MILLIS - 1;
+        assertFalse(timed.mayContainPlot(overworld, 200, 70, 200), "still cached just before the TTL");
+        now[0] += 1;
+        assertTrue(timed.mayContainPlot(overworld, 200, 70, 200), "re-read once the TTL has passed");
+    }
+
+    @Test
+    void anEmptyBoxRecoversWhenTheRegionAppearsLater() {
+        long[] now = {0};
+        regions.infos.put(overworld, List.of());
+        PlotRegistry timed = withClock(now);
+        assertFalse(timed.mayContainPlot(overworld, 10, 70, 10), "no flagged region yet");
+
+        regions.infos.put(overworld, List.of(new PlotRegions.RegionInfo("plot_area", 0, "main", null)));
+        now[0] += PlotRegistry.BOUNDS_TTL_MILLIS;
+        assertTrue(timed.mayContainPlot(overworld, 10, 70, 10), "a region flagged later is picked up without a reload");
+    }
 }

@@ -1,12 +1,3 @@
-- [WorldGuard + house facts](worldguard-and-house-facts.md) — WG 7.0.20/WE 7.4.6 signatures, Structure/Sign/SoundGroup APIs, guard + test-pin quirks
-- [Paper 26.3 API facts](paper-263-api-facts.md) — verified Brigadier/world key/Adventure 5 sound+pack/display/click APIs, TextDisplay centring, javap path, guard quirks
-- [factory-makeover facts](factory-makeover-facts.md) — layout yaw convention, compat ctors for test-built records, smoke-testing other branches' files, pinned-test build
-- [Repo tooling facts](repo-tooling-facts.md) — ownership matcher copy in tools/ownership, repo CookieEmpireMC/CookieClicker, worktree Bash guard quirks
-- [conveyor-belt facts](conveyor-belt-facts.md) — spectator camera + display interpolation APIs, Pat's belt.yml/camera format, no src/test for coder
-- [Economy levels facts](economy-levels-facts.md) — BulkMath/BulkPurchase API, schema v3 SQL + MySQL-safe addColumn, short suffixes, golden smoke recipe, guard quirks
-- [upgrade-panels facts](upgrade-panels-facts.md) — panels/shelf/spin-fix structure, PopJob sync first step, pinned tests, shelf teleport rule (row hitboxes replaced, see next)
-- [plot-polish panels facts](plot-polish-panels-facts.md) — ray-picked clicks via PanelLayout, padded column, legacy fields removed, smoke-run classpath recipe
-- [plot-polish facts](plot-polish-facts.md) — item display 180 flip, flat cookie maths, LoopPacer loops, decor keep-out
-- [plot-polish basket facts](plot-polish-basket-facts.md) — CustomModelData builder, basket as Display pedestal, pack-change respawn, cookie height maths
-- [building-roster economy facts](building-roster-economy-facts.md) — milestones in BuildingDef, shop paging API, row-fit widths, test pins that break
-- [building-roster world facts](building-roster-world-facts.md) — layout origin from house box, purchase hook, MessagesTest literal trap, footprint keep-out, scroll pulse
+- [Paper 26.3 API facts](paper-263-api-facts.md) — verified Paper/Adventure 5.2/WorldGuard 7.0.20 signatures, display/text quirks, javap paths
+- [Repo tooling facts](repo-tooling-facts.md) — build/skip/disabled-test commands, smoke-test recipes, ownership check, Bash guard quirks
+- [Code rules facts](code-rules-facts.md) — tester pins, designer contracts, engine behaviour (PrivateDisplays sweep!), review lessons
