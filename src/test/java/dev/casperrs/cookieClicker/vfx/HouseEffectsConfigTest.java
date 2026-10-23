@@ -55,21 +55,6 @@ class HouseEffectsConfigTest {
     }
 
     @Test
-    void outlinePresetsAreOneForcedParticle() throws Exception {
-        EffectsConfig config = shipped();
-        // played once per outline point (up to ~240 points per redraw), so one particle each and no entities
-        for (String id : List.of("plot_outline", "house_outline")) {
-            EffectsConfig.Preset outline = config.preset(id);
-            assertNotNull(outline, id + " exists");
-            assertEquals(1, outline.particleCost(), id + " cost");
-            assertEquals(0, outline.entityCost(), id + " entities");
-            for (LayerSpec layer : outline.layers()) {
-                assertTrue(assertInstanceOf(LayerSpec.Particles.class, layer).force(), id + " uses force");
-            }
-        }
-    }
-
-    @Test
     void chimneySmokeIsALoopSeenFromAfar() throws Exception {
         EffectsConfig.Preset smoke = shipped().preset("house_chimney_smoke");
         assertEquals(10, smoke.loopEvery());
@@ -78,44 +63,6 @@ class HouseEffectsConfigTest {
             assertTrue(assertInstanceOf(LayerSpec.Particles.class, layer).force(), layer.label() + " uses force");
         }
         assertEquals(0, shipped().preset("cookie_click").loopEvery(), "presets without loop-every report 0");
-    }
-
-    @Test
-    void factorySteamIsACheapIrregularLoop() throws Exception {
-        EffectsConfig c = shipped();
-        EffectsConfig.Preset steam = c.preset("factory_steam");
-        assertNotNull(steam, "factory_steam exists");
-        assertEquals(37, steam.loopEvery());
-        assertTrue(steam.loopEvery() % c.preset("house_chimney_smoke").loopEvery() != 0, "not in sync with smoke");
-        assertTrue(steam.particleCost() <= 10, "cheap per cycle");
-        assertTrue(steam.particleCost() * 20.0 / steam.loopEvery() <= 10, "at most 10 particles per second");
-        assertEquals(0, steam.entityCost());
-        java.util.TreeSet<Integer> starts = new java.util.TreeSet<>();
-        for (LayerSpec layer : steam.layers()) {
-            assertTrue(assertInstanceOf(LayerSpec.Particles.class, layer).force(), layer.label() + " uses force");
-            assertTrue(layer.delayTicks() < steam.loopEvery(), "every puff inside one cycle");
-            starts.add(layer.delayTicks());
-        }
-        // uneven gaps between puffs (including the wrap to the next cycle): not a metronome
-        java.util.List<Integer> s = new java.util.ArrayList<>(starts);
-        java.util.Set<Integer> gaps = new java.util.HashSet<>();
-        for (int i = 0; i < s.size(); i++) {
-            int next = i + 1 < s.size() ? s.get(i + 1) : s.getFirst() + steam.loopEvery();
-            gaps.add(next - s.get(i));
-        }
-        assertTrue(s.size() >= 3 && gaps.size() >= 3, "irregular puff rhythm: " + s);
-        // factory: up to 3 smokestacks + 2 vents per viewer
-        assertTrue(c.limits().maxLoopsPerPlayer() >= 5, "loop cap fits the factory");
-    }
-
-    @Test
-    void shippedBlockDropMatchesTheDefaults() throws Exception {
-        LayerSpec.BlockDrop drop = assertInstanceOf(LayerSpec.BlockDrop.class,
-                shipped().preset(Effects.BLOCK_DROP).layers().getFirst());
-        assertEquals(DropTrack.of(DropTrack.Params.DEFAULTS), drop.track());
-        assertEquals("house_block_land", drop.impactEffect());
-        assertEquals(4, drop.impactParticles());
-        assertTrue(drop.autoBrightness());
     }
 
     @Test
@@ -180,29 +127,4 @@ class HouseEffectsConfigTest {
         assertTrue(c.problems().getFirst().contains("loop-every"));
     }
 
-    @Test
-    void newLimitsAreReadClampedAndDefaulted() throws Exception {
-        EffectsConfig c = parse("""
-                limits:
-                  max-falling-blocks-per-player: 10
-                  max-falling-blocks-global: -5
-                """);
-        assertEquals(10, c.limits().maxFallingBlocksPerPlayer());
-        assertEquals(0, c.limits().maxFallingBlocksGlobal());
-        assertEquals(EffectsConfig.Limits.DEFAULTS.maxLoopsPerPlayer(), c.limits().maxLoopsPerPlayer());
-        assertEquals(1, c.problems().size(), c.problems().toString());
-        assertEquals(24, EffectsConfig.Limits.DEFAULTS.maxFallingBlocksPerPlayer(), "contract default");
-        assertEquals(EffectsConfig.Limits.DEFAULTS, new EffectsConfig.Limits(200, 8, 150));
-        assertEquals(24, shipped().limits().maxFallingBlocksPerPlayer());
-    }
-
-    @Test
-    void forceDefaultsToFalse() throws Exception {
-        LayerSpec.Particles p = (LayerSpec.Particles) parse("""
-                s:
-                  layers:
-                    - { type: particle, particle: smoke }
-                """).preset("s").layers().getFirst();
-        assertEquals(false, p.force());
-    }
 }

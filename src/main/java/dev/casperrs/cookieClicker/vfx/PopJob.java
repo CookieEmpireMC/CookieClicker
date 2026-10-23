@@ -70,13 +70,11 @@ final class PopJob extends Job {
         display.setInterpolationDuration(ticks);
         if (motion != null) {
             PopMotion.Frame f = PopMotion.frame(motion, base, new PopSequence.Step(sx, sy, sz, ticks));
-            display.setTransformation(new Transformation(
-                    f.translation(), f.leftRotation(), f.scale(), cur.getRightRotation()));
+            display.setTransformation(Transformations.with(cur, f.translation(), f.leftRotation(), f.scale()));
             return;
         }
         Vector3f scale = new Vector3f((float) (base.x * sx), (float) (base.y * sy), (float) (base.z * sz));
-        display.setTransformation(new Transformation(
-                cur.getTranslation(), cur.getLeftRotation(), scale, cur.getRightRotation()));
+        display.setTransformation(Transformations.withScale(cur, scale));
     }
 
     /** Stops without touching the display (a new pop on the same display takes over). */

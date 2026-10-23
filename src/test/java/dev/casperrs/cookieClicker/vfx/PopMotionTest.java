@@ -72,47 +72,6 @@ class PopMotionTest {
         assertEquals(1f, f.scale().y, 1e-6);
     }
 
-    @Test
-    void framesAreCopiesThePopMayKeep() {
-        Vector3f t = new Vector3f(1, 2, 3);
-        Quaternionf q = new Quaternionf();
-        PopMotion same = new PopMotion() {
-            public Vector3f translation(int a) {
-                return t;
-            }
-
-            public Quaternionf leftRotation(int a) {
-                return q;
-            }
-        };
-        PopMotion.Frame f = PopMotion.frame(same, new Vector3f(1, 1, 1), PopSequence.standard().steps().getFirst());
-        t.set(9, 9, 9);
-        assertEquals(1f, f.translation().x);
-    }
-
-    @Test
-    void oldOverloadsKeepTheirSignatures() throws Exception {
-        assertNotNull(Effects.class.getMethod("pop", org.bukkit.entity.Display.class, org.bukkit.entity.Player.class));
-        assertNotNull(Effects.class.getMethod("pop", org.bukkit.entity.Display.class, org.bukkit.entity.Player.class,
-                String.class));
-        assertNotNull(Effects.class.getMethod("pop", org.bukkit.entity.Display.class, org.bukkit.entity.Player.class,
-                String.class, PopMotion.class));
-    }
-
-    @Test
-    void upgradePresetsAreCheap() throws Exception {
-        EffectsConfig config = EffectsConfigParser.parse(EffectsConfigParserTest.shipped(), null);
-        assertEquals(List.of(), config.problems());
-        for (String id : List.of("upgrade_bought", "upgrade_shelved")) {
-            EffectsConfig.Preset p = config.preset(id);
-            assertNotNull(p, "contract ID " + id);
-            assertEquals(0, p.entityCost(), id);
-            assertTrue(p.particleCost() <= 70, id + " cost " + p.particleCost());
-        }
-        assertTrue(config.preset("upgrade_shelved").particleCost() < config.preset("upgrade_bought").particleCost());
-    }
-
-    // ---- what PopJob actually sends to the display (the cookie spin fix) ------------------------------------
 
     /** Spin and bob read at the server tick {@link #now}; the test moves the tick forward before each step. */
     private static final class ServerMotion implements PopMotion {

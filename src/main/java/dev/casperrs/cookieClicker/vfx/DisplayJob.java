@@ -7,9 +7,6 @@ import java.util.UUID;
 import org.bukkit.Location;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Player;
-import org.bukkit.util.Transformation;
-import org.joml.AxisAngle4f;
-import org.joml.Vector3f;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -27,6 +24,8 @@ abstract class DisplayJob extends Job {
     private final int delay;
     private final List<Display> entities = new ArrayList<>();
     private final List<DisplayTrack> tracks = new ArrayList<>();
+    /** Per entity: index of its next unsent keyframe (keyframes are in tick order). */
+    private final List<int[]> nextKeyframe = new ArrayList<>();
     private int endTick;
 
     DisplayJob(Spawner spawner, DisplayRegistry registry, Location origin, @Nullable Player viewer, int delay) {
@@ -59,6 +58,7 @@ abstract class DisplayJob extends Job {
     protected final void add(Display entity, DisplayTrack track) {
         entities.add(entity);
         tracks.add(track);
+        nextKeyframe.add(new int[1]);
         endTick = Math.max(endTick, track.removeTick());
         registry.register(this, entity);
     }
@@ -86,7 +86,10 @@ abstract class DisplayJob extends Job {
             if (!e.isValid()) {
                 return finish(); // chunk unloaded or removed by someone else: end the whole effect
             }
-            for (DisplayTrack.Keyframe k : tracks.get(i).keyframes()) {
+            List<DisplayTrack.Keyframe> frames = tracks.get(i).keyframes();
+            int[] next = nextKeyframe.get(i);
+            while (next[0] < frames.size() && frames.get(next[0]).tick() <= t) {
+                DisplayTrack.Keyframe k = frames.get(next[0]++);
                 if (k.tick() == t) {
                     apply(e, k);
                 }
@@ -100,16 +103,7 @@ abstract class DisplayJob extends Job {
     static void apply(Display e, DisplayTrack.Keyframe k) {
         e.setInterpolationDelay(0);
         e.setInterpolationDuration(k.duration());
-        e.setTransformation(transformation(k));
-    }
-
-    static Transformation transformation(DisplayTrack.Keyframe k) {
-        float s = (float) k.scale();
-        return new Transformation(
-                new Vector3f((float) k.tx(), (float) k.ty(), (float) k.tz()),
-                new AxisAngle4f((float) Math.toRadians(k.angleDeg()), (float) k.ax(), (float) k.ay(), (float) k.az()),
-                new Vector3f(s, s, s),
-                new AxisAngle4f());
+        e.setTransformation(Transformations.of(k));
     }
 
     @Override

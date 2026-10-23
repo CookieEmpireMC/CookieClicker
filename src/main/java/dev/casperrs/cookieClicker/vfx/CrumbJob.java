@@ -37,7 +37,7 @@ final class CrumbJob extends DisplayJob {
                 d.setItemStack(item);
                 d.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.NONE);
                 d.setViewRange(layer.viewRange());
-                d.setTransformation(transformation(track.spawn()));
+                d.setTransformation(Transformations.of(track.spawn()));
             });
             add(crumb, track);
         }
