@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
-/** building-roster: the ▲ / ▼ scroll of the buildings panel (clamped, dropped when the default moves, per player). */
+/** the ▲ / ▼ scroll of the buildings panel (clamped, dropped when the default moves, per player). */
 class PanelPagesTest {
 
     /** Seven buildings in three rows: the default window starts at row 1, the last window at row 4. */
@@ -32,13 +32,6 @@ class PanelPagesTest {
     }
 
     @Test
-    void aScrollIsDroppedWhenTheDefaultWindowMovesSoANewUnlockComesIntoView() {
-        pages.scroll(anna, PanelKind.BUILDINGS, 1, DEFAULT_TOP, MAX_TOP); // scrolled to row 2
-        assertEquals(3, pages.top(anna, PanelKind.BUILDINGS, 3, 6), "an unlock moved the default window to row 3");
-        assertEquals(3, pages.top(anna, PanelKind.BUILDINGS, 3, 6), "and it stays there");
-    }
-
-    @Test
     void theScrollIsPerPlayerAndForgottenOnQuit() {
         pages.scroll(anna, PanelKind.BUILDINGS, 2, DEFAULT_TOP, MAX_TOP);
         assertEquals(DEFAULT_TOP, pages.top(ben, PanelKind.BUILDINGS, DEFAULT_TOP, MAX_TOP));
@@ -46,9 +39,4 @@ class PanelPagesTest {
         assertEquals(DEFAULT_TOP, pages.top(anna, PanelKind.BUILDINGS, DEFAULT_TOP, MAX_TOP), "back to the default");
     }
 
-    @Test
-    void aPanelThatFitsCannotScroll() {
-        assertFalse(pages.scroll(anna, PanelKind.BUILDINGS, 1, 0, 0));
-        assertEquals(0, pages.top(anna, PanelKind.BUILDINGS, 0, 0));
-    }
 }

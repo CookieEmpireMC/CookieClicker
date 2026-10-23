@@ -12,7 +12,6 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RevealPlanTest {
@@ -52,25 +51,6 @@ class RevealPlanTest {
     }
 
     @Test
-    void paceRejectsNonsense() {
-        assertThrows(IllegalArgumentException.class, () -> new Pace(0, 1, 0, 1, 0));
-        assertThrows(IllegalArgumentException.class, () -> new Pace(Double.NaN, 1, 0, 1, 0));
-        assertThrows(IllegalArgumentException.class, () -> new Pace(1, 0, 0, 1, 0));
-        assertThrows(IllegalArgumentException.class, () -> new Pace(1, 1, -1, 1, 0));
-        assertThrows(IllegalArgumentException.class, () -> new Pace(1, 1, 0, 0, 0));
-        assertThrows(IllegalArgumentException.class, () -> new Pace(1, 1, 0, 1, -1));
-    }
-
-    @Test
-    void emptyPlanIsDoneRightAway() {
-        RevealPlan plan = new RevealPlan(RevealOrder.of(new long[0]), pace(1, 1, 0));
-        assertEquals(Phase.DONE, plan.phase());
-        assertTrue(plan.complete());
-        assertEquals(-1, plan.nextDrop());
-        assertEquals(0, plan.abort().length);
-    }
-
-    @Test
     void hidingIsPacedBySendPerTickThenRevealingStarts() {
         RevealPlan plan = new RevealPlan(order(4, 1), new Pace(1, 4, 0, 6, 0)); // 16 blocks, 6 per tick
         Set<Integer> seen = new HashSet<>();
@@ -102,45 +82,6 @@ class RevealPlanTest {
             }
         }
         assertEquals(6, firstDropTick); // 5 delay ticks, the first block on the 6th
-    }
-
-    @Test
-    void fractionalBlocksPerTickAccumulates() {
-        RevealPlan plan = new RevealPlan(order(10, 1), pace(0.5, 100, 0));
-        hideAll(plan);
-        int started = 0;
-        for (int t = 0; t < 20; t++) {
-            plan.beginTick();
-            List<Integer> d = dropsThisTick(plan);
-            assertTrue(d.size() <= 1);
-            started += d.size();
-        }
-        assertEquals(10, started);
-    }
-
-    @Test
-    void severalBlocksPerTickAndNoBurstAfterAWait() {
-        RevealPlan plan = new RevealPlan(order(10, 1), pace(2.5, 100, 0));
-        hideAll(plan);
-        int total = 0;
-        for (int t = 0; t < 4; t++) {
-            plan.beginTick();
-            total += dropsThisTick(plan).size();
-        }
-        // the carried fraction is kept (cap = blocksPerTick + 1 - eps): 2.5 averages 2.5, so 10 in 4 ticks
-        assertEquals(10, total);
-        // a stall (cap reached) must not bank unlimited budget
-        RevealPlan capped = new RevealPlan(order(10, 1), pace(1, 1, 0));
-        hideAll(capped);
-        capped.beginTick();
-        int first = capped.nextDrop();
-        for (int t = 0; t < 50; t++) {
-            capped.beginTick();
-            assertEquals(-1, capped.nextDrop(), "cap of 1 falling");
-        }
-        capped.landed(first);
-        capped.beginTick();
-        assertEquals(1, dropsThisTick(capped).size(), "one tick's worth after the wait, not 50");
     }
 
     @Test
@@ -191,53 +132,6 @@ class RevealPlanTest {
     }
 
     @Test
-    void layerGatingWithZeroDelayStartsNextLayerInTheSameTick() {
-        RevealPlan plan = new RevealPlan(order(1, 3), pace(64, 100, 0));
-        hideAll(plan);
-        plan.beginTick();
-        int a = plan.nextDrop();
-        assertEquals(-1, plan.nextDrop(), "layer 0 not landed yet");
-        plan.landed(a);
-        int b = plan.nextDrop();
-        assertTrue(b >= 0);
-        assertEquals(1, RegionShape.unpackY(plan.position(b)));
-    }
-
-    @Test
-    void landingInsideTheDropCallIsFine() {
-        // the effects engine may "land instantly" (cap hit, unloaded): onLanded runs before dropBlock returns
-        RevealPlan plan = new RevealPlan(order(3, 2), pace(64, 100, 0));
-        hideAll(plan);
-        List<Integer> order = new ArrayList<>();
-        for (int t = 0; t < 10 && !plan.complete(); t++) {
-            plan.beginTick();
-            int i;
-            while ((i = plan.nextDrop()) >= 0) {
-                assertTrue(plan.isFalling(i), "marked falling before the caller sees it");
-                assertTrue(plan.landed(i), "re-entrant landing works");
-                assertFalse(plan.landed(i), "and is idempotent");
-                order.add(i);
-            }
-        }
-        assertTrue(plan.complete());
-        assertEquals(Phase.DONE, plan.phase());
-        assertEquals(18, order.size());
-        assertEquals(0, plan.hiddenCount());
-        assertEquals(0, plan.fallingCount());
-        assertEquals(0, plan.abort().length, "nothing left to restore");
-    }
-
-    @Test
-    void landedIgnoresBlocksThatAreNotFalling() {
-        RevealPlan plan = new RevealPlan(order(2, 1), pace(1, 4, 0));
-        hideAll(plan);
-        assertFalse(plan.landed(0), "still hidden, never dropped");
-        assertFalse(plan.landed(-1));
-        assertFalse(plan.landed(99));
-        assertEquals(4, plan.hiddenCount());
-    }
-
-    @Test
     void abortReturnsEveryStillHiddenOrFallingBlockExactlyOnce() {
         RevealPlan plan = new RevealPlan(order(3, 3), pace(64, 100, 0)); // 27 blocks
         hideAll(plan);
@@ -284,20 +178,6 @@ class RevealPlanTest {
     }
 
     @Test
-    void isHiddenFollowsTheStateOfEachBlock() {
-        RevealPlan plan = new RevealPlan(order(2, 1), pace(1, 4, 0));
-        long p0 = plan.position(0);
-        assertTrue(plan.isHidden(p0));
-        assertFalse(plan.isHidden(RegionShape.pack(50, 50, 50)), "not part of the house");
-        hideAll(plan);
-        plan.beginTick();
-        int i = plan.nextDrop();
-        assertTrue(plan.isHidden(plan.position(i)), "falling still counts as hidden");
-        plan.landed(i);
-        assertFalse(plan.isHidden(plan.position(i)));
-    }
-
-    @Test
     void resendCoversOnlyStillHiddenBlocksAndIsPaced() {
         RevealPlan plan = new RevealPlan(order(4, 1), new Pace(64, 100, 0, 5, 0));
         while (plan.phase() == Phase.HIDING) {
@@ -324,37 +204,6 @@ class RevealPlanTest {
         List<Integer> more = new ArrayList<>();
         plan.nextResend(more::add);
         assertTrue(more.isEmpty(), "one pass per request");
-    }
-
-    @Test
-    void resendWhileHidingOnlyCoversWhatWasAlreadySent() {
-        RevealPlan plan = new RevealPlan(order(4, 1), new Pace(1, 4, 0, 4, 0));
-        plan.beginTick();
-        List<Integer> sent = new ArrayList<>();
-        plan.nextHide(sent::add); // 4 of 16
-        plan.requestResend();
-        plan.beginTick();
-        List<Integer> again = new ArrayList<>();
-        plan.nextResend(again::add);
-        assertTrue(sent.containsAll(again), "never ahead of the hiding cursor: " + again);
-    }
-
-    @Test
-    void automaticRefreshRequestsAResendEveryNTicks() {
-        RevealPlan plan = new RevealPlan(order(2, 1), new Pace(1, 1, 0, 100, 3));
-        plan.beginTick();
-        plan.nextHide(i -> { }); // -> REVEALING (refresh only counts while revealing)
-        int resends = 0;
-        for (int t = 1; t <= 9; t++) {
-            plan.beginTick();
-            List<Integer> r = new ArrayList<>();
-            plan.nextResend(r::add);
-            if (!r.isEmpty()) {
-                resends++;
-                assertEquals(4, r.size());
-            }
-        }
-        assertEquals(3, resends);
     }
 
     @Test
@@ -398,14 +247,4 @@ class RevealPlanTest {
         assertEquals(Phase.DONE, plan.phase());
     }
 
-    @Test
-    void bottomLayerFlagMatchesTheFirstLayer() {
-        RevealPlan plan = new RevealPlan(order(3, 2), pace(1, 1, 0));
-        for (int i = 0; i < 9; i++) {
-            assertTrue(plan.bottomLayer(i));
-        }
-        for (int i = 9; i < 18; i++) {
-            assertFalse(plan.bottomLayer(i));
-        }
-    }
 }

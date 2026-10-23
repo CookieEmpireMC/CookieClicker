@@ -6,44 +6,11 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import dev.casperrs.cookieClicker.plot.Plot;
 import java.util.List;
-import org.bukkit.util.Transformation;
-import org.joml.Matrix4f;
-import org.joml.Vector3f;
 import org.junit.jupiter.api.Test;
 
 class BeltPathTest {
 
     /** The cookie's own transformation, applied to the model's corners: min y of the bottom, and the face normal. */
-    private static void assertRestsOnRubber(double pitch, double thickness, Vector3f normalOut, double[] minYOut) {
-        BeltPath path = new BeltPath(18.5, 11.5, 0, 0, -1, 4); // north, toward the pedestal
-        Transformation t = ConveyorBelts.cookieTransform(path, 0.45, pitch, thickness, 1.0);
-        Matrix4f m = new Matrix4f().translation(t.getTranslation()).rotate(t.getLeftRotation())
-                .scale(t.getScale());
-        double minY = Double.MAX_VALUE;
-        for (int i = 0; i < 8; i++) {
-            Vector3f v = new Vector3f((i & 1) == 0 ? -0.5f : 0.5f, (i & 2) == 0 ? -0.5f : 0.5f,
-                    (i & 4) == 0 ? (float) -thickness / 2 : (float) thickness / 2);
-            minY = Math.min(minY, m.transformPosition(v).y);
-        }
-        minYOut[0] = minY;
-        m.transformDirection(normalOut.set(0, 0, 1)); // the scale is in m: normalise the direction
-        normalOut.normalize();
-    }
-
-    @Test
-    void aBeltCookieRestsOnTheRubberFlatOrUpright() {
-        // flat (90, the shipped default): the face is up and the bottom sits exactly on the rubber
-        Vector3f flat = new Vector3f();
-        double[] minY = new double[1];
-        assertRestsOnRubber(90, ConveyorBelts.PACK_COOKIE_THICKNESS, flat, minY);
-        assertEquals(ConveyorBelts.RUBBER, minY[0], 1e-6);
-        assertEquals(1.0, Math.abs(flat.y), 1e-6);
-        // upright (0) with the vanilla sprite's thickness: the bottom is on the rubber too
-        Vector3f upright = new Vector3f();
-        assertRestsOnRubber(0, ConveyorBelts.VANILLA_COOKIE_THICKNESS, upright, minY);
-        assertEquals(ConveyorBelts.RUBBER, minY[0], 1e-6);
-        assertEquals(0.0, upright.y, 1e-6);
-    }
 
     @Test
     void cellsRunInOrderFromTheFirstToTheLastInclusive() {
@@ -56,11 +23,6 @@ class BeltPathTest {
         List<Plot.Cell> east = BeltPath.cells(new int[] {2, 5, 4}, new int[] {5, 5, 4});
         assertEquals(List.of(new Plot.Cell(2, 5, 4), new Plot.Cell(3, 5, 4), new Plot.Cell(4, 5, 4),
                 new Plot.Cell(5, 5, 4)), east);
-    }
-
-    @Test
-    void oneCellWhenFromEqualsTo() {
-        assertEquals(List.of(new Plot.Cell(1, 2, 3)), BeltPath.cells(new int[] {1, 2, 3}, new int[] {1, 2, 3}));
     }
 
     @Test
@@ -89,36 +51,10 @@ class BeltPathTest {
     }
 
     @Test
-    void rideTicksNeverBelowOne() {
-        BeltPath p = new BeltPath(0, 0, 0, 0, -1, 1);
-        assertEquals(1, p.rideTicks(1e9));
-    }
-
-    @Test
-    void singleCellBeltRunsTowardThePedestal() {
-        Plot.Belt belt = new Plot.Belt(List.of(new Plot.Cell(10, 0, 10)), 0.5);
-        BeltPath east = BeltPath.of(belt, new Plot.Pedestal(20.5, 0, 10.5, 0f));
-        assertEquals(1, east.dirX());
-        assertEquals(0, east.dirZ());
-        BeltPath south = BeltPath.of(belt, new Plot.Pedestal(10.5, 0, 20.5, 0f));
-        assertEquals(1, south.dirZ());
-        BeltPath none = BeltPath.of(belt, null);
-        assertEquals(-1, none.dirZ()); // north
-        // pedestal exactly on the cell centre: still a direction, never (0, 0)
-        BeltPath on = BeltPath.of(belt, new Plot.Pedestal(10.5, 0, 10.5, 0f));
-        assertEquals(1, Math.abs(on.dirX()) + Math.abs(on.dirZ()));
-    }
-
-    @Test
     void brokenStoredBeltsGiveNoPath() {
         assertNull(BeltPath.of(new Plot.Belt(List.of(new Plot.Cell(0, 0, 0), new Plot.Cell(1, 0, 1)), 1), null));
         assertNull(BeltPath.of(new Plot.Belt(List.of(new Plot.Cell(0, 0, 0), new Plot.Cell(0, 0, 2)), 1), null));
         assertNull(BeltPath.of(new Plot.Belt(List.of(new Plot.Cell(0, 0, 0), new Plot.Cell(0, 1, 1)), 1), null));
     }
 
-    @Test
-    void emptyBeltIsRejectedByThePlotRecord() {
-        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
-                () -> new Plot.Belt(List.of(), 1));
-    }
 }

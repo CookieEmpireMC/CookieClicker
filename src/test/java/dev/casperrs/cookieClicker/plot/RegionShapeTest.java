@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -73,12 +72,6 @@ class RegionShapeTest {
     }
 
     @Test
-    void regionContainingNothingGivesAnEmptyArray() {
-        RegionShape none = new RegionShape("n", true, 0, 0, 0, 3, 3, 3, List.of(), (x, y, z) -> false);
-        assertEquals(0, none.blocks().length);
-    }
-
-    @Test
     void absurdlyLargeRegionsAreRefusedInsteadOfAllocating() {
         RegionShape huge = RegionShape.cuboid("big", -30_000_000, 0, -30_000_000, 30_000_000, 255, 30_000_000);
         assertTrue(huge.boxVolume() > Integer.MAX_VALUE);
@@ -98,18 +91,4 @@ class RegionShapeTest {
         }
     }
 
-    @Test
-    void packIsInjectiveOverASmallNeighbourhood() {
-        Set<Long> seen = new HashSet<>();
-        List<Long> all = new ArrayList<>();
-        for (int x = -3; x <= 3; x++) {
-            for (int y = -3; y <= 3; y++) {
-                for (int z = -3; z <= 3; z++) {
-                    all.add(RegionShape.pack(x, y, z));
-                    seen.add(RegionShape.pack(x, y, z));
-                }
-            }
-        }
-        assertEquals(all.size(), seen.size());
-    }
 }

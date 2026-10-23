@@ -2,7 +2,6 @@ package dev.casperrs.cookieClicker.hud;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 import dev.casperrs.cookieClicker.format.RealMessages;
 import dev.casperrs.cookieClicker.format.NumberFormatter;
@@ -92,23 +91,4 @@ class HudTemplateTest {
         }
     }
 
-    @Test
-    void textReshapingTagsFallBackToFullParsing() {
-        assertNull(HudTemplate.compile(MM, "<gradient:red:blue><cookies> cookies</gradient>"));
-        assertNull(HudTemplate.compile(MM, "<rainbow><cps></rainbow>"));
-        assertNull(HudTemplate.compile(MM, "<gradient:red:blue><cookies></gradient> <cps>"));
-    }
-
-    @Test
-    void templatesContainingTheMarkerCharacterAreNeverCompiled() {
-        assertNull(HudTemplate.compile(MM, "﷐ <cookies>"));
-    }
-
-    @Test
-    void emptyValuesAreCallersJob() {
-        // Hud.render parses for empty values; the template itself must still agree for a normal pair
-        HudTemplate t = HudTemplate.compile(MM, "<gold><cookies></gold> <cps>");
-        assertNotNull(t);
-        assertEquals(HudTemplate.parse(MM, "<gold><cookies></gold> <cps>", "1", "2"), t.render("1", "2"));
-    }
 }

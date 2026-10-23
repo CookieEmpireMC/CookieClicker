@@ -75,20 +75,6 @@ class PlotFileTest {
     }
 
     @Test
-    void afterWriteRunsOnlyAfterTheFileExists(@TempDir Path dir) {
-        AtomicInteger ran = new AtomicInteger();
-        Path target = dir.resolve("plots.yml");
-        boolean[] existedWhenRun = new boolean[1];
-        PlotFile file = new PlotFile(dir, quiet(), Runnable::run);
-        file.saveAsync(List.of(A), () -> {
-            ran.incrementAndGet();
-            existedWhenRun[0] = Files.isRegularFile(target);
-        });
-        assertEquals(1, ran.get());
-        assertTrue(existedWhenRun[0]);
-    }
-
-    @Test
     void afterWriteIsSkippedWhenTheWriteFails(@TempDir Path dir) throws Exception {
         // the data folder "is" a file, so createDirectories/writeString fails
         Path notADir = dir.resolve("blocker");

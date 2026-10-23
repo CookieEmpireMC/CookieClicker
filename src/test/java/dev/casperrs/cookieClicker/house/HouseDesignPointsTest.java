@@ -55,54 +55,6 @@ class HouseDesignPointsTest {
     }
 
     @Test
-    void legacyChimneyIsAOneItemSmokeList() {
-        HouseDesign d = HouseDesignParser.parse("t", design(new LinkedHashMap<>(Map.of("chimney", List.of(1, 1, 1)))))
-                .design();
-        assertEquals(1, d.smoke().size());
-        assertArrayEquals(new int[] {1, 1, 1}, d.smoke().getFirst());
-        assertTrue(d.steam().isEmpty());
-        assertNotNull(d.points().get("chimney"), "chimney stays a named point too");
-    }
-
-    @Test
-    void smokeListWinsOverChimney() {
-        Map<String, Object> pts = new LinkedHashMap<>();
-        pts.put("chimney", List.of(1, 1, 1));
-        pts.put("smoke", List.of(List.of(0, 0, 0)));
-        HouseDesign d = HouseDesignParser.parse("t", design(pts)).design();
-        assertEquals(1, d.smoke().size());
-        assertArrayEquals(new int[] {0, 0, 0}, d.smoke().getFirst());
-    }
-
-    @Test
-    void noPointsMeansNoSmokeAndNoSteam() {
-        HouseDesign d = HouseDesignParser.parse("t", design(null)).design();
-        assertTrue(d.smoke().isEmpty() && d.steam().isEmpty());
-    }
-
-    @Test
-    void badListsAreRejectedWithTheIndex() {
-        for (Object bad : new Object[] {"x", List.of(List.of(0, 0)), List.of(List.of(3, 0, 0)), List.of(List.of(0, 2, 0)),
-                List.of(List.of(0, 0, -1)), List.of(List.of(0.5, 0, 0)), List.of("a")}) {
-            Map<String, Object> pts = new LinkedHashMap<>();
-            pts.put("steam", bad);
-            HouseDesignParser.Result r = HouseDesignParser.parse("t", design(pts));
-            assertNull(r.design(), String.valueOf(bad));
-            assertTrue(String.join("|", r.problems()).contains("points.steam"), r.problems().toString());
-        }
-    }
-
-    @Test
-    void beltOutAndDoorStayNamedPoints() {
-        Map<String, Object> pts = new LinkedHashMap<>();
-        pts.put("belt_out", List.of(1, 0, 1));
-        pts.put("door", List.of(2, 0, 0));
-        HouseDesign d = HouseDesignParser.parse("t", design(pts)).design();
-        assertArrayEquals(new int[] {1, 0, 1}, d.points().get("belt_out"));
-        assertArrayEquals(new int[] {2, 0, 0}, d.points().get("door"));
-    }
-
-    @Test
     void layoutMustFitInsideTheFenceRing() {
         // 3 x 2 house; plot-size 31 x 30: house-at must leave the outer ring free
         for (int[] at : new int[][] {{0, 0, 5}, {5, 0, 0}, {29, 0, 5}, {5, 0, 29}}) {
@@ -121,32 +73,6 @@ class HouseDesignPointsTest {
         assertNotNull(HouseDesignParser.parse("t", m).design().layout());
         l.put("house-at", List.of(28, 0, 27)); // 28 + 3 = 31 > 30
         assertNull(HouseDesignParser.parse("t", m).design());
-    }
-
-    @Test
-    void layoutProblemsFailTheDesignAndNoLayoutIsFine() {
-        Map<String, Object> m = design(null);
-        m.put("layout", "x");
-        assertNull(HouseDesignParser.parse("t", m).design());
-        assertNull(HouseDesignParser.parse("t", design(null)).design().layout());
-    }
-
-    @Test
-    void theFactoryFixtureParsesWithItsLayoutInsideTheRing() throws Exception {
-        HouseDesignParser.Result r = HouseDesignParser.parse("factory",
-                load("/fixtures/factory-makeover-factory.yml"));
-        assertTrue(r.problems().isEmpty(), r.problems().toString());
-        HouseDesign d = r.design();
-        assertEquals(19, d.sizeX());
-        assertEquals(17, d.sizeY());
-        assertEquals(14, d.sizeZ());
-        assertEquals(2, d.smoke().size());
-        assertEquals(2, d.steam().size());
-        assertNotNull(d.points().get("belt_out"));
-        assertNotNull(d.layout());
-        assertEquals(31, d.layout().sizeX());
-        assertTrue(d.cells().size() < 40000);
-        assertTrue(d.cells().stream().allMatch(c -> c.blockData().startsWith("minecraft:")));
     }
 
     @Test

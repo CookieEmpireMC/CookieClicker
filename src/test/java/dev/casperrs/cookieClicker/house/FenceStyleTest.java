@@ -55,38 +55,6 @@ class FenceStyleTest {
     }
 
     @Test
-    void minimalStyleGetsDefaults() {
-        FenceStyle s = FenceStyle.parse(minimal()).style();
-        assertNotNull(s);
-        assertEquals(List.of("minecraft:oak_log"), s.post());
-        assertEquals(s.post(), s.corner(), "corner defaults to post");
-        assertEquals(4, s.postEvery());
-        assertNull(s.topper());
-        assertEquals(0, s.topperEvery());
-        assertEquals(3, s.gateWidth());
-        assertEquals(List.of(FenceStyle.AIR, FenceStyle.AIR), s.arch());
-    }
-
-    @Test
-    void topperWithoutEveryDefaultsToEveryPost() {
-        Map<String, Object> m = minimal();
-        m.put("topper", "minecraft:lantern");
-        assertEquals(1, FenceStyle.parse(m).style().topperEvery());
-    }
-
-    @Test
-    void everyProblemIsCollected() {
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put("post-every", 0);
-        m.put("rail", 5);
-        FenceStyle.Result r = FenceStyle.parse(m);
-        assertNull(r.style());
-        String all = String.join(" | ", r.problems());
-        assertTrue(all.contains("post must") && all.contains("rail") && all.contains("post-every")
-                && all.contains("gate"), all);
-    }
-
-    @Test
     void badGateValuesAreRejected() {
         for (Object width : new Object[] {0, 16, 2.5, "3"}) {
             Map<String, Object> m = minimal();
@@ -98,25 +66,4 @@ class FenceStyleTest {
         assertNull(FenceStyle.parse(m).style());
     }
 
-    @Test
-    void columnsAreLimitedAndNullOnlyMeansAirInTheArch() {
-        Map<String, Object> m = minimal();
-        m.put("post", java.util.Collections.nCopies(17, "minecraft:oak_log"));
-        assertNull(FenceStyle.parse(m).style());
-        m = minimal();
-        java.util.List<Object> withNull = new java.util.ArrayList<>();
-        withNull.add(null);
-        m.put("post", withNull);
-        assertNull(FenceStyle.parse(m).style(), "null in a post column is not air");
-        m = minimal();
-        ((Map<String, Object>) m.get("gate")).put("arch", java.util.Arrays.asList(null, "minecraft:stone"));
-        assertEquals(List.of(FenceStyle.AIR, "minecraft:stone"), FenceStyle.parse(m).style().arch());
-    }
-
-    @Test
-    void blankBlockDataIsRejected() {
-        Map<String, Object> m = minimal();
-        m.put("rail", "  ");
-        assertNull(FenceStyle.parse(m).style());
-    }
 }

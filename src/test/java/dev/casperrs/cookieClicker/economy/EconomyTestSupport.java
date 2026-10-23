@@ -1,7 +1,6 @@
 package dev.casperrs.cookieClicker.economy;
 
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.random.RandomGenerator;
@@ -81,9 +80,5 @@ final class EconomyTestSupport {
 
     static CookiePouch pouch(double pouch, double baked, Map<String, Integer> owned, String... upgrades) {
         return CookiePouch.fromSnapshot(new PouchSnapshot(pouch, baked, owned, Set.of(upgrades)));
-    }
-
-    static List<String> noWarnings() {
-        return List.of();
     }
 }

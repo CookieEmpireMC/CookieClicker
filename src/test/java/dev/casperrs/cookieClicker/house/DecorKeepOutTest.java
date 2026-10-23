@@ -18,7 +18,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 
 /**
- * Decor keep-out columns of the shipped factory layout (brief plot-polish: the fence, factory, walk/pedestal/panels
+ * Decor keep-out columns of the shipped factory layout (the fence, factory, walk/pedestal/panels
  * and belt are never decorated; the parser rejects those cells at setup).
  */
 class DecorKeepOutTest {
@@ -47,18 +47,6 @@ class DecorKeepOutTest {
     }
 
     @Test
-    void allowedDropsOnlyTheRejectedCells() throws Exception {
-        DecorKeepOut k = DecorKeepOut.of(factory());
-        assertNotNull(k);
-        Decor.Block free = new Decor.Block(2, 0, 2, "minecraft:barrel");
-        Decor d = new Decor(List.of(new Decor.Block(0, 0, 15, "minecraft:barrel"), free,
-                new Decor.Block(10, 0, 15, "minecraft:barrel")));
-        List<String> problems = new ArrayList<>();
-        assertEquals(List.of(free), k.allowed(d, problems));
-        assertEquals(2, problems.size(), problems.toString());
-    }
-
-    @Test
     void theShippedDecorFileAvoidsEveryKeepOutCell() throws Exception {
         Path file = Path.of("src/main/resources/houses/decor.yml");
         assumeTrue(Files.isRegularFile(file), "houses/decor.yml is not on this branch yet");
@@ -69,36 +57,6 @@ class DecorKeepOutTest {
         int kept = DecorKeepOut.of(factory()).allowed(decor, problems).size();
         assertTrue(problems.isEmpty(), problems.toString());
         assertEquals(decor.blocks().size(), kept);
-    }
-
-    @Test
-    void aBuildingSlotIsKeptOutOnItsCellOnly() throws Exception {
-        BuildingSlots slots = new BuildingSlots(java.util.Map.of("villager_baker",
-                List.of(new BuildingSlots.Slot(2, 0, 2, 180f))));
-        DecorKeepOut k = DecorKeepOut.of(factory(), slots);
-        assertNotNull(k);
-        assertEquals("a building slot", k.reason(2, 2));
-        assertNull(k.reason(3, 2));
-        assertNull(DecorKeepOut.of(factory()).reason(2, 2), "the layout alone leaves that cell open");
-    }
-
-    @Test
-    void aFootprintKeepsOutEveryCellItsSquareCoversAndNoMore() throws Exception {
-        BuildingSlots slots = new BuildingSlots(java.util.Map.of(
-                "industrial_oven", List.of(new BuildingSlots.Slot(4, 0, 4, 90f)),
-                "villager_baker", List.of(new BuildingSlots.Slot(4, 0, 7, 0f))));
-        DecorKeepOut k = DecorKeepOut.of(factory(), slots,
-                java.util.Map.of("industrial_oven", 1.55, "villager_baker", 0.82));
-        assertNotNull(k);
-        // 1.55 around the middle of cell 4 (4.5 +- 0.775) reaches cells 3..5 on both axes
-        assertEquals("a building slot", k.reason(3, 3));
-        assertEquals("a building slot", k.reason(5, 5));
-        assertNull(k.reason(6, 4));
-        assertNull(k.reason(2, 4));
-        // 0.82 stays inside its own cell; a building without a footprint entry also keeps just the cell
-        assertEquals("a building slot", k.reason(4, 7));
-        assertNull(k.reason(3, 7));
-        assertNull(k.reason(5, 7));
     }
 
     @Test

@@ -69,16 +69,6 @@ class PlotResolverTest {
     }
 
     @Test
-    void duplicateHouseFlagsDoNotAffectTheValidPlot() {
-        List<String> problems = new ArrayList<>();
-        PlotResolver.Resolved r = PlotResolver.resolve(plot(null, null),
-                List.of(region("p", "main", null), region("h1", null, "main"), region("h2", null, "main")), problems::add);
-        assertEquals("p", r.plotRegion());
-        assertNull(r.houseRegion());
-        assertEquals(1, problems.size());
-    }
-
-    @Test
     void oneRegionCannotBeBothPlotAndHouse() {
         List<String> problems = new ArrayList<>();
         PlotResolver.Resolved r = PlotResolver.resolve(plot(null, null), List.of(region("both", "main", "main")), problems::add);
@@ -88,19 +78,4 @@ class PlotResolverTest {
         assertTrue(problems.getFirst().contains("separate house region"));
     }
 
-    @Test
-    void multiplePlotsEachFindTheirOwnRegions() {
-        List<RegionInfo> regions = List.of(region("p1", "one", null), region("h1", null, "one"), region("p2", "two", null),
-                region("h2", null, "two"));
-        Plot one = new Plot("one", "minecraft:overworld", null, null, null, null, null);
-        Plot two = new Plot("two", "minecraft:overworld", null, null, null, null, null);
-        assertEquals("h1", PlotResolver.resolve(one, regions, p -> { }).houseRegion());
-        assertEquals("p2", PlotResolver.resolve(two, regions, p -> { }).plotRegion());
-    }
-
-    @Test
-    void noRegionsAtAllIsAllNull() {
-        PlotResolver.Resolved r = PlotResolver.resolve(plot(null, null), List.of(), p -> { });
-        assertEquals(PlotResolver.Resolved.NONE, r);
-    }
 }

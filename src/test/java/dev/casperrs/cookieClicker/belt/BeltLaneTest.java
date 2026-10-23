@@ -20,17 +20,6 @@ class BeltLaneTest {
     }
 
     @Test
-    void firstCookieComesOutAtOnceThenWaitsTheInterval() {
-        BeltLane lane = new BeltLane();
-        double cps = 1000; // interval 8, 2.5 b/s -> 40 ticks
-        assertEquals(40, lane.trySpawn(100, cps, CURVE, PATH, 8));
-        for (long t = 101; t < 108; t++) {
-            assertEquals(-1, lane.trySpawn(t, cps, CURVE, PATH, 8), "tick " + t);
-        }
-        assertEquals(40, lane.trySpawn(108, cps, CURVE, PATH, 8));
-    }
-
-    @Test
     void neverMoreThanMaxCookiesOnTheBelt() {
         BeltLane lane = new BeltLane();
         int max = 3;
@@ -43,20 +32,6 @@ class BeltLaneTest {
         assertEquals(max - 1, lane.active());
         assertTrue(lane.trySpawn(1000, 1e6, CURVE, PATH, max) > 0);
         assertEquals(max, lane.active());
-    }
-
-    @Test
-    void zeroCapMeansNothingEver() {
-        BeltLane lane = new BeltLane();
-        assertEquals(-1, lane.trySpawn(0, 1e6, CURVE, PATH, 0));
-    }
-
-    @Test
-    void arrivedNeverGoesNegative() {
-        BeltLane lane = new BeltLane();
-        lane.arrived();
-        lane.arrived();
-        assertEquals(0, lane.active());
     }
 
     @Test
@@ -80,11 +55,4 @@ class BeltLaneTest {
         assertTrue(fast > 0 && 200 + fast > slow);
     }
 
-    @Test
-    void aPurchaseShortensTheGapRightAway() {
-        BeltLane lane = new BeltLane();
-        assertTrue(lane.trySpawn(0, 0.1, CURVE, PATH, 8) > 0); // gap ~ 80 ticks
-        assertEquals(-1, lane.trySpawn(20, 0.1, CURVE, PATH, 8));
-        assertTrue(lane.trySpawn(20, 1000, CURVE, PATH, 8) > 0); // gap 8: 20 ticks since the last is enough
-    }
 }

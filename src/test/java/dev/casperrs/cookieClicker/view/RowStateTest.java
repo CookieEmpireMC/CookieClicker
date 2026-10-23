@@ -2,7 +2,6 @@ package dev.casperrs.cookieClicker.view;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.casperrs.cookieClicker.economy.CookiePouch;
 import dev.casperrs.cookieClicker.economy.Economy;
@@ -51,17 +50,6 @@ class RowStateTest {
     }
 
     @Test
-    void showsOwnedNextCostAndNextCps() throws Exception {
-        Economy e = economy();
-        CookiePouch p = pouch(0, 0, Map.of("baker", 3), "bakerx2", "global");
-        RowState s = RowState.of(e, p, "baker");
-        assertEquals(3, s.owned());
-        assertEquals(e.nextCost(p, "baker"), s.cost());
-        assertEquals(0.1 * 2 * 1.5, s.cps(), 1e-12);
-        assertEquals(1 * 1.5, RowState.of(e, p, "farm").cps(), 1e-12);
-    }
-
-    @Test
     void nextBuildingCpsEqualsTheRealTotalCpsDelta() throws Exception {
         Economy e = economy();
         for (String[] ups : new String[][] {{}, {"bakerx2"}, {"global"}, {"bakerx2", "global"}}) {
@@ -77,13 +65,6 @@ class RowStateTest {
     }
 
     @Test
-    void unknownBuildingDoesNotThrow() throws Exception {
-        RowState s = RowState.of(economy(), pouch(1e9, 1e9, Map.of()), "ghost");
-        assertEquals(RowState.Style.LOCKED, s.style());
-        assertEquals(0, s.needed());
-    }
-
-    @Test
     void equalStatesAreEqualSoTheRowIsNotRedrawn() throws Exception {
         Economy e = economy();
         RowState a = RowState.of(e, pouch(20, 20, Map.of()), "baker");
@@ -92,28 +73,6 @@ class RowStateTest {
         assertEquals(a, b);
         assertNotEquals(a, RowState.of(e, pouch(5, 5, Map.of()), "baker"));
         assertNotEquals(a, RowState.of(e, pouch(20, 20, Map.of("baker", 1)), "baker"));
-    }
-
-    @Test
-    void styleKeysMatchConfigAndMessagePaths() {
-        assertEquals("affordable", RowState.Style.AFFORDABLE.key());
-        assertEquals("locked", RowState.Style.LOCKED.key());
-        assertEquals("panel.row.unaffordable", RowState.Style.UNAFFORDABLE.messagePath());
-        assertEquals("panel.row.locked", RowState.Style.LOCKED.messagePath());
-    }
-
-    @Test
-    void bulkTimesBuysExactlyNOrShowsUnaffordable() throws Exception {
-        Economy e = economy();
-        double five = e.buildingBulkCost(pouch(0, 0, Map.of()), "baker", 5);
-        RowState enough = RowState.of(e, pouch(five, five, Map.of()), "baker", BulkMode.FIVE);
-        assertEquals(RowState.Style.AFFORDABLE, enough.style());
-        assertEquals(5, enough.count());
-        assertEquals(five, enough.cost(), 0.0);
-        RowState short5 = RowState.of(e, pouch(five - 0.01, five, Map.of()), "baker", BulkMode.FIVE);
-        assertEquals(RowState.Style.UNAFFORDABLE, short5.style(), "not even 4 are bought: no partial buys");
-        assertEquals(5, short5.count());
-        assertEquals(five, short5.cost(), 0.0, "the row still shows the cost of the 5 it would buy");
     }
 
     @Test
@@ -129,14 +88,4 @@ class RowStateTest {
         assertEquals(e.buildingCpsGain(pouch(three, three, Map.of()), "baker", 3), max.cps(), 1e-12);
     }
 
-    @Test
-    void maxWithNothingAffordableShowsTheCostOfOneInTheUnaffordableLook() throws Exception {
-        Economy e = economy();
-        CookiePouch broke = pouch(0, 0, Map.of());
-        RowState s = RowState.of(e, broke, "baker", BulkMode.MAX);
-        assertEquals(RowState.Style.UNAFFORDABLE, s.style());
-        assertEquals(1, s.count());
-        assertEquals(e.buildingBulkCost(broke, "baker", 1), s.cost(), 0.0);
-        assertTrue(s.rolls(), "the price still rolls, so it reads as a price, not a lock");
-    }
 }

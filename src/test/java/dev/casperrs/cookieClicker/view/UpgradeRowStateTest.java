@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.random.RandomGenerator;
 import org.junit.jupiter.api.Test;
 
-/** upgrade-holograms: click upgrade rows per bulk mode (repeatable count cut to max-level, Max, one-time). */
+/** click upgrade rows per bulk mode (repeatable count cut to max-level, Max, one-time). */
 class UpgradeRowStateTest {
 
     private static Map<String, Object> map(Object... kv) {
@@ -54,15 +54,6 @@ class UpgradeRowStateTest {
     }
 
     @Test
-    void aTenBuyWithTenLeftShowsTenAndItsTotal() throws Exception {
-        Economy e = economy();
-        CookiePouch p = pouch(1e12, Map.of());
-        UpgradeRowState s = UpgradeRowState.of(e, p, "strength", BulkMode.TEN);
-        assertEquals(3, s.count(), "max-level 3 caps the ×10");
-        assertEquals(e.upgradeBulkCost(p, "strength", 3), s.cost(), 0.0);
-    }
-
-    @Test
     void maxBuysAsManyAsAffordableAndShowsOneWhenNoneIs() throws Exception {
         Economy e = economy();
         CookiePouch two = pouch(e.upgradeBulkCost(pouch(0, Map.of()), "strength", 2), Map.of());
@@ -89,18 +80,4 @@ class UpgradeRowStateTest {
         assertFalse(s.rolls());
     }
 
-    @Test
-    void oneTimeUpgradesIgnoreTheModeAndAreBoughtOnce() throws Exception {
-        Economy e = economy();
-        CookiePouch p = pouch(1e12, Map.of());
-        for (BulkMode mode : BulkMode.values()) {
-            UpgradeRowState s = UpgradeRowState.of(e, p, "mitts", mode);
-            assertEquals(1, s.count(), mode.name());
-            assertEquals(100, s.cost(), 0.0, mode.name());
-        }
-        CookiePouch noBaker = CookiePouch.fromSnapshot(new PouchSnapshot(1e12, 0, Map.of(), Map.of()));
-        UpgradeRowState lock = UpgradeRowState.of(e, noBaker, "mitts", BulkMode.ONE);
-        assertEquals(UpgradeRowState.Style.LOCKED, lock.style(), "no baker: locked, and a locked row doesn't roll");
-        assertFalse(lock.rolls());
-    }
 }

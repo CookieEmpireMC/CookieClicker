@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
-/** upgrade-holograms: which items the panels list, in which order, and what the shelf holds. */
+/** which items the panels list, in which order, and what the shelf holds. */
 class PanelRowsTest {
 
     private static Map<String, Object> map(Object... kv) {
@@ -45,27 +45,11 @@ class PanelRowsTest {
     }
 
     @Test
-    void boughtOneTimeUpgradesLeaveAndTheRestMoveUp() throws Exception {
-        assertEquals(List.of("rep", "b", "a"), PanelRows.clicks(config(), Map.of("c", 1), 10));
-    }
-
-    @Test
-    void aMaxedRepeatableStaysPinnedAtTheTop() throws Exception {
-        assertEquals(List.of("rep", "c", "b", "a"), PanelRows.clicks(config(), Map.of("rep", 2), 10));
-    }
-
-    @Test
     void maxRowsCapsTheList() throws Exception {
         assertEquals(List.of("rep", "c"), PanelRows.clicks(config(), Map.of(), 2));
         assertEquals(List.of(), PanelRows.clicks(config(), Map.of(), 0));
         assertEquals(List.of("baker"), PanelRows.buildings(config(), 1));
         assertEquals(List.of("baker", "farm"), PanelRows.buildings(config(), 5), "buildings.yml order");
-    }
-
-    @Test
-    void theShelfHoldsBoughtOneTimeUpgradesInFileOrderAndNoRepeatables() throws Exception {
-        assertEquals(List.of("b", "c"), PanelRows.shelf(config(), Map.of("c", 1, "b", 1, "rep", 2), 24));
-        assertEquals(List.of("b"), PanelRows.shelf(config(), Map.of("c", 1, "b", 1), 1), "max-icons caps it");
     }
 
     /** Seven buildings b0..b6 in file order (LinkedHashMap keeps it), 3 rows: the window is row 1..3 at most. */

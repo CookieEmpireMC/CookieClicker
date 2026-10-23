@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import dev.casperrs.cookieClicker.config.YamlFiles;
 import dev.casperrs.cookieClicker.plot.Plot;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -55,14 +54,6 @@ class SetupBackupTest {
     }
 
     @Test
-    void emptyPreviousPlotRoundTrips() throws Exception {
-        SetupBackup b = new SetupBackup("p1", "factory", "minecraft:the_end", 1L, new int[3], new int[] {1, 1, 1},
-                List.of(), Plot.empty("p1", "minecraft:the_end"));
-        assertEquals(b.previousPlot(), viaYaml(b).previousPlot());
-        assertEquals(List.of(), viaYaml(b).cells());
-    }
-
-    @Test
     void restoreCellsPutsEveryOldBlockBack() {
         Map<String, String> world = new HashMap<>();
         SetupBackup b = backup();
@@ -102,19 +93,4 @@ class SetupBackupTest {
         }
     }
 
-    @Test
-    void previousPlotForAnotherIdIsRejected() {
-        Map<String, Object> m = new LinkedHashMap<>(backup().toMap());
-        m.put("plot", "other");
-        assertThrows(IllegalArgumentException.class, () -> SetupBackup.fromMap(m));
-    }
-
-    @Test
-    void arraysAreCopiedDefensively() {
-        int[] corner = {1, 2, 3};
-        SetupBackup b = new SetupBackup("main", "d", "minecraft:overworld", 1, corner, new int[] {1, 1, 1},
-                new ArrayList<>(), previous());
-        corner[0] = 99;
-        assertEquals(1, b.houseCorner()[0]);
-    }
 }

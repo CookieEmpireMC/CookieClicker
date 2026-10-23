@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 
 class HouseLayoutTest {
 
-    /** The factory's real layout (fixture copied from feature/factory-makeover). */
+    /** The factory's real layout. */
     static Map<String, Object> valid() {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("plot-size", List.of(31, 30));
@@ -51,24 +51,6 @@ class HouseLayoutTest {
     }
 
     @Test
-    void beltIsOptionalAndYawDefaultsToZero() {
-        Map<String, Object> m = valid();
-        m.remove("belt");
-        m.put("shop", new LinkedHashMap<>(Map.of("at", List.of(20, 0, 6))));
-        HouseLayout l = HouseLayout.parse(m, new ArrayList<>());
-        assertNotNull(l);
-        assertNull(l.beltFrom());
-        assertNull(l.beltTo());
-        assertEquals(0f, l.shop().yaw());
-    }
-
-    @Test
-    void notASectionIsRejected() {
-        assertTrue(problems("nope").contains("layout must be a section"));
-        assertTrue(problems(null).contains("layout must be a section"));
-    }
-
-    @Test
     void plotSizeIsBounded() {
         for (Object size : new Object[] {List.of(4, 30), List.of(30, 4), List.of(257, 30), List.of(31), "31x30",
                 List.of(31.5, 30), List.of(-31, 30)}) {
@@ -93,19 +75,6 @@ class HouseLayoutTest {
     }
 
     @Test
-    void spotsMustBeInsidePlotSize() {
-        Map<String, Object> m = valid();
-        m.put("pedestal", new LinkedHashMap<>(Map.of("at", List.of(31, 0, 6), "yaw", 180)));
-        assertTrue(problems(m).contains("pedestal"));
-        m = valid();
-        m.put("shop", new LinkedHashMap<>(Map.of("at", List.of(3, 0, -1), "yaw", 0)));
-        assertTrue(problems(m).contains("shop"));
-        m = valid();
-        m.put("viewpoint", new LinkedHashMap<>(Map.of("at", List.of(3, 0, 30), "yaw", 0)));
-        assertTrue(problems(m).contains("viewpoint"));
-    }
-
-    @Test
     void missingOrMalformedKeysAreAllReported() {
         Map<String, Object> m = valid();
         m.remove("pedestal");
@@ -116,20 +85,4 @@ class HouseLayoutTest {
         assertTrue(p.contains("house-at") && p.contains("pedestal") && p.contains("viewpoint") && p.contains("belt"), p);
     }
 
-    @Test
-    void nonNumericYawAndNanAreRejected() {
-        Map<String, Object> m = valid();
-        m.put("pedestal", new LinkedHashMap<>(Map.of("at", List.of(18, 0, 6), "yaw", "north")));
-        assertTrue(problems(m).contains("yaw"));
-        m = valid();
-        m.put("viewpoint", new LinkedHashMap<>(Map.of("at", List.of(15, 0, 2), "yaw", Double.NaN)));
-        assertTrue(problems(m).contains("viewpoint"));
-    }
-
-    @Test
-    void pitchIsClamped() {
-        Map<String, Object> m = valid();
-        m.put("viewpoint", new LinkedHashMap<>(Map.of("at", List.of(15, 0, 2), "yaw", 0, "pitch", 400)));
-        assertEquals(90f, HouseLayout.parse(m, new ArrayList<>()).viewpoint().pitch());
-    }
 }

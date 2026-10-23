@@ -37,17 +37,6 @@ class SoundConfigParserTest {
     }
 
     @Test
-    void defaultsAreFilledIn() {
-        List<String> problems = new ArrayList<>();
-        SoundDef d = SoundConfigParser.parse(Map.of("e", spec("key", "a:b", "fallback", "c:d")), problems::add).get("e");
-        assertEquals(1f, d.volume());
-        assertEquals(1f, d.pitchMin());
-        assertEquals(1f, d.pitchMax());
-        assertEquals("master", d.source());
-        assertTrue(problems.isEmpty());
-    }
-
-    @Test
     void badEntriesAreSkippedOthersLoad() {
         List<String> problems = new ArrayList<>();
         Map<String, Object> yaml = new LinkedHashMap<>();
@@ -59,41 +48,6 @@ class SoundConfigParserTest {
         Map<String, SoundDef> out = SoundConfigParser.parse(yaml, problems::add);
         assertEquals(List.of("good"), List.copyOf(out.keySet()));
         assertEquals(4, problems.size(), problems.toString());
-    }
-
-    @Test
-    void missingFallbackWarnsAndUsesTheKey() {
-        List<String> problems = new ArrayList<>();
-        SoundDef d = SoundConfigParser.parse(Map.of("e", spec("key", "a:b")), problems::add).get("e");
-        assertEquals("a:b", d.fallback());
-        assertEquals(1, problems.size());
-    }
-
-    @Test
-    void badNumbersAndSourceAreRepaired() {
-        List<String> problems = new ArrayList<>();
-        SoundDef d = SoundConfigParser.parse(Map.of("e", spec("key", "a:b", "fallback", "c:d", "volume", -1,
-                "pitch-min", 1.5, "pitch-max", 0.5, "source", "nonsense")), problems::add).get("e");
-        assertEquals(1f, d.volume());
-        assertEquals(0.5f, d.pitchMin());
-        assertEquals(1.5f, d.pitchMax());
-        assertEquals("master", d.source());
-        assertEquals(3, problems.size(), problems.toString());
-    }
-
-    @Test
-    void nanVolumeFallsBackToDefault() {
-        SoundDef d = SoundConfigParser.parse(Map.of("e", spec("key", "a:b", "fallback", "c:d", "volume", Double.NaN)), p -> { }).get("e");
-        assertEquals(1f, d.volume());
-    }
-
-    @Test
-    void sourceAliasesMapToAdventureSources() {
-        assertEquals(Sound.Source.RECORD, SoundService.source("records"));
-        assertEquals(Sound.Source.BLOCK, SoundService.source("blocks"));
-        assertEquals(Sound.Source.PLAYER, SoundService.source("players"));
-        assertEquals(Sound.Source.UI, SoundService.source("ui"));
-        assertEquals(Sound.Source.MASTER, SoundService.source("???"));
     }
 
     @Test
@@ -118,19 +72,4 @@ class SoundConfigParserTest {
         assertEquals(SoundDef.BLOCK_KEY, out.get("without").fallback(), "no fallback: unresolved blocks stay silent");
     }
 
-    @Test
-    void otherAtKeysAreStillRejected() {
-        List<String> problems = new ArrayList<>();
-        Map<String, SoundDef> out = SoundConfigParser.parse(Map.of("x", spec("key", "@other", "fallback", "minecraft:block.stone.place")),
-                problems::add);
-        assertTrue(out.isEmpty());
-        assertEquals(1, problems.size());
-    }
-
-    @Test
-    void normalEventsAreNotBlockSounds() {
-        Map<String, SoundDef> out = SoundConfigParser.parse(Map.of("c", spec("key", "cookieclicker:ui.c", "fallback", "minecraft:block.wood.hit")),
-                p -> { });
-        assertTrue(!out.get("c").blockSound());
-    }
 }

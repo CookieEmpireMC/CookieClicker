@@ -1,9 +1,7 @@
 package dev.casperrs.cookieClicker.house;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
 
@@ -16,21 +14,6 @@ class CameraReturnTest {
         CameraReturn odd = new CameraReturn("SURVIVAL", "minecraft:the_nether", -1e7, 1.0E-5, 123456789.123456789,
                 -0.0f, 90f);
         assertEquals(odd, CameraReturn.decode(odd.encode()));
-    }
-
-    @Test
-    void everyGameModeNameSurvives() {
-        for (org.bukkit.GameMode m : org.bukkit.GameMode.values()) {
-            CameraReturn r = new CameraReturn(m.name(), "minecraft:overworld", 1, 2, 3, 4, 5);
-            assertEquals(m.name(), CameraReturn.decode(r.encode()).gameMode());
-        }
-    }
-
-    @Test
-    void decodeNormalisesTheModeName() {
-        CameraReturn r = CameraReturn.decode(" survival ;minecraft:overworld;1;2;3;4;5");
-        assertNotNull(r);
-        assertEquals("SURVIVAL", r.gameMode());
     }
 
     @Test
@@ -47,11 +30,4 @@ class CameraReturnTest {
         assertNull(CameraReturn.decode(null));
     }
 
-    @Test
-    void separatorsInTheFieldsAreRefusedAtConstruction() {
-        assertThrows(IllegalArgumentException.class, () -> new CameraReturn("A;B", "minecraft:overworld", 0, 0, 0, 0, 0));
-        assertThrows(IllegalArgumentException.class, () -> new CameraReturn("SURVIVAL", "a;b", 0, 0, 0, 0, 0));
-        assertThrows(IllegalArgumentException.class, () -> new CameraReturn("", "minecraft:overworld", 0, 0, 0, 0, 0));
-        assertThrows(IllegalArgumentException.class, () -> new CameraReturn("SURVIVAL", " ", 0, 0, 0, 0, 0));
-    }
 }

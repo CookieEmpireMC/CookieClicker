@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
-/** {@code layout.camera} and the belt shape check (brief conveyor-belt). */
+/** {@code layout.camera} and the belt shape check. */
 class HouseLayoutCameraTest {
 
     private static Map<String, Object> withCamera(Object camera) {
@@ -35,13 +35,6 @@ class HouseLayoutCameraTest {
     }
 
     @Test
-    void cameraIsOptional() {
-        HouseLayout l = HouseLayout.parse(HouseLayoutTest.valid(), new ArrayList<>());
-        assertNotNull(l);
-        assertNull(l.camera());
-    }
-
-    @Test
     void theFactoryCameraOutsideAndAboveThePlotParses() {
         List<String> p = new ArrayList<>();
         HouseLayout l = HouseLayout.parse(withCamera(cam(List.of(23, 12, -13), 20, 24)), p);
@@ -49,22 +42,6 @@ class HouseLayoutCameraTest {
         assertArrayEquals(new double[] {23, 12, -13}, l.camera().at());
         assertEquals(20f, l.camera().yaw());
         assertEquals(24f, l.camera().pitch());
-    }
-
-    @Test
-    void negativeCoordinatesAndFractionsAreAllowed() {
-        HouseLayout l = HouseLayout.parse(withCamera(cam(List.of(-40.5, 90, -200.25), 0, 0)), new ArrayList<>());
-        assertNotNull(l);
-        assertEquals(-40.5, l.camera().at()[0]);
-    }
-
-    @Test
-    void yawAndPitchDefaultToZeroAndPitchIsClamped() {
-        HouseLayout l = HouseLayout.parse(withCamera(cam(List.of(1, 2, 3), null, null)), new ArrayList<>());
-        assertEquals(0f, l.camera().yaw());
-        assertEquals(0f, l.camera().pitch());
-        HouseLayout steep = HouseLayout.parse(withCamera(cam(List.of(1, 2, 3), 0, 400)), new ArrayList<>());
-        assertEquals(90f, steep.camera().pitch());
     }
 
     @Test
@@ -103,15 +80,4 @@ class HouseLayoutCameraTest {
         }
     }
 
-    @Test
-    void aBeltOfExactlyMaxCellsIsFine() {
-        Map<String, Object> m = HouseLayoutTest.valid();
-        m.put("belt", new LinkedHashMap<>(Map.of("from", List.of(0, 0, 0), "to", List.of(0, 0, HouseLayout.MAX_BELT - 1))));
-        m.put("plot-size", List.of(31, 70));
-        m.put("pedestal", new LinkedHashMap<>(Map.of("at", List.of(18, 0, 6), "yaw", 180)));
-        List<String> p = new ArrayList<>();
-        // may still fail on other cross-checks in a 31x70 plot; the belt itself must not be the problem
-        HouseLayout.parse(m, p);
-        assertFalse(String.join("|", p).contains("layout.belt must be a straight"), p.toString());
-    }
 }

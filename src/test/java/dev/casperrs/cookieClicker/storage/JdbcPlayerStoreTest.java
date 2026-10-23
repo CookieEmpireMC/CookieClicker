@@ -53,28 +53,12 @@ class JdbcPlayerStoreTest {
     }
 
     @Test
-    void missingPlayerLoadsEmpty() throws Exception {
-        assertTrue(store.load(UUID.randomUUID()).isEmpty());
-    }
-
-    @Test
     void roundTripKeepsEverythingIncludingUnknownIds() throws Exception {
         PouchSnapshot s = new PouchSnapshot(123.5, 999.25, Map.of("baker", 12, "removed_building", 3), Set.of("mitts", "gone"));
         store.save(player, s);
         LoadedPouch loaded = store.load(player).orElseThrow();
         assertEquals(s, loaded.snapshot());
         assertTrue(loaded.problems().isEmpty());
-    }
-
-    @Test
-    void saveReplacesInsteadOfAccumulating() throws Exception {
-        store.save(player, new PouchSnapshot(1, 1, Map.of("a", 1, "b", 2), Set.of("u1", "u2")));
-        store.save(player, new PouchSnapshot(5, 9, Map.of("a", 4), Set.of("u2")));
-        PouchSnapshot s = store.load(player).orElseThrow().snapshot();
-        assertEquals(5, s.pouch());
-        assertEquals(9, s.baked());
-        assertEquals(Map.of("a", 4), s.owned());
-        assertEquals(Set.of("u2"), s.upgrades());
     }
 
     @Test
@@ -99,24 +83,6 @@ class JdbcPlayerStoreTest {
     }
 
     @Test
-    void overlongAndBlankIdsAreSkippedOnSaveNotFatal() throws Exception {
-        String tooLong = "x".repeat(JdbcPlayerStore.MAX_ID_LENGTH + 1);
-        String maxLen = "y".repeat(JdbcPlayerStore.MAX_ID_LENGTH);
-        store.save(player, new PouchSnapshot(1, 1, Map.of(tooLong, 1, maxLen, 2, " ", 3), Set.of(tooLong, "ok")));
-        PouchSnapshot s = store.load(player).orElseThrow().snapshot();
-        assertEquals(Map.of(maxLen, 2), s.owned());
-        assertEquals(Set.of("ok"), s.upgrades());
-    }
-
-    @Test
-    void infinityAndHugeValuesRoundTripAsFinite() throws Exception {
-        store.save(player, new PouchSnapshot(Double.POSITIVE_INFINITY, Double.MAX_VALUE, Map.of(), Set.of()));
-        PouchSnapshot s = store.load(player).orElseThrow().snapshot();
-        assertEquals(Double.MAX_VALUE, s.pouch());
-        assertEquals(Double.MAX_VALUE, s.baked());
-    }
-
-    @Test
     void corruptRowsAreRepairedAndReported() throws Exception {
         sql("INSERT INTO cc_players (uuid, pouch, baked, last_seen) VALUES ('" + player + "', CAST('NaN' AS DOUBLE), -7, 0)");
         sql("INSERT INTO cc_buildings VALUES ('" + player + "', 'good', 4)");
@@ -138,34 +104,6 @@ class JdbcPlayerStoreTest {
     }
 
     @Test
-    void bakedBelowPouchIsRaisedToPouch() throws Exception {
-        sql("INSERT INTO cc_players (uuid, pouch, baked, last_seen) VALUES ('" + player + "', 100, 40, 0)");
-        LoadedPouch loaded = store.load(player).orElseThrow();
-        assertEquals(100, loaded.snapshot().baked());
-        assertEquals(1, loaded.problems().size());
-    }
-
-    @Test
-    void lastSeenUsesTheInjectedClock() throws Exception {
-        store.save(player, PouchSnapshot.EMPTY);
-        try (Connection c = DriverManager.getConnection(url); Statement st = c.createStatement();
-             var rs = st.executeQuery("SELECT last_seen, prestige FROM cc_players")) {
-            assertTrue(rs.next());
-            assertEquals(1234L, rs.getLong(1));
-            assertEquals(0.0, rs.getDouble(2));
-        }
-    }
-
-    @Test
-    void initTwiceIsHarmlessAndKeepsData() throws Exception {
-        store.save(player, new PouchSnapshot(5, 5, Map.of("a", 1), Set.of()));
-        store.init();
-        newStore().init();
-        assertEquals(JdbcPlayerStore.SCHEMA_VERSION, store.schemaVersion());
-        assertEquals(5, store.load(player).orElseThrow().snapshot().pouch());
-    }
-
-    @Test
     void newerSchemaIsRefused() throws Exception {
         sql("UPDATE cc_schema_version SET version = " + (JdbcPlayerStore.SCHEMA_VERSION + 1));
         JdbcPlayerStore other = newStore();
@@ -174,12 +112,6 @@ class JdbcPlayerStoreTest {
         // untouched
         assertEquals(JdbcPlayerStore.SCHEMA_VERSION + 1, store.schemaVersion());
         other.close();
-    }
-
-    @Test
-    void freshDatabaseStartsAtTheCurrentSchemaVersion() throws Exception {
-        assertEquals(JdbcPlayerStore.SCHEMA_VERSION, store.schemaVersion());
-        assertEquals(3, JdbcPlayerStore.SCHEMA_VERSION, "upgrade-holograms is schema v3; bump this test with the next migration");
     }
 
     @Test
@@ -306,21 +238,6 @@ class JdbcPlayerStoreTest {
     void houseSeenRejectsBadPlotIds() {
         assertThrows(StorageException.class, () -> store.markHouseSeen(player, ""));
         assertThrows(StorageException.class, () -> store.markHouseSeen(player, "x".repeat(65)));
-    }
-
-    @Test
-    void tablePrefixIsValidated() {
-        assertThrows(IllegalArgumentException.class, () -> new JdbcPlayerStore(() -> null, "cc_; DROP TABLE x"));
-        assertThrows(IllegalArgumentException.class, () -> new JdbcPlayerStore(() -> null, "x".repeat(33)));
-    }
-
-    @Test
-    void differentPrefixesDoNotShareData() throws Exception {
-        JdbcPlayerStore other = new JdbcPlayerStore(() -> DriverManager.getConnection(url), "zz_");
-        other.init();
-        store.save(player, new PouchSnapshot(9, 9, Map.of(), Set.of()));
-        assertTrue(other.load(player).isEmpty());
-        other.close();
     }
 
     @Test

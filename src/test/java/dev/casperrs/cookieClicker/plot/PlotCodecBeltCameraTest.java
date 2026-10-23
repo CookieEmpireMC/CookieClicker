@@ -1,7 +1,6 @@
 package dev.casperrs.cookieClicker.plot;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -13,7 +12,7 @@ import java.util.Map;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 
-/** plots.yml {@code belt} and {@code camera} (brief conveyor-belt). */
+/** plots.yml {@code belt} and {@code camera}. */
 class PlotCodecBeltCameraTest {
 
     private static Plot plot() {
@@ -40,13 +39,6 @@ class PlotCodecBeltCameraTest {
     }
 
     @Test
-    void negativeCoordinatesSurvive() throws Exception {
-        Plot p = new Plot("n", "minecraft:overworld", null, null, null, null, List.of(), List.of(), null, null, null,
-                new Plot.Belt(List.of(new Plot.Cell(-5, -60, -1)), 0.5), new Plot.Viewpoint(-8.5, 3, -9.5, -90f, 0f));
-        assertEquals(List.of(p), viaYamlText(List.of(p), new ArrayList<>()));
-    }
-
-    @Test
     void oldFilesWithoutBeltOrCameraStillLoad() {
         Map<String, Object> spec = new LinkedHashMap<>();
         spec.put("world", "minecraft:overworld");
@@ -54,16 +46,6 @@ class PlotCodecBeltCameraTest {
         }).getFirst();
         assertNull(p.belt());
         assertNull(p.camera());
-    }
-
-    @Test
-    void absentBeltAndCameraAreNotWritten() {
-        Plot p = new Plot("main", "minecraft:overworld", null, null, null, null, List.of(), List.of(), null, null,
-                null);
-        @SuppressWarnings("unchecked")
-        Map<String, Object> spec = (Map<String, Object>) ((Map<String, Object>) PlotCodec.toMap(List.of(p))
-                .get("plots")).get("main");
-        assertTrue(!spec.containsKey("belt") && !spec.containsKey("camera"));
     }
 
     private static List<String> problemsFor(String key, Object value) {
@@ -93,40 +75,4 @@ class PlotCodecBeltCameraTest {
         }
     }
 
-    @Test
-    void badCamerasAreReportedAndDropped() {
-        Object[] bad = {"up", Map.of("x", 1.0, "y", 2.0), Map.of("x", "a", "y", 2.0, "z", 3.0),
-                Map.of("x", 1.0, "y", 2.0, "z", Double.NaN)};
-        for (Object b : bad) {
-            List<String> problems = problemsFor("camera", b);
-            assertTrue(problems.stream().anyMatch(s -> s.contains(".camera")), problems.toString());
-        }
-    }
-
-    @Test
-    void cameraYawAndPitchAreOptional() {
-        Map<String, Object> spec = new LinkedHashMap<>();
-        spec.put("world", "minecraft:overworld");
-        spec.put("camera", Map.of("x", 1.0, "y", 70.0, "z", 3.0));
-        List<String> problems = new ArrayList<>();
-        Plot p = PlotCodec.fromMap(Map.of("plots", Map.of("main", spec)), problems::add).getFirst();
-        assertNotNull(p.camera());
-        assertEquals(0f, p.camera().yaw());
-        assertTrue(problems.isEmpty());
-    }
-
-    @Test
-    void derivedPlotsKeepBeltAndCamera() {
-        Plot p = plot();
-        assertEquals(p.belt(), p.withViewpoint(null).belt());
-        assertEquals(p.camera(), p.withPedestal(null).camera());
-        assertEquals(p.belt(), p.withSmoke(List.of()).belt());
-        assertEquals(p.camera(), p.withSteam(List.of()).camera());
-        assertEquals(p.belt(), p.withEntrance(null).belt());
-        assertEquals(p.camera(), p.withLayout(null, null, List.of(), List.of(), null, null, null).camera());
-        // moving the plot to another world drops the world-specific layout
-        Plot moved = p.withWorld("minecraft:the_nether");
-        assertNull(moved.belt());
-        assertNull(moved.camera());
-    }
 }

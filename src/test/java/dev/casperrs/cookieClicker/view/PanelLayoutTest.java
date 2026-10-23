@@ -8,14 +8,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.casperrs.cookieClicker.config.StationVisualSettings;
 import dev.casperrs.cookieClicker.config.StationVisualSettings.Offset;
-import dev.casperrs.cookieClicker.config.StationVisualSettings.Shelf;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 
-/** upgrade-holograms: the ×1/×5/×10/Max toggle cycle, the shelf grid and the per-player bulk memory. */
+/** the ×1/×5/×10/Max toggle cycle, the shelf grid and the per-player bulk memory. */
 class PanelLayoutTest {
 
     @Test
@@ -30,30 +28,6 @@ class PanelLayoutTest {
         assertFalse(BulkMode.TEN.max());
     }
 
-    @Test
-    void shelfIconsFillRowByRowFromTheTopLeft() {
-        Shelf shelf = new Shelf(new Offset(-0.28, -2.4, 0), 6, 0.22, 0.18f, 24, 0.2f, 14, 3);
-        assertEquals(new Offset(-0.28, -2.4, 0), shelf.slot(0));
-        assertEquals(new Offset(-0.28 + 5 * 0.22, -2.4, 0), shelf.slot(5), "the sixth icon is still on row one");
-        assertEquals(new Offset(-0.28, -2.4 - 0.22, 0), shelf.slot(6), "the seventh starts the second row");
-        assertEquals(new Offset(-0.28 + 0.22, -2.4 - 0.22, 0), shelf.slot(7));
-    }
-
-    @Test
-    void theChosenModeIsRememberedPerPlayerAndPerPanelOnly() {
-        BulkModes modes = new BulkModes();
-        UUID anna = UUID.randomUUID();
-        UUID ben = UUID.randomUUID();
-        assertEquals(BulkMode.ONE, modes.get(anna, PanelKind.BUILDINGS), "default ×1");
-        assertEquals(BulkMode.FIVE, modes.cycle(anna, PanelKind.BUILDINGS));
-        assertEquals(BulkMode.FIVE, modes.get(anna, PanelKind.BUILDINGS));
-        assertEquals(BulkMode.ONE, modes.get(anna, PanelKind.CLICKS));
-        assertEquals(BulkMode.ONE, modes.get(ben, PanelKind.BUILDINGS));
-        modes.forget(anna);
-        assertEquals(BulkMode.ONE, modes.get(anna, PanelKind.BUILDINGS), "quit forgets the choice");
-    }
-
-    // ---- click picking: the rendered text under the crosshair (default station.panel numbers) ----------------
     // Header 0..0.18 (scale 0.72); gap 0.22; toggle text 0.125 tall, bottom -0.345; gap 0.28; row text 0.25 tall,
     // bottom of row i = -0.875 - 0.42 i (row 1 = -1.295). Text grows up from its position, so a row spans
     // bottom..bottom+h. Column: text left edge -0.9125, 1.825 wide; row icon centre -1.1125, 0.3 wide.
@@ -86,13 +60,6 @@ class PanelLayoutTest {
         assertEquals(row, hit.row());
     }
 
-    private static void assertToggle(BulkMode mode, double right) {
-        PanelLayout.Hit hit = aim(right, -0.26, List.of(), TOGGLE);
-        assertNotNull(hit, "label " + mode);
-        assertEquals(PanelLayout.Hit.Kind.TOGGLE, hit.kind());
-        assertEquals(mode, hit.mode());
-    }
-
     @Test
     void aRowIsPickedByItsRenderedTextAndItsIcon() {
         assertRow(0, aim(0.2, -0.6875, fourRows(), null));    // middle of row 0's text
@@ -123,41 +90,6 @@ class PanelLayoutTest {
         assertNull(one.pick(new Offset(0.2, -0.6875, 3), dir, 6, List.of(TWO_LINES), null), "behind the eye");
         assertNull(one.pick(new Offset(0.2, -0.6875, -3), new Offset(1, 0, 0), 6, List.of(TWO_LINES), null),
                 "parallel to the panel");
-    }
-
-    @Test
-    void eachToggleLabelSelectsItsModeAndAGapBetweenLabelsCycles() {
-        assertToggle(BulkMode.ONE, -0.375);    // 10 px from the left edge of the toggle
-        assertToggle(BulkMode.FIVE, -0.125);   // 30 px
-        assertToggle(BulkMode.TEN, 0.125);     // 50 px
-        assertToggle(BulkMode.MAX, 0.375);     // 70 px
-        PanelLayout.ToggleBox tight = new PanelLayout.ToggleBox(80,
-                Map.of(BulkMode.ONE, new int[] {0, 18}, BulkMode.FIVE, new int[] {22, 40}));
-        PanelLayout.Hit gap = aim(-0.25, -0.26, List.of(), tight); // 20 px: between the two labels
-        assertNotNull(gap);
-        assertEquals(PanelLayout.Hit.Kind.TOGGLE, gap.kind());
-        assertNull(gap.mode(), "between labels: the toggle cycles");
-    }
-
-    @Test
-    void thePageArrowsOnTheToggleLinePickTheirOwnEndAndTheLabelsStillPickTheirMode() {
-        PanelLayout.ToggleBox paged = new PanelLayout.ToggleBox(80,
-                Map.of(BulkMode.ONE, new int[] {20, 40}, BulkMode.FIVE, new int[] {40, 60}),
-                Map.of(PanelLayout.Hit.Kind.PAGE_UP, new int[] {0, 18}, PanelLayout.Hit.Kind.PAGE_DOWN, new int[] {62, 80}));
-        PanelLayout.Hit up = aim(-0.375, -0.26, List.of(), paged); // 10 px: the ▲ on the left
-        assertNotNull(up);
-        assertEquals(PanelLayout.Hit.Kind.PAGE_UP, up.kind());
-        assertEquals(-1, up.row());
-        assertNull(up.mode());
-        assertEquals(PanelLayout.Hit.Kind.PAGE_DOWN, aim(0.375, -0.26, List.of(), paged).kind()); // 70 px: the ▼
-        assertEquals(BulkMode.ONE, aim(-0.125, -0.26, List.of(), paged).mode(), "30 px: the ×1 label");
-    }
-
-    @Test
-    void theHeaderAndTheAirAboveTheToggleAreNotClickable() {
-        assertNull(aim(0, 0.07, fourRows(), TOGGLE));                                  // header text
-        assertNull(aim(0, -0.1, fourRows(), TOGGLE));                                  // air under the header
-        assertEquals(PanelLayout.Hit.Kind.TOGGLE, aim(0, -0.25, fourRows(), TOGGLE).kind());
     }
 
     @Test

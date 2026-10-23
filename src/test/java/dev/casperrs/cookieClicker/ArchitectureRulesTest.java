@@ -96,7 +96,7 @@ class ArchitectureRulesTest {
 
     @Test
     void onlyTheHousePackageChangesBlocksInTheWorld() throws IOException {
-        // starter-house: "the world is only ever modified by /bakery house place and /bakery house undo"
+        // "the world is only ever modified by /bakery house place and /bakery house undo"
         for (String bad : new String[] {".setBlockData(", ".setType(", ".breakNaturally(", "setBiome(", "getStructureManager("}) {
             assertTrue(hits(bad, "/house/").isEmpty(), bad + " outside house/: " + hits(bad, "/house/"));
         }
@@ -104,7 +104,7 @@ class ArchitectureRulesTest {
 
     @Test
     void onlyHousePlacerAndPlotSetupWriteBlocks() throws IOException {
-        // factory-makeover: /bakery plot setup (PlotSetup) joined /bakery house place (HousePlacer) as a world writer
+        // /bakery plot setup (PlotSetup) and /bakery house place (HousePlacer) are the only world writers
         for (String bad : new String[] {".setBlockData(", ".setType(", ".breakNaturally("}) {
             List<String> found = new ArrayList<>(hits(bad, null));
             found.removeIf(h -> h.startsWith("HousePlacer.java:") || h.startsWith("PlotSetup.java:"));

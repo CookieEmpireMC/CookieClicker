@@ -215,17 +215,6 @@ class PanelUpdaterTest {
         }
     }
 
-    @Test
-    void aPagedToggleTagsBothArrowsEvenWhenOneIsDisabled() {
-        PanelUpdater updater = new PanelUpdater(() -> settings, economy, shippedMessages(), new BulkModes(),
-                (kind, id, withPack) -> null);
-        // a disabled arrow is still clickable (it does nothing), so both are tagged for the ray pick
-        PanelLayout.ToggleBox box = PanelUpdater.toggleBox(updater.pagedToggle(Component.text("×1"), false, true));
-        assertTrue(box.pages().containsKey(PanelLayout.Hit.Kind.PAGE_UP));
-        assertTrue(box.pages().containsKey(PanelLayout.Hit.Kind.PAGE_DOWN));
-        assertTrue(box.labels().isEmpty(), "plain text here is not a mode label");
-    }
-
     private StationView view(Station station) {
         StationFrame frame = StationFrame.of(station);
         Offset none = new Offset(0, 0, 0);

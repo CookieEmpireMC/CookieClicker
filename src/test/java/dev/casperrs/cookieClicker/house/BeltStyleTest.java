@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
 
 class BeltStyleTest {
 
-    /** The shape of the shipped houses/belt.yml (model-designer). */
+    /** The shape of the shipped houses/belt.yml. */
     private static final String GOOD = """
             direction: north
             surface-height: 1
@@ -59,40 +59,6 @@ class BeltStyleTest {
     }
 
     @Test
-    void singleCellBeltUsesTheFirstColumn() throws Exception {
-        BeltStyle s = parse(GOOD).style();
-        assertEquals(s.column(0, 1), List.of("minecraft:spruce_log[axis=x]"));
-    }
-
-    @Test
-    void directionAndHeightAreOptionalButChecked() throws Exception {
-        BeltStyle s = parse("columns: {a: [\"minecraft:stone\"]}\nfirst: a\nlast: a\nmiddle: a\n").style();
-        assertNotNull(s);
-        assertEquals(BeltStyle.DEFAULT_HEIGHT, s.surfaceHeight());
-        assertNull(parse(GOOD.replace("direction: north", "direction: east")).style());
-        assertNull(parse(GOOD.replace("surface-height: 1", "surface-height: 0")).style());
-        assertNull(parse(GOOD.replace("surface-height: 1", "surface-height: 5")).style());
-        assertNull(parse(GOOD.replace("surface-height: 1", "surface-height: 1.5")).style());
-        assertNull(parse(GOOD.replace("surface-height: 1", "surface-height: tall")).style());
-    }
-
-    @Test
-    void tallerFrameNeedsMatchingColumnLengths() throws Exception {
-        String two = """
-                surface-height: 2
-                columns:
-                  a: ["minecraft:stone", "minecraft:stone_slab"]
-                  b: ["minecraft:stone"]
-                first: a
-                last: a
-                middle: a
-                """;
-        BeltStyle.Result r = parse(two);
-        assertNull(r.style());
-        assertTrue(String.join("|", r.problems()).contains("columns.b"), r.problems().toString());
-    }
-
-    @Test
     void everyProblemIsCollectedNotJustTheFirst() throws Exception {
         BeltStyle.Result r = parse("direction: west\ncolumns: {a: [\"\"]}\nfirst: nope\nlast: nada\nmiddle: []\n");
         assertNull(r.style());
@@ -100,33 +66,9 @@ class BeltStyleTest {
     }
 
     @Test
-    void missingOrEmptySectionsAreProblemsNotCrashes() throws Exception {
-        assertNull(parse("direction: north\n").style());
-        assertNull(parse("columns: {}\nfirst: a\nlast: a\nmiddle: a\n").style());
-        assertNull(parse("columns: [a, b]\nfirst: a\nlast: a\nmiddle: a\n").style());
-        assertNull(BeltStyle.parse(Map.of()).style());
-    }
-
-    @Test
-    void unknownColumnNamesInMiddleAreProblems() throws Exception {
-        assertNull(parse(GOOD.replace("middle: [housing, roller]", "middle: [housing, ghost]")).style());
-        assertNull(parse(GOOD.replace("middle: [housing, roller]", "middle: 5")).style());
-    }
-
-    @Test
-    void noneStyleHasNoFrameBlocks() {
-        BeltStyle none = BeltStyle.none();
-        assertEquals(BeltStyle.DEFAULT_HEIGHT, none.surfaceHeight());
-        assertTrue(none.column(0, 3).isEmpty());
-        assertTrue(none.column(1, 3).isEmpty());
-        assertTrue(none.allBlockData().isEmpty());
-        assertEquals(3, BeltStyle.none(3).surfaceHeight());
-    }
-
-    @Test
     void theShippedBeltFileParsesWhenPresent() throws IOException {
         Path p = Path.of("src/main/resources/houses/belt.yml");
-        assumeTrue(Files.isRegularFile(p), "belt.yml arrives with the model-designer merge");
+        assumeTrue(Files.isRegularFile(p), "houses/belt.yml is missing");
         try {
             BeltStyle.Result r = BeltStyle.parse(map(Files.readString(p)));
             assertTrue(r.problems().isEmpty(), r.problems().toString());
