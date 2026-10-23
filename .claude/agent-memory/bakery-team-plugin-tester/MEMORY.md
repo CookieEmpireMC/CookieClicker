@@ -20,3 +20,4 @@
 - [Prune tooling gotchas](prune-gotchas.md) — sandbox blocks loops/vars with git; Java/Python method-removal pitfalls; test counts after prune
 - [Ledger: tidy config](ledger-tidy-config.md) — coder config branch READY, 415 tests; paper-plugin classpath facts; new descriptor/old-config tests
 - [Ledger: tidy vfx](ledger-tidy-vfx.md) — vfx split READY at 4a6d3b1; parser equivalence probe recipe; gradient VirtualComponent identity-equals; open LOWs
+- [Ledger: tidy ui](ledger-tidy-ui.md) — ui branch READY at d2ae11c; U3 audit, PanelText/JdbcSkip tests, sandbox quirks

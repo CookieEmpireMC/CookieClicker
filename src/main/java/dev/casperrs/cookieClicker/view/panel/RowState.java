@@ -1,4 +1,4 @@
-package dev.casperrs.cookieClicker.view;
+package dev.casperrs.cookieClicker.view.panel;
 
 import dev.casperrs.cookieClicker.economy.BuildingDef;
 import dev.casperrs.cookieClicker.economy.CookiePouch;
@@ -21,7 +21,7 @@ public record RowState(Style style, int owned, double cost, double cps, double n
     public enum Style {
         AFFORDABLE, UNAFFORDABLE, LOCKED;
 
-        /** Key under {@code station.panel.colors} and {@code panel.row.*}. */
+        /** Key of the row background colour and of {@code panel.row.*}. */
         public String key() {
             return name().toLowerCase(java.util.Locale.ROOT);
         }

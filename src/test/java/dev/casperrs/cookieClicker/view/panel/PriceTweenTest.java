@@ -1,4 +1,4 @@
-package dev.casperrs.cookieClicker.view;
+package dev.casperrs.cookieClicker.view.panel;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;

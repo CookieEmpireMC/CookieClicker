@@ -8,7 +8,7 @@ import dev.casperrs.cookieClicker.economy.Economy;
 import dev.casperrs.cookieClicker.economy.EconomyConfig;
 import dev.casperrs.cookieClicker.economy.EconomyConfigParser;
 import dev.casperrs.cookieClicker.economy.PouchSnapshot;
-import dev.casperrs.cookieClicker.format.RealMessages;
+import dev.casperrs.cookieClicker.text.RealMessages;
 import dev.casperrs.cookieClicker.session.SessionManager;
 import dev.casperrs.cookieClicker.storage.LoadedPouch;
 import dev.casperrs.cookieClicker.storage.PlayerStore;

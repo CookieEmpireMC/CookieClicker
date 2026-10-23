@@ -36,7 +36,7 @@ class StationFrameTest {
     @Test
     void aPlotWithoutAClicksSpotMirrorsTheShopSpotAcrossThePedestal() {
         Station station = new Station("s", "minecraft:overworld", 10, 64, 20, 0f, new Station.Anchor(12, 65, 18, 90f));
-        Station.Anchor mirrored = StationViews.mirroredClicks(station);
+        Station.Anchor mirrored = StationAnchors.mirroredClicks(station);
         assertEquals(8, mirrored.x(), EPS);     // 2 * 10 - 12
         assertEquals(65, mirrored.y(), EPS);    // same height as the shop spot
         assertEquals(22, mirrored.z(), EPS);    // 2 * 20 - 18

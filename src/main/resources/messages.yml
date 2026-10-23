@@ -138,7 +138,7 @@ upgrades:
 # The two floating panels next to the cookie: Buildings (shop spot) and Click upgrades (clicks spot). Each row is
 # redrawn only when it changes; while a price rolls to a new value it is redrawn every few ticks.
 # Keep every row at most two lines of about 110 px (line-width 120 less the padding spaces; a letter is ~6 px,
-# bold +1), so rows line up and clicks land on the right row. Background colours: config.yml station.panel.colors.
+# bold +1), so rows line up and clicks land on the right row.
 # (The floating "+N" click numbers are in effects.yml.)
 panel:
   buildings:
@@ -147,7 +147,7 @@ panel:
   # colours apply), <owned>, <cost> (for the chosen amount), <cps> (what that amount adds), <needed> (baked cookies to
   # unlock) = formatted numbers, <amount> = panel.bulk.amount (empty on x1).
   row:
-    # Not bold: the longest names ("Extra Conveyor Belt ×1000") must fit station.panel.line-width on one line.
+    # Not bold: the longest names ("Extra Conveyor Belt ×1000") must fit the panel line width on one line.
     affordable: "<white><name></white> <gray>×<owned></gray><newline><amount><green><cost></green> <gray>· +<cps>/s</gray>"
     unaffordable: "<gray><name></gray> <dark_gray>×<owned></dark_gray><newline><amount><red><cost></red> <dark_gray>· +<cps>/s</dark_gray>"
     locked: "<dark_gray>???</dark_gray><newline><dark_gray><i>Bake <needed> to unlock</i></dark_gray>"
@@ -183,7 +183,7 @@ panel:
       max: "Max"
     # In front of the cost on every mode but ×1: how many a click buys. <count> = the number.
     amount: "<yellow>×<count></yellow> "
-  # Scrolling the Bakery Shop when it has more buildings than station.panels.buildings.max-rows: the toggle line
+  # Scrolling the Bakery Shop when it has more buildings than it has rows: the toggle line
   # becomes "line" with <toggle> = the ×1 ×5 ×10 Max labels and <up> / <down> = the arrows, each in the enabled style
   # (click scrolls one row) or the disabled one (already at that end). Without paging the toggle stays as above.
   page:

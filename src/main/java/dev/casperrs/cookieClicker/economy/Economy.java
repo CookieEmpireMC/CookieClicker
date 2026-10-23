@@ -38,8 +38,6 @@ public final class Economy {
         this.config = Objects.requireNonNull(config);
     }
 
-    // ---- costs (model.md "Bulk cost and Max") ------------------------------------------------
-
     /** {@code ceil(base_cost × cost_growth ^ owned)}; +infinity for an unknown building. */
     public double nextCost(CookiePouch pouch, String buildingId) {
         return bulkCost(buildingId, pouch.owned(buildingId), 1);
@@ -124,8 +122,6 @@ public final class Economy {
         int left = (int) Math.min(Integer.MAX_VALUE, (long) u.maxLevel() - level);
         return BulkMath.maxAffordable(u.cost(), u.costGrowth(), level, left, pouch.pouch());
     }
-
-    // ---- derived values (effects at the upgrade's level) ---------------------------------------
 
     /**
      * {@code base_cps × owned × 2^(milestones reached) × Π(building-multiplier for b at its level)};
@@ -261,8 +257,6 @@ public final class Economy {
         }
         return p;
     }
-
-    // ---- actions -------------------------------------------------------------------------------
 
     /**
      * One click. Rolls a crit ({@code random.nextDouble() < crit-chance}); a crit multiplies the whole

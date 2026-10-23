@@ -9,6 +9,7 @@ import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 /**
+ * Migration only (the one-time {@code stations.yml} to {@code plots.yml} move in {@code PlotService}; delete with it):
  * {@code stations.yml} &lt;-&gt; {@link Station}s. Layout:
  * <pre>
  * stations:

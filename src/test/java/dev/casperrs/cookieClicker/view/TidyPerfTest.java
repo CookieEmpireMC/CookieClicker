@@ -7,11 +7,15 @@ import dev.casperrs.cookieClicker.economy.Economy;
 import dev.casperrs.cookieClicker.economy.EconomyConfig;
 import dev.casperrs.cookieClicker.economy.EconomyConfigParser;
 import dev.casperrs.cookieClicker.economy.PouchSnapshot;
-import dev.casperrs.cookieClicker.format.RealMessages;
+import dev.casperrs.cookieClicker.text.RealMessages;
 import dev.casperrs.cookieClicker.hud.Hud;
 import dev.casperrs.cookieClicker.text.Messages;
 import dev.casperrs.cookieClicker.text.TextPadding;
 import dev.casperrs.cookieClicker.text.TextWidth;
+import dev.casperrs.cookieClicker.view.panel.PanelRows;
+import dev.casperrs.cookieClicker.view.panel.BulkMode;
+import dev.casperrs.cookieClicker.view.panel.RowState;
+import dev.casperrs.cookieClicker.view.panel.UpgradeRowState;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -131,11 +135,12 @@ class TidyPerfTest {
         @SuppressWarnings("unchecked")
         List<String> buildingIds = new ArrayList<>(((Map<String, Object>) yaml("buildings.yml").get("buildings")).keySet());
         List<String> eight = buildingIds.subList(0, Math.min(8, buildingIds.size()));
+        PanelText text = new PanelText(m);
         double ns = median("8 building row texts (MiniMessage + padding + width), one roll step", () -> {
             int w = 0;
             for (String id : eight) {
-                Component row = PanelUpdater.buildingRow(m, "panel.row.affordable", 1, id, 40, m.number(123456.7),
-                        m.number(98.5), 0, Component.empty());
+                Component row = text.buildingRow("panel.row.affordable", 1, id, "40", m.number(123456.7),
+                        m.number(98.5), "0", BulkMode.ONE, 0);
                 Component padded = TextPadding.right(row, 1, 150, lineWidth);
                 w += TextWidth.lineWidths(TextWidth.runs(padded), lineWidth).size();
             }
@@ -144,13 +149,21 @@ class TidyPerfTest {
         median("  of which buildingRow only (template parse + placeholders)", () -> {
             int w = 0;
             for (String id : eight) {
-                w += PanelUpdater.buildingRow(m, "panel.row.affordable", 1, id, 40, m.number(123456.7),
+                w += text.buildingRow("panel.row.affordable", 1, id, "40", m.number(123456.7),
+                        m.number(98.5), "0", BulkMode.ONE, 0).children().size();
+            }
+            sink = w;
+        });
+        median("  reference: real MiniMessage parse of the same rows (PanelText static)", () -> {
+            int w = 0;
+            for (String id : eight) {
+                w += PanelText.buildingRow(m, "panel.row.affordable", 1, id, 40, m.number(123456.7),
                         m.number(98.5), 0, Component.empty()).children().size();
             }
             sink = w;
         });
-        Component sample = TextPadding.right(PanelUpdater.buildingRow(m, "panel.row.affordable", 1, eight.get(0), 40,
-                m.number(123456.7), m.number(98.5), 0, Component.empty()), 1, 150, lineWidth);
+        Component sample = TextPadding.right(text.buildingRow("panel.row.affordable", 1, eight.get(0), "40",
+                m.number(123456.7), m.number(98.5), "0", BulkMode.ONE, 0), 1, 150, lineWidth);
         median("  of which TextWidth.lineWidths(runs) of one row", () ->
                 sink = TextWidth.lineWidths(TextWidth.runs(sample), lineWidth).size());
         assertTrue(ns > 0);

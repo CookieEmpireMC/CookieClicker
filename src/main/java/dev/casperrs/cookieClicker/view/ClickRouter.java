@@ -1,5 +1,6 @@
 package dev.casperrs.cookieClicker.view;
 
+import dev.casperrs.cookieClicker.view.panel.PanelLayout;
 import dev.casperrs.cookieClicker.config.StationVisualSettings;
 import io.papermc.paper.event.player.PrePlayerAttackEntityEvent;
 import org.bukkit.Bukkit;
@@ -29,7 +30,7 @@ import java.util.stream.Collectors;
  * Left click: {@link EntityDamageByEntityEvent} and {@link PrePlayerAttackEntityEvent} (whichever fires on 26.3 for
  * an Interaction; both are handled and deduped). One click per player per tick, owner and distance checked
  * server-side, the event is cancelled. A click on the cookie's or a panel's box is resolved from the player's eye ray
- * ({@link StationViews#aim}): the panel row or toggle label under the crosshair, else the cookie, else nothing.
+ * ({@link StationAim}): the panel row or toggle label under the crosshair, else the cookie, else nothing.
  * With {@code debug.log-click-events} every event on one of our hitboxes is logged, so the in-game test can see which
  * events fire. Main thread only.
  */
@@ -118,7 +119,7 @@ public final class ClickRouter implements Listener {
         }
         // cookie and panels: the eye ray decides (left clicks carry no hit position, and the boxes are only triggers)
         Location eye = player.getEyeLocation();
-        StationViews.Aim aim = views.aim(view, eye.toVector(), eye.getDirection(), max);
+        StationAim aim = StationAim.find(view, settings.get(), eye.toVector(), eye.getDirection(), max);
         if (aim == null) {
             if (target.kind() == ClickTarget.Kind.COOKIE && inReach) {
                 interactions.clickCookie(player, view, hit); // the ray grazed past the box edge: still the cookie
