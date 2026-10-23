@@ -50,6 +50,25 @@ public final class WorldGuardHook implements PlotRegions {
         this.log = log;
     }
 
+    /** Compares the leading dotted numbers ("7.0.20-SNAPSHOT;abc" -> 7, 0, 20). Unparseable = not older. */
+    public static boolean olderThan(String version, String min) {
+        String[] a = version.split("[^0-9.]", 2)[0].split("\\.");
+        String[] b = min.split("\\.");
+        for (int i = 0; i < b.length; i++) {
+            int x;
+            try {
+                x = i < a.length ? Integer.parseInt(a[i]) : 0;
+            } catch (NumberFormatException e) {
+                return false;
+            }
+            int y = Integer.parseInt(b[i]);
+            if (x != y) {
+                return x < y;
+            }
+        }
+        return false;
+    }
+
     /**
      * Registers {@code bakery-plot} and {@code bakery-house}. Must run in {@code onLoad} (WorldGuard locks its flag
      * registry when it enables). A flag of the same name and type that is already there (a second {@code onLoad}) is

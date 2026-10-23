@@ -6,7 +6,7 @@
 
     <groupId>dev.casperrs</groupId>
     <artifactId>CookieClicker</artifactId>
-    <version>1.2.1</version>
+    <version>1.2.2</version>
     <packaging>jar</packaging>
 
     <name>CookieClicker</name>
@@ -14,7 +14,7 @@
     <properties>
         <java.version>25</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <!-- JDBC drivers: Paper downloads these via plugin.yml `libraries:`; keep both lists in sync -->
+        <!-- JDBC drivers: CookieClickerLoader downloads these (filtered into cookieclicker-libraries.properties) -->
         <h2.version>2.5.252</h2.version>
         <mariadb.version>3.5.10</mariadb.version>
     </properties>
@@ -53,19 +53,21 @@
             </plugin>
         </plugins>
         <resources>
-            <!-- Only plugin.yml needs ${version}; other configs hold MiniMessage/YAML that must not be filtered -->
+            <!-- Only these two need ${...}; other configs hold MiniMessage/YAML that must not be filtered -->
             <resource>
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
                 <includes>
-                    <include>plugin.yml</include>
+                    <include>paper-plugin.yml</include>
+                    <include>cookieclicker-libraries.properties</include>
                 </includes>
             </resource>
             <resource>
                 <directory>src/main/resources</directory>
                 <filtering>false</filtering>
                 <excludes>
-                    <exclude>plugin.yml</exclude>
+                    <exclude>paper-plugin.yml</exclude>
+                    <exclude>cookieclicker-libraries.properties</exclude>
                 </excludes>
             </resource>
         </resources>
@@ -90,7 +92,7 @@
             <version>26.3.build.205-stable</version>
             <scope>provided</scope>
         </dependency>
-        <!-- provided: loaded at runtime by Paper from plugin.yml `libraries:` (not shaded) -->
+        <!-- provided: downloaded at runtime by CookieClickerLoader (not shaded) -->
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
@@ -103,7 +105,7 @@
             <version>${mariadb.version}</version>
             <scope>provided</scope>
         </dependency>
-        <!-- provided: WorldGuard + WorldEdit (or FAWE) are on the server; plugin.yml depend: [WorldGuard] -->
+        <!-- provided: WorldGuard + WorldEdit (or FAWE) are on the server; paper-plugin.yml dependencies.server -->
         <dependency>
             <groupId>com.sk89q.worldguard</groupId>
             <artifactId>worldguard-bukkit</artifactId>

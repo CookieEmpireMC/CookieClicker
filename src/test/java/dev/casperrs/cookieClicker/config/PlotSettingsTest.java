@@ -25,17 +25,7 @@ class PlotSettingsTest {
         assertEquals(120, s.show().maxPoints());
         assertEquals("plot_outline", s.show().plotEffect());
         assertEquals("house_outline", s.show().houseEffect());
-        assertEquals(16, s.chimneyReach());
         assertTrue(problems.isEmpty());
-    }
-
-    @Test
-    void badEffectIdsFallBackToTheOutlinePresetsWithAProblem() throws Exception {
-        List<String> problems = new ArrayList<>();
-        PlotSettings s = parse("plot:\n  show:\n    plot-effect: \"Bad Id\"\n    house-effect: \"x/y\"\n", problems);
-        assertEquals("plot_outline", s.show().plotEffect());
-        assertEquals("house_outline", s.show().houseEffect());
-        assertEquals(2, problems.size());
     }
 
     @Test

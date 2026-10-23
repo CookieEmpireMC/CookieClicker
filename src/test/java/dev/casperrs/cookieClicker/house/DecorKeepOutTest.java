@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import dev.casperrs.cookieClicker.config.VisualFallbacks;
 import dev.casperrs.cookieClicker.config.YamlFiles;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -63,16 +64,11 @@ class DecorKeepOutTest {
     void shippedSlotsWithTheirFootprintsAreClearOfEveryLayoutZoneAndTheShippedDecor() throws Exception {
         Path slotsFile = Path.of("src/main/resources/houses/building-slots.yml");
         Path decorFile = Path.of("src/main/resources/houses/decor.yml");
-        Path configFile = Path.of("src/main/resources/config.yml");
         assumeTrue(Files.isRegularFile(slotsFile) && Files.isRegularFile(decorFile), "roster files not present");
         YamlConfiguration y = new YamlConfiguration();
         y.loadFromString(Files.readString(slotsFile));
         BuildingSlots slots = BuildingSlots.parse(YamlFiles.toMap(y)).slots();
-        YamlConfiguration cfg = YamlConfiguration.loadConfiguration(configFile.toFile());
-        java.util.Map<String, Double> footprints = new java.util.HashMap<>();
-        var section = cfg.getConfigurationSection("plot.buildings.footprints");
-        assertNotNull(section);
-        section.getKeys(false).forEach(id -> footprints.put(id, section.getDouble(id)));
+        java.util.Map<String, Double> footprints = VisualFallbacks.FOOTPRINTS;
 
         DecorKeepOut layoutOnly = DecorKeepOut.of(factory());
         DecorKeepOut withSlots = DecorKeepOut.of(factory(), slots, footprints);

@@ -70,7 +70,7 @@ Last checked: 2026-10-18
 - Reflection into server internals is also off-limits (fragile, and names differ from 1.21.x tutorials since jars are now unobfuscated).
 - If a feature truly can't be done with the API, stop and report it — switching the build to Gradle would be a project-level decision, not something to do inside a feature.
 
-### plugin.yml
+### paper-plugin.yml (this repo; same field in plugin.yml)
 
 ```yaml
 api-version: '26.3'

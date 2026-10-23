@@ -226,8 +226,8 @@ Server: **WorldGuard 7.0.20** with **WorldEdit 7.4.6**, or with **FastAsyncWorld
 ```
 Both pull their `-core` artifacts transitively as `provided`; the jar must contain no `com/sk89q` classes. Pin exact versions (not the `-SNAPSHOT` dev lines).
 
-### plugin.yml and startup
-- `depend: [WorldGuard]` (WorldGuard itself depends on WorldEdit/FAWE). Without it Paper refuses to load the plugin with a "missing dependency" error.
+### paper-plugin.yml and startup
+- `dependencies.server.WorldGuard: {load: BEFORE, required: true, join-classpath: true}` (WorldGuard itself depends on WorldEdit/FAWE). `required` makes Paper refuse to load the plugin without it; `load: BEFORE` keeps WG loading first so `onLoad` can register the flags; `join-classpath` lets our classloader see `com.sk89q.*`. Details: `docs/research/paper-plugin.md`.
 - WorldGuard can be installed but **disabled** (it disables itself on an unsupported version). `onEnable` checks `getPlugin("WorldGuard").isEnabled()` and that our flags were registered; otherwise it logs `plot.missing-worldguard` (messages.yml) to the console and disables CookieClicker.
 - All `com.sk89q` imports live in one class, `worldguard/WorldGuardHook`, behind the `plot.PlotRegions` interface (tests use a fake).
 
@@ -285,4 +285,4 @@ A region without owners/members already stops non-members from building. Recomme
 - `RegionQuery` results are cached for ~1–2 s; after `/rg redefine`, reload and give it a moment.
 - Region ids are case-insensitive; flag values are not: the plugin lower-cases plot ids.
 - `//wand` selections live in the WorldEdit session and are not available to us (no selection commands of our own).
-- The later `paper-plugin.yml` (feature `optimize`) must keep WorldGuard loading first (`load: BEFORE` on the dependency), or flag registration breaks.
+- `paper-plugin.yml` must keep `load: BEFORE` on the WorldGuard dependency (`OMIT` has undefined order), or flag registration breaks.
