@@ -21,12 +21,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 
 /**
- * Which plot / house every online player is in. Checked through {@link PlotRegions} (WorldGuard's cached
- * {@code RegionQuery}) only when a player changes block, teleports, respawns or joins, never on every move event.
- * Fires {@link PlotPresenceListener} on changes. Main thread only.
+ * Which plot / house every online player is in. Checked only when a player changes block, teleports, respawns or
+ * joins, and through WorldGuard ({@link PlotRegions}) only inside the bounds of the known plots
+ * ({@link PlotRegistry#mayContainPlot}). Fires {@link PlotPresenceListener} on changes. Main thread only.
  */
 public final class PlotTracker implements Listener {
 
@@ -81,9 +82,11 @@ public final class PlotTracker implements Listener {
 
     private void update(Player player, Location to) {
         World world = to.getWorld();
-        Presence next = world == null ? Presence.NONE
-                : known(plots.regions().at(world, to.getBlockX(), to.getBlockY(), to.getBlockZ()),
-                        to.getBlockX(), to.getBlockY(), to.getBlockZ());
+        int x = to.getBlockX();
+        int y = to.getBlockY();
+        int z = to.getBlockZ();
+        Presence next = world == null || !plots.mayContainPlot(world, x, y, z) ? Presence.NONE
+                : known(plots.regions().at(world, x, y, z), x, y, z);
         Presence before = current.getOrDefault(player.getUniqueId(), Presence.NONE);
         if (next.equals(before)) {
             return;
@@ -122,7 +125,7 @@ public final class PlotTracker implements Listener {
         }
     }
 
-    private void each(java.util.function.Consumer<PlotPresenceListener> call) {
+    private void each(Consumer<PlotPresenceListener> call) {
         for (PlotPresenceListener l : listeners) {
             try {
                 call.accept(l);
