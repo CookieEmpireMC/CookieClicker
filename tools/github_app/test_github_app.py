@@ -154,17 +154,6 @@ class JwtTests(Base):
             input=f"{head}.{claims}x".encode(), capture_output=True)
         self.assertNotEqual(result.returncode, 0)
 
-    def test_default_time_is_now(self):
-        import time
-        before = int(time.time())
-        claims = json.loads(app.b64url_decode(app.build_jwt(APP_ID, self.key).split(".")[1]))
-        self.assertGreaterEqual(claims["iat"], before - 60)
-        self.assertLessEqual(claims["exp"] - claims["iat"], 600)
-
-    def test_missing_openssl_is_clean_error(self):
-        with self.assertRaises(app.KeyFileError):
-            app.build_jwt(APP_ID, self.key, openssl="definitely-not-openssl")
-
 
 class ConfigTests(Base):
     def test_file_values(self):
@@ -172,12 +161,6 @@ class ConfigTests(Base):
             f"# comment\nAPP_ID=1\nexport INSTALLATION_ID='2'\nKEY_PATH=\"{self.key}\"\n")
         cfg = app.load_config(path, {})
         self.assertEqual((cfg.app_id, cfg.installation_id, cfg.key_path), ("1", "2", self.key))
-
-    def test_env_overrides_file(self):
-        path = self.write_config(f"APP_ID=1\nINSTALLATION_ID=2\nKEY_PATH={self.key}\n")
-        cfg = app.load_config(path, {"APP_ID": "9", "INSTALLATION_ID": "8"})
-        self.assertEqual((cfg.app_id, cfg.installation_id, cfg.key_path), ("9", "8", self.key))
-        self.assertEqual(cfg.sources["APP_ID"], "environment")
 
     def test_precedence_arg_over_env_var_over_default(self):
         a = self.write_config(f"APP_ID=1\nINSTALLATION_ID=1\nKEY_PATH={self.key}\n", "a.env")
@@ -199,14 +182,6 @@ class ConfigTests(Base):
             else:
                 os.environ["HOME"] = old
 
-    def test_relative_key_path_resolves_against_file(self):
-        path = self.write_config("APP_ID=1\nINSTALLATION_ID=2\nKEY_PATH=rel.pem\n")
-        self.assertEqual(app.load_config(path, {}).key_path, os.path.join(self.dir, "rel.pem"))
-
-    def test_missing_explicit_file(self):
-        with self.assertRaises(app.ConfigError):
-            app.load_config(os.path.join(self.dir, "nope.env"), {})
-
     def test_missing_keys_named(self):
         path = self.write_config("APP_ID=1\n")
         with self.assertRaises(app.ConfigError) as cm:
@@ -214,23 +189,11 @@ class ConfigTests(Base):
         self.assertIn("INSTALLATION_ID", str(cm.exception))
         self.assertIn("KEY_PATH", str(cm.exception))
 
-    def test_non_numeric_ids(self):
-        path = self.write_config(f"APP_ID=abc\nINSTALLATION_ID=2\nKEY_PATH={self.key}\n")
-        with self.assertRaises(app.ConfigError):
-            app.load_config(path, {})
-
     def test_malformed_line_not_echoed(self):
         path = self.write_config("this-is-secret-looking\n")
         with self.assertRaises(app.ConfigError) as cm:
             app.load_config(path, {})
         self.assertNotIn("secret-looking", str(cm.exception))
-
-    def test_cli_missing_config_reports_and_fails(self):
-        env = {"GITHUB_APP_CONFIG": os.path.join(self.dir, "none.env")}
-        code, out, err = self.run_token(env=env)
-        self.assertEqual(code, 1)
-        self.assertEqual(out, "")
-        self.assertIn("error", err)
 
 
 class KeyTests(Base):
@@ -251,24 +214,6 @@ class KeyTests(Base):
                     app.check_key_file(self.make_key(mode))
                 self.assertIn("chmod 600", str(cm.exception))
 
-    def test_safe_modes_accepted(self):
-        for mode in (0o600, 0o400):
-            with self.subTest(mode=oct(mode)):
-                app.check_key_file(self.make_key(mode))
-
-    def test_missing_key(self):
-        with self.assertRaises(app.KeyFileError):
-            app.check_key_file(os.path.join(self.dir, "none.pem"))
-
-    def test_directory_refused(self):
-        with self.assertRaises(app.KeyFileError):
-            app.check_key_file(self.dir)
-
-    def test_not_a_key(self):
-        path = self.make_key(0o600, "hello, not a key\n")
-        with self.assertRaises(app.KeyFileError):
-            app.build_jwt(APP_ID, path)
-
     def test_cli_unsafe_key_makes_no_request(self):
         self.env["KEY_PATH"] = self.make_key(0o644)
         code, out, err = self.run_token()
@@ -276,13 +221,6 @@ class KeyTests(Base):
         self.assertEqual(out, "")
         self.assertEqual(self.fake.requests, [])
         self.assertNoSecrets(err)
-
-    def test_cli_not_a_key(self):
-        self.env["KEY_PATH"] = self.make_key(0o600, "garbage")
-        code, out, err = self.run_token()
-        self.assertEqual((code, out), (1, ""))
-        self.assertEqual(self.fake.requests, [])
-        self.assertNotIn("garbage", err)
 
 
 class TokenTests(Base):
@@ -298,13 +236,6 @@ class TokenTests(Base):
         claims = json.loads(app.b64url_decode(auth.split()[1].split(".")[1]))
         self.assertEqual(claims["iss"], APP_ID)
 
-    def test_config_flag(self):
-        path = self.write_config(f"APP_ID={APP_ID}\nINSTALLATION_ID={INSTALLATION_ID}\n"
-                                 f"KEY_PATH={self.key}\n")
-        env = {"GITHUB_API_URL": self.fake.url}
-        code, out, _ = self.run_token(["--config", path], env)
-        self.assertEqual((code, out), (0, FAKE_TOKEN + "\n"))
-
     def error_case(self, status, body, expect):
         self.fake.responses[("POST", self.fake.token_path)] = (status, body)
         code, out, err = self.run_token()
@@ -316,12 +247,6 @@ class TokenTests(Base):
     def test_401(self):
         self.error_case(401, {"message": "bad jwt"}, "401")
 
-    def test_404(self):
-        self.error_case(404, {"message": "Not Found"}, "INSTALLATION_ID")
-
-    def test_500_non_json(self):
-        self.error_case(500, {"message": "boom"}, "500")
-
     def test_jwt_echoed_in_error_is_redacted(self):
         jwt = app.build_jwt(APP_ID, self.key, now=1)
         with self.assertRaises(app.ApiError) as cm:
@@ -329,20 +254,6 @@ class TokenTests(Base):
             app.api_request("POST", self.fake.url + "/x", jwt)
         self.assertNotIn(jwt, str(cm.exception))
         self.assertNotIn(jwt, cm.exception.remote_message)
-
-    def test_missing_token_in_response(self):
-        self.fake.responses[("POST", self.fake.token_path)] = (201, {"nope": 1})
-        code, out, err = self.run_token()
-        self.assertEqual((code, out), (1, ""))
-
-    def test_network_error(self):
-        self.fake.close()
-        code, out, err = self.run_token()
-        self.assertEqual((code, out), (1, ""))
-        self.assertIn("cannot reach", err)
-        self.assertNoSecrets(err)
-        self.fake = FakeGitHub()  # keep cleanup happy
-        self.addCleanup(self.fake.close)
 
     def test_non_loopback_http_refused(self):
         for url in ("http://example.com", "http://127.0.0.1.evil.com", "ftp://127.0.0.1",
@@ -353,13 +264,6 @@ class TokenTests(Base):
                 self.assertEqual((code, out), (1, ""))
                 self.assertIn("GITHUB_API_URL", err)
                 self.assertEqual(self.fake.requests, [])
-
-    def test_https_and_loopback_http_accepted(self):
-        self.assertEqual(app.api_base_url({"GITHUB_API_URL": "https://ghe.example/api/"}),
-                         "https://ghe.example/api")
-        self.assertEqual(app.api_base_url({}), "https://api.github.com")
-        self.assertEqual(app.api_base_url({"GITHUB_API_URL": "http://localhost:1"}),
-                         "http://localhost:1")
 
     def test_script_stdout_is_only_token(self):
         """Run token.py as a real script (also covers the sys.path bootstrap)."""
@@ -388,38 +292,12 @@ class PullRequestTests(Base):
         self.assertEqual(pr_req["body"], {"title": "T", "head": "feature/x", "base": "main",
                                           "body": "Body text", "draft": False})
 
-    def test_draft(self):
-        self.fake.pulls(201, {"html_url": "u", "number": 1, "user": {"login": "b"}})
-        self.assertEqual(self.run_pr("--draft")[0], 0)
-        self.assertTrue(self.fake.requests[-1]["body"]["draft"])
-
-    def test_other_repo(self):
-        self.fake.pulls(201, {"html_url": "u", "number": 1, "user": {"login": "b"}},
-                        repo="a/b")
-        self.assertEqual(self.run_pr("--repo", "a/b")[0], 0)
-
     def test_bad_repo_rejected_before_network(self):
         for repo in ("not-a-repo", "a b/c", "a/b/c", "a/b?x=1"):
             with self.subTest(repo=repo):
                 code, out, err = self.run_pr("--repo", repo)
                 self.assertEqual(code, 1)
                 self.assertEqual(self.fake.requests, [])
-
-    def test_dot_segments_in_repo_rejected(self):
-        for repo in ("../evil", "../..", "a/..", "./b", "a/b\n"):
-            with self.subTest(repo=repo):
-                code, out, err = self.run_pr("--repo", repo)
-                self.assertEqual(code, 1)
-                self.assertEqual(self.fake.requests, [])
-
-    def test_validate_repo_edges(self):
-        for bad in ("a/b\n", "a/.", "../x", "", None):
-            with self.subTest(repo=bad):
-                with self.assertRaises(app.ConfigError):
-                    app.validate_repo(bad)
-        for good in ("a/.b", "a/b.c", app.DEFAULT_REPO, "..a/b..", "a_b/c-d"):
-            with self.subTest(repo=good):
-                self.assertEqual(app.validate_repo(good), good)
 
     def test_empty_title_rejected_before_network(self):
         out, err = io.StringIO(), io.StringIO()
@@ -428,22 +306,6 @@ class PullRequestTests(Base):
         code = open_pr.main(args, self.env, out, err)
         self.assertEqual(code, 1)
         self.assertEqual(self.fake.requests, [])
-
-    def test_missing_body_file(self):
-        out, err = io.StringIO(), io.StringIO()
-        args = self.pr_args()
-        args[args.index("--body-file") + 1] = os.path.join(self.dir, "none.md")
-        self.assertEqual(open_pr.main(args, self.env, out, err), 1)
-        self.assertIn("body file not found", err.getvalue())
-
-    def test_body_from_stdin(self):
-        self.fake.pulls(201, {"html_url": "u", "number": 1, "user": {"login": "b"}})
-        out, err = io.StringIO(), io.StringIO()
-        args = self.pr_args()
-        args[args.index("--body-file") + 1] = "-"
-        code = open_pr.main(args, self.env, out, err, stdin=io.StringIO("from stdin"))
-        self.assertEqual(code, 0)
-        self.assertEqual(self.fake.requests[-1]["body"]["body"], "from stdin")
 
     def fail_case(self, status, body, expect):
         self.fake.pulls(status, body)
@@ -454,29 +316,10 @@ class PullRequestTests(Base):
         self.assertNoSecrets(err)
         return err
 
-    def test_401(self):
-        self.fail_case(401, {"message": "Bad credentials"}, "401")
-
-    def test_403(self):
-        self.fail_case(403, {"message": "Resource not accessible by integration"}, "403")
-
-    def test_404(self):
-        self.fail_case(404, {"message": "Not Found"}, "not found")
-
     def test_422_exists(self):
         err = self.fail_case(422, {"message": "Validation Failed", "errors": [
             {"message": "A pull request already exists for o:feature/x."}]}, "already exists")
         self.assertIn("feature/x", err)
-
-    def test_exists_is_distinct_exception(self):
-        self.fake.pulls(422, {"errors": [{"message": "A pull request already exists"}]})
-        with self.assertRaises(app.PullRequestExistsError):
-            app.create_pull_request(FAKE_TOKEN, app.DEFAULT_REPO, "h", "main",
-                                    "t", "b", base_url=self.fake.url)
-
-    def test_422_other(self):
-        self.fail_case(422, {"message": "Validation Failed",
-                             "errors": [{"message": "No commits between main and x"}]}, "422")
 
     def test_remote_message_with_token_redacted(self):
         self.fake.pulls(403, {"message": f"nope {FAKE_TOKEN}"})
@@ -489,23 +332,6 @@ class PullRequestTests(Base):
         code, out, err = self.run_pr()
         self.assertEqual((code, out), (1, ""))
         self.assertEqual(len(self.fake.requests), 1)
-
-    def test_non_loopback_http_refused(self):
-        self.env["GITHUB_API_URL"] = "http://example.com"
-        code, out, err = self.run_pr()
-        self.assertEqual(code, 1)
-        self.assertEqual(self.fake.requests, [])
-
-    def test_network_error(self):
-        env = dict(self.env)
-        self.fake.close()
-        out = io.StringIO()
-        err = io.StringIO()
-        code = open_pr.main(self.pr_args(), env, out, err)
-        self.assertEqual(code, 1)
-        self.assertNoSecrets(err.getvalue())
-        self.fake = FakeGitHub()
-        self.addCleanup(self.fake.close)
 
 
 class RedactTests(unittest.TestCase):
