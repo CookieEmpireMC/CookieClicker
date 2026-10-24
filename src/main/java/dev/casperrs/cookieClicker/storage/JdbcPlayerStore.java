@@ -285,6 +285,7 @@ public final class JdbcPlayerStore implements PlayerStore, HouseSeenStore {
                     st.executeUpdate();
                 }
             }
+            names.remove(player); // written (or already right); a new player keeps it for the first save
             if (baked < pouch) {
                 problems.add("baked (" + baked + ") was below pouch (" + pouch + "); raised to pouch");
                 baked = pouch;
@@ -412,6 +413,9 @@ public final class JdbcPlayerStore implements PlayerStore, HouseSeenStore {
                 }
                 c.commit();
                 lastSaved.put(player, new Saved(pouch, baked, snapshot.owned(), snapshot.upgradeLevels(), now));
+                if (name != null) {
+                    names.remove(player, name);
+                }
             } catch (SQLException e) {
                 c.rollback();
                 throw e;
