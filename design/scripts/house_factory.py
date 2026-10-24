@@ -35,19 +35,18 @@ SX, SY, SZ, SIZE, GROUND_DEPTH = FL.SX, FL.SY, FL.SZ, FL.SIZE, 1
 STONE = Ramp(P("stone_bricks"), [(P("cracked_stone_bricks"), .14, None), (P("mossy_stone_bricks"), .17, "low"),
                                  (P("andesite"), .08, None)], seed=3)
 PLINTH = Ramp(P("cobblestone"), [(P("mossy_cobblestone"), .25, "low"), (P("andesite"), .15, None)], seed=4)
-PLASTER = Ramp(P("white_terracotta"), [(P("calcite"), .16, "high"), (P("light_gray_terracotta"), .18, "low")], seed=5,
-               height=3, y0=5)
-BRICK = Ramp(P("bricks"), [(P("red_nether_bricks"), .12, None), (P("mud_bricks"), .12, None)], seed=6)
-ROOF = Ramp("spruce", [("dark_oak", .12, None), ("mud_brick", .07, None)], seed=8, height=12)
+PLASTER = Ramp(P("calcite"), [(P("diorite"), .18, None), (P("white_terracotta"), .12, "low")], seed=5, height=3, y0=5)
+BRICK = Ramp(P("bricks"), [(P("mud_bricks"), .14, None), (P("terracotta"), .10, None)], seed=6)
+ROOF = Ramp("spruce", [("dark_oak", .12, None), ("oak", .07, None)], seed=8, height=12)
 FLOOR = Ramp(P("spruce_planks"), [(P("oak_planks"), .22, None), (P("dark_oak_planks"), .15, None)], seed=9)
-GROUND = Ramp(P("gravel"), [(P("coarse_dirt"), .24, None), (P("cobblestone"), .08, None), (P("podzol[snowy=false]"), .07, None)], seed=11)
+GROUND = Ramp(P("gravel"), [(P("coarse_dirt"), .16, None)], seed=11)
 RAMPS = {
     "stone": ["stone_bricks", "cracked_stone_bricks", "mossy_stone_bricks", "andesite"],
     "plinth": ["cobblestone", "mossy_cobblestone", "andesite"],
-    "plaster": ["white_terracotta", "calcite", "light_gray_terracotta"],
-    "brick": ["bricks", "red_nether_bricks", "mud_bricks"],
+    "plaster": ["calcite", "diorite", "white_terracotta"],
+    "brick": ["bricks", "mud_bricks", "terracotta"],
     "timber": ["dark_oak_log", "stripped_dark_oak_log", "dark_oak_planks"],
-    "roof": ["spruce_stairs", "dark_oak_stairs", "mud_brick_stairs"],
+    "roof": ["spruce_stairs", "dark_oak_stairs", "oak_stairs"],
     "floor": ["spruce_planks", "oak_planks", "dark_oak_planks"],
 }
 BEAM = "dark_oak"
@@ -187,7 +186,7 @@ def build() -> Build:
     put(5, 6, 6, None)
     b.g.pop((5, 6, 6), None)
     # ---- the ONE chimney: 2 x 2 oven stack at x4..5, z5..6 against the hall's west wall
-    smoke = stack(b, 4, 5, y0=3, y_top=14, base=STONE, shaft=BRICK, name="oven_stack")
+    smoke = stack(b, 4, 5, y0=3, y_top=15, base=STONE, shaft=BRICK, name="oven_stack")
 
     # ================= flour shed (east lean-to) =================
     for x in range(15, 18):
@@ -232,27 +231,28 @@ def build() -> Build:
     return b, smoke
 
 
+PATHSTONE = Ramp(P("cobblestone"), [(P("mossy_cobblestone"), .2, None), (P("andesite"), .15, None)], seed=12)
+
+
 def ground_layer(b: Build) -> None:
-    """y = -1: path to the door, gravel apron with an irregular outer edge, coarse dirt and podzol beds (R13/R14)."""
-    rng = b.rng
+    """y = -1: a cobblestone path from the door and the hatch to the box edge, a gravel apron one block wide around the
+    walls whose outer edge is pushed out in soft clusters by smooth noise (R13/R14/R15). No lone squares."""
+    import numpy as np
+    from scipy.ndimage import gaussian_filter
+    f = gaussian_filter(np.random.default_rng(9).standard_normal((SX + 4, SZ + 4)), 1.2)
+    f = (f - f.mean()) / f.std()
     solid = {(x, z) for (x, y, z), d in b.g.items() if 0 <= y <= 1 and B.block_id(d) != "air"}
-    path = set()
-    for z in range(0, 2):
-        for x in (7, 8, 9):
-            path.add((x, z))
-    for z in range(0, 2):
-        path |= {(11, z), (12, z), (13, z)}
+    path = {(x, z) for z in (0, 1) for x in (7, 8, 9, 11, 12, 13)}
     for (x, z) in sorted(path):
-        b.put(x, -1, z, GROUND.pick(x * 3, 0, z * 3))
+        b.put(x, -1, z, PATHSTONE.pick(x, 0, z))
     near = lambda x, z, d: any((x + dx, z + dz) in solid for dx in range(-d, d + 1) for dz in range(-d, d + 1))  # noqa
     for x in range(SX):
         for z in range(SZ):
             if (x, z) in solid or (x, z) in path:
                 continue
-            if near(x, z, 1):
+            n = f[x, z]
+            if near(x, z, 1) and n > -1.0 or near(x, z, 2) and n > 0.5:
                 b.put(x, -1, z, GROUND.pick(x, 0, z))
-            elif near(x, z, 2) and rng.random() < .55:
-                b.put(x, -1, z, P("coarse_dirt") if rng.random() < .7 else P("podzol[snowy=false]"))
 
 
 def main() -> int:

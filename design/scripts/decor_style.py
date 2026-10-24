@@ -82,7 +82,7 @@ rng = b.rng
 
 COBBLE = Ramp(P("cobblestone"), [(P("mossy_cobblestone"), .22, None), (P("andesite"), .16, None),
                                  (P("gravel"), .06, None)], seed=31)
-YARD = Ramp(P("coarse_dirt"), [(S.PODZOL, .20, None), (P("gravel"), .10, None), (P("rooted_dirt"), .06, None)], seed=32)
+YARD = Ramp(P("dirt_path"), [(P("coarse_dirt"), .22, None)], seed=32)
 
 
 # --- ground helpers -----------------------------------------------------------------------------------------------
@@ -116,22 +116,33 @@ def blob(cx: float, cz: float, rx: float, rz: float, noise: float = .35) -> set:
     return cells
 
 
-def fringe(cells: set, chance: float = .4) -> set:
-    """Coarse dirt / podzol cells just outside a treatment, so the edge breaks up."""
+def _noise_field():
+    import numpy as np
+    from scipy.ndimage import gaussian_filter
+    f = gaussian_filter(np.random.default_rng(5).standard_normal((PLOT_X + 4, PLOT_Z + 4)), 1.3)
+    return (f - f.mean()) / f.std()
+
+
+NOISE = _noise_field()
+
+
+def fringe(cells: set, thr: float = .35) -> set:
+    """A soft coarse-dirt transition just outside a treatment: neighbouring cells where a smooth noise field is high, so
+    the edge gains clusters of 2-4 cells, never lone squares."""
     out = set()
     for (x, z) in cells:
         for dx, dz in ((1, 0), (-1, 0), (0, 1), (0, -1)):
             n = (x + dx, z + dz)
-            if n not in cells and rng.random() < chance:
+            if n not in cells and NOISE[n[0] % NOISE.shape[0], n[1] % NOISE.shape[1]] > thr:
                 out.add(n)
     return out - cells
 
 
-def paint(cells: set, ramp: Ramp, fr: float = .15) -> None:
+def paint(cells: set, ramp: Ramp, fr: float = .35) -> None:
     S.ground(b, cells, ramp)
     for (x, z) in sorted(fringe(cells, fr)):
         if b.get(x, -1, z) is None:
-            b.put(x, -1, z, P("coarse_dirt") if rng.random() < .7 else S.PODZOL)
+            b.put(x, -1, z, P("coarse_dirt"))
 
 
 # --- scenes: ground first (so props sit on what they belong to), then things that stand ---------------------------------
@@ -184,7 +195,6 @@ b.scene("west_store", "lane")
 S.crates(b, [(4, 0, 13), (4, 1, 13), (4, 0, 14)], sacks=[(4, 0, 16)])
 S.hay(b, [(4, 0, 17, "x"), (4, 0, 19, "z")])
 b.put(4, 0, 18, P("potted_allium")) if False else None
-S.lamp_post(b, 4, 11)
 
 b.scene("east_beds", "fence")
 for z0 in (11, 16, 20):
@@ -208,14 +218,6 @@ S.tree(b, 27, 27, "oak", height=4, spread=1.9, y0=1, ok=b.can)
 S.tree(b, 21, 28, "birch", height=4, spread=1.5, y0=0, ok=b.can) if False else None
 b.scene("woodpile", "tree")
 S.woodpile(b, 20, 28, "x", 3)
-
-b.scene("belt_lamps", "lane")
-for (x, z) in ((11, 6), (24, 6), (26, 8), (4, 26)):
-    if b.can(x, 0, z):
-        S.lamp_post(b, x, z)
-b.scene("front_bench", "lane")
-S.bench(b, 10, 7, "north", 2, "x") if b.can(10, 0, 7) else None
-
 
 # --- validation / output ------------------------------------------------------------------------------------------------
 def validate() -> None:
@@ -264,7 +266,38 @@ def write_yaml(g: dict) -> str:
     return "\n".join(lines) + "\n"
 
 
+def drop_loose_ground(min_size: int = 6) -> None:
+    """No isolated ground squares anywhere: ground treatments in connected groups under `min_size` cells are removed
+    unless a bed, well, garden, lamp or woodpile scene owns them."""
+    ground = {"dirt_path", "gravel", "coarse_dirt", "podzol", "rooted_dirt", "cobblestone", "mossy_cobblestone", "andesite"}
+    keep = {"gate_bed_west", "gate_bed_east", "well_yard", "west_store", "east_beds", "oven_store", "back_garden",
+            "back_orchard", "woodpile"}
+    owner = {}
+    for sc in b.scenes:
+        for c in sc["cells"]:
+            owner[c] = sc["name"]
+    cells = {(x, z) for (x, y, z), d in b.g.items() if y == -1 and B.block_id(d) in ground}
+    seen = set()
+    for c in sorted(cells):
+        if c in seen:
+            continue
+        comp, q = [], [c]
+        seen.add(c)
+        while q:
+            x, z = q.pop()
+            comp.append((x, z))
+            for dx, dz in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                n = (x + dx, z + dz)
+                if n in cells and n not in seen:
+                    seen.add(n)
+                    q.append(n)
+        if len(comp) < min_size and not any(owner.get((x, -1, z)) in keep for (x, z) in comp):
+            for (x, z) in comp:
+                del b.g[(x, -1, z)]
+
+
 def main() -> int:
+    drop_loose_ground()
     g = dict(b.g)
     B.resolve(g)
     validate()

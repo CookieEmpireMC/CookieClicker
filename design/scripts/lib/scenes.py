@@ -11,8 +11,8 @@ from build import Build, Ramp
 FLOWERS = ["poppy", "dandelion", "cornflower", "azure_bluet", "oxeye_daisy", "allium", "pink_tulip",
            "lily_of_the_valley"]
 PODZOL, COARSE, ROOTED = P("podzol[snowy=false]"), P("coarse_dirt"), P("rooted_dirt")
-PATH = Ramp(P("gravel"), [(P("coarse_dirt"), .12, None), (P("cobblestone"), .06, None)], seed=21)
-GRAVEL = Ramp(P("gravel"), [(P("coarse_dirt"), .22, None), (P("cobblestone"), .07, None)], seed=22)
+PATH = Ramp(P("dirt_path"), [(P("coarse_dirt"), .16, None)], seed=21)
+GRAVEL = Ramp(P("gravel"), [(P("coarse_dirt"), .15, None)], seed=22)
 
 
 def noisy_rect(b: Build, x0: int, z0: int, x1: int, z1: int, wobble: int = 1, seed_shift: int = 0) -> set:

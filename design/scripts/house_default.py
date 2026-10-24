@@ -32,19 +32,18 @@ OUT_DIR = ROOT / "design/scripts/previews"
 SX, SY, SZ, GROUND_DEPTH = 17, 13, 15, 1
 
 PLINTH = Ramp(P("cobblestone"), [(P("mossy_cobblestone"), .28, "low"), (P("andesite"), .24, None)], seed=14)
-PLASTER = Ramp(P("white_terracotta"), [(P("calcite"), .17, "high"), (P("light_gray_terracotta"), .17, "low")], seed=15,
-               height=4, y0=1)
-BRICK = Ramp(P("bricks"), [(P("red_nether_bricks"), .12, None), (P("mud_bricks"), .12, None)], seed=16)
+PLASTER = Ramp(P("calcite"), [(P("diorite"), .18, None), (P("white_terracotta"), .12, "low")], seed=15, height=4, y0=1)
+BRICK = Ramp(P("bricks"), [(P("mud_bricks"), .14, None), (P("terracotta"), .10, None)], seed=16)
 STONE = Ramp(P("stone_bricks"), [(P("cracked_stone_bricks"), .14, None), (P("mossy_stone_bricks"), .17, "low"),
                                  (P("andesite"), .08, None)], seed=17)
 FLOOR = Ramp(P("spruce_planks"), [(P("oak_planks"), .30, None), (P("dark_oak_planks"), .25, None)], seed=18)
-ROOF = Ramp("mud_brick", [("brick", .14, None), ("spruce", .09, None)], seed=19, height=7)
+ROOF = Ramp("dark_oak", [("spruce", .09, None), ("mangrove", .07, None)], seed=19, height=7)
 RAMPS = {
     "plinth": ["cobblestone", "mossy_cobblestone", "andesite"],
-    "plaster": ["white_terracotta", "calcite", "light_gray_terracotta"],
-    "brick": ["bricks", "red_nether_bricks", "mud_bricks"],
+    "plaster": ["calcite", "diorite", "white_terracotta"],
+    "brick": ["bricks", "mud_bricks", "terracotta"],
     "timber": ["dark_oak_log", "stripped_dark_oak_log", "dark_oak_planks"],
-    "roof": ["mud_brick_stairs", "brick_stairs", "spruce_stairs", "dark_oak_stairs"],
+    "roof": ["dark_oak_stairs", "spruce_stairs", "mangrove_stairs"],
     "floor": ["spruce_planks", "oak_planks", "dark_oak_planks"],
 }
 BEAM = "dark_oak"
@@ -96,8 +95,8 @@ def build() -> tuple:
     WW = Wall(b, "west", "south", (3, 0))
     window(WW, 7, 3, shutters=None, box="potted_dandelion")
     window(WW, 11, 3, shutters=None, box="potted_azure_bluet")
-    ra = gable_roof(b, axis="x", w0=6, w1=12, a0=2, a1=9, y_eave=5, field="mud_brick", eave="dark_oak",
-                    rake="dark_oak", ridge=stripped("spruce", "x"), cap=sl("dark_oak"), name="hall",
+    ra = gable_roof(b, axis="x", w0=6, w1=12, a0=2, a1=9, y_eave=5, field="dark_oak", eave="spruce",
+                    rake="spruce", ridge=stripped("spruce", "x"), cap=sl("dark_oak"), name="hall",
                     rake_ends=(True, False), ramp_pick=lambda x, y, z: ROOF.pick(x, y, z))
     for z in range(7, 12):                                                     # gable infill, west (x3) and east (x9)
         for x in (3, 9):
@@ -123,11 +122,14 @@ def build() -> tuple:
         for y in (1, 2):
             put(x, y, z, lg(BEAM, "y"))
     WB = Wall(b, "north", "east", (0, 7))
-    window(WB, 12, 2, shutters="spruce", box="potted_poppy")
+    door(WB, 11, 1, mat="spruce", hood=False)                                  # the wing's own door with a stoop
+    put(11, 0, 6, st("stone_brick", "south"))
+    put(10, 0, 6, P("potted_cornflower")); put(12, 0, 6, B.barrel())
+    window(WB, 13, 2, shutters="spruce", box="potted_poppy")
     window(Wall(b, "south", "east", (0, 11)), 12, 2, shutters="spruce", box="potted_dandelion")
     window(Wall(b, "east", "south", (14, 0)), 9, 2, shutters="spruce", box="potted_cornflower")
-    rb = gable_roof(b, axis="x", w0=7, w1=11, a0=10, a1=15, y_eave=3, field="mud_brick", eave="dark_oak",
-                    rake="dark_oak", ridge=stripped("spruce", "x"), cap=sl("dark_oak"), name="wing",
+    rb = gable_roof(b, axis="x", w0=7, w1=11, a0=10, a1=15, y_eave=3, field="dark_oak", eave="spruce",
+                    rake="spruce", ridge=stripped("spruce", "x"), cap=sl("dark_oak"), name="wing",
                     rake_ends=(False, True), ramp_pick=lambda x, y, z: ROOF.pick(x, y, z))
     for z in (8, 9, 10):
         for y in range(4, rb["profile"][z]):
@@ -169,11 +171,6 @@ def yard(b: Build) -> None:
         cells = {(x, z) for x in range(x0, x1 + 1) for z in range(1, 5) if (x, z) not in path}
         cells -= {(x0, 1)} if x0 == 1 else {(x1, 1)}
         S.flower_bed(b, cells)
-    b.scene("bed_edge", "path")
-    for z in range(1, 5):
-        for x in (4, 8):
-            if (x, z) not in path and b.get(x, -1, z) is None:
-                b.put(x, -1, z, P("coarse_dirt"))
     # woodpile against the back wall of the hall
     b.scene("woodpile", "wall")
     S.woodpile(b, 5, 13, "x", 3)
@@ -182,17 +179,19 @@ def yard(b: Build) -> None:
     S.flower_bed(b, {(x, z) for x in range(10, 14) for z in range(13, 15)}, kinds=["allium", "lily_of_the_valley",
                                                                                 "cornflower", "dandelion"])
     b.put(14, 0, 12, B.barrel()); b.put(14, 0, 13, B.hay("x")); b.put(15, 0, 12, B.barrel())
-    # apron of gravel and coarse dirt around the walls
+    # gravel apron one block wide around the walls, pushed out in soft clusters by smooth noise (no lone squares)
+    import numpy as np
+    from scipy.ndimage import gaussian_filter
+    f = gaussian_filter(np.random.default_rng(23).standard_normal((SX + 4, SZ + 4)), 1.2)
+    f = (f - f.mean()) / f.std()
     solid = {(x, z) for (x, y, z), d in b.g.items() if 0 <= y <= 1 and B.block_id(d) != "air"}
     near = lambda x, z, d: any((x + dx, z + dz) in solid for dx in range(-d, d + 1) for dz in range(-d, d + 1))  # noqa
     for x in range(SX):
         for z in range(SZ):
             if (x, -1, z) in b.g or (x, z) in solid:
                 continue
-            if near(x, z, 1) and rng.random() < .7:
+            if near(x, z, 1) and f[x, z] > -1.0 or near(x, z, 2) and f[x, z] > 0.5:
                 b.put(x, -1, z, S.GRAVEL.pick(x, 0, z))
-            elif near(x, z, 2) and rng.random() < .35:
-                b.put(x, -1, z, P("coarse_dirt"))
 
 
 def main() -> int:

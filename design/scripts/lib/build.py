@@ -258,8 +258,5 @@ def stack(b: Build, x: int, z: int, y0: int, y_top: int, *, base: Ramp, shaft: R
                      "west": [(x - 1, z), (x - 1, z + 1)], "east": [(x + 2, z), (x + 2, z + 1)]}.items():
         for (cx, cz) in cs:
             b.put(cx, yc, cz, st("brick", OPP[side], "top"))
-    for (cx, cz) in cells:                                 # crown: stone-brick slab caps with the flue between them
-        b.put(cx, y_top + 1, cz, sl("stone_brick", "bottom") if (cx + cz) % 2 == 0 else AIR)
     b.notes.chimneys.append(name)
-    cx, cz = next(c for c in cells if (c[0] + c[1]) % 2 == 0)
-    return (cx, y_top + 2, cz)
+    return (x, y_top + 1, z)
