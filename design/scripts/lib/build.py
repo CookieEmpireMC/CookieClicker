@@ -182,12 +182,12 @@ def window(wall: Wall, u: int, y: int, *, width: int = 1, height: int = 1, w: in
 
 
 def door(wall: Wall, u: int, y: int, *, mat: str = "spruce", frame: str = "dark_oak", hood: bool = True,
-         hinge: str = "left", w: int = 0, lintel: bool = True) -> tuple:
+         hinge: str = "left", w: int = 0, lintel: bool = True, jambs: bool = True) -> tuple:
     """A door at (u, y..y+1) in the wall plane with log jambs, a stripped-log lintel one block wider each side and an
     optional stair hood on two brackets (R3). Returns the lower door cell."""
     wall.put(u, y, w, B.dr(mat, wall.out, "lower", hinge))
     wall.put(u, y + 1, w, B.dr(mat, wall.out, "upper", hinge))
-    for s in (-1, 1):
+    for s in ((-1, 1) if jambs else ()):
         wall.put(u + s, y, w, lg(frame, "y"))
         wall.put(u + s, y + 1, w, lg(frame, "y"))
     if lintel:

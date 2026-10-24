@@ -3,84 +3,81 @@
 # at = [x, y, z] in plot cells from the plot's min corner (x west->east, z north->south, y 0 = first air layer
 # above the ground; y -1 / -2 = the ground's top block / the one under it; same frame as layout: in houses/factory.yml).
 # block = full block data.
-# 558 blocks.
+# 543 blocks.
 blocks:
   # main_walk
-  - {at: [12, -1, 1], block: "minecraft:coarse_dirt"}
   - {at: [13, -1, 1], block: "minecraft:dirt_path"}
-  - {at: [14, -1, 1], block: "minecraft:dirt_path"}
-  - {at: [15, -1, 1], block: "minecraft:dirt_path"}
-  - {at: [14, -1, 2], block: "minecraft:dirt_path"}
-  - {at: [15, -1, 2], block: "minecraft:dirt_path"}
-  - {at: [14, -1, 3], block: "minecraft:dirt_path"}
-  - {at: [15, -1, 3], block: "minecraft:dirt_path"}
+  - {at: [14, -1, 1], block: "minecraft:coarse_dirt"}
+  - {at: [15, -1, 1], block: "minecraft:coarse_dirt"}
+  - {at: [14, -1, 2], block: "minecraft:coarse_dirt"}
+  - {at: [15, -1, 2], block: "minecraft:coarse_dirt"}
+  - {at: [14, -1, 3], block: "minecraft:coarse_dirt"}
   - {at: [14, -1, 4], block: "minecraft:dirt_path"}
   - {at: [14, -1, 5], block: "minecraft:dirt_path"}
-  - {at: [14, -1, 7], block: "minecraft:dirt_path"}
-  - {at: [14, -1, 8], block: "minecraft:dirt_path"}
-  - {at: [15, -1, 8], block: "minecraft:coarse_dirt"}
-  - {at: [16, -1, 8], block: "minecraft:dirt_path"}
-  - {at: [14, -1, 9], block: "minecraft:dirt_path"}
-  - {at: [15, -1, 9], block: "minecraft:coarse_dirt"}
-  - {at: [16, -1, 9], block: "minecraft:dirt_path"}
+  - {at: [14, -1, 6], block: "minecraft:cobblestone"}
+  - {at: [14, -1, 7], block: "minecraft:cobblestone"}
+  - {at: [15, -1, 7], block: "minecraft:cobblestone"}
+  - {at: [14, -1, 8], block: "minecraft:cobblestone"}
+  - {at: [15, -1, 8], block: "minecraft:mossy_cobblestone"}
+  - {at: [16, -1, 8], block: "minecraft:cobblestone"}
+  - {at: [14, -1, 9], block: "minecraft:cobblestone"}
+  - {at: [15, -1, 9], block: "minecraft:cobblestone"}
+  - {at: [16, -1, 9], block: "minecraft:andesite"}
   # pedestal_plaza
-  - {at: [16, -1, 3], block: "minecraft:cobblestone"}
-  - {at: [18, -1, 3], block: "minecraft:cobblestone"}
-  - {at: [19, -1, 3], block: "minecraft:cobblestone"}
-  - {at: [20, -1, 3], block: "minecraft:cobblestone"}
+  - {at: [15, -1, 3], block: "minecraft:cobblestone"}
+  - {at: [16, -1, 3], block: "minecraft:stone_bricks"}
+  - {at: [17, -1, 3], block: "minecraft:stone_bricks"}
+  - {at: [18, -1, 3], block: "minecraft:stone_bricks"}
+  - {at: [19, -1, 3], block: "minecraft:stone_bricks"}
   - {at: [15, -1, 4], block: "minecraft:cobblestone"}
   - {at: [16, -1, 4], block: "minecraft:cobblestone"}
   - {at: [17, -1, 4], block: "minecraft:cobblestone"}
   - {at: [18, -1, 4], block: "minecraft:cobblestone"}
   - {at: [19, -1, 4], block: "minecraft:andesite"}
-  - {at: [20, -1, 4], block: "minecraft:cobblestone"}
-  - {at: [21, -1, 4], block: "minecraft:cobblestone"}
+  - {at: [20, -1, 4], block: "minecraft:stone_bricks"}
   - {at: [15, -1, 5], block: "minecraft:cobblestone"}
   - {at: [16, -1, 5], block: "minecraft:cobblestone"}
   - {at: [17, -1, 5], block: "minecraft:cobblestone"}
   - {at: [18, -1, 5], block: "minecraft:cobblestone"}
   - {at: [19, -1, 5], block: "minecraft:cobblestone"}
   - {at: [20, -1, 5], block: "minecraft:cobblestone"}
-  - {at: [21, -1, 5], block: "minecraft:cobblestone"}
-  - {at: [13, -1, 6], block: "minecraft:coarse_dirt"}
-  - {at: [14, -1, 6], block: "minecraft:cobblestone"}
+  - {at: [21, -1, 5], block: "minecraft:stone_bricks"}
   - {at: [15, -1, 6], block: "minecraft:cobblestone"}
   - {at: [16, -1, 6], block: "minecraft:cobblestone"}
   - {at: [17, -1, 6], block: "minecraft:cobblestone"}
   - {at: [18, -1, 6], block: "minecraft:gravel"}
   - {at: [19, -1, 6], block: "minecraft:mossy_cobblestone"}
   - {at: [20, -1, 6], block: "minecraft:mossy_cobblestone"}
-  - {at: [21, -1, 6], block: "minecraft:mossy_cobblestone"}
-  - {at: [15, -1, 7], block: "minecraft:cobblestone"}
+  - {at: [21, -1, 6], block: "minecraft:stone_bricks"}
   - {at: [16, -1, 7], block: "minecraft:cobblestone"}
   - {at: [17, -1, 7], block: "minecraft:cobblestone"}
   - {at: [19, -1, 7], block: "minecraft:cobblestone"}
   - {at: [20, -1, 7], block: "minecraft:cobblestone"}
-  - {at: [21, -1, 7], block: "minecraft:cobblestone"}
-  - {at: [19, -1, 8], block: "minecraft:cobblestone"}
+  - {at: [21, -1, 7], block: "minecraft:stone_bricks"}
+  - {at: [17, -1, 8], block: "minecraft:stone_bricks"}
+  - {at: [19, -1, 8], block: "minecraft:stone_bricks"}
+  - {at: [20, -1, 8], block: "minecraft:stone_bricks"}
+  - {at: [21, -1, 8], block: "minecraft:stone_bricks"}
   # baker_yard
+  - {at: [4, -1, 1], block: "minecraft:coarse_dirt"}
   - {at: [5, -1, 1], block: "minecraft:coarse_dirt"}
-  - {at: [7, -1, 1], block: "minecraft:dirt_path"}
+  - {at: [6, -1, 1], block: "minecraft:coarse_dirt"}
+  - {at: [7, -1, 1], block: "minecraft:coarse_dirt"}
   - {at: [8, -1, 1], block: "minecraft:coarse_dirt"}
-  - {at: [9, -1, 1], block: "minecraft:dirt_path"}
-  - {at: [10, -1, 1], block: "minecraft:coarse_dirt"}
-  - {at: [4, -1, 2], block: "minecraft:dirt_path"}
+  - {at: [4, -1, 2], block: "minecraft:coarse_dirt"}
   - {at: [5, -1, 2], block: "minecraft:coarse_dirt"}
   - {at: [6, -1, 2], block: "minecraft:coarse_dirt"}
-  - {at: [7, -1, 2], block: "minecraft:dirt_path"}
-  - {at: [8, -1, 2], block: "minecraft:dirt_path"}
-  - {at: [9, -1, 2], block: "minecraft:dirt_path"}
-  - {at: [10, -1, 2], block: "minecraft:dirt_path"}
-  - {at: [12, -1, 2], block: "minecraft:dirt_path"}
-  - {at: [13, -1, 2], block: "minecraft:dirt_path"}
+  - {at: [7, -1, 2], block: "minecraft:coarse_dirt"}
+  - {at: [8, -1, 2], block: "minecraft:coarse_dirt"}
+  - {at: [9, -1, 2], block: "minecraft:coarse_dirt"}
+  - {at: [13, -1, 2], block: "minecraft:coarse_dirt"}
   - {at: [4, -1, 3], block: "minecraft:dirt_path"}
   - {at: [5, -1, 3], block: "minecraft:coarse_dirt"}
-  - {at: [6, -1, 3], block: "minecraft:coarse_dirt"}
-  - {at: [7, -1, 3], block: "minecraft:dirt_path"}
-  - {at: [8, -1, 3], block: "minecraft:dirt_path"}
-  - {at: [9, -1, 3], block: "minecraft:dirt_path"}
-  - {at: [10, -1, 3], block: "minecraft:dirt_path"}
-  - {at: [12, -1, 3], block: "minecraft:dirt_path"}
+  - {at: [6, -1, 3], block: "minecraft:dirt_path"}
+  - {at: [7, -1, 3], block: "minecraft:coarse_dirt"}
+  - {at: [8, -1, 3], block: "minecraft:coarse_dirt"}
+  - {at: [9, -1, 3], block: "minecraft:coarse_dirt"}
+  - {at: [10, -1, 3], block: "minecraft:coarse_dirt"}
   - {at: [13, -1, 3], block: "minecraft:dirt_path"}
   - {at: [4, -1, 4], block: "minecraft:dirt_path"}
   - {at: [5, -1, 4], block: "minecraft:dirt_path"}
@@ -88,272 +85,265 @@ blocks:
   - {at: [7, -1, 4], block: "minecraft:coarse_dirt"}
   - {at: [8, -1, 4], block: "minecraft:dirt_path"}
   - {at: [9, -1, 4], block: "minecraft:dirt_path"}
-  - {at: [10, -1, 4], block: "minecraft:dirt_path"}
+  - {at: [10, -1, 4], block: "minecraft:coarse_dirt"}
   - {at: [12, -1, 4], block: "minecraft:dirt_path"}
   - {at: [13, -1, 4], block: "minecraft:dirt_path"}
   - {at: [4, -1, 5], block: "minecraft:dirt_path"}
-  - {at: [5, -1, 5], block: "minecraft:dirt_path"}
-  - {at: [6, -1, 5], block: "minecraft:dirt_path"}
+  - {at: [5, -1, 5], block: "minecraft:coarse_dirt"}
+  - {at: [6, -1, 5], block: "minecraft:coarse_dirt"}
   - {at: [7, -1, 5], block: "minecraft:dirt_path"}
   - {at: [8, -1, 5], block: "minecraft:coarse_dirt"}
   - {at: [9, -1, 5], block: "minecraft:dirt_path"}
-  - {at: [10, -1, 5], block: "minecraft:dirt_path"}
-  - {at: [4, -1, 6], block: "minecraft:coarse_dirt"}
-  - {at: [5, -1, 6], block: "minecraft:dirt_path"}
+  - {at: [10, -1, 5], block: "minecraft:coarse_dirt"}
+  - {at: [12, -1, 5], block: "minecraft:dirt_path"}
+  - {at: [5, -1, 6], block: "minecraft:coarse_dirt"}
   - {at: [6, -1, 6], block: "minecraft:coarse_dirt"}
   - {at: [7, -1, 6], block: "minecraft:coarse_dirt"}
-  - {at: [8, -1, 6], block: "minecraft:dirt_path"}
+  - {at: [8, -1, 6], block: "minecraft:coarse_dirt"}
   - {at: [9, -1, 6], block: "minecraft:coarse_dirt"}
-  - {at: [5, -1, 7], block: "minecraft:coarse_dirt"}
-  - {at: [6, -1, 7], block: "minecraft:dirt_path"}
-  - {at: [7, -1, 7], block: "minecraft:coarse_dirt"}
-  - {at: [6, -1, 8], block: "minecraft:coarse_dirt"}
+  - {at: [10, -1, 6], block: "minecraft:coarse_dirt"}
+  - {at: [11, -1, 6], block: "minecraft:coarse_dirt"}
+  - {at: [12, -1, 6], block: "minecraft:coarse_dirt"}
+  - {at: [8, -1, 7], block: "minecraft:coarse_dirt"}
   # portal_yard
-  - {at: [23, -1, 3], block: "minecraft:coarse_dirt"}
   - {at: [26, -1, 3], block: "minecraft:dirt_path"}
-  - {at: [27, -1, 3], block: "minecraft:dirt_path"}
-  - {at: [28, -1, 3], block: "minecraft:dirt_path"}
+  - {at: [27, -1, 3], block: "minecraft:coarse_dirt"}
+  - {at: [28, -1, 3], block: "minecraft:coarse_dirt"}
   - {at: [22, -1, 4], block: "minecraft:coarse_dirt"}
   - {at: [23, -1, 4], block: "minecraft:coarse_dirt"}
   - {at: [25, -1, 4], block: "minecraft:dirt_path"}
-  - {at: [26, -1, 4], block: "minecraft:dirt_path"}
-  - {at: [27, -1, 4], block: "minecraft:dirt_path"}
-  - {at: [28, -1, 4], block: "minecraft:dirt_path"}
-  - {at: [29, -1, 4], block: "minecraft:dirt_path"}
+  - {at: [26, -1, 4], block: "minecraft:coarse_dirt"}
+  - {at: [27, -1, 4], block: "minecraft:coarse_dirt"}
+  - {at: [28, -1, 4], block: "minecraft:coarse_dirt"}
+  - {at: [29, -1, 4], block: "minecraft:coarse_dirt"}
   - {at: [22, -1, 5], block: "minecraft:dirt_path"}
   - {at: [23, -1, 5], block: "minecraft:coarse_dirt"}
-  - {at: [24, -1, 5], block: "minecraft:dirt_path"}
+  - {at: [24, -1, 5], block: "minecraft:coarse_dirt"}
   - {at: [25, -1, 5], block: "minecraft:dirt_path"}
   - {at: [26, -1, 5], block: "minecraft:coarse_dirt"}
   - {at: [27, -1, 5], block: "minecraft:coarse_dirt"}
   - {at: [28, -1, 5], block: "minecraft:dirt_path"}
-  - {at: [29, -1, 5], block: "minecraft:coarse_dirt"}
-  - {at: [22, -1, 6], block: "minecraft:dirt_path"}
-  - {at: [23, -1, 6], block: "minecraft:dirt_path"}
-  - {at: [24, -1, 6], block: "minecraft:dirt_path"}
-  - {at: [25, -1, 6], block: "minecraft:dirt_path"}
-  - {at: [26, -1, 6], block: "minecraft:dirt_path"}
-  - {at: [27, -1, 6], block: "minecraft:dirt_path"}
+  - {at: [29, -1, 5], block: "minecraft:dirt_path"}
+  - {at: [22, -1, 6], block: "minecraft:coarse_dirt"}
+  - {at: [23, -1, 6], block: "minecraft:coarse_dirt"}
+  - {at: [24, -1, 6], block: "minecraft:coarse_dirt"}
+  - {at: [25, -1, 6], block: "minecraft:coarse_dirt"}
+  - {at: [26, -1, 6], block: "minecraft:coarse_dirt"}
+  - {at: [27, -1, 6], block: "minecraft:coarse_dirt"}
+  - {at: [28, -1, 6], block: "minecraft:coarse_dirt"}
   # ring_lane
-  - {at: [4, -1, 8], block: "minecraft:coarse_dirt"}
   - {at: [3, -1, 9], block: "minecraft:dirt_path"}
-  - {at: [4, -1, 9], block: "minecraft:dirt_path"}
-  - {at: [5, -1, 9], block: "minecraft:coarse_dirt"}
-  - {at: [24, -1, 9], block: "minecraft:dirt_path"}
-  - {at: [25, -1, 9], block: "minecraft:dirt_path"}
-  - {at: [26, -1, 9], block: "minecraft:dirt_path"}
+  - {at: [4, -1, 9], block: "minecraft:coarse_dirt"}
+  - {at: [27, -1, 9], block: "minecraft:coarse_dirt"}
+  - {at: [28, -1, 9], block: "minecraft:dirt_path"}
+  - {at: [29, -1, 9], block: "minecraft:coarse_dirt"}
+  - {at: [2, -1, 10], block: "minecraft:coarse_dirt"}
   - {at: [3, -1, 10], block: "minecraft:dirt_path"}
-  - {at: [4, -1, 10], block: "minecraft:coarse_dirt"}
-  - {at: [5, -1, 10], block: "minecraft:coarse_dirt"}
-  - {at: [25, -1, 10], block: "minecraft:dirt_path"}
-  - {at: [26, -1, 10], block: "minecraft:dirt_path"}
-  - {at: [3, -1, 11], block: "minecraft:dirt_path"}
-  - {at: [4, -1, 11], block: "minecraft:dirt_path"}
-  - {at: [5, -1, 11], block: "minecraft:coarse_dirt"}
-  - {at: [25, -1, 11], block: "minecraft:dirt_path"}
-  - {at: [26, -1, 11], block: "minecraft:coarse_dirt"}
-  - {at: [5, -1, 12], block: "minecraft:dirt_path"}
-  - {at: [25, -1, 12], block: "minecraft:dirt_path"}
+  - {at: [4, -1, 10], block: "minecraft:dirt_path"}
+  - {at: [27, -1, 10], block: "minecraft:dirt_path"}
+  - {at: [28, -1, 10], block: "minecraft:dirt_path"}
+  - {at: [29, -1, 10], block: "minecraft:coarse_dirt"}
+  - {at: [25, -1, 11], block: "minecraft:coarse_dirt"}
+  - {at: [26, -1, 11], block: "minecraft:dirt_path"}
+  - {at: [27, -1, 11], block: "minecraft:dirt_path"}
+  - {at: [25, -1, 12], block: "minecraft:coarse_dirt"}
   - {at: [26, -1, 12], block: "minecraft:dirt_path"}
-  - {at: [4, -1, 13], block: "minecraft:dirt_path"}
-  - {at: [5, -1, 13], block: "minecraft:dirt_path"}
-  - {at: [25, -1, 13], block: "minecraft:dirt_path"}
-  - {at: [5, -1, 14], block: "minecraft:dirt_path"}
-  - {at: [25, -1, 14], block: "minecraft:dirt_path"}
-  - {at: [4, -1, 15], block: "minecraft:dirt_path"}
-  - {at: [5, -1, 15], block: "minecraft:dirt_path"}
-  - {at: [25, -1, 15], block: "minecraft:dirt_path"}
-  - {at: [4, -1, 16], block: "minecraft:dirt_path"}
-  - {at: [5, -1, 16], block: "minecraft:dirt_path"}
-  - {at: [3, -1, 17], block: "minecraft:dirt_path"}
-  - {at: [4, -1, 17], block: "minecraft:coarse_dirt"}
+  - {at: [27, -1, 12], block: "minecraft:dirt_path"}
+  - {at: [25, -1, 13], block: "minecraft:coarse_dirt"}
+  - {at: [26, -1, 13], block: "minecraft:coarse_dirt"}
+  - {at: [4, -1, 14], block: "minecraft:coarse_dirt"}
+  - {at: [5, -1, 14], block: "minecraft:coarse_dirt"}
+  - {at: [25, -1, 14], block: "minecraft:coarse_dirt"}
+  - {at: [26, -1, 14], block: "minecraft:coarse_dirt"}
+  - {at: [4, -1, 15], block: "minecraft:coarse_dirt"}
+  - {at: [5, -1, 15], block: "minecraft:coarse_dirt"}
+  - {at: [25, -1, 15], block: "minecraft:coarse_dirt"}
+  - {at: [3, -1, 16], block: "minecraft:coarse_dirt"}
+  - {at: [4, -1, 16], block: "minecraft:coarse_dirt"}
+  - {at: [5, -1, 16], block: "minecraft:coarse_dirt"}
+  - {at: [3, -1, 17], block: "minecraft:coarse_dirt"}
+  - {at: [4, -1, 17], block: "minecraft:dirt_path"}
   - {at: [5, -1, 17], block: "minecraft:coarse_dirt"}
-  - {at: [4, -1, 18], block: "minecraft:coarse_dirt"}
-  - {at: [5, -1, 18], block: "minecraft:coarse_dirt"}
+  - {at: [4, -1, 18], block: "minecraft:dirt_path"}
+  - {at: [5, -1, 18], block: "minecraft:dirt_path"}
   - {at: [4, -1, 19], block: "minecraft:dirt_path"}
-  - {at: [5, -1, 19], block: "minecraft:coarse_dirt"}
-  - {at: [29, -1, 19], block: "minecraft:coarse_dirt"}
+  - {at: [5, -1, 19], block: "minecraft:dirt_path"}
+  - {at: [28, -1, 19], block: "minecraft:dirt_path"}
   - {at: [5, -1, 20], block: "minecraft:coarse_dirt"}
-  - {at: [25, -1, 20], block: "minecraft:coarse_dirt"}
-  - {at: [5, -1, 21], block: "minecraft:dirt_path"}
-  - {at: [25, -1, 21], block: "minecraft:dirt_path"}
-  - {at: [5, -1, 22], block: "minecraft:dirt_path"}
-  - {at: [25, -1, 22], block: "minecraft:dirt_path"}
-  - {at: [26, -1, 22], block: "minecraft:dirt_path"}
-  - {at: [5, -1, 23], block: "minecraft:dirt_path"}
-  - {at: [25, -1, 23], block: "minecraft:dirt_path"}
-  - {at: [26, -1, 23], block: "minecraft:dirt_path"}
+  - {at: [28, -1, 20], block: "minecraft:coarse_dirt"}
+  - {at: [5, -1, 21], block: "minecraft:coarse_dirt"}
+  - {at: [27, -1, 21], block: "minecraft:coarse_dirt"}
+  - {at: [4, -1, 22], block: "minecraft:coarse_dirt"}
+  - {at: [5, -1, 22], block: "minecraft:coarse_dirt"}
+  - {at: [27, -1, 22], block: "minecraft:coarse_dirt"}
+  - {at: [28, -1, 22], block: "minecraft:dirt_path"}
+  - {at: [4, -1, 23], block: "minecraft:dirt_path"}
+  - {at: [5, -1, 23], block: "minecraft:coarse_dirt"}
   - {at: [27, -1, 23], block: "minecraft:coarse_dirt"}
-  - {at: [4, -1, 24], block: "minecraft:coarse_dirt"}
-  - {at: [5, -1, 24], block: "minecraft:dirt_path"}
+  - {at: [28, -1, 23], block: "minecraft:coarse_dirt"}
+  - {at: [29, -1, 23], block: "minecraft:dirt_path"}
+  - {at: [4, -1, 24], block: "minecraft:dirt_path"}
+  - {at: [5, -1, 24], block: "minecraft:coarse_dirt"}
   - {at: [6, -1, 24], block: "minecraft:dirt_path"}
-  - {at: [12, -1, 24], block: "minecraft:dirt_path"}
-  - {at: [13, -1, 24], block: "minecraft:dirt_path"}
-  - {at: [14, -1, 24], block: "minecraft:dirt_path"}
-  - {at: [17, -1, 24], block: "minecraft:coarse_dirt"}
+  - {at: [7, -1, 24], block: "minecraft:coarse_dirt"}
+  - {at: [13, -1, 24], block: "minecraft:coarse_dirt"}
+  - {at: [14, -1, 24], block: "minecraft:coarse_dirt"}
+  - {at: [15, -1, 24], block: "minecraft:dirt_path"}
+  - {at: [16, -1, 24], block: "minecraft:dirt_path"}
+  - {at: [17, -1, 24], block: "minecraft:dirt_path"}
   - {at: [18, -1, 24], block: "minecraft:coarse_dirt"}
-  - {at: [22, -1, 24], block: "minecraft:coarse_dirt"}
-  - {at: [23, -1, 24], block: "minecraft:dirt_path"}
-  - {at: [24, -1, 24], block: "minecraft:dirt_path"}
-  - {at: [25, -1, 24], block: "minecraft:dirt_path"}
-  - {at: [26, -1, 24], block: "minecraft:dirt_path"}
+  - {at: [19, -1, 24], block: "minecraft:dirt_path"}
+  - {at: [20, -1, 24], block: "minecraft:coarse_dirt"}
+  - {at: [21, -1, 24], block: "minecraft:dirt_path"}
   - {at: [27, -1, 24], block: "minecraft:coarse_dirt"}
-  - {at: [4, -1, 25], block: "minecraft:dirt_path"}
-  - {at: [5, -1, 25], block: "minecraft:dirt_path"}
-  - {at: [6, -1, 25], block: "minecraft:dirt_path"}
-  - {at: [7, -1, 25], block: "minecraft:dirt_path"}
-  - {at: [24, -1, 25], block: "minecraft:dirt_path"}
-  - {at: [25, -1, 25], block: "minecraft:dirt_path"}
-  - {at: [26, -1, 25], block: "minecraft:dirt_path"}
-  - {at: [24, -1, 26], block: "minecraft:dirt_path"}
-  - {at: [25, -1, 26], block: "minecraft:dirt_path"}
+  - {at: [28, -1, 24], block: "minecraft:coarse_dirt"}
+  - {at: [29, -1, 24], block: "minecraft:coarse_dirt"}
+  - {at: [4, -1, 25], block: "minecraft:coarse_dirt"}
+  - {at: [5, -1, 25], block: "minecraft:coarse_dirt"}
+  - {at: [6, -1, 25], block: "minecraft:coarse_dirt"}
+  - {at: [7, -1, 25], block: "minecraft:coarse_dirt"}
+  - {at: [15, -1, 25], block: "minecraft:coarse_dirt"}
+  - {at: [24, -1, 25], block: "minecraft:coarse_dirt"}
+  - {at: [25, -1, 25], block: "minecraft:coarse_dirt"}
+  - {at: [26, -1, 25], block: "minecraft:coarse_dirt"}
+  - {at: [29, -1, 25], block: "minecraft:coarse_dirt"}
+  - {at: [24, -1, 26], block: "minecraft:coarse_dirt"}
+  - {at: [25, -1, 26], block: "minecraft:coarse_dirt"}
+  - {at: [9, -1, 27], block: "minecraft:coarse_dirt"}
   # shipping_yard
-  - {at: [2, -1, 10], block: "minecraft:dirt_path"}
   - {at: [2, -1, 11], block: "minecraft:dirt_path"}
+  - {at: [3, -1, 11], block: "minecraft:dirt_path"}
+  - {at: [4, -1, 11], block: "minecraft:coarse_dirt"}
   - {at: [1, -1, 12], block: "minecraft:dirt_path"}
-  - {at: [2, -1, 12], block: "minecraft:coarse_dirt"}
+  - {at: [2, -1, 12], block: "minecraft:dirt_path"}
   - {at: [3, -1, 12], block: "minecraft:dirt_path"}
   - {at: [4, -1, 12], block: "minecraft:dirt_path"}
   - {at: [1, -1, 13], block: "minecraft:dirt_path"}
   - {at: [2, -1, 13], block: "minecraft:dirt_path"}
-  - {at: [3, -1, 13], block: "minecraft:dirt_path"}
+  - {at: [3, -1, 13], block: "minecraft:coarse_dirt"}
+  - {at: [4, -1, 13], block: "minecraft:dirt_path"}
   - {at: [1, -1, 14], block: "minecraft:dirt_path"}
-  - {at: [2, -1, 14], block: "minecraft:dirt_path"}
-  - {at: [3, -1, 14], block: "minecraft:dirt_path"}
-  - {at: [4, -1, 14], block: "minecraft:dirt_path"}
-  - {at: [1, -1, 15], block: "minecraft:dirt_path"}
-  - {at: [2, -1, 15], block: "minecraft:dirt_path"}
-  - {at: [3, -1, 15], block: "minecraft:dirt_path"}
-  - {at: [1, -1, 16], block: "minecraft:dirt_path"}
-  - {at: [2, -1, 16], block: "minecraft:dirt_path"}
-  - {at: [3, -1, 16], block: "minecraft:dirt_path"}
-  - {at: [2, -1, 17], block: "minecraft:dirt_path"}
-  - {at: [2, -1, 18], block: "minecraft:dirt_path"}
-  - {at: [3, -1, 18], block: "minecraft:dirt_path"}
+  - {at: [2, -1, 14], block: "minecraft:coarse_dirt"}
+  - {at: [3, -1, 14], block: "minecraft:coarse_dirt"}
+  - {at: [1, -1, 15], block: "minecraft:coarse_dirt"}
+  - {at: [2, -1, 15], block: "minecraft:coarse_dirt"}
+  - {at: [3, -1, 15], block: "minecraft:coarse_dirt"}
+  - {at: [1, -1, 16], block: "minecraft:coarse_dirt"}
+  - {at: [2, -1, 16], block: "minecraft:coarse_dirt"}
   - {at: [1, -1, 19], block: "minecraft:dirt_path"}
   - {at: [2, -1, 19], block: "minecraft:dirt_path"}
-  - {at: [3, -1, 19], block: "minecraft:dirt_path"}
+  - {at: [3, -1, 19], block: "minecraft:coarse_dirt"}
   - {at: [1, -1, 20], block: "minecraft:dirt_path"}
   - {at: [2, -1, 20], block: "minecraft:dirt_path"}
   - {at: [3, -1, 20], block: "minecraft:dirt_path"}
   - {at: [4, -1, 20], block: "minecraft:dirt_path"}
-  - {at: [1, -1, 21], block: "minecraft:dirt_path"}
-  - {at: [2, -1, 21], block: "minecraft:dirt_path"}
+  - {at: [1, -1, 21], block: "minecraft:coarse_dirt"}
+  - {at: [2, -1, 21], block: "minecraft:coarse_dirt"}
   - {at: [3, -1, 21], block: "minecraft:dirt_path"}
-  - {at: [1, -1, 22], block: "minecraft:dirt_path"}
-  - {at: [2, -1, 22], block: "minecraft:dirt_path"}
-  - {at: [3, -1, 22], block: "minecraft:coarse_dirt"}
-  - {at: [4, -1, 22], block: "minecraft:coarse_dirt"}
+  - {at: [4, -1, 21], block: "minecraft:coarse_dirt"}
+  - {at: [1, -1, 22], block: "minecraft:coarse_dirt"}
+  - {at: [2, -1, 22], block: "minecraft:coarse_dirt"}
+  - {at: [3, -1, 22], block: "minecraft:dirt_path"}
   - {at: [1, -1, 23], block: "minecraft:coarse_dirt"}
   - {at: [2, -1, 23], block: "minecraft:dirt_path"}
   - {at: [3, -1, 23], block: "minecraft:coarse_dirt"}
-  - {at: [1, -1, 24], block: "minecraft:coarse_dirt"}
-  - {at: [2, -1, 24], block: "minecraft:dirt_path"}
   # oven_yard
-  - {at: [27, -1, 11], block: "minecraft:dirt_path"}
-  - {at: [27, -1, 12], block: "minecraft:dirt_path"}
-  - {at: [26, -1, 13], block: "minecraft:dirt_path"}
   - {at: [27, -1, 13], block: "minecraft:dirt_path"}
-  - {at: [28, -1, 13], block: "minecraft:coarse_dirt"}
-  - {at: [26, -1, 14], block: "minecraft:dirt_path"}
+  - {at: [28, -1, 13], block: "minecraft:dirt_path"}
   - {at: [27, -1, 14], block: "minecraft:dirt_path"}
   - {at: [28, -1, 14], block: "minecraft:dirt_path"}
-  - {at: [29, -1, 14], block: "minecraft:coarse_dirt"}
-  - {at: [26, -1, 15], block: "minecraft:dirt_path"}
+  - {at: [29, -1, 14], block: "minecraft:dirt_path"}
+  - {at: [26, -1, 15], block: "minecraft:coarse_dirt"}
   - {at: [27, -1, 15], block: "minecraft:dirt_path"}
-  - {at: [28, -1, 15], block: "minecraft:dirt_path"}
+  - {at: [28, -1, 15], block: "minecraft:coarse_dirt"}
   - {at: [29, -1, 15], block: "minecraft:coarse_dirt"}
-  - {at: [25, -1, 16], block: "minecraft:dirt_path"}
-  - {at: [26, -1, 16], block: "minecraft:dirt_path"}
-  - {at: [27, -1, 16], block: "minecraft:dirt_path"}
-  - {at: [28, -1, 16], block: "minecraft:dirt_path"}
-  - {at: [26, -1, 17], block: "minecraft:dirt_path"}
-  - {at: [27, -1, 17], block: "minecraft:dirt_path"}
+  - {at: [26, -1, 16], block: "minecraft:coarse_dirt"}
+  - {at: [27, -1, 16], block: "minecraft:coarse_dirt"}
+  - {at: [28, -1, 16], block: "minecraft:coarse_dirt"}
+  - {at: [25, -1, 17], block: "minecraft:coarse_dirt"}
+  - {at: [26, -1, 17], block: "minecraft:coarse_dirt"}
+  - {at: [27, -1, 17], block: "minecraft:coarse_dirt"}
+  - {at: [25, -1, 18], block: "minecraft:dirt_path"}
   - {at: [26, -1, 18], block: "minecraft:dirt_path"}
   - {at: [27, -1, 18], block: "minecraft:dirt_path"}
   - {at: [28, -1, 18], block: "minecraft:dirt_path"}
-  - {at: [26, -1, 19], block: "minecraft:dirt_path"}
+  - {at: [25, -1, 19], block: "minecraft:coarse_dirt"}
+  - {at: [26, -1, 19], block: "minecraft:coarse_dirt"}
   - {at: [27, -1, 19], block: "minecraft:dirt_path"}
-  - {at: [28, -1, 19], block: "minecraft:dirt_path"}
+  - {at: [25, -1, 20], block: "minecraft:coarse_dirt"}
   - {at: [26, -1, 20], block: "minecraft:dirt_path"}
-  - {at: [27, -1, 20], block: "minecraft:dirt_path"}
-  - {at: [28, -1, 20], block: "minecraft:dirt_path"}
-  - {at: [26, -1, 21], block: "minecraft:dirt_path"}
-  - {at: [27, -1, 21], block: "minecraft:dirt_path"}
-  - {at: [27, -1, 22], block: "minecraft:dirt_path"}
+  - {at: [27, -1, 20], block: "minecraft:coarse_dirt"}
   # belt_yard
-  - {at: [11, -1, 24], block: "minecraft:dirt_path"}
-  - {at: [8, -1, 25], block: "minecraft:coarse_dirt"}
-  - {at: [9, -1, 25], block: "minecraft:coarse_dirt"}
-  - {at: [10, -1, 25], block: "minecraft:dirt_path"}
-  - {at: [11, -1, 25], block: "minecraft:dirt_path"}
+  - {at: [8, -1, 24], block: "minecraft:coarse_dirt"}
+  - {at: [9, -1, 24], block: "minecraft:dirt_path"}
+  - {at: [10, -1, 24], block: "minecraft:coarse_dirt"}
+  - {at: [11, -1, 24], block: "minecraft:coarse_dirt"}
+  - {at: [12, -1, 24], block: "minecraft:coarse_dirt"}
+  - {at: [8, -1, 25], block: "minecraft:dirt_path"}
+  - {at: [9, -1, 25], block: "minecraft:dirt_path"}
+  - {at: [10, -1, 25], block: "minecraft:coarse_dirt"}
+  - {at: [11, -1, 25], block: "minecraft:coarse_dirt"}
   - {at: [12, -1, 25], block: "minecraft:coarse_dirt"}
-  - {at: [13, -1, 25], block: "minecraft:coarse_dirt"}
-  - {at: [14, -1, 25], block: "minecraft:dirt_path"}
-  - {at: [15, -1, 25], block: "minecraft:dirt_path"}
-  - {at: [7, -1, 26], block: "minecraft:coarse_dirt"}
-  - {at: [8, -1, 26], block: "minecraft:coarse_dirt"}
+  - {at: [13, -1, 25], block: "minecraft:dirt_path"}
+  - {at: [14, -1, 25], block: "minecraft:coarse_dirt"}
   - {at: [9, -1, 26], block: "minecraft:coarse_dirt"}
   - {at: [10, -1, 26], block: "minecraft:coarse_dirt"}
   - {at: [11, -1, 26], block: "minecraft:coarse_dirt"}
-  - {at: [12, -1, 26], block: "minecraft:dirt_path"}
-  - {at: [13, -1, 26], block: "minecraft:dirt_path"}
-  - {at: [14, -1, 26], block: "minecraft:dirt_path"}
-  - {at: [15, -1, 26], block: "minecraft:dirt_path"}
-  - {at: [7, -1, 27], block: "minecraft:dirt_path"}
-  - {at: [8, -1, 27], block: "minecraft:dirt_path"}
-  - {at: [9, -1, 27], block: "minecraft:dirt_path"}
+  - {at: [12, -1, 26], block: "minecraft:coarse_dirt"}
+  - {at: [13, -1, 26], block: "minecraft:coarse_dirt"}
+  - {at: [14, -1, 26], block: "minecraft:coarse_dirt"}
+  - {at: [15, -1, 26], block: "minecraft:coarse_dirt"}
   - {at: [10, -1, 27], block: "minecraft:coarse_dirt"}
   - {at: [11, -1, 27], block: "minecraft:coarse_dirt"}
-  - {at: [12, -1, 27], block: "minecraft:dirt_path"}
+  - {at: [12, -1, 27], block: "minecraft:coarse_dirt"}
   - {at: [13, -1, 27], block: "minecraft:dirt_path"}
-  - {at: [14, -1, 27], block: "minecraft:dirt_path"}
-  - {at: [15, -1, 27], block: "minecraft:dirt_path"}
-  - {at: [10, -1, 28], block: "minecraft:dirt_path"}
-  - {at: [11, -1, 28], block: "minecraft:coarse_dirt"}
-  - {at: [12, -1, 28], block: "minecraft:coarse_dirt"}
+  - {at: [14, -1, 27], block: "minecraft:coarse_dirt"}
+  - {at: [15, -1, 27], block: "minecraft:coarse_dirt"}
+  - {at: [12, -1, 28], block: "minecraft:dirt_path"}
+  - {at: [13, -1, 28], block: "minecraft:dirt_path"}
+  - {at: [14, -1, 28], block: "minecraft:dirt_path"}
+  - {at: [15, -1, 28], block: "minecraft:coarse_dirt"}
   # gate_bed_west
-  - {at: [11, -1, 1], block: "minecraft:coarse_dirt"}
-  - {at: [11, -1, 2], block: "minecraft:coarse_dirt"}
-  - {at: [11, -1, 3], block: "minecraft:coarse_dirt"}
-  - {at: [11, -1, 4], block: "minecraft:podzol[snowy=false]"}
-  - {at: [11, -1, 5], block: "minecraft:rooted_dirt"}
-  - {at: [11, 0, 1], block: "minecraft:cornflower"}
-  - {at: [11, 0, 3], block: "minecraft:lily_of_the_valley"}
-  - {at: [11, 0, 4], block: "minecraft:pink_tulip"}
-  - {at: [11, 0, 5], block: "minecraft:allium"}
+  - {at: [11, -1, 1], block: "minecraft:podzol[snowy=false]"}
+  - {at: [11, -1, 2], block: "minecraft:rooted_dirt"}
+  - {at: [11, -1, 3], block: "minecraft:podzol[snowy=false]"}
+  - {at: [11, -1, 4], block: "minecraft:coarse_dirt"}
+  - {at: [11, -1, 5], block: "minecraft:podzol[snowy=false]"}
+  - {at: [11, 0, 1], block: "minecraft:oxeye_daisy"}
+  - {at: [11, 0, 3], block: "minecraft:allium"}
+  - {at: [11, 0, 4], block: "minecraft:azure_bluet"}
+  - {at: [11, 0, 5], block: "minecraft:azure_bluet"}
   # gate_bed_east
-  - {at: [24, -1, 1], block: "minecraft:podzol[snowy=false]"}
-  - {at: [25, -1, 1], block: "minecraft:coarse_dirt"}
-  - {at: [26, -1, 1], block: "minecraft:coarse_dirt"}
-  - {at: [27, -1, 1], block: "minecraft:coarse_dirt"}
-  - {at: [28, -1, 1], block: "minecraft:podzol[snowy=false]"}
-  - {at: [29, -1, 1], block: "minecraft:coarse_dirt"}
+  - {at: [24, -1, 1], block: "minecraft:coarse_dirt"}
+  - {at: [25, -1, 1], block: "minecraft:podzol[snowy=false]"}
+  - {at: [26, -1, 1], block: "minecraft:podzol[snowy=false]"}
+  - {at: [27, -1, 1], block: "minecraft:podzol[snowy=false]"}
+  - {at: [28, -1, 1], block: "minecraft:rooted_dirt"}
+  - {at: [29, -1, 1], block: "minecraft:podzol[snowy=false]"}
   - {at: [24, -1, 2], block: "minecraft:podzol[snowy=false]"}
-  - {at: [25, -1, 2], block: "minecraft:podzol[snowy=false]"}
+  - {at: [25, -1, 2], block: "minecraft:coarse_dirt"}
   - {at: [26, -1, 2], block: "minecraft:podzol[snowy=false]"}
-  - {at: [27, -1, 2], block: "minecraft:podzol[snowy=false]"}
+  - {at: [27, -1, 2], block: "minecraft:rooted_dirt"}
   - {at: [28, -1, 2], block: "minecraft:coarse_dirt"}
-  - {at: [29, -1, 2], block: "minecraft:coarse_dirt"}
-  - {at: [24, -1, 3], block: "minecraft:coarse_dirt"}
+  - {at: [29, -1, 2], block: "minecraft:rooted_dirt"}
+  - {at: [24, -1, 3], block: "minecraft:podzol[snowy=false]"}
   - {at: [25, -1, 3], block: "minecraft:podzol[snowy=false]"}
-  - {at: [29, -1, 3], block: "minecraft:coarse_dirt"}
-  - {at: [24, -1, 4], block: "minecraft:podzol[snowy=false]"}
-  - {at: [24, 0, 1], block: "minecraft:allium"}
-  - {at: [25, 0, 1], block: "minecraft:allium"}
+  - {at: [29, -1, 3], block: "minecraft:podzol[snowy=false]"}
+  - {at: [24, -1, 4], block: "minecraft:rooted_dirt"}
+  - {at: [24, 0, 1], block: "minecraft:oxeye_daisy"}
   - {at: [26, 0, 1], block: "minecraft:allium"}
-  - {at: [27, 0, 1], block: "minecraft:fern"}
-  - {at: [28, 0, 1], block: "minecraft:cornflower"}
-  - {at: [29, 0, 1], block: "minecraft:cornflower"}
-  - {at: [24, 0, 2], block: "minecraft:cornflower"}
-  - {at: [25, 0, 2], block: "minecraft:dandelion"}
-  - {at: [26, 0, 2], block: "minecraft:dandelion"}
-  - {at: [27, 0, 2], block: "minecraft:dandelion"}
-  - {at: [28, 0, 2], block: "minecraft:lily_of_the_valley"}
-  - {at: [24, 0, 3], block: "minecraft:poppy"}
-  - {at: [25, 0, 3], block: "minecraft:cornflower"}
-  - {at: [29, 0, 3], block: "minecraft:azure_bluet"}
-  - {at: [24, 0, 4], block: "minecraft:pink_tulip"}
+  - {at: [27, 0, 1], block: "minecraft:azure_bluet"}
+  - {at: [28, 0, 1], block: "minecraft:oxeye_daisy"}
+  - {at: [29, 0, 1], block: "minecraft:dandelion"}
+  - {at: [24, 0, 2], block: "minecraft:poppy"}
+  - {at: [25, 0, 2], block: "minecraft:poppy"}
+  - {at: [26, 0, 2], block: "minecraft:cornflower"}
+  - {at: [27, 0, 2], block: "minecraft:azure_bluet"}
+  - {at: [29, 0, 2], block: "minecraft:dandelion"}
+  - {at: [24, 0, 3], block: "minecraft:lily_of_the_valley"}
+  - {at: [25, 0, 3], block: "minecraft:poppy"}
+  - {at: [29, 0, 3], block: "minecraft:lily_of_the_valley"}
+  - {at: [24, 0, 4], block: "minecraft:cornflower"}
   # well_yard
   - {at: [1, -2, 4], block: "minecraft:cobblestone"}
   - {at: [2, -2, 4], block: "minecraft:cobblestone"}
@@ -364,14 +354,14 @@ blocks:
   - {at: [1, -2, 6], block: "minecraft:cobblestone"}
   - {at: [2, -2, 6], block: "minecraft:cobblestone"}
   - {at: [3, -2, 6], block: "minecraft:cobblestone"}
-  - {at: [1, -1, 1], block: "minecraft:rooted_dirt"}
-  - {at: [2, -1, 1], block: "minecraft:podzol[snowy=false]"}
-  - {at: [3, -1, 1], block: "minecraft:podzol[snowy=false]"}
+  - {at: [1, -1, 1], block: "minecraft:coarse_dirt"}
+  - {at: [2, -1, 1], block: "minecraft:rooted_dirt"}
+  - {at: [3, -1, 1], block: "minecraft:coarse_dirt"}
   - {at: [1, -1, 2], block: "minecraft:podzol[snowy=false]"}
   - {at: [2, -1, 2], block: "minecraft:podzol[snowy=false]"}
-  - {at: [3, -1, 2], block: "minecraft:rooted_dirt"}
-  - {at: [1, -1, 3], block: "minecraft:rooted_dirt"}
-  - {at: [2, -1, 3], block: "minecraft:podzol[snowy=false]"}
+  - {at: [3, -1, 2], block: "minecraft:podzol[snowy=false]"}
+  - {at: [1, -1, 3], block: "minecraft:podzol[snowy=false]"}
+  - {at: [2, -1, 3], block: "minecraft:coarse_dirt"}
   - {at: [3, -1, 3], block: "minecraft:podzol[snowy=false]"}
   - {at: [1, -1, 4], block: "minecraft:cobblestone"}
   - {at: [2, -1, 4], block: "minecraft:cobblestone"}
@@ -382,20 +372,18 @@ blocks:
   - {at: [1, -1, 6], block: "minecraft:cobblestone"}
   - {at: [2, -1, 6], block: "minecraft:cobblestone"}
   - {at: [3, -1, 6], block: "minecraft:cobblestone"}
-  - {at: [1, -1, 8], block: "minecraft:podzol[snowy=false]"}
-  - {at: [2, -1, 8], block: "minecraft:podzol[snowy=false]"}
-  - {at: [3, -1, 8], block: "minecraft:coarse_dirt"}
-  - {at: [1, -1, 9], block: "minecraft:podzol[snowy=false]"}
-  - {at: [2, -1, 9], block: "minecraft:coarse_dirt"}
-  - {at: [1, 0, 1], block: "minecraft:dandelion"}
-  - {at: [2, 0, 1], block: "minecraft:lily_of_the_valley"}
-  - {at: [3, 0, 1], block: "minecraft:allium"}
-  - {at: [1, 0, 2], block: "minecraft:short_grass"}
-  - {at: [2, 0, 2], block: "minecraft:azure_bluet"}
-  - {at: [3, 0, 2], block: "minecraft:dandelion"}
-  - {at: [1, 0, 3], block: "minecraft:azure_bluet"}
-  - {at: [2, 0, 3], block: "minecraft:cornflower"}
-  - {at: [3, 0, 3], block: "minecraft:pink_tulip"}
+  - {at: [1, -1, 8], block: "minecraft:coarse_dirt"}
+  - {at: [2, -1, 8], block: "minecraft:coarse_dirt"}
+  - {at: [3, -1, 8], block: "minecraft:rooted_dirt"}
+  - {at: [1, -1, 9], block: "minecraft:coarse_dirt"}
+  - {at: [2, -1, 9], block: "minecraft:podzol[snowy=false]"}
+  - {at: [1, 0, 1], block: "minecraft:cornflower"}
+  - {at: [2, 0, 1], block: "minecraft:azure_bluet"}
+  - {at: [1, 0, 2], block: "minecraft:allium"}
+  - {at: [2, 0, 2], block: "minecraft:allium"}
+  - {at: [3, 0, 2], block: "minecraft:allium"}
+  - {at: [1, 0, 3], block: "minecraft:poppy"}
+  - {at: [2, 0, 3], block: "minecraft:azure_bluet"}
   - {at: [1, 0, 4], block: "minecraft:cobblestone"}
   - {at: [2, 0, 4], block: "minecraft:mossy_cobblestone"}
   - {at: [3, 0, 4], block: "minecraft:cobblestone"}
@@ -404,11 +392,10 @@ blocks:
   - {at: [1, 0, 6], block: "minecraft:cobblestone"}
   - {at: [2, 0, 6], block: "minecraft:mossy_cobblestone"}
   - {at: [3, 0, 6], block: "minecraft:cobblestone"}
-  - {at: [1, 0, 8], block: "minecraft:oxeye_daisy"}
-  - {at: [2, 0, 8], block: "minecraft:oxeye_daisy"}
-  - {at: [3, 0, 8], block: "minecraft:pink_tulip"}
-  - {at: [1, 0, 9], block: "minecraft:short_grass"}
-  - {at: [2, 0, 9], block: "minecraft:short_grass"}
+  - {at: [1, 0, 8], block: "minecraft:dandelion"}
+  - {at: [3, 0, 8], block: "minecraft:azure_bluet"}
+  - {at: [1, 0, 9], block: "minecraft:allium"}
+  - {at: [2, 0, 9], block: "minecraft:allium"}
   - {at: [1, 1, 5], block: "minecraft:dark_oak_log[axis=y]"}
   - {at: [2, 1, 5], block: "minecraft:barrel[facing=up,open=false]"}
   - {at: [3, 1, 5], block: "minecraft:dark_oak_log[axis=y]"}
@@ -441,22 +428,21 @@ blocks:
   - {at: [4, 1, 16], block: "minecraft:white_carpet"}
   # east_beds
   - {at: [29, -1, 11], block: "minecraft:coarse_dirt"}
-  - {at: [28, -1, 12], block: "minecraft:coarse_dirt"}
-  - {at: [29, -1, 12], block: "minecraft:podzol[snowy=false]"}
+  - {at: [28, -1, 12], block: "minecraft:podzol[snowy=false]"}
+  - {at: [29, -1, 12], block: "minecraft:coarse_dirt"}
   - {at: [29, -1, 13], block: "minecraft:podzol[snowy=false]"}
   - {at: [29, -1, 16], block: "minecraft:podzol[snowy=false]"}
-  - {at: [28, -1, 17], block: "minecraft:podzol[snowy=false]"}
-  - {at: [29, -1, 17], block: "minecraft:coarse_dirt"}
-  - {at: [29, -1, 18], block: "minecraft:coarse_dirt"}
+  - {at: [28, -1, 17], block: "minecraft:coarse_dirt"}
+  - {at: [29, -1, 17], block: "minecraft:podzol[snowy=false]"}
+  - {at: [29, -1, 18], block: "minecraft:podzol[snowy=false]"}
   - {at: [29, -1, 20], block: "minecraft:podzol[snowy=false]"}
-  - {at: [28, -1, 21], block: "minecraft:podzol[snowy=false]"}
-  - {at: [29, -1, 21], block: "minecraft:coarse_dirt"}
+  - {at: [28, -1, 21], block: "minecraft:rooted_dirt"}
+  - {at: [29, -1, 21], block: "minecraft:podzol[snowy=false]"}
   - {at: [29, -1, 22], block: "minecraft:podzol[snowy=false]"}
-  - {at: [29, 0, 11], block: "minecraft:short_grass"}
+  - {at: [29, 0, 11], block: "minecraft:lily_of_the_valley"}
   - {at: [29, 0, 13], block: "minecraft:lily_of_the_valley"}
-  - {at: [29, 0, 16], block: "minecraft:lily_of_the_valley"}
-  - {at: [29, 0, 17], block: "minecraft:lily_of_the_valley"}
-  - {at: [29, 0, 21], block: "minecraft:cornflower"}
+  - {at: [29, 0, 16], block: "minecraft:cornflower"}
+  - {at: [29, 0, 17], block: "minecraft:cornflower"}
   - {at: [29, 0, 22], block: "minecraft:fern"}
   # oven_store
   - {at: [29, 0, 14], block: "minecraft:hay_block[axis=x]"}
@@ -508,6 +494,7 @@ blocks:
   - {at: [24, 2, 27], block: "minecraft:carved_pumpkin[facing=west]"}
   # back_orchard
   - {at: [27, -1, 25], block: "minecraft:grass_block[snowy=false]"}
+  - {at: [28, -1, 25], block: "minecraft:grass_block[snowy=false]"}
   - {at: [26, -1, 26], block: "minecraft:grass_block[snowy=false]"}
   - {at: [27, -1, 26], block: "minecraft:grass_block[snowy=false]"}
   - {at: [28, -1, 26], block: "minecraft:grass_block[snowy=false]"}
@@ -520,44 +507,42 @@ blocks:
   - {at: [27, -1, 28], block: "minecraft:grass_block[snowy=false]"}
   - {at: [28, -1, 28], block: "minecraft:grass_block[snowy=false]"}
   - {at: [27, 0, 25], block: "minecraft:grass_block[snowy=false]"}
+  - {at: [28, 0, 25], block: "minecraft:grass_block[snowy=false]"}
   - {at: [26, 0, 26], block: "minecraft:grass_block[snowy=false]"}
-  - {at: [27, 0, 26], block: "minecraft:grass_block[snowy=false]"}
+  - {at: [27, 0, 26], block: "minecraft:podzol[snowy=false]"}
   - {at: [28, 0, 26], block: "minecraft:grass_block[snowy=false]"}
   - {at: [25, 0, 27], block: "minecraft:grass_block[snowy=false]"}
   - {at: [26, 0, 27], block: "minecraft:podzol[snowy=false]"}
   - {at: [27, 0, 27], block: "minecraft:podzol[snowy=false]"}
-  - {at: [28, 0, 27], block: "minecraft:grass_block[snowy=false]"}
+  - {at: [28, 0, 27], block: "minecraft:rooted_dirt"}
   - {at: [29, 0, 27], block: "minecraft:grass_block[snowy=false]"}
   - {at: [26, 0, 28], block: "minecraft:grass_block[snowy=false]"}
-  - {at: [27, 0, 28], block: "minecraft:podzol[snowy=false]"}
+  - {at: [27, 0, 28], block: "minecraft:rooted_dirt"}
   - {at: [28, 0, 28], block: "minecraft:grass_block[snowy=false]"}
   - {at: [27, 1, 27], block: "minecraft:oak_log[axis=y]"}
   - {at: [27, 2, 27], block: "minecraft:oak_log[axis=y]"}
   - {at: [27, 3, 27], block: "minecraft:oak_log[axis=y]"}
-  - {at: [26, 4, 24], block: "minecraft:oak_leaves[distance=1,persistent=true,waterlogged=false]"}
-  - {at: [25, 4, 25], block: "minecraft:oak_leaves[distance=1,persistent=true,waterlogged=false]"}
-  - {at: [26, 4, 25], block: "minecraft:oak_leaves[distance=1,persistent=true,waterlogged=false]"}
-  - {at: [27, 4, 25], block: "minecraft:oak_leaves[distance=1,persistent=true,waterlogged=false]"}
-  - {at: [26, 4, 26], block: "minecraft:oak_leaves[distance=1,persistent=true,waterlogged=false]"}
-  - {at: [27, 4, 26], block: "minecraft:oak_leaves[distance=1,persistent=true,waterlogged=false]"}
+  - {at: [25, 4, 27], block: "minecraft:oak_leaves[distance=1,persistent=true,waterlogged=false]"}
   - {at: [26, 4, 27], block: "minecraft:oak_leaves[distance=1,persistent=true,waterlogged=false]"}
   - {at: [27, 4, 27], block: "minecraft:oak_log[axis=y]"}
+  - {at: [28, 4, 27], block: "minecraft:oak_leaves[distance=1,persistent=true,waterlogged=false]"}
+  - {at: [24, 4, 28], block: "minecraft:oak_leaves[distance=1,persistent=true,waterlogged=false]"}
+  - {at: [25, 4, 28], block: "minecraft:oak_leaves[distance=1,persistent=true,waterlogged=false]"}
+  - {at: [26, 4, 28], block: "minecraft:oak_leaves[distance=1,persistent=true,waterlogged=false]"}
   - {at: [27, 4, 28], block: "minecraft:oak_leaves[distance=1,persistent=true,waterlogged=false]"}
-  - {at: [24, 5, 25], block: "minecraft:oak_leaves[distance=1,persistent=true,waterlogged=false]"}
-  - {at: [25, 5, 25], block: "minecraft:oak_leaves[distance=1,persistent=true,waterlogged=false]"}
-  - {at: [26, 5, 25], block: "minecraft:oak_leaves[distance=1,persistent=true,waterlogged=false]"}
+  - {at: [27, 5, 25], block: "minecraft:oak_leaves[distance=1,persistent=true,waterlogged=false]"}
   - {at: [26, 5, 26], block: "minecraft:oak_leaves[distance=1,persistent=true,waterlogged=false]"}
   - {at: [27, 5, 26], block: "minecraft:oak_leaves[distance=1,persistent=true,waterlogged=false]"}
   - {at: [28, 5, 26], block: "minecraft:oak_leaves[distance=1,persistent=true,waterlogged=false]"}
-  - {at: [25, 5, 27], block: "minecraft:oak_leaves[distance=1,persistent=true,waterlogged=false]"}
+  - {at: [29, 5, 26], block: "minecraft:oak_leaves[distance=1,persistent=true,waterlogged=false]"}
   - {at: [26, 5, 27], block: "minecraft:oak_leaves[distance=1,persistent=true,waterlogged=false]"}
   - {at: [27, 5, 27], block: "minecraft:oak_log[axis=y]"}
   - {at: [28, 5, 27], block: "minecraft:oak_leaves[distance=1,persistent=true,waterlogged=false]"}
-  - {at: [24, 5, 28], block: "minecraft:oak_leaves[distance=1,persistent=true,waterlogged=false]"}
-  - {at: [25, 5, 28], block: "minecraft:oak_leaves[distance=1,persistent=true,waterlogged=false]"}
+  - {at: [29, 5, 27], block: "minecraft:oak_leaves[distance=1,persistent=true,waterlogged=false]"}
   - {at: [26, 5, 28], block: "minecraft:oak_leaves[distance=1,persistent=true,waterlogged=false]"}
   - {at: [27, 5, 28], block: "minecraft:oak_leaves[distance=1,persistent=true,waterlogged=false]"}
   - {at: [28, 5, 28], block: "minecraft:oak_leaves[distance=1,persistent=true,waterlogged=false]"}
+  - {at: [29, 5, 28], block: "minecraft:oak_leaves[distance=1,persistent=true,waterlogged=false]"}
   - {at: [27, 6, 26], block: "minecraft:oak_leaves[distance=1,persistent=true,waterlogged=false]"}
   - {at: [26, 6, 27], block: "minecraft:oak_leaves[distance=1,persistent=true,waterlogged=false]"}
   - {at: [27, 6, 27], block: "minecraft:oak_leaves[distance=1,persistent=true,waterlogged=false]"}

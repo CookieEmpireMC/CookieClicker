@@ -25,7 +25,7 @@ PROP_WORDS = ("barrel", "hay_block", "composter", "cauldron", "carved_pumpkin", 
               "campfire", "flower_pot", "potted_", "_wool", "_carpet", "lantern", "crafting_table", "bookshelf",
               "smoker", "furnace")
 ORGANIC_GROUND = {"dirt_path", "gravel", "coarse_dirt", "podzol", "rooted_dirt", "moss_block", "mud", "packed_mud",
-                  "clay", "cobblestone", "mossy_cobblestone", "andesite", "stone", "dirt", "tuff", "polished_andesite"}
+                  "clay", "cobblestone", "mossy_cobblestone", "andesite", "stone", "dirt", "tuff", "polished_andesite", "stone_bricks"}
 DEPTH_IGNORE_WORDS = ("lantern", "potted_", "barrel", "hay_block", "wool", "carpet", "_fence", "campfire", "chain",
                       "_sign", "flower_pot", "composter", "cauldron", "bell", "lightning_rod", "azalea", "moss")
 RAMP_EXEMPT_WORDS = ("air", "glass", "door", "lantern", "campfire", "sign", "carpet", "wool", "barrel", "pot",

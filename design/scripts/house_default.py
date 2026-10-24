@@ -37,13 +37,13 @@ BRICK = Ramp(P("bricks"), [(P("mud_bricks"), .12, None), (P("stone_bricks"), .08
 STONE = Ramp(P("stone_bricks"), [(P("cracked_stone_bricks"), .14, None), (P("mossy_stone_bricks"), .17, "low"),
                                  (P("andesite"), .08, None)], seed=17)
 FLOOR = Ramp(P("spruce_planks"), [(P("oak_planks"), .30, None), (P("dark_oak_planks"), .25, None)], seed=18)
-ROOF = Ramp("dark_oak", [("spruce", .09, None), ("oak", .06, None)], seed=19, height=7)
+ROOF = Ramp("dark_oak", [], seed=19, height=7)
 RAMPS = {
     "plinth": ["cobblestone", "mossy_cobblestone", "andesite"],
     "plaster": ["calcite", "diorite", "polished_diorite"],
     "brick": ["bricks", "mud_bricks", "stone_bricks"],
     "timber": ["dark_oak_log", "stripped_dark_oak_log", "dark_oak_planks"],
-    "roof": ["dark_oak_stairs", "spruce_stairs", "oak_stairs"],
+    "roof": ["dark_oak_stairs", "spruce_stairs", "dark_oak_slab"],
     "floor": ["spruce_planks", "oak_planks", "dark_oak_planks"],
 }
 BEAM = "dark_oak"
@@ -82,7 +82,7 @@ def build() -> tuple:
         for y in (2, 3, 4):
             put(x, y, 9, lg(BEAM, "y"))
     WN = Wall(b, "north", "east", (0, 6))
-    door(WN, 6, 1, mat="spruce", hood=True)
+    door(WN, 6, 1, mat="spruce", hood=True, jambs=False)
     put(5, 3, 5, B.lantern(True))
     put(7, 3, 5, "minecraft:spruce_hanging_sign[attached=false,rotation=8,waterlogged=false]")
     put(6, 0, 5, st("stone_brick", "south"))
@@ -179,19 +179,6 @@ def yard(b: Build) -> None:
     S.flower_bed(b, {(x, z) for x in range(10, 14) for z in range(13, 15)}, kinds=["allium", "lily_of_the_valley",
                                                                                 "cornflower", "dandelion"])
     b.put(14, 0, 12, B.barrel()); b.put(14, 0, 13, B.hay("x")); b.put(15, 0, 12, B.barrel())
-    # gravel apron one block wide around the walls, pushed out in soft clusters by smooth noise (no lone squares)
-    import numpy as np
-    from scipy.ndimage import gaussian_filter
-    f = gaussian_filter(np.random.default_rng(23).standard_normal((SX + 4, SZ + 4)), 1.2)
-    f = (f - f.mean()) / f.std()
-    solid = {(x, z) for (x, y, z), d in b.g.items() if 0 <= y <= 1 and B.block_id(d) != "air"}
-    near = lambda x, z, d: any((x + dx, z + dz) in solid for dx in range(-d, d + 1) for dz in range(-d, d + 1))  # noqa
-    for x in range(SX):
-        for z in range(SZ):
-            if (x, -1, z) in b.g or (x, z) in solid:
-                continue
-            if near(x, z, 1) and f[x, z] > -1.0 or near(x, z, 2) and f[x, z] > 0.5:
-                b.put(x, -1, z, S.GRAVEL.pick(x, 0, z))
 
 
 def main() -> int:

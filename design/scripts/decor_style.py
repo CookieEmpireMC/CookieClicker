@@ -146,32 +146,53 @@ def paint(cells: set, ramp: Ramp, fr: float = .75) -> None:
 
 
 # --- scenes: ground first (so props sit on what they belong to), then things that stand ---------------------------------
+def ellipse(cx: float, cz: float, rx: float, rz: float, deg: float = 24.0) -> set:
+    """A slightly rotated ellipse: its flat sides stair-step every 3-5 cells instead of running straight (R15)."""
+    import math
+    ca, sa = math.cos(math.radians(deg)), math.sin(math.radians(deg))
+    out = set()
+    for x in range(int(cx - rx) - 2, int(cx + rx) + 3):
+        for z in range(int(cz - rx) - 2, int(cz + rx) + 3):
+            u, v = (x - cx) * ca + (z - cz) * sa, -(x - cx) * sa + (z - cz) * ca
+            if (u / rx) ** 2 + (v / rz) ** 2 <= 1.0:
+                out.add((x, z))
+    return out
+
+
+STONEB = P("stone_bricks")
+W3 = dict(hl=(1, 1), hr=(1, 1))                       # every track is 3 wide; only its centre wanders
+
 b.scene("main_walk", "gate")
-walk = lane([(15, 1), (15, 9)], hl=(1, 1), hr=(1, 1), jitter=1)
-paint(walk, S.PATH)
+walk = lane([(15, 1), (15, 9)], **W3, jitter=1)
+for (x, z) in sorted(walk):                           # stone near the house and the plaza, fading into the dirt track
+    cobble = min(1.0, max(0.0, (z - 2) / 6)) + 0.22 * NOISE[x, z] > 0.55
+    b.put(x, -1, z, (COBBLE if cobble else S.PATH).pick(x, 0, z))
 
 b.scene("pedestal_plaza", "pedestal")
-plaza = blob(18, 5.5, 4.0, 2.6)
-paint(plaza, COBBLE, .3)
+plaza = ellipse(18, 5.5, 4.2, 2.8)
+rim = {c for c in plaza if any((c[0] + dx, c[1] + dz) not in plaza for dx, dz in ((1, 0), (-1, 0), (0, 1), (0, -1)))}
+for (x, z) in sorted(plaza):
+    if (x, z) in rim and (x, z) not in walk:
+        b.put(x, -1, z, STONEB)                       # a defined stone-brick rim
+    else:
+        b.put(x, -1, z, COBBLE.pick(x, 0, z))
 
 b.scene("baker_yard", "slots")
-yard = blob(7, 3.8, 4.4, 3.1) | lane([(10, 4), (13, 4)], hl=(1, 1), hr=(1, 1))
-paint(yard, YARD)
+S.ground(b, ellipse(7, 3.8, 4.4, 3.0) | lane([(10, 4), (13, 4)], **W3), S.PATH)
 
 b.scene("portal_yard", "slots")
-paint(blob(27, 4, 2.4, 2.4) | lane([(22, 4), (26, 4)], hl=(1, 1), hr=(1, 1)), YARD)
+S.ground(b, ellipse(27, 4, 2.5, 2.5) | lane([(22, 4), (26, 4)], **W3), S.PATH)
 
 b.scene("ring_lane", "factory")
-ring = lane([(4, 9), (4, 25)], hl=(0, 1), hr=(1, 1)) | lane([(4, 25), (26, 25)], hl=(0, 1), hr=(1, 1)) \
-    | lane([(26, 25), (26, 9)], hl=(0, 1), hr=(1, 1))
-paint(ring, S.PATH, .22)
+ring = lane([(4, 9), (4, 25)], **W3) | lane([(4, 25), (27, 25)], **W3) | lane([(27, 25), (27, 9)], **W3)
+S.ground(b, ring, S.PATH)
 
 b.scene("shipping_yard", "slots")
-paint(blob(2, 13.5, 2.0, 3.4) | blob(2, 21, 2.0, 3.0), YARD)
+S.ground(b, ellipse(2, 13.5, 2.0, 3.4) | ellipse(2, 21, 2.0, 3.0), S.PATH)
 b.scene("oven_yard", "slots")
-paint(blob(27, 16.5, 1.9, 5.4), YARD)
+S.ground(b, ellipse(27, 16.5, 1.9, 5.4), S.PATH)
 b.scene("belt_yard", "slots")
-paint(blob(12, 26, 5.0, 1.9), YARD)
+S.ground(b, ellipse(12, 26, 5.0, 1.9), S.PATH)
 
 # flower beds along the fence and at the paths (podzol, flowers, ferns)
 b.scene("gate_bed_west", "fence")
