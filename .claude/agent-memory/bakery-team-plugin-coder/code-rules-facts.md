@@ -31,7 +31,8 @@ Checked against the tidy layout (feature/tidy, 2026-10-23). Package map: `docs/a
   (ground = -N..-1). `design.corner(min)`/`size()` = whole box incl. ground (backups); house box = base up
   (`houseHeight()`), `Plot.Box.ground` = N so `HouseShapes` adds the ground layers to the cinematic.
 - Design block data goes through `house/setup/DesignBlocks.create` (leaves forced persistent); restores don't.
-- `plot/LiquidGuard` cancels BlockFromToEvent inside `mayContainPlot` bounds.
+- `plot/LiquidGuard` cancels BlockFromToEvent only inside `PlotRegistry.inPasteArea` (per-plot regions + house ground),
+  never the `mayContainPlot` union box (Gandalf HIGH: froze natural water between plots). HousePlacer calls a plotChanged hook.
 - Decor y -1/-2 uses `DecorKeepOut.groundReason` (ring, house box no margin, belt cells only).
 
 **Engine behaviour**

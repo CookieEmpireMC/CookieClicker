@@ -10,17 +10,21 @@
 3. Writes one Chunky scene per shot (y range -64.., camera from Minecraft yaw/pitch) and renders it headlessly.
    Output: <shots>/<design>_<shot>.png.
 
-Starts the review server when RCON doesn't answer (and leaves it running); never stops a running one.
+Starts the review server when RCON doesn't answer (and leaves it running); never stops a running one. Before a
+start it makes server.properties loopback-only (server-ip=127.0.0.1, refused if it names another address) with RCON
+on and a random password kept in <home>/rcon.password (owner-only), which the client then uses.
 Paths (env): BAKERY_REVIEW_HOME (default ~/bakery-review), BAKERY_REVIEW_SERVER (<home>/server),
 BAKERY_REVIEW_CHUNKY (<home>/chunky), BAKERY_REVIEW_TEXTURES (<chunky>/home/resources/minecraft.jar),
 BAKERY_REVIEW_SCENES (<home>/scenes), BAKERY_REVIEW_SHOTS (<home>/shots), BAKERY_REVIEW_JAVA (java on PATH),
-BAKERY_RCON_HOST (127.0.0.1), BAKERY_RCON_PORT (25575), BAKERY_RCON_PASSWORD (review).
+BAKERY_RCON_HOST (loopback only, 127.0.0.1), BAKERY_RCON_PORT (25575), BAKERY_RCON_PASSWORD (overrides the
+stored password).
 """
 import argparse
 import glob
 import json
 import math
 import os
+import secrets
 import shutil
 import subprocess
 import sys
@@ -49,6 +53,7 @@ def paths():
     home = env_path("BAKERY_REVIEW_HOME", "~/bakery-review")
     chunky = env_path("BAKERY_REVIEW_CHUNKY", os.path.join(home, "chunky"))
     return {
+        "home": home,
         "server": env_path("BAKERY_REVIEW_SERVER", os.path.join(home, "server")),
         "chunky": chunky,
         "textures": env_path("BAKERY_REVIEW_TEXTURES", os.path.join(chunky, "home", "resources", "minecraft.jar")),
@@ -58,30 +63,105 @@ def paths():
     }
 
 
-def rcon_args():
+LOOPBACK = ("127.0.0.1", "localhost", "::1")
+PASSWORD_FILE = "rcon.password"
+
+
+def rcon_endpoint():
     host = os.environ.get("BAKERY_RCON_HOST", "127.0.0.1")
-    if host not in ("127.0.0.1", "localhost", "::1"):
+    if host not in LOOPBACK:
         sys.exit("BAKERY_RCON_HOST must be a loopback address: RCON stays bound to 127.0.0.1")
-    return host, int(os.environ.get("BAKERY_RCON_PORT", "25575")), os.environ.get("BAKERY_RCON_PASSWORD", "review")
+    return host, int(os.environ.get("BAKERY_RCON_PORT", "25575"))
 
 
 # ---------------------------------------------------------------- server
 
+def read_properties(path):
+    """server.properties as (lines, {key: value})."""
+    if not os.path.exists(path):
+        return [], {}
+    with open(path, encoding="utf-8") as f:
+        lines = f.read().splitlines()
+    values = {}
+    for line in lines:
+        if line and not line.lstrip().startswith("#") and "=" in line:
+            k, v = line.split("=", 1)
+            values[k.strip()] = v.strip()
+    return lines, values
+
+
+def write_properties(path, lines, updates):
+    """Sets `updates` in server.properties, keeping every other line as it is."""
+    todo = dict(updates)
+    out = []
+    for line in lines:
+        key = line.split("=", 1)[0].strip() if "=" in line and not line.lstrip().startswith("#") else None
+        if key in todo:
+            out.append(f"{key}={todo.pop(key)}")
+        else:
+            out.append(line)
+    out.extend(f"{k}={v}" for k, v in todo.items())
+    with open(path, "w", encoding="utf-8") as f:
+        f.write("\n".join(out) + "\n")
+
+
+def check_loopback(values, props):
+    ip = values.get("server-ip", "")
+    if ip and ip not in LOOPBACK:
+        sys.exit(f"{props} has server-ip={ip}; the review server must bind to 127.0.0.1 only. Refusing.")
+    return bool(ip)
+
+
+def stored_password(home):
+    """The review RCON password kept in BAKERY_REVIEW_HOME (created random, owner-only, on first use)."""
+    path = os.path.join(home, PASSWORD_FILE)
+    if os.path.exists(path):
+        with open(path, encoding="utf-8") as f:
+            pw = f.read().strip()
+        if pw:
+            return pw
+    pw = secrets.token_urlsafe(24)
+    os.makedirs(home, exist_ok=True)
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
+        f.write(pw + "\n")
+    return pw
+
+
 def ensure_server(p):
-    host, port, pw = rcon_args()
-    if reachable(host, port, pw):
-        return
+    """(host, port, password) of a running loopback-only review server; starts one when RCON doesn't answer.
+
+    A running server is never touched: it is used with whichever password it was started with (the stored one, or
+    the one still in server.properties from before the random password existed). Before a start, server.properties
+    gets server-ip=127.0.0.1 (refused when it names another address), enable-rcon=true, the port and the stored
+    random password, so an old fixed password is replaced on the next start.
+    """
+    host, port = rcon_endpoint()
+    props = os.path.join(p["server"], "server.properties")
+    lines, values = read_properties(props)
+    bound = check_loopback(values, props)
+    stored = os.environ.get("BAKERY_RCON_PASSWORD") or stored_password(p["home"])
+    for pw in dict.fromkeys([stored, values.get("rcon.password", "")]):
+        if pw and reachable(host, port, pw):
+            if not bound:
+                sys.exit(f"A server answers RCON but {props} has no server-ip=127.0.0.1; fix it and restart it.")
+            if pw != stored:
+                print("  the running server still uses its old RCON password; it switches to the stored random "
+                      "one on its next start by this tool")
+            return host, port, pw
     jar = os.path.join(p["server"], "paper.jar")
     if not os.path.exists(jar):
         sys.exit(f"Review server not running and no {jar}; set BAKERY_REVIEW_SERVER")
+    write_properties(props, lines, {"server-ip": "127.0.0.1", "enable-rcon": "true", "rcon.port": str(port),
+                                    "rcon.password": stored, "broadcast-rcon-to-ops": "false"})
     log = open(os.path.join(p["server"], "review-server.log"), "ab")
     print(f"Starting the review server in {p['server']} (it keeps running; stop it with RCON 'stop')")
     subprocess.Popen([p["java"], "-Xms1G", "-Xmx2G", "-jar", jar, "--nogui"], cwd=p["server"], stdout=log,
                      stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, start_new_session=True)
     for _ in range(180):
         time.sleep(1)
-        if reachable(host, port, pw):
-            return
+        if reachable(host, port, stored):
+            return host, port, stored
     sys.exit("The review server did not open RCON within 180 s; see review-server.log")
 
 
@@ -92,8 +172,8 @@ def attached(data):
     return any(k in ident for k in ATTACHED)
 
 
-def place(plan):
-    host, port, pw = rcon_args()
+def place(plan, endpoint):
+    host, port, pw = endpoint
     min_x, min_z, max_x, max_z = plan.box
     x1, z1, x2, z2 = min_x - CLEAR_MARGIN, min_z - CLEAR_MARGIN, max_x + CLEAR_MARGIN, max_z + CLEAR_MARGIN
     low = min([y for _, y, _ in plan.blocks] + [plan.y0 - 3])
@@ -117,6 +197,7 @@ def place(plan):
                     print(f"  setblock {x} {y} {z} {data} -> {out}", file=sys.stderr)
         print(f"Placed {len(order)} blocks ({errors} errors)")
         print(r.cmd("save-all flush") or "saved")
+        r.cmd(f"forceload remove {x1} {z1} {x2} {z2}")
         time.sleep(1)
 
 
@@ -206,8 +287,7 @@ def main(argv=None):
     for problem in plan.problems:
         print(f"  {problem}")
     if not a.no_place:
-        ensure_server(p)
-        place(plan)
+        place(plan, ensure_server(p))
     if a.no_render:
         return
     cams = plot_plan.shots(plan)
