@@ -99,4 +99,43 @@ class DecorKeepOutTest {
         List<String> problems = new ArrayList<>();
         assertEquals(decor.blocks().size(), withSlots.allowed(decor, problems).size(), problems.toString());
     }
+
+    @Test
+    void groundDecorMayUseTheWalkAndSlotsButNotTheHouseBoxOrTheBelt() throws Exception {
+        HouseDesign design = factory();
+        HouseLayout layout = design.layout();
+        assertNotNull(layout);
+        DecorKeepOut k = DecorKeepOut.of(design);
+        assertNotNull(k);
+        assertNull(k.groundReason(13, 3), "the walk is open to paths and beds");
+        int[] house = design.toWorld(layout.houseAt(), 1, 0, 1);
+        assertEquals("the house design box", k.groundReason(house[0], house[2]));
+        assertEquals("the factory", k.reason(house[0], house[2]), "above ground the house is kept out as before");
+        // the belt's start (beltFrom) is inside the house box, so test its far end, which is outside the box
+        int[] belt = layout.beltTo();
+        assertNotNull(belt);
+        assertEquals("the belt", k.groundReason(belt[0], belt[2]));
+
+        YamlConfiguration y = new YamlConfiguration();
+        y.loadFromString(Files.readString(Path.of("src/main/resources/houses/building-slots.yml")));
+        BuildingSlots slots = BuildingSlots.parse(YamlFiles.toMap(y)).slots();
+        DecorKeepOut withSlots = DecorKeepOut.of(design, slots, VisualFallbacks.FOOTPRINTS);
+        assertNotNull(withSlots);
+        int slotCells = 0;
+        for (int x = 0; x < layout.sizeX(); x++) {
+            for (int z = 0; z < layout.sizeZ(); z++) {
+                if ("a building slot".equals(withSlots.reason(x, z))) {
+                    slotCells++;
+                    assertNull(withSlots.groundReason(x, z), "ground decor on a slot cell " + x + "," + z);
+                }
+            }
+        }
+        assertTrue(slotCells > 0, "the shipped slots cover some plot cells");
+
+        List<String> problems = new ArrayList<>();
+        Decor decor = new Decor(List.of(new Decor.Block(13, -1, 3, "minecraft:dirt_path"),
+                new Decor.Block(house[0], -1, house[2], "minecraft:dirt_path")));
+        assertEquals(1, k.allowed(decor, problems).size(), "the house box cell is refused, the walk cell is kept");
+        assertEquals(1, problems.size());
+    }
 }
