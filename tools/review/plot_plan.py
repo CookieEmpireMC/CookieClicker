@@ -12,6 +12,7 @@ If the Java planner changes, change this file with it.
 """
 import math
 import os
+import re
 
 import yaml
 
@@ -432,6 +433,8 @@ EYE = 1.62
 
 def shots(p):
     """{shot: (x, y, z, yaw, pitch)} for 'eye' (layout viewpoint), '34' (3/4 overview) and 'door' (close-up)."""
+    if not p.layout:
+        return _place_only_shots(p)
     min_x, min_z, max_x, max_z = p.box
     sx, sz = max_x - min_x + 1, max_z - min_z + 1
     centre = (min_x + sx / 2, p.y0 + 3, min_z + sz / 2)
@@ -462,5 +465,56 @@ def shots(p):
         vx, vz = ex - target[0], ez - target[2]
         n = math.hypot(vx, vz) or 1.0
         cam = (target[0] + 6 * vx / n, dy + EYE + 0.5, target[2] + 6 * vz / n)
+        out["door"] = cam + look(cam, target)
+    return out
+
+
+FACINGS = {"north": (0, -1), "south": (0, 1), "west": (-1, 0), "east": (1, 0)}
+FOV = 70.0  # Chunky's vertical field of view in the review scenes (review_render.scene)
+
+
+def door_facing(design):
+    """Horizontal unit vector the design's front faces: the `facing` of the block at points.door; north if unknown."""
+    door = design.points.get("door")
+    if door is not None:
+        x, y, z = (int(v) for v in door)
+        try:
+            ch = design.layers[y + design.ground][z][x]
+        except (IndexError, TypeError):
+            ch = None
+        m = re.search(r"facing=(\w+)", design.palette.get(ch, "")) if ch else None
+        if m and m.group(1) in FACINGS:
+            return FACINGS[m.group(1)]
+    return FACINGS["north"]
+
+
+def _place_only_shots(p):
+    """Shots for a design without a layout, framed on the house box (the plot box is the house box here)."""
+    min_x, min_z, max_x, max_z = p.box
+    sx, sz, sy = max_x - min_x + 1, max_z - min_z + 1, p.design.house_height()
+    cx, cz = min_x + sx / 2, min_z + sz / 2
+    centre = (cx, p.y0 + sy / 2, cz)
+    fx, fz = door_facing(p.design)
+    door = p.design.points.get("door")
+    target = None
+    if door is not None:
+        dx, dy, dz = p.design.to_world((p.ax, p.y0, p.az), *door)
+        target = (dx + 0.5, dy + 1.0, dz + 0.5)
+    out = {}
+    dist = 1.3 * max(sx, sz)
+    cam = (cx + fx * dist, p.y0 + 1.6, cz + fz * dist)
+    out["eye"] = cam + look(cam, target or centre)
+    # front-left as seen by someone in front of the house looking at it; 20 degrees up, far enough that a
+    # sphere around the box plus 3 blocks fits the vertical field of view
+    hx, hz = fx - fz, fz + fx
+    n = math.hypot(hx, hz)
+    radius = math.sqrt((sx + 6) ** 2 + (sy + 6) ** 2 + (sz + 6) ** 2) / 2
+    d = radius / math.sin(math.radians(FOV / 2))
+    up = math.radians(20)
+    cam = (centre[0] + hx / n * d * math.cos(up), centre[1] + d * math.sin(up),
+           centre[2] + hz / n * d * math.cos(up))
+    out["34"] = cam + look(cam, centre)
+    if target is not None:
+        cam = (target[0] + 4 * fx, dy + EYE, target[2] + 4 * fz)
         out["door"] = cam + look(cam, target)
     return out
