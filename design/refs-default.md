@@ -2,7 +2,7 @@
 
 (Lives at `design/refs-default.md` instead of `design/refs/default.md`: see `design/refs-factory.md`.)
 
-Style: English Tudor cottage: a stone plinth of two courses, plastered timber-framed walls, a mud-tile roof with dark oak
+Style: English Tudor cottage: a stone plinth of two courses, plastered timber-framed walls, a dark oak roof with spruce
 eaves, a lower service wing, one gable-end stack. Sources as in `design/refs-factory.md` (research note sections 2, 3).
 Original design.
 
