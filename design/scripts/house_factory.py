@@ -1,16 +1,13 @@
-"""The `factory` cookie works: a block list file for `/bakery house place factory`.
+"""The `factory` cookie works (Norman/Tudor bakehouse): a block list file for `/bakery house place factory`.
 
 Outputs:
-  src/main/resources/houses/factory.yml            (the design file the plugin parses)
-  design/scripts/previews/house_factory_layers.png (top view of every layer)
-  design/scripts/previews/house_factory_iso.png    (orthographic 3/4 views, front and back, front elevation)
-  design/scripts/previews/house_factory_plot.png   (top-down plot layout: belt, pedestal, shop, fence margin)
-  design/scripts/previews/house_factory_camera.png (the build cinematic's view from `layout.camera`, 16:9, FOV 70)
+  src/main/resources/houses/factory.yml                (the design file the plugin parses; ground-depth 1)
+  design/scripts/previews/house_factory_*.png          (textured previews, see design_views.py; layer sheet)
 Run with `mise run assets` (or `python design/scripts/house_factory.py` from the repo root).
-Deterministic. Spec: design/factory.md (format: design/house-default.md + list points).
+Deterministic. Spec: design/factory.md, style: design/style-guide.md "Block structures", refs: design/refs/factory.md.
 
-Design axes: x = west -> east (0..18), y = bottom -> top (0..16), z = north -> south (0..13).
-The front (door, sign, loading hatch) faces north (-Z).
+Design axes: x = west -> east (0..18), y = bottom -> top (0..16), z = north -> south (0..13); y -1 = the ground layer.
+The front (door, sign, loading hatch) faces north (-Z). ONE chimney (R11): the 2 x 2 oven stack.
 """
 from __future__ import annotations
 
@@ -18,671 +15,283 @@ import sys
 from pathlib import Path
 
 import yaml
-from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
-import house_lib  # noqa: E402
-from house_lib import KEEP, parse_block_data  # noqa: E402
-from voxel_render import project, render, render_perspective  # noqa: E402
-
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import belt_style  # noqa: E402
-import fence_style  # noqa: E402
+import blocks as B  # noqa: E402
+import build_lint  # noqa: E402
+import design_views  # noqa: E402
+import factory_layout as FL  # noqa: E402
+import house_lib  # noqa: E402
+from blocks import AIR, lg, plain as P, sl, st, stripped  # noqa: E402
+from build import Build, Ramp, Wall, door, gable_roof, stack, window  # noqa: E402
 
 OUT_YML = ROOT / "src/main/resources/houses/factory.yml"
 OUT_DIR = ROOT / "design/scripts/previews"
+SX, SY, SZ, SIZE, GROUND_DEPTH = FL.SX, FL.SY, FL.SZ, FL.SIZE, 1
 
-SX, SY, SZ = 19, 17, 14
-SIZE = (SX, SY, SZ)
-ORIGIN = (0, 0, 0)
-
-AIR = "minecraft:air"
-STONE, MOSSY, CHISELED = "minecraft:stone_bricks", "minecraft:mossy_stone_bricks", "minecraft:chiseled_stone_bricks"
-BRICK, TERRA, WTERRA = "minecraft:bricks", "minecraft:terracotta", "minecraft:white_terracotta"
-FLOOR, RIDGE = "minecraft:spruce_planks", "minecraft:dark_oak_planks"
-POST = "minecraft:spruce_log[axis=y]"
-BEAM_X, BEAM_Z = "minecraft:stripped_spruce_log[axis=x]", "minecraft:stripped_spruce_log[axis=z]"
-LOG_X = "minecraft:spruce_log[axis=x]"
-MAGMA, SHROOM = "minecraft:magma_block", "minecraft:shroomlight"
-COPPER, GRATE = "minecraft:waxed_cut_copper", "minecraft:waxed_copper_grate[waterlogged=false]"
-COPPER_SLAB = "minecraft:waxed_cut_copper_slab[type=bottom,waterlogged=false]"
-AWNING = "minecraft:waxed_copper_trapdoor[facing=north,half=top,open=false,powered=false,waterlogged=false]"
-ROD = "minecraft:waxed_lightning_rod[facing=up,powered=false,waterlogged=false]"
-CU_LANTERN = "minecraft:waxed_copper_lantern[hanging=false,waterlogged=false]"
-LANTERN_HANG = "minecraft:lantern[hanging=true,waterlogged=false]"
-LANTERN_STAND = "minecraft:lantern[hanging=false,waterlogged=false]"
-CAMPFIRE = "minecraft:campfire[facing=north,lit=true,signal_fire=false,waterlogged=false]"
-SIGN = "minecraft:dark_oak_wall_sign[facing=north,waterlogged=false]"
-BARREL_UP, BARREL_W = "minecraft:barrel[facing=up,open=false]", "minecraft:barrel[facing=west,open=false]"
-SACK, SACK_TOP = "minecraft:white_wool", "minecraft:white_carpet"
-SKYLIGHT = "minecraft:glass"
-POT_RED, POT_ORANGE = "minecraft:potted_red_tulip", "minecraft:potted_orange_tulip"
-ROOF_SLAB = "minecraft:dark_oak_slab[type=bottom,waterlogged=false]"
-
-
-def stairs(mat: str, facing: str, half: str = "bottom") -> str:
-    return f"minecraft:{mat}_stairs[facing={facing},half={half},shape=straight,waterlogged=false]"
-
-
-def door(facing: str, half: str) -> str:
-    return f"minecraft:spruce_door[facing={facing},half={half},hinge=left,open=false,powered=false]"
-
-
-# connectable blocks: the generator fills in the connection flags from the neighbours
-PANE, BARS, FENCE = "pane", "bars", "fence"
-CONNECT_ID = {PANE: "glass_pane", BARS: "waxed_copper_bars", FENCE: "spruce_fence"}
-
-# main hall: walls x=6..14, z=2..10; roof gable with the ridge along z (x=10)
-ROOF = {5: 6, 6: 7, 7: 8, 8: 9, 9: 10, 10: 10, 11: 10, 12: 9, 13: 8, 14: 7, 15: 6}
-# west annex (oven house) lean-to: x -> roof y, sloping down to the west
-ANNEX_ROOF = {0: (3, "stair"), 1: (4, "slab"), 2: (4, "stair"), 3: (5, "slab"), 4: (5, "stair"), 5: (5, "planks")}
-# east shed lean-to, sloping down to the east
-SHED_ROOF = {18: (3, "stair"), 17: (4, "slab"), 16: (4, "stair"), 15: (5, "slab")}
-
-POINTS = {
-    "smoke": [[16, 16, 12], [4, 12, 4]],      # tall boiler stack, short oven stack
-    "steam": [[10, 13, 6], [13, 10, 8]],      # ridge vent (cupola), copper pipe on the east slope
-    "belt_out": [12, 0, 1],                   # first belt cell outside the loading hatch; belt runs north (-Z)
-    "door": [8, 1, 2],                        # lower half of the front door
+# --- materials: every one is a ramp of 3+ blocks (R6/R7) -----------------------------------------------------------------
+STONE = Ramp(P("stone_bricks"), [(P("cracked_stone_bricks"), .14, None), (P("mossy_stone_bricks"), .17, "low"),
+                                 (P("andesite"), .08, None)], seed=3)
+PLINTH = Ramp(P("cobblestone"), [(P("mossy_cobblestone"), .25, "low"), (P("andesite"), .15, None)], seed=4)
+PLASTER = Ramp(P("white_terracotta"), [(P("calcite"), .16, "high"), (P("light_gray_terracotta"), .18, "low")], seed=5,
+               height=3, y0=5)
+BRICK = Ramp(P("bricks"), [(P("red_nether_bricks"), .12, None), (P("mud_bricks"), .12, None)], seed=6)
+ROOF = Ramp("spruce", [("dark_oak", .12, None), ("mud_brick", .07, None)], seed=8, height=12)
+FLOOR = Ramp(P("spruce_planks"), [(P("oak_planks"), .22, None), (P("dark_oak_planks"), .15, None)], seed=9)
+GROUND = Ramp(P("gravel"), [(P("coarse_dirt"), .26, None), (P("dirt_path"), .10, None), (P("podzol[snowy=false]"), .07, None)], seed=11)
+RAMPS = {
+    "stone": ["stone_bricks", "cracked_stone_bricks", "mossy_stone_bricks", "andesite"],
+    "plinth": ["cobblestone", "mossy_cobblestone", "andesite"],
+    "plaster": ["white_terracotta", "calcite", "light_gray_terracotta"],
+    "brick": ["bricks", "red_nether_bricks", "mud_bricks"],
+    "timber": ["dark_oak_log", "stripped_dark_oak_log", "dark_oak_planks"],
+    "roof": ["spruce_stairs", "dark_oak_stairs", "mud_brick_stairs"],
+    "floor": ["spruce_planks", "oak_planks", "dark_oak_planks"],
 }
-SIGNS = [{"at": [10, 4, 1], "lines": ["", "Cookie Works", "", ""]}]
+BEAM = "dark_oak"
+POT_FLOWERS = ["potted_poppy", "potted_cornflower", "potted_azure_bluet", "potted_oxeye_daisy"]
 
 
-def build() -> dict[tuple[int, int, int], str]:
-    g: dict[tuple[int, int, int], str] = {}
+def beam(axis: str) -> str:
+    return stripped(BEAM, axis)
 
-    def put(x, y, z, data):
-        assert 0 <= x < SX and 0 <= y < SY and 0 <= z < SZ, (x, y, z)
-        g[(x, y, z)] = data
 
-    # ---------------- main hall ----------------
-    hall_x, hall_z = range(6, 15), range(2, 11)
-    mossy = {(6, 5), (9, 10), (14, 3), (13, 10), (6, 9)}
-    for x in hall_x:
-        for z in hall_z:
-            edge = x in (6, 14) or z in (2, 10)
-            put(x, 0, z, (MOSSY if (x, z) in mossy else STONE) if edge else FLOOR)
-            if not edge:
-                for y in range(1, ROOF[x]):
-                    put(x, y, z, AIR)
-                continue
-            for y in range(1, 5):
-                corner = x in (6, 14) and z in (2, 10)
-                put(x, y, z, STONE if corner and y % 2 == 1 else BRICK)     # stone quoins on the corners
-            put(x, 5, z, TERRA)                                              # terracotta string course
-            put(x, 6, z, BEAM_Z if x in (6, 14) and z not in (2, 10) else BEAM_X)
-    # gables (front z=2, back z=10): white terracotta with spruce timbers under the roof line
-    for z in (2, 10):
-        for x in hall_x:
-            for y in range(7, ROOF[x]):
-                put(x, y, z, POST if y == ROOF[x] - 1 and x != 10 else WTERRA)
-    for x, y in ((10, 7), (9, 8), (10, 8), (11, 8), (10, 9)):                # rose window, front gable
-        put(x, y, 2, PANE)
-    put(10, 8, 10, PANE)                                                     # back gable window
+def build() -> Build:
+    b = Build(SIZE, ground=GROUND_DEPTH)
+    n = b.notes
+    put, fill = b.put, b.fill
 
-    # roof: dark oak stairs, plank ridge with a slab cap, overhang 1 all round (z=1..11)
-    for z in range(1, 12):
-        for x, y in ROOF.items():
-            if x == 10:
-                put(x, y, z, RIDGE)
-                put(x, y + 1, z, ROOF_SLAB)
-            else:
-                put(x, y, z, stairs("dark_oak", "east" if x < 10 else "west"))
-    for x in (8, 12):                                                        # skylights in both slopes
-        for z in (4, 5, 7, 8):
-            put(x, ROOF[x], z, SKYLIGHT)
-    for z in (5, 6, 7):                                                      # ridge vent: copper louvre + cap
-        put(10, 11, z, GRATE)
-        put(10, 12, z, COPPER_SLAB)
-    put(13, 9, 8, ROD)                                                       # copper steam pipe, east slope
-
-    # front (z=2): door bay (west), timber post, loading hatch bay (east)
-    put(8, 1, 2, door("north", "lower")); put(8, 2, 2, door("north", "upper"))
-    put(8, 0, 1, stairs("stone_brick", "south"))                             # step up to the door
-    for x in (7, 9):
-        put(x, 2, 2, PANE); put(x, 3, 2, PANE)
-    for y in range(1, 5):
-        put(10, y, 2, POST)
-    put(12, 0, 2, AIR); put(12, 1, 2, AIR)                                   # loading hatch opening
-    for x in (11, 12, 13):
-        put(x, 2, 2, COPPER)                                                 # copper lintel
-        put(x, 3, 2, PANE)                                                   # wide window over the hatch
-        put(x, 1, 1, AWNING)                                                 # copper awning over the hatch
-    for x in (6, 14):                                                        # corner pilasters + lanterns
-        put(x, 0, 1, STONE)
-        for y in range(1, 5):
-            put(x, y, 1, BRICK)
-        put(x, 5, 1, CHISELED)
-        put(x, 6, 1, CU_LANTERN)
-    for x in (7, 8, 9):
-        put(x, 3, 1, ROOF_SLAB)                                              # door canopy
-    put(9, 2, 1, LANTERN_HANG)
-    for x in (9, 10, 11):
-        put(x, 4, 1, SIGN)                                                   # signboard (text on the middle one)
-    put(7, 0, 1, POT_RED); put(9, 0, 1, POT_ORANGE)
-    put(13, 0, 1, BARREL_UP)
-
-    # back (z=10): small door, windows
-    put(11, 1, 10, door("south", "lower")); put(11, 2, 10, door("south", "upper"))
-    put(11, 0, 11, stairs("stone_brick", "north"))
-    for x in (7, 8, 13):
-        put(x, 2, 10, PANE); put(x, 3, 10, PANE)
-    # sides: tall windows on the east wall (x=14); the west wall is covered by the annex
-    for z in (4, 6):
-        for y in (2, 3, 4):
-            put(14, y, z, PANE)
-    for z in (8, 9):
-        put(14, 2, z, PANE); put(14, 3, z, PANE)
-
-    # ---------------- west annex: the oven house ----------------
-    for x in range(0, 6):
-        ry, kind = ANNEX_ROOF[x]
+    # ================= bake hall: x6..14, z2..10 =================
+    for x in range(6, 15):
         for z in range(2, 11):
-            put(x, ry, z, {"stair": stairs("dark_oak", "east"), "slab": ROOF_SLAB, "planks": RIDGE}[kind])
-    for x in range(1, 6):
-        top = ANNEX_ROOF[x][0] - 1
-        for z in range(3, 10):
-            edge = x == 1 or z in (3, 9)
-            put(x, 0, z, STONE if edge else FLOOR)
-            for y in range(1, top + 1):
-                put(x, y, z, BRICK if edge else AIR)
-    put(2, 2, 3, PANE)                                                       # front window
-    put(1, 2, 6, PANE)                                                       # west window
-    # oven: copper bars in front, campfire + magma bed, shroomlight glow at the back
-    for x in (3, 4):
-        put(x, 1, 3, BARS); put(x, 2, 3, BARS)
-        put(x, 3, 3, CHISELED)
-        put(x, 1, 5, MAGMA); put(x, 2, 5, SHROOM)
-        put(x, 2, 4, AIR)
-        put(x, 3, 4, BRICK)
-    put(3, 1, 4, MAGMA); put(4, 1, 4, CAMPFIRE)
-    for y in (1, 2):
-        put(2, y, 4, BRICK); put(5, y, 4, BRICK)
-    # short oven stack right above the fire, with a corbelled crown
-    for y in range(3, 12):
-        put(4, y, 4, BRICK)
-    put(4, 10, 3, stairs("brick", "south", "top")); put(4, 10, 5, stairs("brick", "north", "top"))
-    put(3, 10, 4, stairs("brick", "east", "top")); put(5, 10, 4, stairs("brick", "west", "top"))
-    for x, z in ((3, 3), (5, 3), (3, 5), (5, 5)):                           # square cap, not a cross
-        put(x, 10, z, "minecraft:brick_slab[type=top,waterlogged=false]")
-    put(4, 12, 4, AIR)                                                       # smoke cell
-
-    # ---------------- east shed (flour store) ----------------
-    for x, (ry, kind) in SHED_ROOF.items():
-        for z in range(2, 9):
-            put(x, ry, z, stairs("dark_oak", "west") if kind == "stair" else ROOF_SLAB)
+            edge = x in (6, 14) or z in (2, 10)
+            put(x, 0, z, PLINTH.pick(x, 0, z) if edge else FLOOR.pick(x, 0, z))
+            if edge:
+                for y in (1, 2, 3):
+                    put(x, y, z, STONE.pick(x, y, z))
+                put(x, 4, z, STONE.pick(x, 4, z) if z == 2 else beam("x" if z == 10 else "z"))   # fascia / string course
+            else:
+                fill(x, 1, z, x, 8, z, AIR)
+    # upper floor ring: north row at z=1 (the jetty), south z=10, sides x=6/14
+    ring_up = [(x, 1) for x in range(6, 15)] + [(x, 10) for x in range(6, 15)] + \
+              [(6, z) for z in range(2, 10)] + [(14, z) for z in range(2, 10)]
+    for (x, z) in ring_up:
+        for y in (5, 6, 7):
+            put(x, y, z, PLASTER.pick(x, y, z))
+        put(x, 8, z, beam("x" if z in (1, 10) else "z"))                       # top plate
+    for x in range(6, 15):
+        put(x, 5, 1, beam("x"))                                               # jetty bressumer
+    # timber frame: corner posts + close studs (every 2nd block) on all four upper walls
+    for (x, z) in ((6, 1), (14, 1), (6, 10), (14, 10)):
+        for y in (6, 7):
+            put(x, y, z, lg(BEAM, "y"))
+    for z in (1, 10):                                                          # square panels: posts at 6, 10, 14
+        for y in (6, 7):
+            put(10, y, z, lg(BEAM, "y"))
+    for x in (6, 14):
+        for y in (5, 6, 7):
+            put(x, y, 5, lg(BEAM, "y"))
+    for x in (7, 13):                                                          # short braces under the plate
+        for z in (1, 10):
+            put(x, 7, z, P("dark_oak_planks"))
+    # ---- north facade: ground plane z=2 (WN), upper plane z=1 (WU)
+    WN = Wall(b, "north", "east", (0, 2))
+    WU = Wall(b, "north", "east", (0, 1))
+    for x in (6, 14):                                                          # pilasters carry the jetty
+        for y in range(0, 4):
+            put(x, y, 1, (PLINTH if y == 0 else STONE).pick(x, y, 1))
+        put(x, 4, 1, P("chiseled_stone_bricks"))
+    door(WN, 8, 1, mat="spruce", hood=False)
+    put(8, 0, 1, st("stone_brick", "south"))                                   # step
+    put(7, 0, 1, P("potted_red_tulip")); put(9, 0, 1, P("potted_orange_tulip"))
+    for x in (7, 8, 12, 13):                                                   # jetty brackets (inverted stairs)
+        put(x, 4, 1, WN.stair(BEAM, "top", "in"))
+    put(8, 3, 1, B.lantern(True))
+    for x in (9, 10, 11):
+        put(x, 4, 1, B.wall_sign("spruce", "north"))                           # signboard, text on the middle one
+    # loading hatch: opening x12 y0..1, timber jambs, copper lintel + awning, wide window above
+    fill(12, 0, 2, 12, 1, 2, AIR)
+    put(11, 1, 2, lg(BEAM, "y")); put(13, 1, 2, lg(BEAM, "y"))
+    for x in (11, 12, 13):
+        put(x, 2, 2, P("waxed_cut_copper"))
+        put(x, 1, 1, P("waxed_copper_trapdoor[facing=north,half=top,open=false,powered=false,waterlogged=false]"))
+    window(WN, 11, 3, width=3, shutters=None, box="potted_poppy", sill="spruce")
+    put(13, 0, 1, B.barrel())
+    # upper north windows: 4 tall narrow ones in the stud bays, flower boxes, lit
+    for i, x in enumerate((8, 12)):
+        window(WU, x, 6, height=2, shutters=None, box=POT_FLOWERS[i])
+    # gable north (plane z=1)
+    def gable(wall: Wall, prof: dict, centre: int):
+        for x in range(7, 14):
+            for y in range(9, prof[x]):
+                wall.put(x, y, 0, PLASTER.pick(*wall.xyz(x, y, 0)))
+        for y in (9, 11):
+            wall.put(10, y, 0, lg(BEAM, "y"))
+        window(wall, 10, 10, shutters=BEAM, box="potted_cornflower", sill="spruce")
+    # ---- roof: spruce eave + rake, dark oak field, ridge beam + slab cap
+    pr = gable_roof(b, axis="z", w0=6, w1=14, a0=0, a1=11, y_eave=8, field="spruce", eave="dark_oak", rake="dark_oak",
+                    ridge=stripped("spruce", "z"), cap=sl("dark_oak"), name="hall",
+                    ramp_pick=lambda x, y, z: ROOF.pick(x, y, z))
+    gable(WU, pr["profile"], pr["centre"])
+    WS = Wall(b, "south", "east", (0, 10))
+    gable(WS, pr["profile"], pr["centre"])
+    for z in (5, 6, 7):                                                        # flush ridge louvre (not a chimney)
+        put(10, 12, z, P("waxed_copper_grate[waterlogged=false]"))
+        b.g.pop((10, 13, z), None)
+    # ---- south (back) facade
+    window(WS, 8, 2, height=2, box="potted_azure_bluet")
+    door(WS, 11, 1, mat="spruce", hood=False)
+    put(11, 0, 11, st("stone_brick", "north"))
+    for i, x in enumerate((8, 12)):
+        window(WS, x, 6, height=2, shutters=None, box=POT_FLOWERS[(i + 2) % 4])
+    # ---- east facade (x=14): ground windows inside the shed, upper windows
+    WE = Wall(b, "east", "south", (14, 0))
     for z in (3, 7):
-        for y in (0, 1, 2):
-            put(18, y, z, FENCE)
-    put(17, 0, 4, BARREL_UP); put(17, 1, 4, BARREL_UP); put(17, 0, 6, BARREL_W)
-    put(16, 0, 4, SACK); put(16, 0, 5, SACK); put(17, 0, 5, SACK); put(16, 1, 4, SACK); put(16, 1, 5, SACK_TOP)
-    put(16, 3, 5, LANTERN_HANG)
+        window(WE, z, 2, height=2, box=None, sill="spruce")
+    for z in (3, 7):
+        window(WE, z, 6, height=2, shutters=None, box=POT_FLOWERS[z % 4])
+    # ---- west facade (x=6): upper windows beyond the annex roof
+    WW = Wall(b, "west", "south", (6, 0))
+    for z in (3, 8):
+        window(WW, z, 6, height=2, shutters=None, box=POT_FLOWERS[(z + 1) % 4])
 
-    # ---------------- tall boiler stack (back east) ----------------
-    cx, cz = 16, 12
-    for y in range(0, 3):
-        for x in range(cx - 1, cx + 2):
-            for z in range(cz - 1, cz + 2):
-                put(x, y, z, STONE)
-    plus = [(cx, cz), (cx - 1, cz), (cx + 1, cz), (cx, cz - 1), (cx, cz + 1)]
-    for y in range(3, 16):
-        for x, z in plus:
-            put(x, y, z, COPPER if y == 9 else BRICK)
-    for x in range(cx - 1, cx + 2):                                          # crown ring, hollow centre
-        for z in range(cz - 1, cz + 2):
-            put(x, 16, z, AIR if (x, z) == (cx, cz) else BRICK)
-    for y in range(0, 3):
-        put(15, y, 10, BRICK)                                                # flue duct to the hall
-    put(15, 3, 10, "minecraft:brick_slab[type=bottom,waterlogged=false]")
+    # ================= oven house (west annex): x1..5, z4..8 =================
+    for x in range(1, 6):
+        for z in range(4, 9):
+            edge = x == 1 or z in (4, 8)
+            put(x, 0, z, PLINTH.pick(x, 0, z) if edge else FLOOR.pick(x, 0, z))
+            if edge:
+                for y in (1, 2):
+                    put(x, y, z, STONE.pick(x, y, z))
+                put(x, 3, z, beam("x" if z in (4, 8) else "z"))
+            else:
+                fill(x, 1, z, x, 3, z, AIR)
+    WA = Wall(b, "north", "east", (0, 4))
+    for x in (4, 5):
+        for y in (1, 2):
+            put(x, y, 4, "@waxed_copper_bars")
+        put(x, 3, 4, P("chiseled_stone_bricks"))
+        put(x, 1, 6, P("magma_block")); put(x, 2, 6, P("shroomlight"))
+    put(5, 1, 5, P("magma_block")); put(4, 1, 5, B.campfire(True))
+    fill(4, 2, 5, 5, 2, 5, AIR)
+    window(WA, 2, 2, shutters="spruce", box="potted_dandelion")
+    WAW = Wall(b, "west", "south", (1, 0))
+    window(WAW, 6, 2, shutters="spruce", box="potted_red_tulip")
+    ar = gable_roof(b, axis="x", w0=4, w1=8, a0=0, a1=5, y_eave=3, field="spruce", eave="dark_oak", rake="dark_oak",
+                    ridge=stripped("spruce", "x"), cap=sl("dark_oak"), name="oven_house", rake_ends=(True, False),
+                    ramp_pick=lambda x, y, z: ROOF.pick(x, y, z))
+    for z in (5, 6, 7):
+        put(1, 4, z, PLASTER.pick(1, 4, z))
+    put(5, 6, 6, None)
+    b.g.pop((5, 6, 6), None)
+    # ---- the ONE chimney: 2 x 2 oven stack at x4..5, z5..6 against the hall's west wall
+    smoke = stack(b, 4, 5, y0=3, y_top=14, base=STONE, shaft=BRICK, name="oven_stack")
 
-    # ---------------- yard props ----------------
-    put(1, 0, 2, BARREL_UP); put(1, 1, 2, BARREL_UP); put(2, 0, 2, SACK)
-    put(0, 0, 4, SACK); put(0, 0, 5, SACK); put(0, 1, 4, SACK_TOP)
-    for x in (2, 3, 4):
-        put(x, 0, 10, LOG_X)                                                 # firewood under the annex eave
-    put(3, 1, 10, LOG_X)
-    for x in (5, 15):                                                        # lamp posts framing the front
-        put(x, 0, 0, FENCE); put(x, 1, 0, FENCE); put(x, 2, 0, LANTERN_STAND)
-    return g
+    # ================= flour shed (east lean-to) =================
+    for x in range(15, 18):
+        for z in range(2, 9):
+            put(x, 0, z, PLINTH.pick(x, 0, z))
+            for y in (1, 2, 3):
+                if (x, y, z) not in b.g:
+                    put(x, y, z, AIR)
+    for z in (2, 5, 8):
+        fill(17, 0, z, 17, 2, z, lg(BEAM, "y"))
+    for z in range(2, 9):
+        put(17, 3, z, beam("z"))
+    for z in (3, 4, 6, 7):
+        put(17, 0, z, "@stone_brick_wall")
+    eave, field = [], []
+    for z in range(1, 10):
+        rake = z in (1, 9)
+        put(18, 3, z, st("spruce", "west")); eave.append((18, 3, z))
+        put(17, 4, z, sl("spruce" if rake else "dark_oak")); field.append((17, 4, z))
+        put(16, 4, z, st("spruce" if rake else "dark_oak", "west")); field.append((16, 4, z))
+        put(15, 4, z, sl("spruce" if rake else "dark_oak")); field.append((15, 4, z))
+    b.notes.roofs.append({"name": "shed", "eave": eave, "field": field, "overhang": 1})
+    b.notes.roof_cells |= set(eave) | set(field)
+    put(16, 3, 5, B.lantern(True))
+    put(16, 0, 3, B.barrel()); put(16, 1, 3, B.barrel()); put(16, 0, 7, B.barrel("west"))
+    for p in ((15, 0, 4), (15, 0, 5), (16, 0, 5), (15, 1, 4)):
+        put(*p, P("white_wool"))
+    put(15, 1, 5, P("white_carpet"))
+    b.volume("hall", (6, 2, 14, 10), 13)
+    b.volume("oven_house", (1, 4, 5, 8), 6)
+    b.volume("flour_shed", (15, 2, 18, 8), 4)
 
-
-def resolve_connections(g: dict) -> None:
-    """Fill in pane/bars/fence connection flags from the neighbours (same rule the validator checks)."""
-    def bid(p):
-        v = g.get(p, AIR)
-        return v if v in CONNECT_ID else parse_block_data(v)[0]
-
-    def fam(b):
-        return {PANE: "pane", BARS: "pane", FENCE: "wood_fence"}.get(b) or house_lib.family(b)
-
-    out = {}
-    for p, v in g.items():
-        if v not in CONNECT_ID:
-            continue
-        flags = {}
-        for d in ("east", "north", "south", "west"):
-            dx, _, dz = house_lib.DIRS[d]
-            nb = bid((p[0] + dx, p[1], p[2] + dz))
-            flags[d] = "true" if house_lib.is_solid(nb) or fam(nb) == fam(v) else "false"
-        flags["waterlogged"] = "false"
-        out[p] = f"minecraft:{CONNECT_ID[v]}[" + ",".join(f"{k}={flags[k]}" for k in sorted(flags)) + "]"
-    g.update(out)
-
-
-# preferred palette chars per block data (the rest get chars from POOL, in first-use order)
-PREFERRED = {
-    AIR: "_", STONE: "S", MOSSY: "M", CHISELED: "C", BRICK: "B", TERRA: "T", WTERRA: "W", FLOOR: "F",
-    RIDGE: "K", POST: "P", BEAM_X: "X", BEAM_Z: "Z", LOG_X: "l", MAGMA: "m", SHROOM: "g", COPPER: "c",
-    GRATE: "#", COPPER_SLAB: "u", AWNING: "a", ROD: "i", CU_LANTERN: "j", LANTERN_HANG: "L",
-    LANTERN_STAND: "k", CAMPFIRE: "f", SIGN: "H", BARREL_UP: "O", BARREL_W: "Q", SACK: "w", SACK_TOP: "y",
-    SKYLIGHT: "G", POT_RED: "r", POT_ORANGE: "o", ROOF_SLAB: "=",
-    stairs("dark_oak", "east"): ">", stairs("dark_oak", "west"): "<",
-    stairs("stone_brick", "south"): "s", stairs("stone_brick", "north"): "n",
-    door("north", "lower"): "d", door("north", "upper"): "D", door("south", "lower"): "e", door("south", "upper"): "E",
-}
-POOL = "-|+1234567890bhpqtvxzANRUVY"
-
-
-def to_palette(g: dict) -> tuple[dict, dict]:
-    """grid of block data -> grid of chars + palette (deterministic: scan order x, y, z)."""
-    palette: dict[str, str] = {}
-    rev: dict[str, str] = {}
-    pool = iter(POOL)
-    for p in sorted(g, key=lambda p: (p[1], p[2], p[0])):
-        data = g[p]
-        if data in rev:
-            continue
-        c = PREFERRED.get(data) or next(c for c in pool if c not in PREFERRED.values() and c not in palette)
-        assert c not in palette, (c, data)
-        palette[c] = data
-        rev[data] = c
-    ordered = dict(sorted(palette.items(), key=lambda kv: list(PREFERRED.values()).index(kv[0])
-                          if kv[0] in PREFERRED.values() else 100 + POOL.index(kv[0])))
-    return {p: rev[d] for p, d in g.items()}, ordered
+    ground_layer(b)
+    n.ramps = {k: [i for i in v] for k, v in RAMPS.items()}
+    n.plinth = {"blocks": RAMPS["plinth"], "courses": 1,
+                "ring": [(x, z) for x in range(6, 15) for z in range(2, 11) if x in (6, 14) or z in (2, 10)]}
+    n.body_box = (1, 1, 18, 11)
+    n.wall_rows = (1, 8)
+    n.ground_region = (-1, -1, SX, SZ)
+    n.seal = {(12, 0, 2), (12, 1, 2)}
+    n.exempt_windows = set()
+    return b, smoke
 
 
-# --- previews ----------------------------------------------------------------------------------
-# Approximate average colours of the vanilla textures, for previews only.
-BASE_COLOURS = {
-    "air": (255, 255, 255), "stone_bricks": (122, 121, 122), "mossy_stone_bricks": (108, 121, 94),
-    "chiseled_stone_bricks": (118, 117, 118), "bricks": (150, 82, 66), "terracotta": (152, 94, 67),
-    "white_terracotta": (209, 178, 161), "spruce_planks": (115, 85, 52), "dark_oak_planks": (66, 44, 22),
-    "spruce_log": (62, 44, 26), "stripped_spruce_log": (118, 90, 58), "magma_block": (190, 80, 30),
-    "shroomlight": (240, 150, 70), "waxed_cut_copper": (192, 107, 79), "waxed_copper_grate": (180, 100, 74),
-    "waxed_cut_copper_slab": (192, 107, 79), "waxed_copper_trapdoor": (190, 104, 76),
-    "waxed_lightning_rod": (200, 112, 82), "waxed_copper_lantern": (120, 200, 120), "lantern": (236, 178, 72),
-    "campfire": (250, 160, 50), "dark_oak_wall_sign": (78, 52, 28), "barrel": (125, 92, 54),
-    "white_wool": (234, 236, 236), "white_carpet": (234, 236, 236), "glass": (190, 220, 230),
-    "glass_pane": (178, 214, 226), "waxed_copper_bars": (190, 104, 76), "spruce_fence": (115, 85, 52),
-    "potted_red_tulip": (200, 60, 48), "potted_orange_tulip": (232, 130, 40), "dark_oak_slab": (78, 52, 28),
-    "dark_oak_stairs": (66, 44, 22), "stone_brick_stairs": (122, 121, 122), "brick_stairs": (150, 82, 66),
-    "brick_slab": (150, 82, 66), "spruce_door": (106, 80, 48),
-}
-
-
-def colour(data: str):
-    return BASE_COLOURS[parse_block_data(data)[0]]
-
-
-def boxes_for(data: str, x: int, y: int, z: int):
-    block, pr = parse_block_data(data)
-    col = BASE_COLOURS[block]
-    s = 1 / 16
-
-    def b(x1, y1, z1, x2, y2, z2, rgb=col):
-        return ((x + x1, y + y1, z + z1), (x + x2, y + y2, z + z2), rgb)
-
-    if block == "air":
-        return []
-    if block.endswith("_slab"):
-        return [b(0, 0, 0, 1, .5, 1)] if pr["type"] == "bottom" else [b(0, .5, 0, 1, 1, 1)]
-    if block.endswith("_stairs"):
-        lo, hi = (0, .5) if pr["half"] == "bottom" else (.5, 1)
-        part = {"north": (0, 0, 1, .5), "south": (0, .5, 1, 1), "east": (.5, 0, 1, 1), "west": (0, 0, .5, 1)}
-        x1, z1, x2, z2 = part[pr["facing"]]
-        ylo, yhi = (.5, 1) if pr["half"] == "bottom" else (0, .5)
-        return [b(0, lo, 0, 1, hi, 1), b(x1, ylo, z1, x2, yhi, z2)]
-    if block.endswith("_door"):
-        return [b(0, 0, 13 * s, 1, 1, 1)] if pr["facing"] == "north" else [b(0, 0, 0, 1, 1, 3 * s)]
-    if block.endswith("_trapdoor"):
-        return [b(0, 13 * s, 0, 1, 1, 1)]
-    if block in ("glass_pane", "waxed_copper_bars", "spruce_fence"):
-        w = 2 * s if block == "spruce_fence" else 1 * s
-        post = [b(.5 - w, 0, .5 - w, .5 + w, 1, .5 + w)]
-        arms = {"north": (.5 - w, 0, .5 + w, .5), "south": (.5 - w, .5, .5 + w, 1),
-                "west": (0, .5 - w, .5, .5 + w), "east": (.5, .5 - w, 1, .5 + w)}
-        for d, (x1, z1, x2, z2) in arms.items():
-            if pr[d] == "true":
-                if block == "spruce_fence":
-                    post += [b(x1, 6 * s, z1, x2, 9 * s, z2), b(x1, 12 * s, z1, x2, 15 * s, z2)]
-                else:
-                    post.append(b(x1, 0, z1, x2, 1, z2))
-        return post
-    if block.endswith("_wall_sign"):
-        return [b(0, 4.5 * s, 14 * s, 1, 12.5 * s, 1)]
-    if block.endswith("lantern"):
-        y0 = 1 * s if pr["hanging"] == "true" else 0
-        return [b(5 * s, y0, 5 * s, 11 * s, y0 + 7 * s, 11 * s),
-                b(7 * s, y0 + 7 * s, 7 * s, 9 * s, y0 + 9 * s, 9 * s, (60, 60, 66))]
-    if block == "campfire":
-        return [b(1 * s, 0, 1 * s, 15 * s, 4 * s, 15 * s, (90, 66, 40)), b(4 * s, 4 * s, 4 * s, 12 * s, 14 * s, 12 * s)]
-    if block.endswith("lightning_rod"):
-        return [b(6 * s, 0, 6 * s, 10 * s, 1, 10 * s)]
-    if block == "white_carpet":
-        return [b(0, 0, 0, 1, 1 * s, 1)]
-    if block.startswith("potted_"):
-        return [b(5 * s, 0, 5 * s, 11 * s, 6 * s, 11 * s, (142, 76, 56)), b(6 * s, 6 * s, 6 * s, 10 * s, 12 * s, 10 * s)]
-    return [b(0, 0, 0, 1, 1, 1)]
-
-
-# --- plot layout (contract: the `layout:` section) ----------------------------------------------
-# Plot cells relative to the plot's min corner: x west->east, z north->south, y 0 = first air layer
-# above the ground. The fence runs on the outer ring of plot-size. Design cell d lands on HOUSE_AT + d.
-PLOT_X, PLOT_Z = 31, 30
-HOUSE_AT = (6, 0, 10)
-MARGIN = 5                                           # free blocks between the design box and the fence
-BELT_LEN = 5
-
-
-def to_plot(p):
-    return (p[0] + HOUSE_AT[0], p[1] + HOUSE_AT[1], p[2] + HOUSE_AT[2])
-
-
-BELT_FROM = to_plot(POINTS["belt_out"])
-BELT_TO = (BELT_FROM[0], BELT_FROM[1], BELT_FROM[2] - (BELT_LEN - 1))   # last belt cell, next to the pedestal
-PEDESTAL = (BELT_TO[0], 0, BELT_TO[2] - 1)
-SHOP = (PEDESTAL[0] + 2, 0, PEDESTAL[2])
-CLICKS = (PEDESTAL[0] - 2, 0, PEDESTAL[2])        # click upgrades panel: mirror of the shop, 2 west
-VIEWPOINT = (15, 0, 2)
-# build-cinematic camera: a feet cell like the viewpoint (eye = cell bottom centre + 1.62), outside the plot in
-# front of the plot, north-east of the gate and raised, looking south-south-west and down: a 3/4 view of the facade
-# with the belt and pedestal in clear view (see design/conveyor-belt.md). Checked against a 4:3 screen (the
-# narrowest common one) at the default FOV 70, keeping 5% from the frame edge.
-CAMERA = (23, 12, -13)
-CAMERA_YAW, CAMERA_PITCH = 20, 24
-CAMERA_FOV, CAMERA_ASPECT, CAMERA_MARGIN = 70, 4 / 3, 0.95
-EYE_HEIGHT = 1.62
-ENTRANCE = (15, 0)                                   # gate centre on the front (north) ring, 3 wide
-LAYOUT = {
-    "plot-size": [PLOT_X, PLOT_Z],
-    "house-at": list(HOUSE_AT),
-    "pedestal": {"at": list(PEDESTAL), "yaw": 180},
-    "shop": {"at": list(SHOP), "yaw": 180},
-    "clicks": {"at": list(CLICKS), "yaw": 180},
-    "viewpoint": {"at": list(VIEWPOINT), "yaw": 0, "pitch": -14},
-    "entrance": list(ENTRANCE),
-    "belt": {"from": list(BELT_FROM), "to": list(BELT_TO)},
-    "camera": {"at": list(CAMERA), "yaw": CAMERA_YAW, "pitch": CAMERA_PITCH},
-}
-BELT = [(BELT_FROM[0], z) for z in range(BELT_FROM[2], BELT_TO[2] - 1, -1)]   # plot (x, z) cells
-
-
-def layout_yaml() -> list[str]:
-    v = lambda p: "[" + ", ".join(str(i) for i in p) + "]"  # noqa: E731
-    L = LAYOUT
-    return [
-        "layout:",
-        f"  plot-size: {v(L['plot-size'])}",
-        f"  house-at: {v(L['house-at'])}",
-        f"  pedestal: {{at: {v(L['pedestal']['at'])}, yaw: {L['pedestal']['yaw']}}}",
-        f"  shop: {{at: {v(L['shop']['at'])}, yaw: {L['shop']['yaw']}}}",
-        f"  clicks: {{at: {v(L['clicks']['at'])}, yaw: {L['clicks']['yaw']}}}",
-        f"  viewpoint: {{at: {v(L['viewpoint']['at'])}, yaw: {L['viewpoint']['yaw']}, "
-        f"pitch: {L['viewpoint']['pitch']}}}",
-        f"  entrance: {v(L['entrance'])}",
-        f"  belt: {{from: {v(L['belt']['from'])}, to: {v(L['belt']['to'])}}}",
-        f"  camera: {{at: {v(L['camera']['at'])}, yaw: {L['camera']['yaw']}, pitch: {L['camera']['pitch']}}}",
-    ]
-
-
-def validate_layout(chars: dict, palette: dict) -> None:
-    solid3 = {to_plot((x, y, z)) for (x, y, z), c in chars.items() if parse_block_data(palette[c])[0] != "air"}
-
-    class Occupied:                                  # (x, z) "occupied" = a block at belt/feet/head level
-        def __init__(self, levels):
-            self.levels = levels
-
-        def __contains__(self, p):
-            return any((p[0], y, p[1]) in solid3 for y in self.levels)
-
-    occupied = Occupied((0, 1))
-    bx0, bz0, bx1, bz1 = HOUSE_AT[0], HOUSE_AT[2], HOUSE_AT[0] + SX - 1, HOUSE_AT[2] + SZ - 1
-
-    def inner(x, z):
-        return 1 <= x <= PLOT_X - 2 and 1 <= z <= PLOT_Z - 2
-
-    def in_box(x, z):
-        return bx0 <= x <= bx1 and bz0 <= z <= bz1
-
-    assert HOUSE_AT[1] == 0
-    assert bx0 - MARGIN >= 1 and bx1 + MARGIN <= PLOT_X - 2 and bz1 + MARGIN <= PLOT_Z - 2, "margin to fence"
-    assert len(BELT) >= 4 and BELT[0] == (BELT_FROM[0], BELT_FROM[2])
-    for x, z in BELT:
-        assert inner(x, z) and (x, z) not in Occupied((0,)), f"belt cell {(x, z)} is not free"
-    assert (PEDESTAL[0], PEDESTAL[2] + 1) == (BELT_TO[0], BELT_TO[2]), "belt must end next to the pedestal"
-    for name, (x, y, z) in (("pedestal", PEDESTAL), ("shop", SHOP), ("clicks", CLICKS), ("viewpoint", VIEWPOINT)):
-        assert y == 0 and inner(x, z) and (x, z) not in occupied and (x, z) not in BELT, f"{name} not free"
-        assert not in_box(x, z), f"{name} must be outside the house footprint"
-    assert PEDESTAL[2] - 1 >= MARGIN, "room in front of the pedestal"
-    ex, ez = ENTRANCE
-    assert ez == 0 and 2 <= ex <= PLOT_X - 3, "entrance: front ring, gate fully between the corners"
-    for gx in (ex - 1, ex, ex + 1):                  # the walk-in from the gate to the viewpoint is free
-        assert (gx, 1) not in occupied
-    bx, by, bz = POINTS["belt_out"]
-    assert parse_block_data(palette[chars[(bx, by, bz + 1)]])[0] == "air", "hatch behind belt_out is open"
-    # the belt frame (houses/belt.yml) fills y 0 .. surface-height-1 of the belt cells; the surface display and
-    # the cookies need the cell above (a closed top-half trapdoor awning is fine, anything else is not)
-    for x, z in BELT:
-        y = belt_style.STYLE["surface-height"]
-        if (x, y, z) in solid3:
-            d = (x - HOUSE_AT[0], y, z - HOUSE_AT[2])
-            b, pr = parse_block_data(palette[chars[d]])
-            assert b.endswith("_trapdoor") and pr["half"] == "top" and pr["open"] == "false", f"belt clearance {d}"
-    # camera: above ground, outside the house, in the air, and it frames everything
-    cx, cy, cz = CAMERA
-    assert cy >= 1 and not in_box(cx, cz), "camera: raised and outside the design box"
-    assert (cx, cy, cz) not in solid3 and (cx, cy + 1, cz) not in solid3
-    sx, sy, depth = project(framing_points(), camera_eye(), CAMERA_YAW, CAMERA_PITCH, CAMERA_FOV, CAMERA_ASPECT)
-    assert (depth > 1).all() and abs(sx).max() <= CAMERA_MARGIN and abs(sy).max() <= CAMERA_MARGIN, \
-        f"camera framing: x {sx.min():.2f}..{sx.max():.2f}, y {sy.min():.2f}..{sy.max():.2f}"
-
-
-def camera_eye():
-    """Camera eye in plot block coordinates (bottom centre of the feet cell + eye height)."""
-    return (CAMERA[0] + 0.5, CAMERA[1] + EYE_HEIGHT, CAMERA[2] + 0.5)
-
-
-def framing_points():
-    """What the camera must show: the fence ring (with the gate arch), the whole design box and the pedestal."""
-    pts = [(x, y, z) for x in (0, PLOT_X) for z in (0, PLOT_Z) for y in (0, 2.5)]
-    pts += [(ENTRANCE[0] + dx, 5, 0) for dx in (-2, 3)]
-    pts += [(x, y, z) for x in (HOUSE_AT[0], HOUSE_AT[0] + SX) for z in (HOUSE_AT[2], HOUSE_AT[2] + SZ)
-            for y in (0, SY)]
-    pts += [(PEDESTAL[0] + .5, 2.5, PEDESTAL[2] + .5)]
-    return pts
-
-
-def ground_boxes():
-    x0, z0 = -HOUSE_AT[0], -HOUSE_AT[2]
-    return [((x0, -1, z0), (x0 + PLOT_X, 0, z0 + PLOT_Z), (96, 140, 62))]
-
-
-def plot_boxes():
-    """Belt, pedestal, shop and fence-ring markers for the preview (not part of the design)."""
-    hx, hz = HOUSE_AT[0], HOUSE_AT[2]
-    out = belt_style.belt_boxes(belt_style.STYLE, BELT, ox=-hx, oz=-hz)
-    px, pz = PEDESTAL[0] - hx, PEDESTAL[2] - hz
-    out += [((px + .2, 0, pz + .2), (px + .8, .9, pz + .8), (230, 225, 210)),
-            ((px + .25, 1.1, pz + .45), (px + .75, 1.6, pz + .55), (196, 140, 70))]
-    sx, sz = SHOP[0] - hx, SHOP[2] - hz
-    out.append(((sx + .3, 0, sz + .3), (sx + .7, 1.8, sz + .7), (90, 60, 160)))
-    cx, cz = CLICKS[0] - hx, CLICKS[2] - hz
-    out.append(((cx + .3, 0, cz + .3), (cx + .7, 1.8, cz + .7), (60, 150, 160)))
-    return out
-
-
-def fence_boxes():
-    """The plot fence ring from houses/fence.yml (approximate shapes), in design coordinates."""
-    st, s = fence_style.STYLE, 1 / 16
-    col = {"spruce_fence": (115, 85, 52), "spruce_log": (62, 44, 26), "stone_bricks": (122, 121, 122),
-           "bricks": (150, 82, 66), "chiseled_stone_bricks": (118, 117, 118), "lantern": (236, 178, 72),
-           "waxed_copper_lantern": (120, 200, 120), "dark_oak_planks": (66, 44, 22), "dark_oak_slab": (78, 52, 28)}
-    hx, hz = HOUSE_AT[0], HOUSE_AT[2]
-    out = []
-
-    def column(x, z, datas):
-        for y, data in enumerate(datas):
-            if data is None:
+def ground_layer(b: Build) -> None:
+    """y = -1: path to the door, gravel apron with an irregular outer edge, coarse dirt and podzol beds (R13/R14)."""
+    rng = b.rng
+    solid = {(x, z) for (x, y, z), d in b.g.items() if 0 <= y <= 1 and B.block_id(d) != "air"}
+    path = set()
+    for z in range(0, 2):
+        for x in (7, 8, 9):
+            path.add((x, z))
+    for z in range(0, 2):
+        path |= {(11, z), (12, z), (13, z)}
+    for (x, z) in sorted(path):
+        b.put(x, -1, z, GROUND.pick(x * 3, 0, z * 3))
+    near = lambda x, z, d: any((x + dx, z + dz) in solid for dx in range(-d, d + 1) for dz in range(-d, d + 1))  # noqa
+    for x in range(SX):
+        for z in range(SZ):
+            if (x, z) in solid or (x, z) in path:
                 continue
-            b = parse_block_data(data)[0]
-            x0, z0 = x - hx, z - hz
-            if b.endswith("lantern"):
-                out.append(((x0 + 5 * s, y, z0 + 5 * s), (x0 + 11 * s, y + 7 * s, z0 + 11 * s), col[b]))
-            else:
-                out.append(((x0, y, z0), (x0 + 1, y + (.5 if b.endswith("_slab") else 1), z0 + 1), col[b]))
-
-    def rail(x, z, along_x):
-        x0, z0, c = x - hx, z - hz, col["spruce_fence"]
-        out.append(((x0 + 6 * s, 0, z0 + 6 * s), (x0 + 10 * s, 1, z0 + 10 * s), c))
-        for y1, y2 in ((6 * s, 9 * s), (12 * s, 15 * s)):
-            if along_x:
-                out.append(((x0, y1, z0 + 7 * s), (x0 + 1, y2, z0 + 9 * s), c))
-            else:
-                out.append(((x0 + 7 * s, y1, z0), (x0 + 9 * s, y2, z0 + 1), c))
-
-    g, ex = st["gate"], ENTRANCE[0]
-    ring = [(x, 0) for x in range(PLOT_X)] + [(x, PLOT_Z - 1) for x in range(PLOT_X)]
-    ring += [(0, z) for z in range(1, PLOT_Z - 1)] + [(PLOT_X - 1, z) for z in range(1, PLOT_Z - 1)]
-    for x, z in ring:
-        corner = x in (0, PLOT_X - 1) and z in (0, PLOT_Z - 1)
-        along_x = z in (0, PLOT_Z - 1)
-        k = x if along_x else z
-        if corner:
-            column(x, z, st["corner"] + [st["topper"]])
-        elif z == 0 and x in (ex - 2, ex + 2):
-            column(x, z, g["left"] if x < ex else g["right"])
-        elif z == 0 and abs(x - ex) <= 1:
-            column(x, z, g["arch"])
-        elif k % st["post-every"] == 0 and not (z == 0 and abs(x - ex) <= 3) and 1 < k < (PLOT_X if along_x
-                                                                                             else PLOT_Z) - 2:
-            column(x, z, st["post"] + ([st["topper"]] if (k // st["post-every"]) % st["topper-every"] == 0 else []))
-        else:
-            rail(x, z, along_x)
-    return out
-
-
-def camera_view(boxes) -> Image.Image:
-    """What the player sees from layout.camera (16:9, FOV 70), with the 4:3 crop marked."""
-    hx, hz = HOUSE_AT[0], HOUSE_AT[2]
-    ex, ey, ez = camera_eye()
-    world = [((-40 - hx, -1, -40 - hz), (PLOT_X + 40 - hx, 0, PLOT_Z + 40 - hz), (88, 128, 58)),
-             ((-hx, -1, -hz), (PLOT_X - hx, -0.02, PLOT_Z - hz), (100, 146, 64))] + boxes + fence_boxes()
-    img = render_perspective(world, (ex - hx, ey, ez - hz), CAMERA_YAW, CAMERA_PITCH, CAMERA_FOV, (1280, 720))
-    d = ImageDraw.Draw(img)
-    w43 = int(720 * 4 / 3)
-    x0 = (1280 - w43) // 2
-    d.rectangle([x0, 0, x0 + w43 - 1, 719], outline=(255, 255, 255, 160), width=2)
-    f = house_lib.font(16)
-    d.text((10, 8), f"layout.camera {list(CAMERA)}, yaw {CAMERA_YAW}, pitch {CAMERA_PITCH}; 16:9, FOV {CAMERA_FOV}; "
-           "white box = 4:3 screen", fill=(20, 20, 30), font=f)
-    return img
-
-
-def plot_sheet(chars: dict, palette: dict) -> Image.Image:
-    cell = 18
-    w, h = PLOT_X * cell, PLOT_Z * cell
-    img = Image.new("RGBA", (w + 40, h + 175), (40, 44, 52, 255))
-    d = ImageDraw.Draw(img)
-    f = house_lib.font(14)
-    top = {}
-    for (x, y, z), c in chars.items():
-        p = (x + HOUSE_AT[0], z + HOUSE_AT[2])
-        if parse_block_data(palette[c])[0] != "air" and y >= top.get(p, (-1, None))[0]:
-            top[p] = (y, c)
-    ox, oy = 20, 30
-    d.text((ox, 8), f"factory plot layout, top view (north up), 1 square = 1 block, plot-size {PLOT_X} x {PLOT_Z}",
-           fill=(235, 235, 235), font=f)
-    for gx in range(PLOT_X):
-        for gz in range(PLOT_Z):
-            px, py = ox + gx * cell, oy + gz * cell
-            rgb = (96, 140, 62) if (gx + gz) % 2 else (90, 132, 58)
-            if gx in (0, PLOT_X - 1) or gz in (0, PLOT_Z - 1):
-                rgb = (115, 85, 52)
-                if gz == 0 and abs(gx - ENTRANCE[0]) <= 1:
-                    rgb = (200, 170, 110)
-            if (gx, gz) in top:
-                y, c = top[(gx, gz)]
-                k = 0.55 + 0.45 * min(y, 12) / 12
-                rgb = tuple(int(v * k) for v in colour(palette[c]))
-            if (gx, gz) in BELT:
-                rgb = (40, 40, 44)
-            if (gx, gz) == (PEDESTAL[0], PEDESTAL[2]):
-                rgb = (240, 220, 120)
-            if (gx, gz) == (SHOP[0], SHOP[2]):
-                rgb = (120, 90, 200)
-            if (gx, gz) == (CLICKS[0], CLICKS[2]):
-                rgb = (60, 150, 160)
-            if (gx, gz) == (VIEWPOINT[0], VIEWPOINT[2]):
-                rgb = (230, 80, 80)
-            d.rectangle([px, py, px + cell - 1, py + cell - 1], fill=rgb, outline=(30, 34, 30))
-    vx, vz = ox + VIEWPOINT[0] * cell + cell // 2, oy + VIEWPOINT[2] * cell + cell // 2
-    d.line([vx, vz, vx, vz + 3 * cell], fill=(230, 80, 80), width=3)          # looking south (yaw 0)
-    bx, by = ox + HOUSE_AT[0] * cell, oy + HOUSE_AT[2] * cell
-    d.rectangle([bx, by, bx + SX * cell - 1, by + SZ * cell - 1], outline=(255, 255, 255), width=2)
-    legend = [((40, 40, 44), f"belt {list(BELT_FROM)} -> {list(BELT_TO)} (5 cells)"),
-              ((240, 220, 120), f"pedestal {list(PEDESTAL)}, yaw 180"),
-              ((120, 90, 200), f"shop {list(SHOP)}, yaw 180"),
-              ((60, 150, 160), f"clicks {list(CLICKS)}, yaw 180"),
-              ((230, 80, 80), f"viewpoint {list(VIEWPOINT)}, yaw 0, pitch -14"),
-              ((115, 85, 52), "fence: outer ring of plot-size"),
-              ((200, 170, 110), f"entrance (3-wide gate) centre {list(ENTRANCE)}"),
-              ((255, 255, 255), f"design box {SX} x {SY} x {SZ} at house-at {list(HOUSE_AT)}")]
-    for i, (rgb, text) in enumerate(legend):
-        lx, ly = ox + (i % 2) * (w // 2), oy + h + 14 + (i // 2) * 22
-        d.rectangle([lx, ly, lx + 14, ly + 14], fill=rgb, outline=(20, 20, 20))
-        d.text((lx + 22, ly), text, fill=(235, 235, 235), font=f)
-    return img
+            if near(x, z, 1):
+                b.put(x, -1, z, GROUND.pick(x, 0, z))
+            elif near(x, z, 2) and rng.random() < .55:
+                b.put(x, -1, z, P("coarse_dirt") if rng.random() < .7 else P("podzol[snowy=false]"))
 
 
 def main() -> int:
-    g = build()
-    resolve_connections(g)
-    chars, palette = to_palette(g)
-    layers = house_lib.to_layers(chars, SIZE)
-    blocks = house_lib.validate(chars, layers, palette, SIZE, ORIGIN, POINTS, SIGNS)
+    b, smoke = build()
+    FL.POINTS["smoke"] = [list(smoke)]
+    g = dict(b.g)
+    B.resolve(g)
+    chars, palette = B.to_palette(g)
+    layers = house_lib.to_layers(chars, (SX, SY + GROUND_DEPTH, SZ), GROUND_DEPTH)
+    blocks = house_lib.validate(chars, layers, palette, (SX, SY + GROUND_DEPTH, SZ), (0, 0, 0), FL.POINTS, SIGNS,
+                                ground=GROUND_DEPTH)
+    try:
+        build_lint.lint_house(g, b.notes, FL.POINTS, palette)
+    except build_lint.LintError:
+        OUT_DIR.mkdir(parents=True, exist_ok=True)
+        design_views.factory_previews(g, OUT_DIR)          # look at it anyway; the YAML is NOT written
+        raise
+    FL.validate_layout(g)
     header = [
         "# The `factory` cookie works. GENERATED by design/scripts/house_factory.py; do not edit by hand.",
         "# Spec and plot layout: design/factory.md (format: design/house-default.md, plus list points).",
         "# Axes: x = west->east, y = bottom->top, z = north->south. Front (door, sign, hatch) faces north (-Z).",
-        f"# {blocks} blocks (not counting air/keep).",
+        f"# {blocks} blocks (not counting air/keep). ground-depth 1: the first layer is design y -1.",
     ]
-    validate_layout(chars, palette)
-    text = house_lib.write_yaml(header, layers, palette, SIZE, ORIGIN, POINTS, SIGNS) + "\n".join(layout_yaml()) + "\n"
+    text = house_lib.write_yaml(header, layers, palette, (SX, SY + GROUND_DEPTH, SZ), (0, 0, 0), FL.POINTS, SIGNS,
+                                ground=GROUND_DEPTH) + "\n".join(FL.layout_yaml()) + "\n"
     parsed = yaml.safe_load(text)
-    assert parsed["layers"] == layers and parsed["size"] == list(SIZE)
-    assert parsed["palette"] == palette and parsed["points"] == POINTS and parsed["signs"] == SIGNS
-    assert parsed["layout"] == LAYOUT
+    assert parsed["layers"] == layers and parsed["size"] == [SX, SY + GROUND_DEPTH, SZ] and parsed["ground-depth"] == GROUND_DEPTH
+    assert parsed["palette"] == palette and parsed["points"] == FL.POINTS and parsed["signs"] == SIGNS
+    assert parsed["layout"] == FL.LAYOUT
     OUT_YML.parent.mkdir(parents=True, exist_ok=True)
     OUT_YML.write_text(text, encoding="utf-8")
-
-    colours = {c: (colour(d) if parse_block_data(d)[0] != "air" else (255, 255, 255)) for c, d in palette.items()}
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-    house_lib.layer_sheet(layers, SIZE, colours, "factory: layers bottom->top, x ->, z (north at top) v; "
-                          "'.' = keep", cell=22, cols=5).save(OUT_DIR / "house_factory_layers.png")
-    boxes = ground_boxes() + plot_boxes()
-    for (x, y, z), data in sorted(g.items()):
-        boxes += boxes_for(data, x, y, z)
-    house_lib.iso_sheet(boxes, px_per_unit=22).save(OUT_DIR / "house_factory_iso.png")
-    # a closer front 3/4 from the plot entrance (no plot ground, so the building fills the frame)
-    near = [((-1, -1, -1), (SX + 1, 0, SZ + 1), (96, 140, 62))] + [bx_ for bx_ in boxes[1:]]
-    render(near, yaw=200, pitch=22, px_per_unit=40).save(OUT_DIR / "house_factory_front.png")
-    plot_sheet(chars, palette).save(OUT_DIR / "house_factory_plot.png")
-    camera_view(boxes[1:]).save(OUT_DIR / "house_factory_camera.png")
     print(f"{OUT_YML.relative_to(ROOT)}: {blocks} blocks, {len(palette)} palette entries")
-    print(f"previews in {OUT_DIR.relative_to(ROOT)}")
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    design_views.factory_previews(g, OUT_DIR)
     return 0
 
+
+SIGNS = [{"at": [10, 4, 1], "lines": ["", "Cookie Works", "", ""]}]
 
 if __name__ == "__main__":
     sys.exit(main())
