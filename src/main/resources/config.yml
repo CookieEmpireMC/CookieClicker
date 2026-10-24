@@ -1,27 +1,18 @@
-# Cookie Empire (CookieClicker). Balance is in buildings.yml / upgrades.yml, sounds in sounds.yml, text in
-# messages.yml. Apply changes with /bakery reload (database.*: restart the server). Missing keys use the defaults.
-
-# Our resource pack (3D cookie, icons, HUD glyph, sounds), sent on join next to other plugins' packs.
 # Get url + sha1 from `mise run pack` and wherever you host the zip. Empty url/sha1 = not sent (vanilla fallbacks).
 resource-pack:
-  # false = don't send it (e.g. merged into ItemsAdder's pack); any loaded server pack then counts as ours
-  enabled: true
   url: ""
-  # SHA-1 of the zip, 40 hex characters
   sha1: ""
+  # false = don't send it (e.g. merged into ItemsAdder's pack);
+  enabled: true
   # true = players who decline are kicked by the client prompt
   required: false
 
 database:
-  # h2 (embedded file, no setup) or mariadb
   type: h2
-  # Prefix for every table (letters, digits, _)
   table-prefix: cc_
-  # Online players are also saved on quit and on shutdown
   autosave-seconds: 300
   shutdown-save-timeout-seconds: 10
   h2:
-    # Relative to plugins/CookieClicker/ (H2 adds .mv.db)
     file: data/cookies
   mariadb:
     host: localhost
@@ -29,21 +20,18 @@ database:
     database: cookieclicker
     username: cookieclicker
     password: ""
-    # Extra JDBC URL parameters, e.g. "sslMode=trust"
     parameters: ""
 
+# Action bar
 hud:
-  # Action bar with cookies and cookies per second (text in messages.yml: hud.*)
   enabled: true
 
+# A player's own cookie, pedestal and panels spawn within this many blocks of their pedestal
 station:
-  # A player's own cookie, pedestal and panels spawn within this many blocks of their pedestal
   view-distance: 24
-  # Clicks from further away (blocks, eye to hitbox) are ignored
   click-distance: 6
 
 plot:
-  # Players near a pedestal don't see other players near the same pedestal
   hide-others-near-pedestal:
     enabled: false
     radius: 6
@@ -55,25 +43,20 @@ house:
   # /bakery plot setup and /bakery house place refuse designs bigger than this (x * y * z blocks)
   max-blocks: 40000
   cinematic:
-    # First-visit build cinematic, seen only by that player
     enabled: true
-    # Watch it in spectator mode from the plot's camera point (when the plot has one)
     camera: true
   chimney:
     smoke: true
   steam:
     enabled: true
   ambient:
-    # Low oven hum for players within radius blocks of the factory
+    # Oven humming
     enabled: true
     radius: 24.0
 
 belt:
-  # Conveyor belt from the factory to the pedestal; purely visual
   enabled: true
-  # Your cookies on the belt at once (0 = surface only; at most 32)
   max-cookies: 8
 
 debug:
-  # Log every click event on a bakery hitbox
   log-click-events: false
