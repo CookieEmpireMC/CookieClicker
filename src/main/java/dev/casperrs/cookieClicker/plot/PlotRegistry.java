@@ -35,6 +35,14 @@ public final class PlotRegistry {
     private final LongSupplier clockMillis;
     /** Per world UID: the bounding box of every region whose flag names a known plot (lazy, cleared on change). */
     private final Map<UUID, CachedBounds> bounds = new HashMap<>();
+    private final Map<UUID, PasteAreas> pasteAreas = new HashMap<>();
+
+    /** Where a paste may write in one world, with their joint bounding box as the cheap pre-check. */
+    private record PasteAreas(Bounds bounds, List<RegionShape> shapes, long readAt) {
+    }
+
+    /** Ground layers a design may own below a house region (HouseDesignParser.MAX_GROUND_DEPTH). */
+    private static final int MAX_HOUSE_GROUND = 2;
 
     private record CachedBounds(Bounds bounds, long readAt) {
     }
@@ -133,6 +141,62 @@ public final class PlotRegistry {
         return cached.bounds().contains(x, y, z);
     }
 
+    /**
+     * Whether block {@code x y z} lies where a bakery paste writes: inside a known plot's plot region, its house
+     * region or the {@value #MAX_HOUSE_GROUND} layers below it (design ground), or its setup house box incl. ground.
+     * Polygons are tested exactly; the areas are cached like {@link #mayContainPlot} and first pre-checked against
+     * their joint bounding box, so a block far from every plot costs one box test.
+     */
+    public boolean inPasteArea(World world, int x, int y, int z) {
+        long now = clockMillis.getAsLong();
+        PasteAreas cached = pasteAreas.get(world.getUID());
+        if (cached == null || now - cached.readAt() >= BOUNDS_TTL_MILLIS) {
+            cached = pasteAreasOf(world, now);
+            pasteAreas.put(world.getUID(), cached);
+        }
+        if (!cached.bounds().contains(x, y, z)) {
+            return false;
+        }
+        for (RegionShape s : cached.shapes()) {
+            if (x >= s.minX() && x <= s.maxX() && y >= s.minY() && y <= s.maxY() && z >= s.minZ() && z <= s.maxZ()
+                    && s.contains().contains(x, y, z)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private PasteAreas pasteAreasOf(World world, long now) {
+        List<RegionShape> shapes = new ArrayList<>();
+        for (Plot p : plots.values()) {
+            Plot.Box h = p.house();
+            if (h != null && world(p).map(world::equals).orElse(false)) {
+                shapes.add(RegionShape.cuboid("house-box:" + p.id(), h.minX(), h.minY() - h.ground(), h.minZ(),
+                        h.maxX(), h.maxY(), h.maxZ()));
+            }
+        }
+        if (!shapes.isEmpty() || plots.values().stream().anyMatch(p -> world(p).map(world::equals).orElse(false))) {
+            for (PlotRegions.RegionInfo r : regions.regions(world)) {
+                boolean plot = r.plotFlag() != null && plots.containsKey(r.plotFlag());
+                boolean house = r.houseFlag() != null && plots.containsKey(r.houseFlag());
+                RegionShape shape = plot || house ? regions.shape(world, r.id()).orElse(null) : null;
+                if (shape == null) {
+                    continue;
+                }
+                shapes.add(shape);
+                if (house) {
+                    shapes.add(RegionShape.cuboid(shape.id() + ":ground", shape.minX(), shape.minY() - MAX_HOUSE_GROUND,
+                            shape.minZ(), shape.maxX(), shape.minY() - 1, shape.maxZ()));
+                }
+            }
+        }
+        Bounds b = Bounds.EMPTY;
+        for (RegionShape s : shapes) {
+            b = b.union(s);
+        }
+        return new PasteAreas(b, List.copyOf(shapes), now);
+    }
+
     private Bounds boundsOf(World world) {
         boolean any = false;
         for (Plot p : plots.values()) {
@@ -161,6 +225,7 @@ public final class PlotRegistry {
     /** Enable / reload: swap in the plots and resolve their regions. */
     public void replaceAll(Collection<Plot> fresh, Consumer<String> problems) {
         bounds.clear();
+        pasteAreas.clear();
         plots.clear();
         fresh.forEach(p -> plots.put(p.id(), p));
         resolveAll(problems);
@@ -169,6 +234,7 @@ public final class PlotRegistry {
     /** Adds or replaces one plot (commands) and resolves it. */
     public void put(Plot plot, Consumer<String> problems) {
         bounds.clear();
+        pasteAreas.clear();
         plots.put(plot.id(), plot);
         resolved.put(plot.id(), resolve(plot, new HashMap<>(), problems));
     }

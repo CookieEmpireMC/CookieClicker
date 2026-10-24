@@ -21,6 +21,10 @@ import java.util.Map;
  * </ul>
  * For the factory layout this gives exactly the table in design/decor.md (factory x 5..25 z 9..24, front zone
  * x 12..23 z 1..8 inside the ring).
+ *
+ * <p><b>Ground decor</b> (y below 0: it replaces the plot's ground, so it blocks nothing above it) has its own, smaller
+ * keep-out: the fence ring, the house design box itself (no margin; that ground belongs to the house design) and the
+ * belt cells (no margin). Paths may run through the front zone, along the walk and under building slots.
  */
 public final class DecorKeepOut {
 
@@ -49,11 +53,13 @@ public final class DecorKeepOut {
     private final int sizeX;
     private final int sizeZ;
     private final List<Area> areas;
+    private final List<Area> groundAreas;
 
-    private DecorKeepOut(int sizeX, int sizeZ, List<Area> areas) {
+    private DecorKeepOut(int sizeX, int sizeZ, List<Area> areas, List<Area> groundAreas) {
         this.sizeX = sizeX;
         this.sizeZ = sizeZ;
         this.areas = List.copyOf(areas);
+        this.groundAreas = List.copyOf(groundAreas);
     }
 
     /** The keep-out of {@code design}'s plot layout; null when the design has no layout. */
@@ -85,7 +91,7 @@ public final class DecorKeepOut {
                 areas.add(new Area("a building slot", low(s.x(), h), low(s.z(), h), high(s.x(), h), high(s.z(), h)));
             }
         });
-        return new DecorKeepOut(base.sizeX, base.sizeZ, areas);
+        return new DecorKeepOut(base.sizeX, base.sizeZ, areas, base.groundAreas);
     }
 
     private static @Nullable DecorKeepOut layoutOnly(HouseDesign design) {
@@ -94,9 +100,12 @@ public final class DecorKeepOut {
             return null;
         }
         List<Area> areas = new ArrayList<>();
+        List<Area> ground = new ArrayList<>();
         int[] corner = design.toWorld(layout.houseAt(), 0, 0, 0);
         areas.add(Area.between("the factory", corner[0], corner[2], corner[0] + design.sizeX() - 1,
                 corner[2] + design.sizeZ() - 1, MARGIN));
+        ground.add(Area.between("the house design box", corner[0], corner[2], corner[0] + design.sizeX() - 1,
+                corner[2] + design.sizeZ() - 1, 0));
         // front zone: the gate, the pedestal and both panel spots, widened (walk, click rows, hitboxes, shelf)
         int ex = layout.entrance()[0];
         int ez = layout.entrance()[1];
@@ -126,12 +135,22 @@ public final class DecorKeepOut {
             int[] f = layout.beltFrom();
             int[] t = layout.beltTo();
             areas.add(Area.between("the belt", f[0], f[2], t[0], t[2], MARGIN));
+            ground.add(Area.between("the belt", f[0], f[2], t[0], t[2], 0));
         }
-        return new DecorKeepOut(layout.sizeX(), layout.sizeZ(), areas);
+        return new DecorKeepOut(layout.sizeX(), layout.sizeZ(), areas, ground);
     }
 
     /** Why decor may not go at plot cell {@code (x, z)}, or null when it may. */
     public @Nullable String reason(int x, int z) {
+        return reason(x, z, areas);
+    }
+
+    /** Why ground decor (y below 0) may not go at plot cell {@code (x, z)}, or null when it may. */
+    public @Nullable String groundReason(int x, int z) {
+        return reason(x, z, groundAreas);
+    }
+
+    private @Nullable String reason(int x, int z, List<Area> areas) {
         if (x < 0 || z < 0 || x >= sizeX || z >= sizeZ) {
             return "outside the plot";
         }
@@ -150,7 +169,7 @@ public final class DecorKeepOut {
     public List<Decor.Block> allowed(Decor decor, List<String> problems) {
         List<Decor.Block> out = new ArrayList<>(decor.blocks().size());
         for (Decor.Block b : decor.blocks()) {
-            String why = reason(b.x(), b.z());
+            String why = b.y() < 0 ? groundReason(b.x(), b.z()) : reason(b.x(), b.z());
             if (why == null) {
                 out.add(b);
             } else {

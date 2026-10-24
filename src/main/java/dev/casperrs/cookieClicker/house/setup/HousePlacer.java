@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 import java.util.function.IntSupplier;
 import java.util.logging.Level;
 import java.util.regex.Pattern;
@@ -53,15 +54,18 @@ public final class HousePlacer {
     private final IntSupplier maxBlocks;
     private final Executor main;
     private final WorldOperation ops;
+    private final Consumer<String> plotChanged;
 
     /** A checked paste: everything the world step needs once its backup is on disk. */
     private record Paste(String plotId, HouseDesign design, int[] regionMin, List<HouseBackup.Change> changes,
                          Map<String, BlockData> byString, HouseBackup backup, byte[] structure) {
     }
 
+    /** {@code plotChanged} hears the plot id after a paste or undo changed its points or house box (main thread). */
     public HousePlacer(JavaPlugin plugin, PlotRegistry plots, PlotFile plotFile, Messages messages, Executor io,
-                       Executor main, IntSupplier maxBlocks) {
+                       Executor main, IntSupplier maxBlocks, Consumer<String> plotChanged) {
         this.plugin = plugin;
+        this.plotChanged = plotChanged;
         this.plots = plots;
         this.plotFile = plotFile;
         this.messages = messages;
@@ -134,10 +138,10 @@ public final class HousePlacer {
                     Placeholder.unparsed("amount", Integer.toString(maxBlocks.getAsInt())));
             return null;
         }
-        Map<Character, BlockData> palette = new HashMap<>();
+        Map<String, BlockData> palette = new HashMap<>();
         for (Map.Entry<Character, String> e : design.palette().entrySet()) {
             try {
-                palette.put(e.getKey(), Bukkit.createBlockData(e.getValue()));
+                palette.put(e.getValue(), DesignBlocks.create(e.getValue()));
             } catch (IllegalArgumentException ex) {
                 ops.finishNow(op, "house.design-invalid", Placeholder.unparsed("name", design.name()),
                         Placeholder.unparsed("problem", "palette '" + e.getKey() + "': '" + e.getValue()
@@ -147,8 +151,8 @@ public final class HousePlacer {
         }
         RegionShape shape = house.get();
         int[] regionMin = {shape.minX(), shape.minY(), shape.minZ()};
-        int[] corner = design.toWorld(regionMin, 0, 0, 0);
-        int[] size = {design.sizeX(), design.sizeY(), design.sizeZ()};
+        int[] corner = design.corner(regionMin); // ground layers included: they are backed up like the rest
+        int[] size = design.size();
         if (!loaded(world, corner, size)) {
             ops.finishNow(op, "house.not-loaded", Placeholder.unparsed("id", plotId));
             return null;
@@ -156,7 +160,7 @@ public final class HousePlacer {
         List<HouseBackup.Change> changes = new ArrayList<>();
         Map<String, BlockData> byString = new HashMap<>();
         for (HouseDesign.Cell c : design.cells()) {
-            BlockData data = palette.get(design.grid()[c.y()][c.z()][c.x()]);
+            BlockData data = palette.get(c.blockData());
             String s = data.getAsString();
             byString.putIfAbsent(s, data);
             int[] w = design.toWorld(regionMin, c.x(), c.y(), c.z());
@@ -200,8 +204,7 @@ public final class HousePlacer {
         HouseDesign design = paste.design();
         Plot plot = plots.get(paste.plotId()).orElse(null);
         World world = plot == null ? null : plots.world(plot).orElse(null);
-        if (plot == null || world == null || !loaded(world, design.toWorld(paste.regionMin(), 0, 0, 0),
-                new int[] {design.sizeX(), design.sizeY(), design.sizeZ()})) {
+        if (plot == null || world == null || !loaded(world, design.corner(paste.regionMin()), design.size())) {
             ops.submit(op, () -> {
                 BackupFiles.deleteQuietly(plugin.getLogger(), yml);
                 ops.finish(op, "house.not-loaded", Placeholder.unparsed("id", paste.plotId()));
@@ -219,9 +222,14 @@ public final class HousePlacer {
         List<Plot.Point> smoke = cellCentres(design, paste.regionMin(), design.smoke());
         Plot updated = (smoke.isEmpty() ? plot : plot.withSmoke(smoke))
                 .withSteam(cellCentres(design, paste.regionMin(), design.steam()));
+        if (updated.house() != null) {
+            // the build cinematic reveals the design's ground layers below the box too
+            updated = updated.withHouse(updated.house().withGround(design.groundDepth()));
+        }
         if (!updated.equals(plot)) {
             plots.put(updated, problem -> plugin.getLogger().warning(problem));
             plotFile.saveAsync(plots.all());
+            plotChanged.accept(updated.id());
         }
         ops.finishNow(op, "house.placed", Placeholder.unparsed("name", design.name()),
                 Placeholder.unparsed("id", paste.plotId()),
@@ -278,6 +286,7 @@ public final class HousePlacer {
             plots.put(plot.withSmoke(backup.previousSmoke()).withSteam(backup.previousSteam()),
                     problem -> plugin.getLogger().warning(problem));
             plotFile.saveAsync(plots.all());
+            plotChanged.accept(plotId);
         });
         int count = backup.cells().size();
         ops.submit(op, () -> {
@@ -351,7 +360,9 @@ public final class HousePlacer {
 
     /**
      * The real world behind {@link HouseBackup.BlockAccess}; the only block writes of both world writers go through
-     * here ({@code known} caches parsed block data). No physics, so a paste never drops or updates neighbours.
+     * here ({@code known} caches parsed block data). No physics, so a paste never drops or updates neighbours and
+     * pasted water or lava gets no fluid tick (it stays where the design put it; {@code plot.LiquidGuard} keeps it
+     * there later).
      */
     static HouseBackup.BlockAccess worldAccess(World world, Map<String, BlockData> known) {
         return new HouseBackup.BlockAccess() {
