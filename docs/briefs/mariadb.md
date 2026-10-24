@@ -1,6 +1,6 @@
 # mariadb
 
-**Status:** in progress  <!-- planned | in progress | review | done -->
+**Status:** review  <!-- planned | in progress | review | done -->
 **Created:** 2026-10-24 · **Depends on:** tidy (merged, PR #15, 1.2.2)
 
 ## Goal
@@ -16,37 +16,37 @@ somewhere else.
 
 ## Acceptance criteria
 ### Pool
-- [ ] Connections come from a **HikariCP** pool, downloaded by `CookieClickerLoader` like the drivers (version in a
+- [x] Connections come from a **HikariCP** pool, downloaded by `CookieClickerLoader` like the drivers (version in a
       `pom.xml` property, filtered into `cookieclicker-libraries.properties`, `provided`/not shaded). The pool loads
       the driver class through the plugin's class loader (no `DriverManager`).
-- [ ] `JdbcPlayerStore` borrows a connection per operation (try-with-resources) instead of keeping one cached
+- [x] `JdbcPlayerStore` borrows a connection per operation (try-with-resources) instead of keeping one cached
       connection; `ConnectionFactory` stays the seam tests use.
-- [ ] H2 keeps working (small pool, e.g. max 2; file locking unchanged). MariaDB pool size, connection timeout and
+- [x] H2 keeps working (small pool, e.g. max 2; file locking unchanged). MariaDB pool size, connection timeout and
       max lifetime have built-in defaults; at most `database.mariadb.pool-size` (default 4) is exposed in
       `config.yml`.
-- [ ] Shutdown closes the pool after the final saves (respecting `shutdown-save-timeout-seconds`).
+- [x] Shutdown closes the pool after the final saves (respecting `shutdown-save-timeout-seconds`).
 ### Fail fast
-- [ ] With `type: mariadb`, if the database is unreachable or the login fails at enable, the plugin logs one clear
+- [x] With `type: mariadb`, if the database is unreachable or the login fails at enable, the plugin logs one clear
       error (host/port/database/user, never the password) and disables itself. It never falls back to H2.
 ### Migration
-- [ ] `/bakery db migrate` (permission `cookieempire.admin`, console or player) copies every table (players,
+- [x] `/bakery db migrate` (permission `cookieempire.admin`, console or player) copies every table (players,
       buildings, upgrades, house_seen) from the H2 file at `database.h2.file` into the configured MariaDB, in one
       transaction per table batch, off the main thread, then reports row counts per table.
-- [ ] Refuses when the current type is not mariadb, when the H2 file doesn't exist, or when the MariaDB tables
+- [x] Refuses when the current type is not mariadb, when the H2 file doesn't exist, or when the MariaDB tables
       already hold player rows (unless `/bakery db migrate --force`, which replaces them). Online players are saved
       first; the migrate runs while nobody's data is mid-save (it goes through the same IO thread).
-- [ ] Migrated data loads identically (same pouch, baked, prestige, buildings, upgrade levels, house_seen).
+- [x] Migrated data loads identically (same pouch, baked, prestige, buildings, upgrade levels, house_seen).
 ### Website-ready schema (schema version 4)
-- [ ] `players` gets a `name VARCHAR(16)` column (last known name, updated on load/save) and an index on `baked`
+- [x] `players` gets a `name VARCHAR(16)` column (last known name, updated on load/save) and an index on `baked`
       (leaderboard: `ORDER BY baked DESC`). Both via the existing idempotent migration steps, on H2 and MariaDB.
-- [ ] MariaDB tables use `ENGINE=InnoDB` and `utf8mb4`; column names stay stable from here on (documented as the
+- [x] MariaDB tables use `ENGINE=InnoDB` and `utf8mb4`; column names stay stable from here on (documented as the
       website contract).
 ### Docs
-- [ ] A "MariaDB" section in `docs/integrations.md`: install on the same host, create the database, a read/write
+- [x] A "MariaDB" section in `docs/integrations.md`: install on the same host, create the database, a read/write
       user for the plugin and a **read-only user for the website** (`GRANT SELECT`), the config keys, running
       `/bakery db migrate`, backups (`mariadb-dump`), and the table/column contract for the website.
 ### Tests (important only)
-- [ ] Pool-backed store save/load round trip on H2; schema v3 → v4 upgrade keeps data; migrate copies every table
+- [x] Pool-backed store save/load round trip on H2; schema v3 → v4 upgrade keeps data; migrate copies every table
       (H2 → H2 in-memory stands in for MariaDB) and refuses a non-empty target without `--force`.
 
 ## Out of scope
@@ -89,8 +89,8 @@ none (decided with the user on 2026-10-23).
 ## Status
 | Agent | Status | Branch | Verdict | Notes |
 |---|---|---|---|---|
-| plugin-coder | in progress | `mariadb/plugin-coder` | | |
-| plugin-tester | planned | | | |
+| plugin-coder | done | `mariadb/plugin-coder` (merged) | READY | fix round: M1 + L1–L3 |
+| plugin-tester | done | `mariadb/plugin-tester` (merged) | READY | 405 tests; MariaDB-only SQL needs the human check |
 
 ## Merge order
 1. plugin-coder
