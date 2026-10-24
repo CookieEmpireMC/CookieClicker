@@ -1,6 +1,6 @@
 # build-quality
 
-**Status:** planned  <!-- planned | in progress | review | done -->
+**Status:** in progress  <!-- planned | in progress | review | done -->
 **Created:** 2026-10-24 · **Depends on:** mariadb (merged, PR #16, 1.3.0)
 
 ## Goal
@@ -61,6 +61,13 @@ flour shed, a woodpile. Nothing is just dropped on the grass. The small villager
   - Keep the keep-out asserts.
   - Keep the small villager workers.
 - [ ] **fence:** irregular rhythm (no posts every 4 blocks), in the same palette family.
+- [ ] **Whole plot, not only the house (user, 2026-10-24):** ground and decor cover the **entire plot**, around the
+      house and between house, belt, pedestal, panels and building slots.
+  - **Ground:** shaped and graded (path to the door and the pedestal, gravel and coarse-dirt edges, beds, small
+    mounds).
+  - **Decor:** scenes anchored to the house, the fence, the paths and the belt.
+  - **Keep-outs stay clear:** pedestal, shop/clicks panels, building slots, belt line, viewpoint, entrance, the
+    hologram corridor, and the cinematic camera's view of the house.
 ### Ground layer (plugin-coder)
 - [ ] House designs can own ground below their base. The format is decided by the coder with the model-designer
       and documented in `design/house-default.md`. The plugin places and backs it up like the rest of the design.
@@ -113,15 +120,15 @@ none: `docs/research/build-quality.md` (committed on this branch). The orchestra
 - A 1280×720, 128-SPP shot takes about 7 s.
 
 ## Open questions
-1. Split like this (build-quality 1.4.0 first, then ingredient-farm 1.5.0), or fold the rework into the farm feature?
-2. Should the plot's surroundings (the space between house, belt and pedestal) also get the ground/decor treatment
-   here, or only the house box?
+1. Split: build-quality (1.4.0) first, then ingredient-farm (1.5.0). The orchestrator proceeded with the split; the
+   user can still fold it into the farm.
+2. Answered 2026-10-24: ground and decor cover every area of the plot, also around the house.
 
 ## Contract (fixed names; change only via the orchestrator)
 | Kind | ID | Owner | Notes |
 |---|---|---|---|
 | house design | `factory`, `default`, `decor`, `fence` (ids unchanged) | model-designer | kept points listed above |
-| design file format | ground layers (y -2..-1) + height field in house YAML | plugin-coder + model-designer | documented in `design/house-default.md` |
+| design file format | ground layers (y -2..-1) + height field in house YAML and in the plot-wide decor/ground design | plugin-coder + model-designer | documented in `design/house-default.md` |
 | design files | `design/refs/<house>.md`, `design/build-lint.md` | model-designer | |
 | mise task | `review-render` | plugin-coder | outputs to `~/bakery-review/shots/` |
 
@@ -139,7 +146,8 @@ right away and the builds once the format is merged.
 ## Status
 | Agent | Status | Branch | Verdict | Notes |
 |---|---|---|---|---|
-| | planned | | | |
+| plugin-coder | in progress | `build-quality/plugin-coder` | | |
+| model-designer | in progress | `build-quality/model-designer` | | style guide, lint, renderer first |
 
 ## Merge order
 1. research note (done), 2. plugin-coder, 3. model-designer, then the review rounds (model-designer fixes on its branch).
