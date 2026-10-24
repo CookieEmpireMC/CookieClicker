@@ -37,6 +37,7 @@ class PluginDescriptorTest {
     @Test
     void loaderDownloadsExactlyTheDriverVersionsOfThePom() throws Exception {
         assertEquals(List.of("com.h2database:h2:" + pomProperty("h2.version"),
+                "com.zaxxer:HikariCP:" + pomProperty("hikaricp.version"),
                 "org.mariadb.jdbc:mariadb-java-client:" + pomProperty("mariadb.version")),
                 CookieClickerLoader.libraries());
     }

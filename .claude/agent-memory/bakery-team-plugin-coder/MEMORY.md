@@ -1,3 +1,4 @@
 - [Paper 26.3 API facts](paper-263-api-facts.md) — verified Paper/Adventure 5.2/WorldGuard 7.0.20 signatures, display/text quirks, javap paths
 - [Repo tooling facts](repo-tooling-facts.md) — build/skip/disabled-test commands, smoke-test recipes, ownership check, Bash guard quirks
 - [Code rules facts](code-rules-facts.md) — tester pins, designer contracts, engine behaviour (PrivateDisplays sweep!), review lessons
+- [Storage facts](storage-facts.md) — HikariCP 7.0.2 via DataSource, MariaDB docker smoke, schema v4 SQL for H2+MariaDB, loader test pin

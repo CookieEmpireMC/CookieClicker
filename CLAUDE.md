@@ -21,7 +21,7 @@ Shared knowledge changes only through a PR on CookieMemory that the user merges.
 | `paper-26x-reference.md` | Java 25, new version strings, unobfuscated server, Adventure 5, world keys, API changes 26.1–26.3, rules | `pom.xml` has `26.x.build.…` |
 | `toolchain.md` | mise: pinned Java/Maven/Python per target, build/test/asset tasks, worktree trust | before any build or test |
 | `minimessage.md` | All player-facing text: MiniMessage, placeholders, security, fonts/glyphs, Adventure 5 removals | any feature that shows text |
-| `integrations.md` | ItemsAdder & ModelEngine: compatibility, Maven, hooks, load events, resource packs | the project uses either plugin |
+| `integrations.md` | ItemsAdder & ModelEngine (compatibility, Maven, hooks, load events, resource packs); MariaDB (setup, users, migrate, backups, website table contract) | the project uses either plugin; any storage or website work |
 | `architecture.md` | package structure & conventions (maintained by plugin-tester) | always, if it exists |
 | `research/*.md` | resource pack research notes (written by resource-pack-researcher) | before building a researched feature |
 | `reviews/*.md` | test & review reports (written by plugin-tester) | after a review |

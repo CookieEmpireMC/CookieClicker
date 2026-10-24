@@ -2,6 +2,7 @@ package dev.casperrs.cookieClicker.storage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -286,6 +287,114 @@ class JdbcPlayerStoreTest {
         try (JdbcPlayerStore again = new JdbcPlayerStore(new DriverConnectionFactory(settings), "cc_")) {
             again.init();
             assertEquals(2, again.load(player).orElseThrow().snapshot().owned().get("a"), "survives a reopen");
+        }
+    }
+
+    @Test
+    void pooledH2FileRoundTripSurvivesAReopenAndWritesTheName(@org.junit.jupiter.api.io.TempDir java.nio.file.Path dir)
+            throws Exception {
+        DatabaseSettings settings = new DatabaseSettings(DatabaseSettings.Type.H2, dir.resolve("data/cookies"),
+                "", 0, "", "", "", "", "cc_");
+        PouchSnapshot saved = new PouchSnapshot(55.5, 120, Map.of("baker", 2), Map.of("mitts", 3));
+        try (PooledConnectionFactory pool = new PooledConnectionFactory(settings, new DriverConnectionFactory(settings));
+             JdbcPlayerStore first = new JdbcPlayerStore(pool, "cc_")) {
+            first.init();
+            first.rememberName(player, "Baker_Bob");
+            first.save(player, saved);
+        } // pool closed: the H2 file must be closed cleanly
+        try (PooledConnectionFactory pool = new PooledConnectionFactory(settings, new DriverConnectionFactory(settings));
+             JdbcPlayerStore again = new JdbcPlayerStore(pool, "cc_")) {
+            again.init();
+            LoadedPouch loaded = again.load(player).orElseThrow();
+            assertEquals(saved, loaded.snapshot());
+            assertTrue(loaded.problems().isEmpty());
+        }
+        try (Connection c = DriverManager.getConnection(settings.jdbcUrl()); Statement st = c.createStatement();
+             var rs = st.executeQuery("SELECT name FROM cc_players")) {
+            assertTrue(rs.next());
+            assertEquals("Baker_Bob", rs.getString(1));
+        }
+    }
+
+    /** The v3 schema exactly as a 1.2.x plugin left it (upgrade_level exists, players.name and the baked index do not). */
+    private static void createVersionThreeSchema(Statement st, UUID old) throws SQLException {
+        st.execute("CREATE TABLE zz_players (uuid VARCHAR(36) NOT NULL PRIMARY KEY, pouch DOUBLE NOT NULL, baked DOUBLE NOT NULL, last_seen BIGINT NOT NULL, prestige DOUBLE NOT NULL DEFAULT 0)");
+        st.execute("CREATE TABLE zz_buildings (uuid VARCHAR(36) NOT NULL, building_id VARCHAR(64) NOT NULL, owned INT NOT NULL, PRIMARY KEY (uuid, building_id))");
+        st.execute("CREATE TABLE zz_upgrades (uuid VARCHAR(36) NOT NULL, upgrade_id VARCHAR(64) NOT NULL, upgrade_level INT DEFAULT 1 NOT NULL, PRIMARY KEY (uuid, upgrade_id))");
+        st.execute("CREATE TABLE zz_house_seen (uuid VARCHAR(36) NOT NULL, plot_id VARCHAR(64) NOT NULL, seen_at BIGINT NOT NULL, PRIMARY KEY (uuid, plot_id))");
+        st.execute("CREATE TABLE zz_schema_version (id INT NOT NULL PRIMARY KEY, version INT NOT NULL)");
+        st.execute("INSERT INTO zz_schema_version VALUES (1, 3)");
+        st.execute("INSERT INTO zz_players VALUES ('" + old + "', 42, 100, 1, 0)");
+        st.execute("INSERT INTO zz_buildings VALUES ('" + old + "', 'baker', 7)");
+        st.execute("INSERT INTO zz_upgrades VALUES ('" + old + "', 'mitts', 2)");
+        st.execute("INSERT INTO zz_house_seen VALUES ('" + old + "', 'main', 5)");
+    }
+
+    @Test
+    void migratesAVersionThreeDatabaseToVersionFourKeepingDataAndAddingNameAndIndex() throws Exception {
+        String v3url = "jdbc:h2:mem:v3db" + COUNTER.incrementAndGet() + ";DB_CLOSE_DELAY=-1";
+        UUID old = UUID.randomUUID();
+        try (Connection c = DriverManager.getConnection(v3url); Statement st = c.createStatement()) {
+            createVersionThreeSchema(st, old);
+        }
+        JdbcPlayerStore migrating = new JdbcPlayerStore(() -> DriverManager.getConnection(v3url), "zz_", () -> 99L);
+        migrating.init();
+        assertEquals(JdbcPlayerStore.SCHEMA_VERSION, migrating.schemaVersion());
+        PouchSnapshot before = migrating.load(old).orElseThrow().snapshot();
+        assertEquals(42, before.pouch());
+        assertEquals(100, before.baked());
+        assertEquals(Map.of("baker", 7), before.owned());
+        assertEquals(Map.of("mitts", 2), before.upgradeLevels());
+        assertTrue(migrating.isHouseSeen(old, "main"));
+        try (Connection c = DriverManager.getConnection(v3url); Statement st = c.createStatement()) {
+            // the new column is there and empty for players saved before v4
+            try (var rs = st.executeQuery("SELECT name FROM zz_players")) {
+                assertTrue(rs.next());
+                assertNull(rs.getString(1));
+            }
+            // and the leaderboard index exists
+            boolean indexed = false;
+            try (var rs = c.getMetaData().getIndexInfo(null, null, "ZZ_PLAYERS", false, true)) {
+                while (rs.next()) {
+                    indexed |= "zz_players_baked_idx".equalsIgnoreCase(rs.getString("INDEX_NAME"));
+                }
+            }
+            assertTrue(indexed, "zz_players_baked_idx on players(baked)");
+        }
+        // a second start is a no-op and loses nothing; the name is written from now on
+        migrating.rememberName(old, "Alex");
+        migrating.save(old, before);
+        migrating.init();
+        assertEquals(JdbcPlayerStore.SCHEMA_VERSION, migrating.schemaVersion());
+        assertEquals(before, migrating.load(old).orElseThrow().snapshot());
+        try (Connection c = DriverManager.getConnection(v3url); Statement st = c.createStatement();
+             var rs = st.executeQuery("SELECT name FROM zz_players")) {
+            assertTrue(rs.next());
+            assertEquals("Alex", rs.getString(1));
+        }
+        migrating.close();
+        try (Connection c = DriverManager.getConnection(v3url); Statement st = c.createStatement()) {
+            st.execute("SHUTDOWN");
+        }
+    }
+
+    @Test
+    void aVersionThreeDatabaseThatAlreadyHasTheNewStepsStillReachesVersionFour() throws Exception {
+        // a v3 -> v4 run that crashed after its ALTER and CREATE INDEX but before the version write
+        String rerunUrl = "jdbc:h2:mem:v4rerun" + COUNTER.incrementAndGet() + ";DB_CLOSE_DELAY=-1";
+        UUID old = UUID.randomUUID();
+        try (Connection c = DriverManager.getConnection(rerunUrl); Statement st = c.createStatement()) {
+            createVersionThreeSchema(st, old);
+            st.execute("ALTER TABLE zz_players ADD COLUMN name VARCHAR(16)");
+            st.execute("CREATE INDEX zz_players_baked_idx ON zz_players (baked)");
+        }
+        JdbcPlayerStore rerun = new JdbcPlayerStore(() -> DriverManager.getConnection(rerunUrl), "zz_", () -> 99L);
+        rerun.init(); // must not fail with "column already exists" / "index already exists"
+        assertEquals(JdbcPlayerStore.SCHEMA_VERSION, rerun.schemaVersion());
+        assertEquals(Map.of("baker", 7), rerun.load(old).orElseThrow().snapshot().owned());
+        rerun.close();
+        try (Connection c = DriverManager.getConnection(rerunUrl); Statement st = c.createStatement()) {
+            st.execute("SHUTDOWN");
         }
     }
 }
