@@ -197,7 +197,7 @@ public final class SessionManager {
             T result = null;
             try {
                 result = task.get();
-            } catch (RuntimeException e) {
+            } catch (Throwable e) { // even an Error must end the exclusive phase, or joins wait forever
                 log.log(Level.SEVERE, "Storage task failed", e);
             }
             T r = result;
