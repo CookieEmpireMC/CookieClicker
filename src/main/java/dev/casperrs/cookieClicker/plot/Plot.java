@@ -84,9 +84,22 @@ public record Plot(String id, String worldKey, @Nullable String plotRegion, @Nul
     }
 
     /** A block box, inclusive. */
-    public record Box(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+    /**
+     * The house box (inclusive). {@code ground}: how many layers of the pasted design lie below {@code minY} (the
+     * design's {@code ground-depth}, 0..2); they belong to the house for the build cinematic but not to the box.
+     */
+    public record Box(int minX, int minY, int minZ, int maxX, int maxY, int maxZ, int ground) {
+
+        public Box(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+            this(minX, minY, minZ, maxX, maxY, maxZ, 0);
+        }
+
         public boolean contains(int x, int y, int z) {
             return x >= minX && x <= maxX && y >= minY && y <= maxY && z >= minZ && z <= maxZ;
+        }
+
+        public Box withGround(int layers) {
+            return layers == ground ? this : new Box(minX, minY, minZ, maxX, maxY, maxZ, layers);
         }
     }
 
@@ -119,6 +132,10 @@ public record Plot(String id, String worldKey, @Nullable String plotRegion, @Nul
 
     public Plot withSteam(List<Point> points) {
         return new Plot(id, worldKey, plotRegion, houseRegion, viewpoint, pedestal, smoke, points, entrance, shop, house, belt, camera, clicks);
+    }
+
+    public Plot withHouse(@Nullable Box h) {
+        return new Plot(id, worldKey, plotRegion, houseRegion, viewpoint, pedestal, smoke, steam, entrance, shop, h, belt, camera, clicks);
     }
 
     public Plot withEntrance(@Nullable Point e) {
