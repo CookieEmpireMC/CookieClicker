@@ -9,6 +9,7 @@ import dev.casperrs.cookieClicker.storage.StorageException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -17,6 +18,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -42,6 +45,9 @@ public final class SessionManager {
     private final Map<UUID, Object> pending = new HashMap<>();
     private final List<SessionListener> listeners = new CopyOnWriteArrayList<>();
     private volatile boolean storageReady;
+    /** While {@link #runExclusive} runs: nobody has a session; these players join again when it ends. */
+    private boolean exclusive;
+    private final java.util.Set<UUID> rejoin = new LinkedHashSet<>();
 
     public SessionManager(PlayerStore store, ExecutorService io, Executor main, Logger log) {
         this.store = store;
@@ -84,6 +90,15 @@ public final class SessionManager {
 
     /** Player joined: load async, then create the session on the main thread. */
     public void join(UUID player) {
+        join(player, null);
+    }
+
+    /** Same, and the store remembers the player's name (written with the load or the next save). */
+    public void join(UUID player, String name) {
+        if (exclusive) {
+            rejoin.add(player);
+            return;
+        }
         if (sessions.containsKey(player) || pending.containsKey(player)) {
             return;
         }
@@ -98,6 +113,9 @@ public final class SessionManager {
             try {
                 if (!storageReady) {
                     throw new StorageException("storage did not initialise");
+                }
+                if (name != null) {
+                    store.rememberName(player, name);
                 }
                 loaded = store.load(player);
             } catch (StorageException | RuntimeException e) {
@@ -124,6 +142,7 @@ public final class SessionManager {
 
     /** Player quit: drop the session and save it async. */
     public void quit(UUID player) {
+        rejoin.remove(player);
         pending.remove(player);
         CookiePouch pouch = sessions.remove(player);
         if (pouch != null) {
@@ -156,6 +175,44 @@ public final class SessionManager {
     }
 
     /**
+     * Runs {@code task} on the storage thread while nobody has a session, then hands its result (null if it threw)
+     * to {@code done} on the main thread. First every session is saved (final) and unloaded, so no old in-memory
+     * pouch can overwrite what the task writes; joins wait; afterwards those players load again from the store.
+     * False (and nothing happens) when another exclusive task runs or storage has stopped.
+     */
+    public <T> boolean runExclusive(Supplier<T> task, Consumer<T> done) {
+        if (exclusive || io.isShutdown()) {
+            return false;
+        }
+        exclusive = true;
+        rejoin.addAll(sessions.keySet());
+        rejoin.addAll(pending.keySet());
+        pending.clear(); // loads in flight drop their result (token gone)
+        for (UUID player : List.copyOf(sessions.keySet())) {
+            CookiePouch pouch = sessions.remove(player);
+            listeners.forEach(l -> l.onUnloaded(player));
+            saveAsync(player, pouch.snapshot(), true);
+        }
+        io.execute(() -> {
+            T result = null;
+            try {
+                result = task.get();
+            } catch (Throwable e) { // even an Error must end the exclusive phase, or joins wait forever
+                log.log(Level.SEVERE, "Storage task failed", e);
+            }
+            T r = result;
+            main.execute(() -> {
+                exclusive = false;
+                List<UUID> back = List.copyOf(rejoin);
+                rejoin.clear();
+                back.forEach(this::join);
+                done.accept(r);
+            });
+        });
+        return true;
+    }
+
+    /**
      * Plugin disable: save everyone, then wait (blocking, up to {@code timeoutSeconds}) for every queued
      * write to finish and close the store. Callbacks to {@code main} after this are dropped by the caller's
      * executor (the plugin is disabled).
@@ -164,6 +221,7 @@ public final class SessionManager {
         sessions.forEach((player, pouch) -> saveAsync(player, pouch.snapshot(), true));
         sessions.clear();
         pending.clear();
+        rejoin.clear();
         io.execute(store::close);
         io.shutdown();
         try {

@@ -296,4 +296,68 @@ class SessionManagerTest {
         assertEquals(1, count("save"));
     }
 
+    @Test
+    void migrationTaskRunsAfterTheFinalSavesJoinsAreHeldAndEveryoneReloadsAfterwards() throws Exception {
+        UUID bob = UUID.randomUUID();
+        sessions.join(alice); // no saved data yet: only the exclusive save can create the row
+        settle();
+        assertFalse(store.data.containsKey(alice));
+        List<String> seen = Collections.synchronizedList(new ArrayList<>());
+        assertTrue(sessions.runExclusive(() -> {
+            seen.add("saved=" + store.data.containsKey(alice));
+            return "ok";
+        }, r -> events.add("done:" + r)));
+        assertFalse(sessions.isLoaded(alice), "saved and unloaded before the task");
+        sessions.join(bob);
+        assertFalse(sessions.isLoaded(bob), "joins are held while the migration runs");
+        settle(); // the task and its main-thread callback
+        settle(); // the reloads that the callback queued
+        assertEquals(List.of("saved=true"), seen);
+        assertTrue(sessions.isLoaded(alice));
+        assertTrue(sessions.isLoaded(bob));
+        assertTrue(events.contains("done:ok"));
+    }
+
+    @Test
+    void quitDuringTheMigrationDoesNotComeBackAfterIt() throws Exception {
+        sessions.join(alice);
+        settle();
+        assertTrue(sessions.runExclusive(() -> "ok", r -> { }));
+        sessions.quit(alice); // already unloaded and saved by runExclusive: no second save, no rejoin
+        settle();
+        settle();
+        assertFalse(sessions.isLoaded(alice));
+        assertEquals(1, count("save"));
+    }
+
+    @Test
+    void aMigrationTaskThatThrowsStillReleasesTheHoldAndReportsNothing() throws Exception {
+        UUID bob = UUID.randomUUID();
+        List<Object> reported = Collections.synchronizedList(new ArrayList<>());
+        assertTrue(sessions.runExclusive(() -> {
+            throw new IllegalStateException("boom");
+        }, reported::add));
+        settle();
+        settle();
+        assertEquals(Collections.singletonList(null), reported);
+        sessions.join(bob);
+        settle();
+        settle();
+        assertTrue(sessions.isLoaded(bob), "joins work again after a failed migration");
+    }
+
+    @Test
+    void anErrorInsideTheMigrationTaskMustNotStrandPlayers() throws Exception {
+        UUID bob = UUID.randomUUID();
+        assertTrue(sessions.runExclusive(() -> {
+            throw new LinkageError("driver class missing");
+        }, r -> { }));
+        settle();
+        settle();
+        sessions.join(bob);
+        settle();
+        settle();
+        assertTrue(sessions.isLoaded(bob), "an Error must not hold joins for the rest of the uptime");
+    }
+
 }

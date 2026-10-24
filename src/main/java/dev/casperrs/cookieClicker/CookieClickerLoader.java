@@ -14,12 +14,12 @@ import java.util.List;
 import java.util.Properties;
 
 /**
- * Adds the JDBC drivers to the plugin's classpath, resolved through Paper's Maven Central mirror (Maven Central
+ * Adds the JDBC drivers and the HikariCP pool to the plugin's classpath, resolved through Paper's Maven Central mirror (Maven Central
  * directly risks rate limits). Runs before the plugin class exists, so no plugin API here.
  */
 public final class CookieClickerLoader implements PluginLoader {
 
-    /** Filtered from the pom's driver version properties, so the versions cannot drift. */
+    /** Filtered from the pom's driver and pool version properties, so the versions cannot drift. */
     static final String LIBRARIES = "cookieclicker-libraries.properties";
 
     @Override

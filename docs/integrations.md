@@ -1,9 +1,9 @@
-# Plugin integrations: ItemsAdder, ModelEngine & WorldGuard
+# Plugin integrations: ItemsAdder, ModelEngine, WorldGuard & MariaDB
 
 Reference for all agents. Read together with the Paper reference for the project's target version (`docs/paper-121x-reference.md` or `docs/paper-26x-reference.md`).
 ItemsAdder and ModelEngine are **closed source and paid**. We compile against their public API jars only and never redistribute them. WorldGuard/WorldEdit are open source (EngineHub); same rule: `provided`, never shaded.
 
-Last checked: 2026-10-19 (WorldGuard section); 2026-10-18 (ItemsAdder, ModelEngine)
+Last checked: 2026-10-24 (MariaDB section, tested on MariaDB 11.4); 2026-10-19 (WorldGuard); 2026-10-18 (ItemsAdder, ModelEngine)
 
 ---
 
@@ -286,3 +286,102 @@ A region without owners/members already stops non-members from building. Recomme
 - Region ids are case-insensitive; flag values are not: the plugin lower-cases plot ids.
 - `//wand` selections live in the WorldEdit session and are not available to us (no selection commands of our own).
 - `paper-plugin.yml` must keep `load: BEFORE` on the WorldGuard dependency (`OMIT` has undefined order), or flag registration breaks.
+
+---
+
+## MariaDB (live storage and the website)
+
+H2 (one file in the plugin folder) is the default and needs nothing. Use **MariaDB** on the live server, so a
+website (leaderboards, later) can read the data while the server runs. Tested with MariaDB 11.4 and
+mariadb-java-client 3.5.10; the plugin downloads the driver and the HikariCP pool itself (`CookieClickerLoader`,
+versions in `pom.xml`), so there is nothing to put in `plugins/`.
+
+### 1. Install on the same machine
+```sh
+sudo apt install mariadb-server        # Debian/Ubuntu; other systems: https://mariadb.org/download/
+sudo systemctl enable --now mariadb
+sudo mariadb-secure-installation       # set a root password, remove test users/database
+```
+Keep MariaDB on `localhost` (the default `bind-address = 127.0.0.1`): the plugin and the website connect locally,
+nothing has to be open to the internet.
+
+### 2. Database and users
+`sudo mariadb`, then (pick your own passwords):
+```sql
+CREATE DATABASE cookieclicker CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- the plugin: reads and writes, creates and migrates its own tables
+CREATE USER 'cookieclicker'@'localhost' IDENTIFIED BY 'change-me';
+GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX ON cookieclicker.* TO 'cookieclicker'@'localhost';
+
+-- the website: read-only, it can never change a save
+CREATE USER 'cookieweb'@'localhost' IDENTIFIED BY 'change-me-too';
+GRANT SELECT ON cookieclicker.* TO 'cookieweb'@'localhost';
+```
+
+### 3. config.yml
+```yaml
+database:
+  type: mariadb
+  table-prefix: cc_
+  mariadb:
+    host: localhost
+    port: 3306
+    database: cookieclicker
+    username: cookieclicker
+    password: "change-me"
+    parameters: ""     # extra JDBC URL parameters, e.g. "connectTimeout=5000"
+    pool-size: 4       # max open connections
+```
+Restart the server (the database is never switched by `/bakery reload`). At enable the plugin connects once: if
+MariaDB is down or the login is wrong it logs one line (`Could not connect to MariaDB at host:port/database as
+user: ...`, never the password) and **disables itself**. It never falls back to H2, so no progress is saved
+somewhere you don't expect. The schema (tables, columns, index) is created and upgraded automatically.
+
+### 4. Move the old H2 saves: `/bakery db migrate`
+Once, after the restart on MariaDB, as console or a player with `cookieempire.admin`:
+- **Back up the H2 file first** (copy `plugins/CookieClicker/data/cookies.mv.db`): the migrate upgrades its schema to
+  version 4 in place, and CookieClicker 1.2.x can't open it after that.
+- `/bakery db migrate` copies `players`, `buildings`, `upgrades` and `house_seen` from the H2 file at
+  `database.h2.file` (`plugins/CookieClicker/data/cookies.mv.db`) into MariaDB and reports the rows per table.
+- Online players are saved and unloaded first; the copy runs on the storage thread (never the main thread) and
+  then everyone online is loaded again from MariaDB. Each table is replaced in one transaction.
+- It refuses when `database.type` isn't `mariadb`, when the H2 file doesn't exist, or when MariaDB already holds
+  player rows. `/bakery db migrate --force` replaces them with the H2 data (an admin who joined before migrating
+  already has a row, so run it from the console with nobody online, or use `--force`).
+- The H2 file is kept (only its schema is upgraded to version 4); your copy from the first step is the backup for 1.2.x.
+
+### 5. Backups
+```sh
+mariadb-dump --single-transaction cookieclicker | gzip > cookieclicker-$(date +%F).sql.gz
+gunzip < cookieclicker-2026-10-24.sql.gz | mariadb cookieclicker      # restore (server stopped)
+```
+`--single-transaction` takes a consistent snapshot without locking (all tables are InnoDB), so it can run while the
+server plays; put it in a daily cron job and keep a few days.
+
+### Website contract (schema version 4)
+All tables use the configured prefix (default `cc_`), `ENGINE=InnoDB` and `utf8mb4`. These names are stable: later
+versions only **add** tables or columns, never rename or remove these. The website only reads (`SELECT`); the
+plugin keeps live players in memory and saves them every `autosave-seconds` (300 by default) and on quit, so the
+data is at most that old.
+
+| Table | Column | Type | Meaning |
+|---|---|---|---|
+| `cc_players` | `uuid` | `VARCHAR(36)` PK | Minecraft UUID with dashes |
+| | `name` | `VARCHAR(16)` NULL | last known name (set on join/save; NULL for saves from before 1.3.0 until the player joins) |
+| | `pouch` | `DOUBLE` | cookies the player has now |
+| | `baked` | `DOUBLE` | cookies baked in total (never below `pouch`); the leaderboard value |
+| | `last_seen` | `BIGINT` | epoch milliseconds of the last save |
+| | `prestige` | `DOUBLE` | reserved for prestige (0 for now) |
+| `cc_buildings` | `uuid`, `building_id` PK | `VARCHAR(36)`, `VARCHAR(64)` | building ids as in `buildings.yml` |
+| | `owned` | `INT` | how many the player owns (> 0) |
+| `cc_upgrades` | `uuid`, `upgrade_id` PK | `VARCHAR(36)`, `VARCHAR(64)` | upgrade ids as in `upgrades.yml` |
+| | `upgrade_level` | `INT` | level bought (>= 1) |
+| `cc_house_seen` | `uuid`, `plot_id` PK | `VARCHAR(36)`, `VARCHAR(64)` | first house cinematic seen on a plot |
+| | `seen_at` | `BIGINT` | epoch milliseconds |
+| `cc_schema_version` | `id` = 1, `version` | `INT` | schema version (4); the website can refuse to run on a newer one |
+
+Index `cc_players_baked_idx` on `cc_players(baked)` makes the leaderboard cheap:
+```sql
+SELECT name, baked FROM cc_players ORDER BY baked DESC LIMIT 10;
+```

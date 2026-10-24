@@ -51,7 +51,12 @@ public final class CookieClicker extends JavaPlugin {
 
         settings = loader.loadSettings(problems);
         wiring = new PluginWiring(this, () -> settings, messages, loader);
-        wiring.build(regions, problems);
+        try {
+            wiring.build(regions, problems);
+        } catch (PluginWiring.StartupFailure e) {
+            getLogger().severe(e.getMessage());
+            getServer().getPluginManager().disablePlugin(this);
+        }
     }
 
     /** The region hook, or null when WorldGuard is missing, disabled or our flags could not be registered. */

@@ -16,5 +16,6 @@ Older per-feature ledgers (starter-house, upgrade-holograms, plot-polish, buildi
 | world part (`house`, `plot`, `belt`, `building`, `worldguard`) | tidy/plugin-tester-world | READY; `PlotRegistryBoundsTest` |
 | cleanup (`LoopPlayer`, `PlotRegistry` TTL, `BeltRider` key) + integration | tip of tidy/plugin-tester-integration (includes `318f1d5`) | READY after the MEDIUM-1 fix; `LoopPlayerTest`; 395 tests / 93 asset files / 28 sounds / 19 balance targets / 73 tools tests |
 | older house/sound/balance designer assets | 2026-10-19..22 | asset-only branches, checked through `validate-assets`, `sound-check`, `balance-check`; Rick merges them without a branch review |
+| mariadb storage (`storage/**`, `session/SessionManager` runExclusive, `command/DbCommand`, `PluginWiring.openPool`) | `mariadb/plugin-coder` 0cc05c0 | NOT READY (2026-10-24): MEDIUM runExclusive stranded by an Error; see `storage-mariadb.md`. Tests at `mariadb/plugin-tester` 14e7797: 404 tests green |
 
 Re-review: `git diff 318f1d5..HEAD -- src/main/java/dev/casperrs/cookieClicker/sound`.
