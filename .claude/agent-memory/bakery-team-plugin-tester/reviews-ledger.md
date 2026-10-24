@@ -18,4 +18,6 @@ Older per-feature ledgers (starter-house, upgrade-holograms, plot-polish, buildi
 | older house/sound/balance designer assets | 2026-10-19..22 | asset-only branches, checked through `validate-assets`, `sound-check`, `balance-check`; Rick merges them without a branch review |
 | mariadb storage (`storage/**`, `session/SessionManager` runExclusive, `command/DbCommand`, `PluginWiring.openPool`) | `mariadb/plugin-coder` 0cc05c0 | NOT READY (2026-10-24): MEDIUM runExclusive stranded by an Error; see `storage-mariadb.md`. Tests at `mariadb/plugin-tester` 14e7797: 404 tests green |
 
+| build-quality code (`house/design` ground/decor/fence, `house/setup` DesignBlocks/planner/backup, `plot` LiquidGuard/Box/PlotCodec, `house/cinematic/HouseShapes`, `tools/review`) | `build-quality/plugin-coder` 10e2279 | NOT READY (2026-10-24): HIGH LiquidGuard cancels flows inside the union box of ALL plot regions (outside plots too); MEDIUM RCON loopback not enforced on the server side (tool never writes server.properties, default password `review`); LOW Box.ground stale after `house place`; LOW cinematic pit (accepted). Tests at `build-quality/plugin-tester` 24ce235 + a315224: 416 Java green, tools-test 77 green. Re-review: `git diff 10e2279..HEAD -- src/main tools/review`. |
+
 Re-review: `git diff 318f1d5..HEAD -- src/main/java/dev/casperrs/cookieClicker/sound`.

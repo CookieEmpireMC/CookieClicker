@@ -22,4 +22,8 @@ Verified at tidy integration 2026-10-23 (feature/tidy + cleanup). Package map an
 - Overlap test recipe: `PanelCookieOverlapTest` (frame yaw 0, panels at x=+-2, eye 1.62, `BoundingBox.rayTrace` vs `PanelLayout.pick`).
 - Pack: `mise run pack` is reproducible (same SHA-1 twice).
 
+**House ground and decor (build-quality, verified 2026-10-24 at 10e2279)**: `HouseDesign` design y -N..-1 are ground (`ground-depth` 0..2); `corner(regionMin)` = y regionMin-N-origin; `houseHeight()` = sizeY-N. Plot.Box has `ground` (7th field); `HouseShapes` adds the ground cuboid below the box for the cinematic. `DecorKeepOut.groundReason`: ground keep-out = house design box (no margin) + belt cells only; the fence ring applies to both. Factory: `house-at [6,0,10]`, size 19x17x14 (box x 6..24, z 10..23); belt from (18,11) is INSIDE the box, belt to (18,7) is outside. `LiquidGuard` uses `mayContainPlot`, which is the union of all plot regions in the world (not per plot).
+- `DesignBlocks.create` forces leaves persistent; restores (`PlotSetup.restore`, `undoNow`) use a fresh `HashMap` and plain `Bukkit::createBlockData`, so they stay exact.
+- Undo restores `backup.previousPlot()` and calls the PlotSetup store hook, which calls `cinematics.plotChanged` (forget shape). `HousePlacer` paste updates `house.withGround` WITHOUT that hook (stale shape cache).
+
 **Open items (details in the tidy integration review)**: config<->belt/storage package cycle; PrivateDisplays adoption; in-game check of panel text vertical anchor; v2->v3 ALTER not idempotent (use `ADD COLUMN IF NOT EXISTS`).
