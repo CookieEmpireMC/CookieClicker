@@ -9,7 +9,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
+import org.bukkit.event.block.BlockFromToEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -144,5 +148,45 @@ class PlotRegistryBoundsTest {
         regions.infos.put(overworld, List.of(new PlotRegions.RegionInfo("plot_area", 0, "main", null)));
         now[0] += PlotRegistry.BOUNDS_TTL_MILLIS;
         assertTrue(timed.mayContainPlot(overworld, 10, 70, 10), "a region flagged later is picked up without a reload");
+    }
+
+    /** A block for a flow event: its world and position, water. */
+    private static Block block(World w, int x, int y, int z) {
+        return (Block) Proxy.newProxyInstance(Block.class.getClassLoader(), new Class<?>[] {Block.class},
+                (proxy, method, args) -> switch (method.getName()) {
+                    case "getWorld" -> w;
+                    case "getX" -> x;
+                    case "getY" -> y;
+                    case "getZ" -> z;
+                    case "getType" -> Material.WATER;
+                    case "hashCode" -> System.identityHashCode(proxy);
+                    case "equals" -> proxy == args[0];
+                    default -> throw new UnsupportedOperationException(method.getName());
+                });
+    }
+
+    /**
+     * HIGH-1 regression: liquids are stopped only where a paste writes (plot region, house region and its ground,
+     * house box and ground). A flow in the union box around them, between plot and house, is not stopped.
+     */
+    @Test
+    void liquidFlowIsStoppedOnlyInsideAPasteAreaNotInTheBoxAroundThePlots() {
+        registry.put(Plot.empty("main", "minecraft:overworld").withHouse(new Plot.Box(52, 75, 52, 54, 77, 54, 2)),
+                p -> { });
+        assertTrue(registry.inPasteArea(overworld, 10, 70, 10), "plot region");
+        assertTrue(registry.inPasteArea(overworld, 55, 65, 55), "house region");
+        assertTrue(registry.inPasteArea(overworld, 53, 76, 53), "setup house box");
+        assertTrue(registry.inPasteArea(overworld, 53, 73, 53), "ground layer under the setup house box");
+        assertFalse(registry.inPasteArea(overworld, 40, 70, 40), "between plot and house: inside the union box only");
+        assertFalse(registry.inPasteArea(overworld, 53, 71, 53), "above the house region, below the house box");
+        assertFalse(registry.inPasteArea(overworld, 1005, 5, 1005), "a foreign region");
+
+        LiquidGuard guard = new LiquidGuard(registry);
+        BlockFromToEvent natural = new BlockFromToEvent(block(overworld, 40, 70, 40), BlockFace.DOWN);
+        guard.onFlow(natural);
+        assertFalse(natural.isCancelled(), "natural water in the union box keeps flowing");
+        BlockFromToEvent inHouse = new BlockFromToEvent(block(overworld, 53, 76, 53), BlockFace.DOWN);
+        guard.onFlow(inHouse);
+        assertTrue(inHouse.isCancelled(), "water inside a house box stays where the design put it");
     }
 }
