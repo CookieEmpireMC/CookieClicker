@@ -26,6 +26,14 @@ Checked against the tidy layout (feature/tidy, 2026-10-23). Package map: `docs/a
 - Loop sound periods: ambient 80, crackle 60 (`house.chimney.crackle-ticks`), belt 100; all through `SoundService.playLoop`
   / `loopDelay` (`sound/LoopPacer` keeps the beat per player+event). Plot ambience uses `sound/LoopPlayer` (one task); the belt polls inside its ride task.
 
+**House ground (build-quality, 2026-10-24)**
+- `ground-depth` N: HouseDesign keeps file layers in `grid[layer]`, but cells/points/signs/origin/toWorld use design y
+  (ground = -N..-1). `design.corner(min)`/`size()` = whole box incl. ground (backups); house box = base up
+  (`houseHeight()`), `Plot.Box.ground` = N so `HouseShapes` adds the ground layers to the cinematic.
+- Design block data goes through `house/setup/DesignBlocks.create` (leaves forced persistent); restores don't.
+- `plot/LiquidGuard` cancels BlockFromToEvent inside `mayContainPlot` bounds.
+- Decor y -1/-2 uses `DecorKeepOut.groundReason` (ring, house box no margin, belt cells only).
+
 **Engine behaviour**
 - `EffectTicker.start(job)` runs the first step synchronously (a pop's step 0 happens inside the click handler).
 - `Effects.play` may keep the Location for multi-tick jobs: pass a fresh Location per call.
