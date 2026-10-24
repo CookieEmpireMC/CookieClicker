@@ -340,6 +340,8 @@ somewhere you don't expect. The schema (tables, columns, index) is created and u
 
 ### 4. Move the old H2 saves: `/bakery db migrate`
 Once, after the restart on MariaDB, as console or a player with `cookieempire.admin`:
+- **Back up the H2 file first** (copy `plugins/CookieClicker/data/cookies.mv.db`): the migrate upgrades its schema to
+  version 4 in place, and CookieClicker 1.2.x can't open it after that.
 - `/bakery db migrate` copies `players`, `buildings`, `upgrades` and `house_seen` from the H2 file at
   `database.h2.file` (`plugins/CookieClicker/data/cookies.mv.db`) into MariaDB and reports the rows per table.
 - Online players are saved and unloaded first; the copy runs on the storage thread (never the main thread) and
@@ -347,7 +349,7 @@ Once, after the restart on MariaDB, as console or a player with `cookieempire.ad
 - It refuses when `database.type` isn't `mariadb`, when the H2 file doesn't exist, or when MariaDB already holds
   player rows. `/bakery db migrate --force` replaces them with the H2 data (an admin who joined before migrating
   already has a row, so run it from the console with nobody online, or use `--force`).
-- The H2 file is kept (only its schema is brought to the current version first); keep it as a backup.
+- The H2 file is kept (only its schema is upgraded to version 4); your copy from the first step is the backup for 1.2.x.
 
 ### 5. Backups
 ```sh

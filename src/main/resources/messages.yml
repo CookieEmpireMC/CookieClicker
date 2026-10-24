@@ -261,7 +261,7 @@ house:
 # /bakery db migrate [--force]: copies the H2 file into MariaDB. <id> = file or table, <count> = rows/players.
 db:
   migrate:
-    started: "<prefix><gray>Saving online players, then copying <white><id></white> into MariaDB...</gray>"
+    started: "<prefix><gray>Saving online players, then copying <white><id></white> into MariaDB (this upgrades the H2 file to schema v4; 1.2.x can't open it after)...</gray>"
     table: "<dark_gray> - </dark_gray><gray><id>: <white><count></white> row(s)</gray>"
     done: "<prefix><green>Migration finished: <count> row(s) copied. Online players were reloaded from MariaDB.</green>"
     not-mariadb: "<prefix><red>Set <white>database.type: mariadb</white> in config.yml and restart first; the migration copies the H2 file into MariaDB.</red>"
