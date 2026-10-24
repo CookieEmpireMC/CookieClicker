@@ -128,7 +128,10 @@ none: `docs/research/build-quality.md` (committed on this branch). The orchestra
 | Kind | ID | Owner | Notes |
 |---|---|---|---|
 | house design | `factory`, `default`, `decor`, `fence` (ids unchanged) | model-designer | kept points listed above |
-| design file format | ground layers (y -2..-1) + height field in house YAML and in the plot-wide decor/ground design | plugin-coder + model-designer | documented in `design/house-default.md` |
+| house YAML | new optional `ground-depth: 0..2`: the first N `layers` lie **below** the house region's min y (design y -N..-1); `size[1]` counts them. Mounds/terraces are ordinary blocks above y0; ditches/water are air/water in the ground layers. Missing key = 0 (old files unchanged) | plugin-coder (parser, paste, backup, undo, cinematic) + model-designer (designs) | documented in `design/house-default.md` |
+| decor.yml | `blocks[].at` y may be **-1 or -2** (replaces the plot's ground there, e.g. paths, beds, gravel edges); everything is backed up and restored by `/bakery plot setup` undo like today | plugin-coder + model-designer | `design/decor.md` |
+| fence.yml | new optional `post-spacing: [4, 3, 5, …]` (cycled list of gaps, replaces `post-every`) and `topper-spacing` likewise; `post-every`/`topper-every` still accepted | plugin-coder + model-designer | `design/fence.md` |
+| placement rule | every `*_leaves` block placed from a design gets `persistent=true` (forced by the plugin even if the file omits it) | plugin-coder | |
 | design files | `design/refs/<house>.md`, `design/build-lint.md` | model-designer | |
 | mise task | `review-render` | plugin-coder | outputs to `~/bakery-review/shots/` |
 
