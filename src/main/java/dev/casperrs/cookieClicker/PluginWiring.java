@@ -15,6 +15,7 @@ import dev.casperrs.cookieClicker.hud.BakeryTicker;
 import dev.casperrs.cookieClicker.hud.Hud;
 import dev.casperrs.cookieClicker.pack.ResourcePackSender;
 import dev.casperrs.cookieClicker.pack.ResourcePackTracker;
+import dev.casperrs.cookieClicker.plot.LiquidGuard;
 import dev.casperrs.cookieClicker.plot.PedestalPrivacy;
 import dev.casperrs.cookieClicker.plot.PlotFile;
 import dev.casperrs.cookieClicker.plot.PlotOutlines;
@@ -168,6 +169,7 @@ final class PluginWiring {
         pm.registerEvents(new ClickRouter(views, interactions, () -> settings.get().visuals(), plugin.getLogger()),
                 plugin);
         views.start();
+        pm.registerEvents(new LiquidGuard(plotRegistry), plugin);
 
         plotTracker = new PlotTracker(plugin, plotRegistry);
         cinematics = new HouseCinematics(plugin, plotRegistry, plotTracker, houseSeen, effects, sounds, messages,
