@@ -7,6 +7,8 @@ metadata:
 
 Verified 2026-10-24 by running `mise run review-render factory --at 200 -60 0` end to end (stable unless the setup moves).
 
+- RCON password: random, in `<home>/rcon.password` (0600); written to server.properties only before this tool starts the
+  server; a running server keeps its old one (the client tries stored, then properties). server-ip must be loopback.
 - Layout outside the repo: `~/bakery-review/{server,chunky,scenes,shots}`; server = Paper 26.3 flat world, RCON
   127.0.0.1:25575 pw `review`; the orchestrator runs it as `java -Xmx3G -jar paper.jar --nogui` (check with
   `rcon.reachable` before starting one). Flat world: first air layer y -60 (grass -61, dirt -62/-63, bedrock -64).
