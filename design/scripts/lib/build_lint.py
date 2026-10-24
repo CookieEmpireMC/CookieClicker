@@ -387,7 +387,7 @@ def check_props(g: dict, errors: list) -> None:
             errors.append(f"lone prop: {b} at {p} (D1: every prop is anchored to a wall, path, bed or other props)")
 
 
-def check_organic(g: dict, errors: list, max_run: int = 7, region: tuple | None = None) -> None:
+def check_organic(g: dict, errors: list, max_run: int = 7, region: tuple | None = None, extra_inside=None) -> None:
     """R15: ground treatments (paths, gravel, coarse dirt, beds ...) and hedges never run straight for more than
     `max_run` blocks along their edge."""
     mask, built = set(), set()
@@ -397,7 +397,7 @@ def check_organic(g: dict, errors: list, max_run: int = 7, region: tuple | None 
             mask.add((x, z))
         if y >= 0 and b != "air" and not is_prop(b) and not b.endswith("leaves") and "fence" not in b:
             built.add((x, z))
-    inside = mask | built
+    inside = mask | built | set(extra_inside or ())
     xs = [p[0] for p in mask] or [0]
     zs = [p[1] for p in mask] or [0]
     for name, (dx, dz) in (("north", (0, -1)), ("south", (0, 1)), ("west", (-1, 0)), ("east", (1, 0))):
@@ -478,11 +478,12 @@ def lint_house(g: dict, notes: Notes, points: dict, palette: dict | None = None)
         raise LintError("build lint failed (design/build-lint.md):\n  - " + "\n  - ".join(sorted(set(errors))))
 
 
-def lint_decor(blocks: dict, scenes: list[dict], plot_cells: set | None = None, palette: dict | None = None) -> None:
+def lint_decor(blocks: dict, scenes: list[dict], plot_cells: set | None = None, palette: dict | None = None,
+               extra_inside=None) -> None:
     """blocks: {(x, y, z): data} plot cells (ground at y -1/-2); scenes: [{name, cells, anchor, ground_cells}]."""
     errors: list[str] = []
     check_props(blocks, errors)
-    check_organic(blocks, errors)
+    check_organic(blocks, errors, extra_inside=extra_inside)
     for s in scenes:
         cells = s["cells"]
         types = {bid(blocks[c]) for c in cells if c in blocks}

@@ -11,10 +11,8 @@ from build import Build, Ramp
 FLOWERS = ["poppy", "dandelion", "cornflower", "azure_bluet", "oxeye_daisy", "allium", "pink_tulip",
            "lily_of_the_valley"]
 PODZOL, COARSE, ROOTED = P("podzol[snowy=false]"), P("coarse_dirt"), P("rooted_dirt")
-PATH = Ramp(P("dirt_path"), [(P("gravel"), .22, None), (P("coarse_dirt"), .14, None), (P("cobblestone"), .09, None)],
-            seed=21)
-GRAVEL = Ramp(P("gravel"), [(P("coarse_dirt"), .25, None), (P("dirt_path"), .12, None), (P("cobblestone"), .08, None)],
-              seed=22)
+PATH = Ramp(P("gravel"), [(P("coarse_dirt"), .12, None), (P("cobblestone"), .06, None)], seed=21)
+GRAVEL = Ramp(P("gravel"), [(P("coarse_dirt"), .22, None), (P("cobblestone"), .07, None)], seed=22)
 
 
 def noisy_rect(b: Build, x0: int, z0: int, x1: int, z1: int, wobble: int = 1, seed_shift: int = 0) -> set:
@@ -69,6 +67,8 @@ def flower_bed(b: Build, cells, kinds=FLOWERS, density: float = .78, seed: int =
     for (x, z) in sorted(cells):
         r = rng.random()
         b.put(x, -1, z, PODZOL if r < .6 else (COARSE if r < .85 else ROOTED))
+        if hasattr(b, "can") and not b.can(x, 0, z):
+            continue                                       # ground only here (a keep-out forbids standing things)
         if rng.random() < density:
             k = rng.choice(kinds)
             b.put(x, 0, z, P(k))
@@ -84,9 +84,19 @@ def woodpile(b: Build, x: int, z: int, axis: str = "x", length: int = 5) -> None
             b.put(cx, layer, cz, lg("spruce" if (i + layer) % 3 else "oak", axis))
     cx, cz = (x + length + 1, z) if axis == "x" else (x, z + length + 1)
     b.put(cx, 0, cz, lg("oak", "y"))
+    apron(b, x - 1, z - 1, x + length + 1, z + 1, Ramp(COARSE, [(PODZOL, .3, None), (P("gravel"), .2, None)], seed=44), force=True)
+
+
+def apron(b: Build, x0: int, z0: int, x1: int, z1: int, ramp: Ramp | None = None, force: bool = False) -> None:
+    """Ground (y -1) under a prop group where nothing has been painted yet (so the group sits on its own patch)."""
+    for x in range(x0, x1 + 1):
+        for z in range(z0, z1 + 1):
+            if force or b.get(x, -1, z) is None:
+                b.put(x, -1, z, (ramp or GRAVEL).pick(x, 0, z))
 
 
 def lamp_post(b: Build, x: int, z: int, height: int = 3) -> None:
+    apron(b, x - 1, z - 1, x + 1, z + 1)
     for y in range(height):
         b.put(x, y, z, "@dark_oak_fence")
     b.put(x, height, z, B.lantern(False))
@@ -143,52 +153,49 @@ def veg_plot(b: Build, x0: int, z0: int, w: int, d: int, crops: list, seed: int 
 
 
 def well(b: Build, x: int, z: int) -> None:
-    """3 x 3 stone ring around enclosed water (ground layers), two dark oak posts, a small stair roof."""
+    """3 x 3 mossy stone ring around enclosed water (ground layers), two dark oak posts, a small stair roof, a bucket
+    barrel and chain over the water."""
     for dx in (-1, 0, 1):
         for dz in (-1, 0, 1):
             if (dx, dz) == (0, 0):
                 b.put(x, -1, z, P("water[level=0]"))
                 b.put(x, -2, z, P("water[level=0]"))
             else:
+                b.put(x + dx, -2, z + dz, P("cobblestone"))
                 b.put(x + dx, -1, z + dz, P("cobblestone"))
                 b.put(x + dx, 0, z + dz, P("mossy_cobblestone") if (dx + dz) % 2 else P("cobblestone"))
-    for dz in (-1, 1):
-        b.put(x - 1, 0, z + dz, P("stone_brick_wall[east=none,north=none,south=none,up=true,waterlogged=false,west=none]")
-              if False else P("mossy_cobblestone"))
     for dx in (-1, 1):
         for y in (1, 2):
             b.put(x + dx, y, z, lg("dark_oak", "y"))
-        b.put(x + dx, 3, z, B.stripped("dark_oak", "z"))
-    for dz in (-1, 0, 1):
-        b.put(x - 1, 3, z + dz, B.stripped("dark_oak", "z"))
-        b.put(x + 1, 3, z + dz, B.stripped("dark_oak", "z"))
-    for dz in (-1, 0, 1):
-        b.put(x, 4, z + dz, sl("dark_oak"))
-    for dx in (-1, 1):
         for dz in (-1, 0, 1):
-            b.put(x + dx, 4, z + dz, st("spruce", "east" if dx < 0 else "west"))
+            b.put(x + dx, 3, z + dz, B.stripped("dark_oak", "z"))
+    for dz in (-1, 0, 1):
+        b.put(x - 1, 4, z + dz, st("spruce", "east"))
+        b.put(x, 4, z + dz, sl("dark_oak"))
+        b.put(x + 1, 4, z + dz, st("spruce", "west"))
+    b.put(x, 3, z, B.stripped("dark_oak", "z"))
     b.put(x, 2, z, B.chain("y"))
     b.put(x, 1, z, B.barrel())
-    b.g[(x, 3, z)] = P("dark_oak_planks")
 
 
-def tree(b: Build, x: int, z: int, kind: str = "oak", height: int = 5, spread: float = 2.6, bend: int = 0) -> None:
-    """A custom tree: slightly bent trunk, 3-4 canopy blobs with noisy edges, podzol roots (R20). Leaves persistent."""
+def tree(b: Build, x: int, z: int, kind: str = "oak", height: int = 5, spread: float = 2.6, bend: int = 0,
+         y0: int = 0, ok=None) -> None:
+    """A custom tree: trunk (height blocks from y0), 3-4 canopy blobs with noisy edges, podzol roots (R20).
+    Leaves are persistent. `ok(x, y, z)` may veto a leaf cell (keep-outs)."""
     rng = b.rng
     log = f"{kind}_log"
-    b.put(x, -1, z, PODZOL)
+    b.put(x, y0 - 1, z, PODZOL)
     for (dx, dz) in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-        if rng.random() < .6:
-            b.put(x + dx, -1, z + dz, ROOTED if rng.random() < .5 else PODZOL)
+        if rng.random() < .6 and (ok is None or ok(x + dx, y0 - 1, z + dz)):
+            b.put(x + dx, y0 - 1, z + dz, ROOTED if rng.random() < .5 else PODZOL)
     tx, tz = x, z
-    for y in range(height):
+    for y in range(y0, y0 + height):
         b.put(tx, y, tz, f"minecraft:{log}[axis=y]")
-        if bend and y in (2, 3):
-            tx += bend if y == 2 else 0
-    blobs = [(tx, height, tz, spread)]
+    top = y0 + height
+    blobs = [(tx, top, tz, spread)]
     for _ in range(3):
-        blobs.append((tx + rng.randint(-2, 2), height - 1 + rng.randint(0, 1), tz + rng.randint(-2, 2),
-                      spread - 0.6 - rng.random() * .6))
+        blobs.append((tx + rng.randint(-2, 2), top - 1 + rng.randint(0, 1), tz + rng.randint(-2, 2),
+                      max(1.2, spread - 0.6 - rng.random() * .6)))
     for (bx, by, bz, r) in blobs:
         for dx in range(-3, 4):
             for dy in range(-2, 3):
@@ -196,10 +203,9 @@ def tree(b: Build, x: int, z: int, kind: str = "oak", height: int = 5, spread: f
                     dd = (dx * dx + dz * dz) / (r * r) + (dy * dy) / ((r * .8) ** 2)
                     if dd + rng.random() * .35 < 1.0:
                         p = (bx + dx, by + dy, bz + dz)
-                        if p not in b.g and 0 <= p[1] < b.size[1] and 0 <= p[0] < b.size[0] and 0 <= p[2] < b.size[2]:
-                            b.put(*p, B.leaves(kind))
-    b.put(tx, height, tz, f"minecraft:{log}[axis=y]")
-    for dy in range(1, 3):                                                 # a branch stub for character
-        bx = tx + (1 if rng.random() < .5 else -1)
-        if (bx, height - dy, tz) not in b.g:
-            b.put(bx, height - dy, tz, f"minecraft:{log}[axis=x]")
+                        if p in b.g or not (0 <= p[1] < b.size[1] and 0 <= p[0] < b.size[0] and 0 <= p[2] < b.size[2]):
+                            continue
+                        if ok is not None and not ok(*p):
+                            continue
+                        b.put(*p, B.leaves(kind))
+    b.put(tx, top, tz, f"minecraft:{log}[axis=y]")

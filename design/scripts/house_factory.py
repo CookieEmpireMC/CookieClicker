@@ -40,7 +40,7 @@ PLASTER = Ramp(P("white_terracotta"), [(P("calcite"), .16, "high"), (P("light_gr
 BRICK = Ramp(P("bricks"), [(P("red_nether_bricks"), .12, None), (P("mud_bricks"), .12, None)], seed=6)
 ROOF = Ramp("spruce", [("dark_oak", .12, None), ("mud_brick", .07, None)], seed=8, height=12)
 FLOOR = Ramp(P("spruce_planks"), [(P("oak_planks"), .22, None), (P("dark_oak_planks"), .15, None)], seed=9)
-GROUND = Ramp(P("gravel"), [(P("coarse_dirt"), .26, None), (P("dirt_path"), .10, None), (P("podzol[snowy=false]"), .07, None)], seed=11)
+GROUND = Ramp(P("gravel"), [(P("coarse_dirt"), .24, None), (P("cobblestone"), .08, None), (P("podzol[snowy=false]"), .07, None)], seed=11)
 RAMPS = {
     "stone": ["stone_bricks", "cracked_stone_bricks", "mossy_stone_bricks", "andesite"],
     "plinth": ["cobblestone", "mossy_cobblestone", "andesite"],

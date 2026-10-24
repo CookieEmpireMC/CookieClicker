@@ -1,53 +1,61 @@
 # Plot decoration: `houses/decor.yml`
 
-Status: placeholder (first design; judge in game)
+Status: placeholder (rebuilt 2026-10-24 for `build-quality`: scenes over the whole plot; textured plan + Chunky shots reviewed, needs a look in game)
 
-- **Purpose:** cosy bakery-village props around the factory so the fenced plot no longer feels plain (feature `plot-polish`). `/bakery plot setup` places them after house, fence and belt; backup/undo covers them like the rest.
-- **Pipeline:** plugin data file, vanilla blocks only. **Generated** by `design/scripts/decor_style.py` (`mise run assets`); don't edit the YAML by hand. Preview: `design/scripts/previews/decor_plot.png` (top-down plan: keep-out zones, factory, belt, pedestal and panels, decor colours).
-- **Target:** Paper 26.3. Block ids checked against `Material.java` in the paper-api 26.3 sources (2026-10-22); block data is checked by `house_lib.check_block_data` (new schemas added for leaves, farmland, wheat, water, carved pumpkin, small flowers).
-- 360 blocks, 9 clusters. Every plant is self-contained: flowers and trees stand on a `grass_block[snowy=false]` the decor places at y 0 (plant at y 1, trunk from y 1), wheat on its own farmland at y 0; nothing depends on the unknown plot ground.
+- **Purpose:** the ground treatment and props around the factory so the fenced plot looks lived-in everywhere, also around the house (feature `build-quality`; replaces the lone-flower layout of `plot-polish`). `/bakery plot setup` places them after house, fence and belt; backup/undo covers them like the rest.
+- **Pipeline:** plugin data file, vanilla blocks only. **Generated** by `design/scripts/decor_style.py` (`mise run assets`); don't edit the YAML by hand. Scene kits: `design/scripts/lib/scenes.py`; lint: `design/build-lint.md` (D1/D2/R15).
+- **Previews (textured, whole plot with factory, fence and belt):** `design/scripts/previews/decor_sheet.png` (4 corner views), `decor_eye.png`, `decor_ne/nw/se/sw.png`. Chunky shots: `~/bakery-review/shots/factory_{eye,34,door}.png`.
+- **Target:** Paper 26.3. Block data is checked by `house_lib.check_block_data` and the client-jar cross-check. 640 blocks in 18 scenes.
+
+![plot](scripts/previews/decor_sheet.png)
 
 ## Format (the coder parses exactly this)
 ```yaml
 blocks:
-  - {at: [11, 0, 2], block: "minecraft:poppy"}
+  - {at: [15, -1, 4], block: "minecraft:gravel"}
   - {at: [24, 3, 4], block: "minecraft:lantern[hanging=false,waterlogged=false]"}
 ```
-- `at: [x, y, z]` ints in **plot cells from the plot's min corner** (same frame as `layout:` in factory.yml, `design/factory.md`): x west to east, z north to south, y 0 = first air layer above the ground. All y >= 0 (nothing replaces ground); y max is 6.
-- `block`: full block data with explicit states for every stateful block. No rotation, nothing relative to the house. YAML `#` comment lines name the clusters.
-- Placement: physics off (like the house). One block per cell, no duplicates. Plants never rely on the ground: each stands on soil placed at y 0 (see above).
+- `at: [x, y, z]` ints in **plot cells from the plot's min corner** (same frame as `layout:` in factory.yml): x west to east, z north to south, **y 0 = first air layer above the ground; y -1 = the ground's top block, y -2 = the block under it** (new). Both ground levels replace the plot's block there (paths, gravel, beds, farmland, water). y max is 8.
+- `block`: full block data, explicit states for every stateful block. YAML `#` comment lines name the scenes.
+- Placement: physics off (so enclosed water stays still, nothing pops). One block per cell. **Leaves are forced `persistent=true`** by the plugin (the file also writes it). Everything (ground levels too) is backed up and restored by `/bakery plot setup` undo.
+- Plants never rely on the ground: each stands on soil the decor places at y -1 (podzol, coarse dirt, rooted dirt, grass block, farmland) or on a mound block at y 0.
 - All cells are inside the interior, x 1..29, z 1..28.
 
-## Keep-out (parser check; any y)
-A decor cell `(x, z)` is rejected when it is inside one of these (inclusive). The generator asserts the same rules.
-| Name | Cells | Derived from |
+## Keep-outs (parser check)
+| | Cells | Applies to |
 |---|---|---|
-| fence ring | `x == 0`, `x == 30`, `z == 0`, `z == 29` | `plot-size [31, 30]` |
-| factory | `x 5..25`, `z 9..24` | design box 19 x 14 at `house-at [6, 0, 10]` = x 6..24, z 10..23, plus 1 cell margin all round (door at plot `[14, 12]`, hatch, belt start at z 11) |
-| front zone | `x 12..23`, `z 1..8` | covers: the gate walk (gate x 14..16 at z 0, walk straight south), the free click rows in front of the pedestal, the pedestal `[18, 6]` +-2 (x 16..20, z 4..8), clicks `[16, 6]` +-2 (x 14..18), shop `[20, 6]` +-2 (x 18..22), belt cells x 18, z 7..11 (z 9..11 are in the factory zone), and the shelf growing west of clicks (x 12..13) |
+| fence ring | `x == 0`, `x == 30`, `z == 0`, `z == 29` | every y |
+| house design box | `x 6..24`, `z 10..23` (design box at `house-at [6, 0, 10]`, its ground layer is the house design's) | **ground cells (y < 0)** |
+| belt cells | `x 18`, `z 7..11` | ground cells (y < 0) |
+| factory margin | `x 5..25`, `z 9..24` | y >= 0 |
+| front zone | `x 12..23`, `z 1..8` (gate walk, click area, pedestal, panels, belt, viewpoint, holograms) | y >= 0 |
+| building slots | the footprint squares of `houses/building-slots.yml` + 0.35 (`building_slots.zone_cells`) | y >= 0 |
 
-Panels hang above their cells and stay inside the front zone, so no decor sits in a hitbox. The belt cells, the pedestal and both panels are inside these two rectangles (checked in the generator via the numbers above). The path from gate to pedestal is the open grass corridor x 12..23, z 1..8; the decor stands only along its edges (x 11 and x 24).
+So **ground decor (y -1 / -2) may go anywhere inside the ring except the house design box and the belt cells** (the front zone, the walk and the slot yards are allowed), while **y >= 0 decor keeps every old keep-out**. The generator asserts both (`Decor.put`).
 
-## Clusters (what they are)
-| Cluster | Where (x, z) | Content |
+## Scenes (what they are)
+| Scene | Where (x, z) | Content |
 |---|---|---|
-| `path_edge_west` / `path_edge_east` | x 11 and x 24, z 2..7 | flower rows (poppy, dandelion, cornflower, azure bluet, oxeye daisy, pink tulip) edging the walk, a **lamp post** (3 spruce logs + lantern) at z 4 on each side |
-| `front_west_garden` | x 3..8, z 1..8 | **cherry tree** (cherry log trunk 4, round pink canopy) at `[3, 3]`, a 3-stair **bench** at x 8, z 5..7 facing east (towards the pedestal), potted poppy and cornflower at its ends, loose flowers |
-| `front_east_wheat` | x 26..29, z 2..8 | 3 x 3 **wheat patch** (x 26..28, z 2..4): 8 farmland (moisture 7) with ripe wheat, centre `[27, 0, 3]` is water so the farmland stays wet; **scarecrow** at `[29, 0..2, 6]` (spruce log, hay block, carved pumpkin facing west); hay bales and a potted dandelion |
-| `west_store` | x 1..4, z 11..22 | barrels (a stack of 2 high), **flour sacks** (white wool + carpet, like the factory's flour shed), hay bales, a potted plant, lamp posts at `[4, 11]` and `[4, 22]` |
-| `west_bench_garden` | x 1..3, z 18..22 | bench (3 stairs facing east), two pots, a flower bed |
-| `east_yard` | x 26..29, z 11..22 | small cherry tree at `[28, 13]` (radius 1), barrels, hay, sacks, lamp posts at `[26, 11]`, `[26, 22]` |
-| `east_bench` | x 26, z 14..16 | 2-stair bench facing west towards the factory, potted poppy |
-| `back_yard` | z 24..28 | oak and cherry tree at `[3, 26]` / `[27, 26]`, oak-leaf hedges, a spruce **log pile** (x 12..16 at z 28), two lamp posts at `[10, 26]` and `[20, 26]`, flowers |
+| `main_walk` | x 13..17, z 1..9 | gravel lane from the gate (wanders +-1) to the plaza and on to the house path |
+| `pedestal_plaza` | x 14..22, z 3..8 | cobblestone / mossy / andesite plaza under the pedestal, panels and belt end |
+| `baker_yard` | x 2..12, z 1..7 | coarse dirt / podzol yard under the villager slots, a lane to the plaza |
+| `portal_yard` | x 24..29, z 2..6 | the same under the portal slot, a lane from the plaza |
+| `ring_lane` | z 9 (x 4..26), x 4..5, z 25, x 26 | a 2-3 wide gravel lane ringing the factory; the shipping, alchemy, oven and extra-belt slots face it |
+| `shipping_yard`, `oven_yard`, `belt_yard` | x 1..4 / x 25..29 / x 7..17 | packed-earth yards under the slots |
+| `gate_bed_west`, `gate_bed_east` | x 10..11, z 1..5 / x 24..29, z 1..4 | podzol flower beds against the fence beside the gate walk |
+| `well_yard` | x 1..3, z 1..9 | a **well** (3 x 3 mossy stone ring, enclosed water at y -1/-2, posts, stair roof, chain, bucket) with flower beds |
+| `west_store` | x 4, z 11..19 | barrels, flour sacks (wool + carpet), hay bales, a lamp post on its own apron |
+| `east_beds`, `oven_store` | x 28..29, z 11..22 | fern / lily-of-the-valley / allium patches and hay/crates along the east fence |
+| `back_garden` | x 16..23, z 25..28 | the **garden** (reworked wheat patch): farmland rows with wheat, carrots, potatoes and a water channel, coarse-dirt edge, a scarecrow |
+| `back_orchard` | x 25..29, z 24..28 | a grass **mound** with a custom oak (bent canopy, podzol roots, persistent leaves) |
+| `woodpile` | x 20..24, z 28 | a log pyramid with a chopping block on its own ground patch |
+| `belt_lamps` | (11,6) (24,6) (26,8) (4,26) | lamp posts only at junctions, each on a gravel apron |
 
-Style: the factory palette (spruce, dark oak greens, bricks, lanterns), pink cherry canopy and flowers for a little colour, kept to the edges and the back so the walk, the pedestal and the factory front stay clear. No fences (their connections would need computed states); lamp posts use a spruce log so nothing connects. Lantern light: 8 lamp posts, lit at night.
+Style: gravel lanes, cobblestone plazas, packed-earth yards, podzol beds (R14); every patch edge wobbles (R15); no lone flowers, no hedge rectangles, no grid of lamp posts. The small villager workers (item displays on the slots) are untouched (D7).
 
 ## Notes for the other roles
-- **plugin-coder:** parse `blocks:` as a list of `{at, block}`; reject cells in the keep-out table and outside x 1..29 / z 1..28 / y >= 0. Block entities: barrels (empty, 8), none else. The only **fluid** is the single `water[level=0]` source at `[27, 0, 3]`, enclosed by 4 farmland blocks; with physics off it stays put. Backup must capture y 0..6 for these cells (leaves reach y 6). The wheat y 1 cells sit on farmland y 0.
-- **plugin-tester:** parser cases: a decor cell inside each keep-out zone is rejected, an out-of-range cell is rejected, the shipped file loads (360 blocks) and none of them hit the keep-out.
+- **plugin-coder:** parse `blocks:` as a list of `{at, block}`; accept y -2..-1 (ground) and 0..8; reject keep-out cells as in the table (ground cells only against the house box and belt); backup must capture y -2..8 for these cells (leaves reach y 8). Block entities: barrels (empty). The only fluid is `water[level=0]` at y -1/-2 in the well and the garden channel, each enclosed on all four sides.
+- **plugin-tester:** parser cases: a ground cell in the house box / on the belt is rejected, a y >= 0 cell in the front zone is rejected, a y -3 cell is rejected, the shipped file loads (640 blocks).
 
 ## Placeholder / needs a human
-Everything is a first design judged from a top-down plan only (no in-game view): check the density, tree size, bench orientation, and the raised grass blocks under flowers and trees.
-
-## building-roster rework (2026-10-22)
-Slot zones from `houses/building-slots.yml` (footprint squares plus 0.35 blocks, see `design/buildings-world.md`) are a third keep-out in the generator (`building_slots.zone_cells`) and the parser should add the slot cells too. New layout (282 blocks, 7 clusters): `path_edge_west/east` unchanged; `front_west_garden` (x1..4: radius-1 cherry tree at [2,3], wheat bed x1..3 z6..8 with water [2,0,7], scarecrow [4,*,7] facing east); `front_east_corner` (flowers, hay, lamp [29,*,4] around the portal at x26..28 z3..5); `west_store` (x 4: lamps, barrels, sack, hay beside shipping/alchemy); `east_yard` (x 29: lamps, flowers beside the ovens); `back_yard` (hedges, log pile x17..21, trees [5,26] r1 and [27,26], lamps [12,26] [18,26], flowers). Removed: benches, east tree, west bench garden.
+- Judged in textured plans and Chunky shots only: check in game the amount of paving versus lawn, the well proportions, the oak and the lamp light at night, and that the hologram corridor and the cinematic view stay clear.

@@ -8,7 +8,7 @@ ground-depth: 1
 palette:
   "_": "minecraft:air"
   "a": "minecraft:gravel"
-  "b": "minecraft:dirt_path"
+  "b": "minecraft:cobblestone"
   "c": "minecraft:podzol[snowy=false]"
   "d": "minecraft:coarse_dirt"
   "e": "minecraft:andesite"
@@ -17,116 +17,115 @@ palette:
   "h": "minecraft:potted_orange_tulip"
   "i": "minecraft:barrel[facing=up,open=false]"
   "j": "minecraft:mossy_cobblestone"
-  "k": "minecraft:cobblestone"
-  "l": "minecraft:dark_oak_log[axis=y]"
-  "m": "minecraft:dark_oak_planks"
-  "n": "minecraft:spruce_planks"
-  "o": "minecraft:oak_planks"
-  "p": "minecraft:stone_brick_wall[east=none,north=low,south=low,up=true,waterlogged=false,west=low]"
-  "q": "minecraft:white_wool"
-  "r": "minecraft:barrel[facing=west,open=false]"
-  "s": "minecraft:stone_brick_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]"
-  "t": "minecraft:mossy_stone_bricks"
-  "u": "minecraft:waxed_copper_trapdoor[facing=north,half=top,open=false,powered=false,waterlogged=false]"
-  "v": "minecraft:stone_bricks"
-  "w": "minecraft:spruce_door[facing=north,half=lower,hinge=left,open=false,powered=false]"
-  "x": "minecraft:spruce_trapdoor[facing=north,half=top,open=false,powered=false,waterlogged=false]"
-  "y": "minecraft:spruce_slab[type=top,waterlogged=false]"
-  "z": "minecraft:spruce_trapdoor[facing=east,half=top,open=false,powered=false,waterlogged=false]"
-  "A": "minecraft:cracked_stone_bricks"
-  "B": "minecraft:waxed_copper_bars[east=true,north=false,south=false,waterlogged=false,west=true]"
-  "C": "minecraft:waxed_copper_bars[east=true,north=false,south=true,waterlogged=false,west=true]"
-  "D": "minecraft:campfire[facing=north,lit=true,signal_fire=false,waterlogged=false]"
-  "E": "minecraft:magma_block"
-  "F": "minecraft:white_carpet"
-  "G": "minecraft:spruce_trapdoor[facing=west,half=top,open=false,powered=false,waterlogged=false]"
-  "H": "minecraft:spruce_door[facing=south,half=lower,hinge=left,open=false,powered=false]"
-  "I": "minecraft:spruce_trapdoor[facing=south,half=top,open=false,powered=false,waterlogged=false]"
-  "J": "minecraft:spruce_door[facing=north,half=upper,hinge=left,open=false,powered=false]"
-  "K": "minecraft:waxed_cut_copper"
-  "L": "minecraft:spruce_trapdoor[facing=east,half=bottom,open=true,powered=false,waterlogged=false]"
-  "M": "minecraft:spruce_trapdoor[facing=north,half=bottom,open=true,powered=false,waterlogged=false]"
-  "N": "minecraft:potted_dandelion"
-  "O": "minecraft:lantern[hanging=false,waterlogged=false]"
-  "P": "minecraft:glass_pane[east=false,north=true,south=true,waterlogged=false,west=false]"
-  "Q": "minecraft:glass_pane[east=true,north=false,south=false,waterlogged=false,west=true]"
-  "R": "minecraft:spruce_trapdoor[facing=west,half=bottom,open=true,powered=false,waterlogged=false]"
-  "S": "minecraft:shroomlight"
-  "T": "minecraft:spruce_door[facing=south,half=upper,hinge=left,open=false,powered=false]"
-  "U": "minecraft:spruce_trapdoor[facing=south,half=bottom,open=true,powered=false,waterlogged=false]"
-  "V": "minecraft:potted_azure_bluet"
-  "W": "minecraft:lantern[hanging=true,waterlogged=false]"
-  "X": "minecraft:potted_poppy"
-  "Y": "minecraft:spruce_stairs[facing=west,half=bottom,shape=straight,waterlogged=false]"
-  "Z": "minecraft:stripped_dark_oak_log[axis=x]"
-  "0": "minecraft:stripped_dark_oak_log[axis=z]"
-  "1": "minecraft:dark_oak_stairs[facing=south,half=bottom,shape=straight,waterlogged=false]"
-  "2": "minecraft:chiseled_stone_bricks"
-  "3": "minecraft:dark_oak_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]"
-  "4": "minecraft:dark_oak_stairs[facing=south,half=top,shape=straight,waterlogged=false]"
-  "5": "minecraft:spruce_wall_sign[facing=north,waterlogged=false]"
-  "6": "minecraft:spruce_slab[type=bottom,waterlogged=false]"
-  "7": "minecraft:dark_oak_slab[type=bottom,waterlogged=false]"
-  "8": "minecraft:dark_oak_stairs[facing=west,half=bottom,shape=straight,waterlogged=false]"
-  "9": "minecraft:spruce_stairs[facing=south,half=bottom,shape=straight,waterlogged=false]"
-  "-": "minecraft:light_gray_terracotta"
-  "|": "minecraft:white_terracotta"
-  "+": "minecraft:spruce_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]"
-  "=": "minecraft:stripped_spruce_log[axis=x]"
-  "^": "minecraft:calcite"
-  "~": "minecraft:potted_cornflower"
-  "!": "minecraft:potted_oxeye_daisy"
-  "#": "minecraft:mud_bricks"
-  "$": "minecraft:red_nether_bricks"
-  "%": "minecraft:bricks"
-  "&": "minecraft:dark_oak_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]"
-  "*": "minecraft:spruce_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]"
-  ":": "minecraft:mud_brick_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]"
-  ";": "minecraft:mud_brick_stairs[facing=west,half=bottom,shape=straight,waterlogged=false]"
-  "<": "minecraft:dark_oak_trapdoor[facing=north,half=bottom,open=true,powered=false,waterlogged=false]"
-  ">": "minecraft:dark_oak_trapdoor[facing=south,half=bottom,open=true,powered=false,waterlogged=false]"
-  "?": "minecraft:stripped_spruce_log[axis=z]"
-  "@": "minecraft:waxed_copper_grate[waterlogged=false]"
-  "/": "minecraft:brick_stairs[facing=south,half=top,shape=straight,waterlogged=false]"
-  "(": "minecraft:brick_stairs[facing=east,half=top,shape=straight,waterlogged=false]"
-  ")": "minecraft:brick_stairs[facing=west,half=top,shape=straight,waterlogged=false]"
-  ",": "minecraft:brick_stairs[facing=north,half=top,shape=straight,waterlogged=false]"
-  "{": "minecraft:stone_brick_slab[type=bottom,waterlogged=false]"
+  "k": "minecraft:dark_oak_log[axis=y]"
+  "l": "minecraft:dark_oak_planks"
+  "m": "minecraft:spruce_planks"
+  "n": "minecraft:oak_planks"
+  "o": "minecraft:stone_brick_wall[east=none,north=low,south=low,up=true,waterlogged=false,west=low]"
+  "p": "minecraft:white_wool"
+  "q": "minecraft:barrel[facing=west,open=false]"
+  "r": "minecraft:stone_brick_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]"
+  "s": "minecraft:mossy_stone_bricks"
+  "t": "minecraft:waxed_copper_trapdoor[facing=north,half=top,open=false,powered=false,waterlogged=false]"
+  "u": "minecraft:stone_bricks"
+  "v": "minecraft:spruce_door[facing=north,half=lower,hinge=left,open=false,powered=false]"
+  "w": "minecraft:spruce_trapdoor[facing=north,half=top,open=false,powered=false,waterlogged=false]"
+  "x": "minecraft:spruce_slab[type=top,waterlogged=false]"
+  "y": "minecraft:spruce_trapdoor[facing=east,half=top,open=false,powered=false,waterlogged=false]"
+  "z": "minecraft:cracked_stone_bricks"
+  "A": "minecraft:waxed_copper_bars[east=true,north=false,south=false,waterlogged=false,west=true]"
+  "B": "minecraft:waxed_copper_bars[east=true,north=false,south=true,waterlogged=false,west=true]"
+  "C": "minecraft:campfire[facing=north,lit=true,signal_fire=false,waterlogged=false]"
+  "D": "minecraft:magma_block"
+  "E": "minecraft:white_carpet"
+  "F": "minecraft:spruce_trapdoor[facing=west,half=top,open=false,powered=false,waterlogged=false]"
+  "G": "minecraft:spruce_door[facing=south,half=lower,hinge=left,open=false,powered=false]"
+  "H": "minecraft:spruce_trapdoor[facing=south,half=top,open=false,powered=false,waterlogged=false]"
+  "I": "minecraft:spruce_door[facing=north,half=upper,hinge=left,open=false,powered=false]"
+  "J": "minecraft:waxed_cut_copper"
+  "K": "minecraft:spruce_trapdoor[facing=east,half=bottom,open=true,powered=false,waterlogged=false]"
+  "L": "minecraft:spruce_trapdoor[facing=north,half=bottom,open=true,powered=false,waterlogged=false]"
+  "M": "minecraft:potted_dandelion"
+  "N": "minecraft:lantern[hanging=false,waterlogged=false]"
+  "O": "minecraft:glass_pane[east=false,north=true,south=true,waterlogged=false,west=false]"
+  "P": "minecraft:glass_pane[east=true,north=false,south=false,waterlogged=false,west=true]"
+  "Q": "minecraft:spruce_trapdoor[facing=west,half=bottom,open=true,powered=false,waterlogged=false]"
+  "R": "minecraft:shroomlight"
+  "S": "minecraft:spruce_door[facing=south,half=upper,hinge=left,open=false,powered=false]"
+  "T": "minecraft:spruce_trapdoor[facing=south,half=bottom,open=true,powered=false,waterlogged=false]"
+  "U": "minecraft:potted_azure_bluet"
+  "V": "minecraft:lantern[hanging=true,waterlogged=false]"
+  "W": "minecraft:potted_poppy"
+  "X": "minecraft:spruce_stairs[facing=west,half=bottom,shape=straight,waterlogged=false]"
+  "Y": "minecraft:stripped_dark_oak_log[axis=x]"
+  "Z": "minecraft:stripped_dark_oak_log[axis=z]"
+  "0": "minecraft:dark_oak_stairs[facing=south,half=bottom,shape=straight,waterlogged=false]"
+  "1": "minecraft:chiseled_stone_bricks"
+  "2": "minecraft:dark_oak_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]"
+  "3": "minecraft:dark_oak_stairs[facing=south,half=top,shape=straight,waterlogged=false]"
+  "4": "minecraft:spruce_wall_sign[facing=north,waterlogged=false]"
+  "5": "minecraft:spruce_slab[type=bottom,waterlogged=false]"
+  "6": "minecraft:dark_oak_slab[type=bottom,waterlogged=false]"
+  "7": "minecraft:dark_oak_stairs[facing=west,half=bottom,shape=straight,waterlogged=false]"
+  "8": "minecraft:spruce_stairs[facing=south,half=bottom,shape=straight,waterlogged=false]"
+  "9": "minecraft:light_gray_terracotta"
+  "-": "minecraft:white_terracotta"
+  "|": "minecraft:spruce_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]"
+  "+": "minecraft:stripped_spruce_log[axis=x]"
+  "=": "minecraft:calcite"
+  "^": "minecraft:potted_cornflower"
+  "~": "minecraft:potted_oxeye_daisy"
+  "!": "minecraft:mud_bricks"
+  "#": "minecraft:red_nether_bricks"
+  "$": "minecraft:bricks"
+  "%": "minecraft:dark_oak_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]"
+  "&": "minecraft:spruce_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]"
+  "*": "minecraft:mud_brick_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]"
+  ":": "minecraft:mud_brick_stairs[facing=west,half=bottom,shape=straight,waterlogged=false]"
+  ";": "minecraft:dark_oak_trapdoor[facing=north,half=bottom,open=true,powered=false,waterlogged=false]"
+  "<": "minecraft:dark_oak_trapdoor[facing=south,half=bottom,open=true,powered=false,waterlogged=false]"
+  ">": "minecraft:stripped_spruce_log[axis=z]"
+  "?": "minecraft:waxed_copper_grate[waterlogged=false]"
+  "@": "minecraft:brick_stairs[facing=south,half=top,shape=straight,waterlogged=false]"
+  "/": "minecraft:brick_stairs[facing=east,half=top,shape=straight,waterlogged=false]"
+  "(": "minecraft:brick_stairs[facing=west,half=top,shape=straight,waterlogged=false]"
+  ")": "minecraft:brick_stairs[facing=north,half=top,shape=straight,waterlogged=false]"
+  ",": "minecraft:stone_brick_slab[type=bottom,waterlogged=false]"
 layers:
   # y=-1
-  - [".....aaaaaaaaaabc.d", "ddd..a.aaddada.baaa", ".aba.a......a.....a", "da.aaa............a", "c.................c", "a.................a", "..................a", "d.................a", "d.................a", "adddaa.........adaa", "ddddca.........d.d.", "....caad.aa.aaadc..", "....dd.dddaaad.dd..", "......d.dddd......."]
+  - [".....aaaaaaaaaabc.d", "ddd..a.aaadada.baaa", ".aaa.a......a.....a", "da.aaa............a", "c.................c", "a.................a", "..................a", "d.................a", "d.................a", "adddaa.........adaa", "ddddca.........d.d.", "....caad.aa.aaadc..", "....dd.dddaaad.dd..", "......d.dddd......."]
   # y=0
-  - ["...................", "......efgh...ij....", "......ekkkjj_kjjjl.", "......jmnnnnnojjip.", ".jkkkkknnnnnnnjqjp.", ".jnnooknnnononkqql.", ".kmoooknnnnnnnkjkp.", ".konmmemnmnnnnjjrp.", ".jkjjkkmmmmooojjjl.", "......kmmnnnnoj....", "......kkkjkkkjj....", "...........s.......", "...................", "..................."]
+  - ["...................", "......efgh...ij....", "......ebbbjj_bjjjk.", "......jlmmmmmnjjio.", ".jbbbbbmmmmmmmjpjo.", ".jmmnnbmmmnmnmbppk.", ".blnnnbmmmmmmmbjbo.", ".bnmllelmlmmmmjjqo.", ".jbjjbbllllnnnjjjk.", "......bllmmmmnj....", "......bbbjbbbjj....", "...........r.......", "...................", "..................."]
   # y=1
-  - ["...................", "......t....uuut....", "......vlwlvl_lt__l.", "..x...v______ytzi_.", ".vAtBCv_______tq__.", ".vy_DEv_______eF_l.", "Gvy_EEv_______v___.", ".A____A______yvz__.", ".tvvttt_______v__l.", "......t_y_____v....", "......tvvvlHlAv....", "........I..........", "...................", "..................."]
+  - ["...................", "......s....ttts....", "......ukvkuk_ks__k.", "..w...u______xsyi_.", ".uzsABu_______sp__.", ".ux_CDu_______eE_k.", "Fux_DDu_______u___.", ".z____z______xuy__.", ".suusss_______u__k.", "......s_x_____u....", "......suuukGkzu....", "........H..........", "...................", "..................."]
   # y=2
-  - ["...................", "......e....xxxA....", "......vlJlvKKKtL_l.", ".MNM..v_____yOP___.", ".vQvBBv_______tL__.", "RvO___v_______t__l.", "fPO_SSv_______vL__.", "RA____v______OP___.", ".ttttvv_______vL_l.", "......v_O_____v....", "......vvQAlTlAv....", ".......UVU.........", "...................", "..................."]
+  - ["...................", "......e....wwwz....", "......ukIkuJJJsK_k.", ".LML..u_____xNO___.", ".uPuAAu_______sK__.", "QuN___u_______s__k.", "fON_RRu_______uK__.", "Qz____u______NO___.", ".ssssuu_______uK_k.", "......u_N_____u....", "......uuPzkSkzu....", ".......TUT.........", "...................", "..................."]
   # y=3
-  - ["...................", "......A.W..XXXv...Y", "......vZZZvQQQtL_0Y", "111111v_____O_P__0Y", ".ZZZ22A_______tL_0Y", ".0__vvv_______A_W0Y", ".0__vvv_______AL_0Y", ".0____v_______P__0Y", ".ZZZZZv_______vL_0Y", "333333v_______v...Y", "......vvQvZZZvv....", ".......U.U.........", "...................", "..................."]
+  - ["...................", "......z.V..WWWu...X", "......uYYYuPPPsK_ZX", "000000u_____N_O__ZX", ".YYY11z_______sK_ZX", ".Z__uuu_______z_VZX", ".Z__uuu_______zK_ZX", ".Z____u_______O__ZX", ".YYYYYu_______uK_ZX", "222222u_______u...X", "......uuPuYYYuu....", ".......T.T.........", "...................", "..................."]
   # y=4
-  - ["...................", "......2445554426Y6.", "......vvvvvettt787.", "......0_______0787.", "1999990_______0787.", ".-..vv0_______0787.", ".|..vv0_______0787.", ".-....0_______0787.", "3+++++0_______0787.", "......0_______06Y6.", "......ZZZZZZZZZ....", "...................", "...................", "..................."]
+  - ["...................", "......1334443315X5.", "......uuuuuesss676.", "......Z_______Z676.", "088888Z_______Z676.", ".9..uuZ_______Z676.", ".-..uuZ_______Z676.", ".9....Z_______Z676.", "2|||||Z_______Z676.", "......Z_______Z5X5.", "......YYYYYYYYY....", "...................", "...................", "..................."]
   # y=5
-  - ["........x...x......", "......ZZZZZZZZZ....", "......|.y...y.|....", ".....G|y_____y|z...", "......|_______|....", "1199vvl_______l....", "====vv|_______-....", "3+++++-______y-z...", ".....G-y______^....", "......-_y___y_^....", "......--|||-|||....", "........I...I......", "...................", "..................."]
+  - ["........w...w......", "......YYYYYYYYY....", "......-.x...x.-....", ".....F-x_____x-y...", "......-_______-....", "0088uuk_______k....", "++++uu-_______9....", "2|||||9______x9y...", ".....F9x______=....", "......9_x___x_=....", "......99---9---....", "........H...H......", "...................", "..................."]
   # y=6
-  - ["........X...~......", "......l|Q|l-Q|l....", "......|.O...O.|....", ".....XPO_____OP!...", "......|_______|....", "....#$l_______l....", "7777%%|_______|....", "......-______OP!...", ".....~PO______|....", "......-_O___O_|....", "......l-Q|l-Q|l....", "........V...!......", "...................", "..................."]
+  - ["........W...^......", "......k-P-k9P-k....", "......-.N...N.-....", ".....WON_____NO~...", "......-_______-....", "....!#k_______k....", "6666$$-_______-....", "......9______NO~...", ".....^ON______-....", "......9_N___N_-....", "......k9P-k9P-k....", "........U...~......", "...................", "..................."]
   # y=7
-  - ["...................", "......lmQ|l|Qml....", "......|.......|....", "......P_______P....", "......|_______^....", "....%$l_______l....", "....%%|_______|....", "......|_______P....", "......P_______|....", "......|_______|....", "......lmQ|l|Qml....", "...................", "...................", "..................."]
+  - ["...................", "......klP-k-Plk....", "......-.......-....", "......O_______O....", "......-_______=....", "....$#k_______k....", "....$$-_______-....", "......-_______O....", "......O_______-....", "......-_______-....", "......klP-k-Plk....", "...................", "...................", "..................."]
   # y=8
-  - [".....&.........8...", ".....&ZZZZZZZZZ8...", ".....&0.......08...", ".....&0_______08...", ".....&0_______08...", "....$%0_______08...", "....%%0_______08...", ".....&0_______08...", ".....&0_______08...", ".....&0_______08...", ".....&ZZZZZZZZZ8...", ".....&.........8...", "...................", "..................."]
+  - [".....%.........7...", ".....%YYYYYYYYY7...", ".....%Z.......Z7...", ".....%Z_______Z7...", ".....%Z_______Z7...", "....#$Z_______Z7...", "....$$Z_______Z7...", ".....%Z_______Z7...", ".....%Z_______Z7...", ".....%Z_______Z7...", ".....%YYYYYYYYY7...", ".....%.........7...", "...................", "..................."]
   # y=9
-  - ["......&...x...8....", "......*|||l^||Y....", "......*...y...Y....", "......*.......Y....", "......*.......8....", "....%%*.......Y....", "....#%*.......Y....", "......*.......Y....", "......:.......Y....", "......*...y...Y....", "......&|^^l^^|;....", "......&...I...8....", "...................", "..................."]
+  - ["......%...w...7....", "......&---k=--X....", "......&...x...X....", "......&.......X....", "......&.......7....", "....$$&.......X....", "....!$&.......X....", "......&.......X....", "......*.......X....", "......&...x...X....", "......%-==k==-:....", "......%...H...7....", "...................", "..................."]
   # y=10
-  - [".......&.<~<.8.....", ".......*|^Q^^Y.....", ".......*..O..Y.....", ".......&.....Y.....", ".......:.....Y.....", "....%%.:.....8.....", "....$%.*.....Y.....", ".......*.....Y.....", ".......*.....Y.....", ".......*..O..8.....", ".......&^^Q^|Y.....", ".......&.>~>.8.....", "...................", "..................."]
+  - [".......%.;^;.7.....", ".......&-=P==X.....", ".......&..N..X.....", ".......%.....X.....", ".......*.....X.....", "....$$.*.....7.....", "....#$.&.....X.....", ".......&.....X.....", ".......&.....X.....", ".......&..N..7.....", ".......%==P=-X.....", ".......%.<^<.7.....", "...................", "..................."]
   # y=11
-  - ["........&...8......", "........*^l^;......", "........*...Y......", "........*...;......", "........&...Y......", "....#%..*...Y......", "....%%..*...Y......", "........*...Y......", "........*...Y......", "........*...Y......", "........*^l^Y......", "........&...8......", "...................", "..................."]
+  - ["........%...7......", "........&=k=:......", "........&...X......", "........&...:......", "........%...X......", "....!$..&...X......", "....$$..&...X......", "........&...X......", "........&...X......", "........&...X......", "........&=k=X......", "........%...7......", "...................", "..................."]
   # y=12
-  - [".........&?8.......", ".........*?Y.......", ".........*?;.......", ".........*?Y.......", ".........*?Y.......", "....%%...*@Y.......", "....%%...*@Y.......", ".........*@Y.......", ".........*?Y.......", ".........*?Y.......", ".........*?Y.......", ".........&?8.......", "...................", "..................."]
+  - [".........%>7.......", ".........&>X.......", ".........&>:.......", ".........&>X.......", ".........&>X.......", "....$$...&?X.......", "....$$...&?X.......", ".........&?X.......", ".........&>X.......", ".........&>X.......", ".........&>X.......", ".........%>7.......", "...................", "..................."]
   # y=13
-  - ["..........7........", "..........7........", "..........7........", "..........7........", "....//....7........", "...(%%)............", "...(%%)............", "....,,.............", "..........7........", "..........7........", "..........7........", "..........7........", "...................", "..................."]
+  - ["..........6........", "..........6........", "..........6........", "..........6........", "....@@....6........", ".../$$(............", ".../$$(............", "....)).............", "..........6........", "..........6........", "..........6........", "..........6........", "...................", "..................."]
   # y=14
-  - ["...................", "...................", "...................", "...................", "...................", "....#%.............", "....%%.............", "...................", "...................", "...................", "...................", "...................", "...................", "..................."]
+  - ["...................", "...................", "...................", "...................", "...................", "....!$.............", "....$$.............", "...................", "...................", "...................", "...................", "...................", "...................", "..................."]
   # y=15
-  - ["...................", "...................", "...................", "...................", "...................", "...._{.............", "....{_.............", "...................", "...................", "...................", "...................", "...................", "...................", "..................."]
+  - ["...................", "...................", "...................", "...................", "...................", "...._,.............", "....,_.............", "...................", "...................", "...................", "...................", "...................", "...................", "..................."]
   # y=16
   - ["...................", "...................", "...................", "...................", "...................", "...................", "...................", "...................", "...................", "...................", "...................", "...................", "...................", "..................."]
 points:

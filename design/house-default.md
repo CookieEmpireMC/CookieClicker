@@ -1,94 +1,70 @@
 # House design: `default` bakery cottage
 
-Status: placeholder (first design; needs a look in game)
+Status: placeholder (reworked 2026-10-24 for `build-quality`; textured previews reviewed, needs a look in game)
 
-- **Purpose:** the house `/bakery house place default` pastes into a plot's house region (feature `starter-house`). The build cinematic reveals the same blocks per player, and the chimney smoke starts at `points.chimney`.
+- **Purpose:** the house `/bakery house place default` pastes into a plot's house region. The build cinematic reveals the same blocks per player, and the chimney smoke starts at `points.chimney`.
 - **Pipeline:** plugin data file, not resource pack. Vanilla blocks only, no custom models or textures.
-- **File:** `src/main/resources/houses/default.yml`. It is **generated**: edit `design/scripts/house_default.py` and run `mise run assets` (or `python design/scripts/house_default.py` from the repo root). Don't edit the YAML by hand.
-- **Previews:** `design/scripts/previews/house_default_iso.png` (3/4 views from the front-west, front-east and back-east, plus a front elevation) and `design/scripts/previews/house_default_layers.png` (top view of every layer with the palette chars). The colours there are rough averages of the vanilla textures, for the preview only.
-- **Target:** Paper 26.3 (`26.3.build.205-stable`). Every block data string is a full 26.3 vanilla state (all properties written out) and goes straight into `Bukkit.createBlockData(String)`.
+- **File:** `src/main/resources/houses/default.yml`. It is **generated**: edit `design/scripts/house_default.py` and run `mise run assets`. Don't edit the YAML by hand. Reference sheet: `design/refs-default.md`; lint: `design/build-lint.md`.
+- **Previews (textured):** `design/scripts/previews/house_default_sheet.png` (front, NE, NW, back), `house_default_front/ne/nw/back/above.png`.
+- **Target:** Paper 26.3 (`26.3.build.205-stable`). Every block data string is a full 26.3 vanilla state and goes straight into `Bukkit.createBlockData(String)`; stair shapes and connections are computed like the game does.
 
-![iso](scripts/previews/house_default_iso.png)
-![layers](scripts/previews/house_default_layers.png)
+![sheet](scripts/previews/house_default_sheet.png)
 
 ## Look
-A small timber-framed bakery cottage, 7 × 5 body under a shallow dark oak roof that overhangs one block all round.
-- Stone brick plinth (a few mossy bricks) with a stone brick step up to the door.
-- Walls: spruce log corner posts, white terracotta infill, stripped spruce top beam. Glass pane windows: 2 at the front, 2 at the back, 1 on the west gable, 2 on the east gable either side of the chimney breast.
-- Oak door in the middle of the front (north) wall, recessed (the door plate sits on the inner side of the wall).
-- Under the front eave: a hanging lantern west of the door and a spruce hanging sign reading "Bakery" east of it (seen from the front: sign left, lantern right), and potted red and orange tulips either side of the step.
-- Shallow roof: alternating dark oak stairs and bottom slabs (half-block steps), slab ridge at y5.
-- Brick chimney outside the east gable (`x=8, z=3`), through the roof overhang, from the ground to y5. Its top stands half a block above the slab ridge.
-- Inside: spruce plank floor, empty room (y1–y3) plus a small attic gap under the ridge. Furniture is out of scope.
-- 170 blocks (air and keep cells not counted), well under the 2,000 limit.
+A Tudor bakery cottage in two volumes (R1) with a yard around it:
+- **Hall** (walls x3..9, z6..12, ridge along x): two-course cobblestone plinth ramp, plaster ramp walls in a dark oak frame (corner posts, door jambs, mid posts), flower-boxed windows with sills and lit interiors, a dark oak plate (y5), a 45 degree mud-brick roof with brick and spruce patches, dark oak eave and rake, spruce ridge beam with slab cap (ridge y8). Plastered gables with a king post (west gable window with a flower box).
+- **Door (front, north):** spruce door in a log frame with a lintel, a stair **hood**, a hanging lantern on its west side, a hanging "Bakery" sign on its east side, a stone step and two potted tulips.
+- **Service wing** (x9..14, z7..11, lower, ridge y5, set back one block): shuttered windows on three sides, a plastered east gable.
+- **The one chimney** (R11): a 2 x 2 brick stack on the hall's west gable (x1..2, z8..9) from the ground to y10 on a cobblestone base, corbel ring, two-slab crown at y11; smoke above.
+- **Yard (ground layer + y >= 0):** a wandering 3-wide gravel path from the door to the north edge, two flower beds either side of it, a gravel/coarse-dirt apron around the walls with an irregular outer edge, a woodpile with a chopping block at the back wall, an herb bed, hay and barrels behind the wing. The front yard (5 deep, 9 wide, 3-wide corridor) is kept clear.
+- 657 blocks (air and keep cells not counted), design box 17 x 13 x 15 above the ground + 1 ground layer.
+
+**What changed (2026-10-24):** the old cottage was one 9 x 7 x 7 box with a flat brick chimney. Design box and block count changed: **the shipped-design test in `HouseDesignParserTest` pins the old 9 x 7 x 7 and 170 blocks and must be updated** (REQUEST to plugin-tester).
 
 ## File format (contract; the coder parses it, the tester tests the parser)
 ```yaml
-size: [9, 7, 7]          # [x, y, z] cells
-origin: [0, 0, 0]        # design cell that lands on the house region's minimum corner
+size: [17, 14, 15]       # [x, y, z] cells; y counts the ground layers too
+origin: [0, 0, 0]        # design cell (design y!) that lands on the house region's minimum corner
+ground-depth: 1          # OPTIONAL, 0..2 (< size[1]); missing = 0 (old files unchanged)
 palette:                 # one char -> one block data string
   "S": "minecraft:stone_bricks"
   ...
-layers:                  # bottom -> top: size[1] layers
+layers:                  # bottom -> top: size[1] layers; the first ground-depth layers are the ground
   - ["...rso...", ...]   # each layer: size[2] rows (z = 0 first), each row: size[0] chars (x = 0 first)
 points:
-  chimney: [8, 6, 3]     # design cell where chimney smoke starts (the cell just above the chimney top)
-  door: [4, 1, 1]        # lower half of the front door (optional for the coder)
+  chimney: [1, 12, 9]    # design cell where chimney smoke starts (air above the crown slab)
+  door: [6, 1, 6]        # lower half of the front door
 signs:                   # optional: text to set on sign blocks after placing
-  - at: [5, 2, 0]
+  - at: [7, 3, 5]
     lines: ["", "Bakery", "", ""]
 ```
-- **Axes:** x = west → east, y = bottom → top, z = north → south, the same directions as world coordinates. No rotation: the front (door, sign) always faces **north (-Z)**. Rotating designs is not part of this format.
-- **Placement:** world position of a cell = `regionMin + (cell - origin)`. With `origin: [0, 0, 0]` cell `[0,0,0]` is the region's minimum corner. `points` and `signs[].at` are design cells too: convert them the same way (the smoke spawns at the cell's centre or bottom centre, as the vfx-designer prefers).
-- **`.` = keep:** the existing world block stays (not changed, not backed up). `.` is reserved and never in the palette.
-- **`_` = air:** cleared on purpose (the room inside, the attic gap). It is a normal palette entry (`minecraft:air`).
-- Rows are quoted strings because some chars are YAML-special (`-`, `|`, `^`, `=`). Parse them as plain strings, one char per cell.
-- Validation the generator runs before writing (the parser can do the same): every palette value matches `^minecraft:[a-z0-9_]+(\[[a-z0-9_]+=[a-z0-9_]+(,…)*\])?$` and has exactly the properties/values of its block type; `len(layers) == size[1]`, every layer has `size[2]` rows of `size[0]` chars; every char is `.` or a palette key; `origin` and all points are inside `size`; the chimney point is a keep/air cell with the chimney's brick right below it; the door point is the lower door half; every sign position holds a sign block; pane connections match their neighbours; no gravity blocks; fewer than 2,000 blocks.
+- **Axes:** x = west to east, y = bottom to top, z = north to south, as in the world. No rotation: the front always faces north (-Z).
+- **`ground-depth: N`** (new, contract of `build-quality`, 0..2, `N < size[1]`): the first N entries of `layers` are **ground layers** below the house region's minimum Y; `size[1]` counts them. **Design y counts from the first layer above the ground**, so the ground layers are design y -N..-1, and `points`, `signs[].at` and `origin` use that design y (so existing points do not shift: the door stays `[x, 1, z]`). Layer i (0-based) is design y `i - N`; world y = `regionMin.y + (designY - origin.y)`. Mounds and terraces are ordinary blocks at y >= 0. Ditches and water are air or water in the ground layers; pasted water stays still. The footprint of the ground is the design box itself. `.` keeps the world's block (not changed, not backed up); `_` is air. Everything, ground included, is backed up and restored by `/bakery house undo`.
+- **Placement:** physics off. Leaves are forced `persistent=true` by the plugin (the generator also writes `persistent=true`).
+- **Points:** `points.chimney` (single, = a one-item smoke list) or `points.smoke` / `points.steam` lists (see `design/factory.md`): at most one entry each (R11).
+- Rows are quoted strings (some chars are YAML-special). The palette may contain non-ASCII characters (Latin-1 letters) when a design needs more than ~90 distinct block states; read the file as UTF-8, one char per cell.
+- Validation the generator runs before writing (the parser can do the same): palette values match `^minecraft:[a-z0-9_]+(\[...\])?$` with exactly the properties of the block type; `len(layers) == size[1]`, row lengths; every char is `.` or a palette key; `origin` and all points inside the design (y >= 0); the chimney point is an air cell with a block right below it; the door point is the lower door half; signs hold sign blocks; pane/fence/wall connections and **stair shapes equal what the game assigns on placement**; no gravity blocks except gravel in the ground layers; plants have soil; leaves are persistent; `size[0] * size[1] * size[2]` below `house.max-blocks`.
 
 ## Site the admin needs
-- House region at least 9 × 7 × 7 (x × y × z). With `/bakery house place` the design starts at the region's **minimum corner**, so make the region's min Y the **first air layer above the ground**: the plinth (y0) then sits on the ground, and the step and flower pots stand on it.
-- Keep the 9 × 7 footprint and the front (north) side clear: cells marked `.` keep whatever is there (grass, flowers), which is intended under the roof overhang.
-- Nothing needs support from outside the design. The door stands on the plinth; the lantern and the hanging sign hang from the front eave stairs (bottom-half stairs have a full bottom face). Flower pots need no support in vanilla. No gravity blocks.
-
-## Palette
-| Char | Block data | Role | Preview colour |
-|---|---|---|---|
-| `_` | `minecraft:air` | room, attic | — |
-| `S` | `minecraft:stone_bricks` | plinth | `#7A797A` |
-| `M` | `minecraft:mossy_stone_bricks` | plinth accents | `#6C795E` |
-| `s` | `minecraft:stone_brick_stairs[facing=south,half=bottom,shape=straight,waterlogged=false]` | front step | `#7A797A` |
-| `F` | `minecraft:spruce_planks` | floor, west gable fill | `#735534` |
-| `P` | `minecraft:spruce_log[axis=y]` | corner posts | `#3E2C1A` |
-| `X` | `minecraft:stripped_spruce_log[axis=x]` | top beam (front/back) | `#765A3A` |
-| `Z` | `minecraft:stripped_spruce_log[axis=z]` | top beam (gables) | `#765A3A` |
-| `W` | `minecraft:white_terracotta` | wall infill | `#D1B2A1` |
-| `B` | `minecraft:bricks` | chimney + breast | `#965242` |
-| `-` | `minecraft:glass_pane[east=true,north=false,south=false,waterlogged=false,west=true]` | front/back windows | `#B2D6E2` |
-| `\|` | `minecraft:glass_pane[east=false,north=true,south=true,waterlogged=false,west=false]` | gable windows | `#B2D6E2` |
-| `d` | `minecraft:oak_door[facing=north,half=lower,hinge=left,open=false,powered=false]` | door, lower | `#8C6E40` |
-| `D` | `minecraft:oak_door[facing=north,half=upper,hinge=left,open=false,powered=false]` | door, upper | `#8C6E40` |
-| `v` | `minecraft:dark_oak_stairs[facing=south,half=bottom,shape=straight,waterlogged=false]` | roof, front slope | `#422C16` |
-| `^` | `minecraft:dark_oak_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]` | roof, back slope | `#422C16` |
-| `=` | `minecraft:dark_oak_slab[type=bottom,waterlogged=false]` | roof steps, ridge | `#4E341C` |
-| `L` | `minecraft:lantern[hanging=true,waterlogged=false]` | porch light | `#ECB248` |
-| `H` | `minecraft:spruce_hanging_sign[attached=false,rotation=8,waterlogged=false]` | shop sign (front faces north) | `#735534` |
-| `r` | `minecraft:potted_red_tulip` | entrance pot | `#C83C30` |
-| `o` | `minecraft:potted_orange_tulip` | entrance pot | `#E88228` |
+- House region at least 17 x 13 x 15 (x, y, z, above the ground) **with the region's min Y = the first air layer above the ground** and one more layer of existing ground below it (the ground layer the design rewrites). The design starts at the region's minimum corner. The front (north) side stays clear: cells marked `.` keep whatever is there.
+- Nothing needs support from outside the design.
 
 ## Points and signs
 | Name | Design cell | Meaning |
 |---|---|---|
-| `points.chimney` | `[8, 6, 3]` | first cell above the chimney top (`[8, 5, 3]` is the top brick); smoke and the crackle loop start here |
-| `points.door` | `[4, 1, 1]` | lower door half (optional; e.g. for a "welcome" effect or keep-out checks) |
-| `signs[0]` | `[5, 2, 0]`, lines `["", "Bakery", "", ""]` | **optional for the coder.** Plain text, not MiniMessage. Set it on the sign's **front** side (rotation 8 = front faces north) after placing the blocks, e.g. `sign.getSide(Side.FRONT).line(1, Component.text("Bakery"))` + `update()`. The cinematic resends the sign's real tile data with `sendBlockUpdate` (research: fake-blocks). |
+| `points.chimney` | `[1, 12, 9]` | air above the crown slab of the stack (`[1, 11, 9]` is the slab); smoke and the crackle loop start here; the stack is 2 x 2 (x1..2, z8..9) |
+| `points.door` | `[6, 1, 6]` | lower door half |
+| `signs[0]` | `[7, 3, 5]`, lines `["", "Bakery", "", ""]` | the hanging sign east of the door hood (`rotation=8`, front faces north); plain text, set on the front side |
 
-The only block entity is the hanging sign. Nothing contains items.
+Block entities: the hanging sign, 4 barrels, barrel/hay in the yard. Nothing contains items.
+
+## Palette and ramps
+See `design/refs-default.md`. 71 palette entries (generated; stairs in all shapes).
 
 ## Notes for the other roles
-- **plugin-coder:** layers are bottom → top, rows z = 0 first, chars x = 0 first. Read every palette value with `Bukkit.createBlockData`; skip `.` entirely (no backup, no change). Place with physics off (`setBlockData(data, false)`) so the door halves and pane states stay as written. The reveal can use the same order for every non-`.` cell; `_` cells count as part of the house (fake air is air anyway).
-- **vfx-designer:** smoke starts at `points.chimney`; the chimney is 1 × 1, so a small column spread (≤ 0.3) looks right. The y6 layer is empty: it exists so the smoke cell is inside the design bounds.
-- **plugin-tester:** parser test cases worth covering: `.` vs `_`, quoted special chars (`-`, `|`, `^`, `=`), wrong row length, unknown char, point out of bounds.
+- **plugin-coder:** layers bottom to top, rows z = 0 first, chars x = 0 first; ground layers first. Skip `.`. Physics off. Parse `ground-depth` (new) and apply design y offset as above.
+- **vfx-designer:** smoke from `points.chimney`: a 2 x 2 top (NW cell given), spread <= 0.4, offset +0.5.
+- **plugin-tester:** update the pinned default test (size `17, 14, 15`, 657 blocks, `points.chimney` present, one sign, `ground-depth` 1).
 
 ## Placeholder / needs a human
-- The whole design is a first pass judged from previews: check it in game (proportions, how the shallow roof reads, the sign text fitting a hanging sign, the lantern light by the door).
-- Possible later polish: window shutters (spruce trapdoors), a smoker or oven inside, a lighter roof trim. Interior furniture is out of scope for `starter-house`.
+- Judged from textured previews (the review tool's default camera sits inside layout-less designs, so no Chunky shots of the cottage). Check in game: the roof pitch, the hanging sign text, the hood, lantern light at night, the yard path.

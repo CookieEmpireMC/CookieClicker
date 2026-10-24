@@ -1,56 +1,50 @@
 # House design: `factory` cookie works
 
-Status: placeholder (first design; needs a look in game)
+Status: placeholder (reworked 2026-10-24 for `build-quality`; textured previews and Chunky shots reviewed, needs a look in game)
 
-- **Purpose:** the house `/bakery house place factory` pastes and the build cinematic reveals (feature `factory-makeover`, GDD §3.1 "the atmospheric little building in which the cookies are baked"). Replaces the cottage as the design the docs and test guide use; `default` stays available.
+- **Purpose:** the house `/bakery house place factory` pastes and the build cinematic reveals (GDD §3.1 "the atmospheric little building in which the cookies are baked").
 - **Pipeline:** plugin data file, not resource pack. Vanilla blocks only.
-- **File:** `src/main/resources/houses/factory.yml`, **generated** by `design/scripts/house_factory.py` (`mise run assets`). Don't edit the YAML by hand. Validation, YAML writer and preview sheets are shared with the cottage in `design/scripts/lib/house_lib.py` (`default.yml` is byte-identical after the refactor).
-- **Target:** Paper 26.3 (`26.3.build.205-stable`). Every block data string is a full 26.3 vanilla state; all block ids were checked against `org/bukkit/Material.java` in the paper-api 26.3 sources jar (2026-10-20), e.g. `waxed_copper_bars`, `waxed_copper_lantern`, `waxed_lightning_rod` (copper blocks are **waxed** so they never oxidise).
-- **Previews:** `design/scripts/previews/house_factory_front.png` (front 3/4 from the entrance side), `house_factory_iso.png` (front-west and front-east 3/4, back 3/4, front elevation), `house_factory_layers.png` (every layer with palette chars), `house_factory_plot.png` (top-down plot layout), `house_factory_camera.png` (the build-cinematic view from `layout.camera`, perspective). Preview colours are rough texture averages. The belt is drawn with its `belt.yml` frame and surface; pedestal and shop are markers only.
+- **File:** `src/main/resources/houses/factory.yml`, **generated** by `design/scripts/house_factory.py` (`mise run assets`); layout constants and checks in `design/scripts/factory_layout.py`. Don't edit the YAML by hand. Kits: `design/scripts/lib/build.py`; lint: `design/build-lint.md`; reference sheet: `design/refs-factory.md`.
+- **Target:** Paper 26.3 (`26.3.build.205-stable`). Every block data string is a full 26.3 vanilla state (stairs shapes and pane/fence connections computed like the game does on placement); ids and states are also cross-checked against the 26.3 client jar's blockstates. Copper is **waxed**.
+- **Size:** `size: [19, 18, 14]` = design box 19 x 17 x 14 above the ground **plus 1 ground layer** (`ground-depth: 1`, design y -1). 965 blocks.
+- **Previews (textured, real 26.3 textures):** `design/scripts/previews/house_factory_sheet.png` (front, NE, NW, back), `house_factory_front.png`, `_ne`, `_nw`, `_back`, `_above`; the whole plot with decor and fence: `decor_sheet.png`, `decor_eye.png`, `decor_ne/nw/se/sw.png`. Chunky shots (orchestrator): `~/bakery-review/shots/factory_{eye,34,door}.png`.
 
-![front](scripts/previews/house_factory_front.png)
-![iso](scripts/previews/house_factory_iso.png)
-![plot](scripts/previews/house_factory_plot.png)
-![layers](scripts/previews/house_factory_layers.png)
+![sheet](scripts/previews/house_factory_sheet.png)
+![plot](scripts/previews/decor_sheet.png)
 
 ## Look
-A chunky brick-and-timber cookie works, three parts under dark oak roofs:
-- **Bake hall** (9 × 9, walls 6 high): stone brick plinth (a few mossy), brick walls with stone quoins on the back corners, a terracotta string course and a stripped spruce top beam. Tall front gable in white terracotta framed by spruce timbers, with a cross-shaped **rose window**. Steep 45° dark oak roof, plank ridge with a slab cap, one block of overhang all round. **Skylights** (glass) in both slopes, a **copper ridge vent** (copper grate louvres under a copper slab cap) and a copper **steam pipe** (waxed lightning rod) on the east slope.
-- **Front (north):** brick corner pilasters standing one block proud, each with a copper lantern on a chiselled cap. West bay: spruce door with a stone step, a dark oak canopy and a hanging lantern, windows either side, potted tulips. A spruce post divides the bays. **Signboard** of three dark oak wall signs; the middle one reads "Cookie Works". East bay: the **loading hatch** (1 wide, 2 high, at ground level) under a copper lintel and a copper awning, a wide window over it, a barrel beside it. The belt comes out here (`points.belt_out`).
-- **Oven house** (west lean-to, set back one block): the **oven mouth** behind waxed copper bars, with a lit campfire on a magma bed and a glowing shroomlight back wall, under a chiselled lintel. The **short oven stack** (1 × 1, corbelled square cap, top y11) rises straight above the fire. Barrels and flour sacks by the door, firewood under the back eave.
-- **Flour shed** (east lean-to on spruce fence posts): barrels, a pile of flour sacks (white wool + carpet), a hanging lantern.
-- **Tall boiler stack** (back east): 3 × 3 stone base, rounded "plus" shaft with a copper band at y9, a square crown ring with an open flue at y16, a brick duct to the hall.
-- Two lamp posts (fence + lantern) frame the front.
-- 796 blocks (air/keep not counted), design box 19 × 17 × 14 = 4,522 cells (limit `house.max-blocks` 40,000).
+A Norman/Tudor **bakehouse**, three volumes, **one chimney**:
+- **Bake hall** (x6..14, z2..10): cobblestone plinth ramp (y0), stone-brick ramp ground storey (y1..4, a string course of stripped dark oak on the sides and back), a **plastered upper floor** (y5..7, plaster ramp in a dark oak frame: log posts at the corners, bay ends and mid-wall, plank braces) with flower-boxed windows, a stripped-log top plate (y8), and a **45 degree roof** (spruce field with mud-brick and dark-oak patches, **dark oak eave and rake**, spruce ridge beam with slab cap, ridge y12). Both gables are plastered, with a king post and a shuttered loft window with a flower box. A **flush copper louvre** sits in the ridge (z5..7).
+- **Front (north):** the upper floor is a **1-block jetty** (plane z1 over the ground plane z2) on a stripped-log bressumer, carried by stone pilasters (chiselled caps) and inverted-stair brackets. West bay: spruce door in a dark oak frame with stoop, a hanging lantern on a bracket, potted tulips. A stone post, then the **signboard** (three spruce wall signs at y4). East bay: the **loading hatch** (x12, y0..1) between timber jambs under a copper lintel and awning, a wide flower-boxed window above, a barrel.
+- **Oven house** (west lean-to gable, x1..5, z4..8): stone walls, a **cross-gable** roof (ridge along x, y5), the **oven mouth** behind waxed copper bars with a lit campfire, magma and shroomlight, a shuttered flower-boxed window, a window on the west gable.
+- **The one chimney:** a 2 x 2 **oven stack** (x4..5, z5..6) from the oven hood: 3 stone courses, a brick shaft (bricks / red nether / mud bricks in clustered quotas), a corbel ring of inverted brick stairs and a two-slab crown, top y14, crown y15; it stands against the hall's west wall and is the only thing above the ridge. The old 16-high boiler stack, the brick duct and the copper steam pipe are gone.
+- **Flour shed** (east lean-to, x15..18, z2..8): dark oak posts and beam, stone-brick-wall knee walls, a 26 degree roof with a spruce eave, barrels, flour sacks, a hanging lantern; two lit windows into the hall.
+- **Ground (y -1, inside the design box):** a gravel / coarse-dirt apron around the walls with an irregular outer edge, a gravel path from the door and the hatch to the box edge. Everything outside the box is `decor.yml`.
 
-**Why this size:** the bake hall needs 9 wide to fit door bay + post + hatch bay on one facade with real depth (pilasters, recesses, canopy), and a 45° roof over 9 gives the tall fairy-tale gable that reads as "main building" next to the lean-tos. Everything else hangs off it in lean-tos so the footprint grows sideways, not up. The tall stack is the only thing above the ridge, which makes the silhouette (one tall stack, one short stack, a vent) read as a factory from the plot entrance. Smaller lost the hatch bay or the oven; bigger only added empty wall.
+**Rework 2026-10-24 (build-quality):** before it was two chimneys, flat brick walls, a roof covering most of the facade, skylight glass cubes and stray props. Now: R1-R21 of `design/style-guide.md` and the lint pass.
 
 ## File format additions (the rest: `design/house-default.md`)
 ```yaml
+ground-depth: 1                        # the first layer is design y -1 (see house-default.md)
 points:
-  smoke: [[16, 16, 12], [4, 12, 4]]   # list: every point gets the chimney smoke loop
-  steam: [[10, 13, 6], [13, 10, 8]]   # optional list: the factory_steam loop
-  belt_out: [12, 0, 1]                # the first belt cell outside the loading hatch
+  smoke: [[4, 16, 6]]                  # list with ONE entry (R11): the air cell above the oven stack's crown slab
+  steam: [[10, 13, 6]]                 # ONE entry: the air cell above the copper ridge louvre (sound anchor)
+  belt_out: [12, 0, 1]                 # the first belt cell outside the loading hatch
   door: [8, 1, 2]
-layout:                               # plot layout (see below); cells from the plot's min corner
-  plot-size: [31, 30]
-  ...
+layout:                                # plot layout (below)
 ```
-- `points.smoke` / `points.steam` are lists of `[x, y, z]`; `points.chimney` (cottage) stays a single `[x, y, z]` = a one-item smoke list. A design may have both styles only across files, not in one file.
-- Every smoke point is an air cell with the stack's top block right below it; every steam point is an air cell right above its vent/pipe (the generator checks this).
+- `points.smoke` / `points.steam` are lists of `[x, y, z]` with **at most one entry** since this rework (R11, lint-enforced). Every smoke point is an air cell with a block right below it (the crown slab); every steam point an air cell right above the louvre.
 
 ## Points
 | Name | Design cell | Meaning |
 |---|---|---|
-| `points.smoke[0]` | `[16, 16, 12]` | tall boiler stack: the open flue inside the crown ring, `[16, 15, 12]` is the top brick |
-| `points.smoke[1]` | `[4, 12, 4]` | short oven stack: above the top brick `[4, 11, 4]` |
-| `points.steam[0]` | `[10, 13, 6]` | above the copper ridge vent cap (`[10, 12, 6]`); the vent is 3 long along z (5..7) |
-| `points.steam[1]` | `[13, 10, 8]` | above the copper steam pipe (lightning rod at `[13, 9, 8]`) |
-| `points.belt_out` | `[12, 0, 1]` | first belt cell outside the hatch, at ground level (y0 = first air layer above the ground). The hatch opening is `[12, 0..1, 2]`; the belt runs **north (-Z)**, straight. A copper awning sits above it at `[11..13, 1, 1]` (top-half trapdoor, top 1/8 of the cell), so a belt up to ~1.8 high fits. |
-| `points.door` | `[8, 1, 2]` | lower half of the front door |
-| `signs[0]` | `[10, 4, 1]`, `["", "Cookie Works", "", ""]` | middle wall sign of the signboard, front faces north. The two signs beside it (`[9, 4, 1]`, `[11, 4, 1]`) stay blank on purpose (they make the board). |
+| `points.smoke[0]` | `[4, 16, 6]` | above the slab crown of the oven stack (`[4, 15, 6]` is a slab; the shaft top is y14); the stack is 2 x 2 (x4..5, z5..6), spread up to 0.4 |
+| `points.steam[0]` | `[10, 13, 6]` | above the copper grate louvre in the ridge (`[10, 12, 6]`, z5..7); sound anchor of `factory_ambient` |
+| `points.belt_out` | `[12, 0, 1]` | unchanged: first belt cell outside the hatch; the hatch opening is `[12, 0..1, 2]`; belt runs north; copper awning at `[11..13, 1, 1]` |
+| `points.door` | `[8, 1, 2]` | unchanged: lower half of the front door |
+| `signs[0]` | `[10, 4, 1]`, `["", "Cookie Works", "", ""]` | unchanged: middle wall sign of the signboard (now spruce signs on the stone fascia); the signs beside it stay blank |
 
-`factory_ambient` (sound) plays at `points.steam[0]` per the brief. Light: the oven (campfire, shroomlight, magma), 4 lanterns and 2 copper lanterns light the front at night.
+Light: the oven (campfire, shroomlight, magma), a lantern on a shelf behind every window, a hanging lantern at the door and in the shed.
 
 ## Plot layout (the `layout:` section, contract change 2026-10-20)
 The admin draws one WorldGuard region; the plugin builds everything from this fixed layout so every plot looks the same. All cells are relative to the **plot's min corner**: x west → east, z north → south, y 0 = the first air layer above the ground. The front faces north; nothing rotates.
@@ -78,28 +72,13 @@ layout:
 - Validated by the generator: the camera is raised, outside the design box, in the air and frames everything (4:3, FOV 70, 5% margin); the cell above every belt cell is air or a closed top-half trapdoor; all points inside the ring; belt cells free at belt level; pedestal, shop and viewpoint free at feet and head height and outside the design box; belt straight, ≥ 4 long, ends next to the pedestal; ≥ 5 free blocks to the fence (≥ 5 rows in front of the pedestal); entrance on the front ring with the whole gate between the corners and a free walk-in; the hatch behind `belt_out` open.
 
 ## Palette
-Generated (55 entries; chars for connection variants are assigned automatically, the YAML has the full list). Main ones:
-| Char | Block | Role | Preview colour |
-|---|---|---|---|
-| `B` | `bricks` | walls, stacks | `#965242` |
-| `S` / `M` / `C` | stone / mossy / chiselled stone bricks | plinth, quoins, caps, stack base | `#7A797A` |
-| `T` | `terracotta` | string course | `#985E43` |
-| `W` | `white_terracotta` | gable infill | `#D1B2A1` |
-| `P` `X` `Z` `l` | spruce log / stripped spruce (x, z) / spruce log x | posts, timbers, beams, firewood | `#3E2C1A` / `#765A3A` |
-| `F` / `K` | spruce / dark oak planks | floors / ridge | `#735534` / `#422C16` |
-| `>` `<` `=` | dark oak stairs (east / west), bottom slab | roofs | `#422C16` |
-| `c` `#` `u` `a` `i` `j` | waxed cut copper, copper grate, copper slab, copper trapdoor, lightning rod, copper lantern | copper accents | `#C06B4F` |
-| `f` `m` `g` | campfire (lit), magma, shroomlight | the oven glow | `#FAA032` |
-| `G` | `glass` | skylights | `#BEDCE6` |
-| `H` | `dark_oak_wall_sign[facing=north]` | signboard | `#4E341C` |
-| `O` `Q` `w` `y` | barrels, white wool, white carpet | props (crates, flour sacks) | `#7D5C36` / `#EAECEC` |
-| digits, `-`, `\|`, `+` | glass panes, copper bars, spruce fences (every connection variant), brick slabs/stairs | windows, oven bars, posts, stack crowns | |
+Generated (85 entries; chars are assigned automatically, the YAML has the full list; stairs appear in all needed shapes). Roles: see `design/refs-factory.md` (ramps). Block counts: 965.
 
 ## Notes for the other roles
-- **plugin-coder:** parse `points.smoke`/`points.steam` as lists (and `points.chimney` as a one-item smoke list); read the `layout:` section (all ints except yaw/pitch, which may be ints or decimals). Place with physics off like the cottage. Block entities: 3 wall signs, the campfire, 4 barrels (all empty). The campfire is lit and stays lit; it makes its own small smoke inside the oven stack.
-- **vfx-designer:** two stacks of different sizes: the tall one has a 1-cell flue inside a 3 × 3 crown (spread ≤ 0.4), the short one a 1 × 1 top (≤ 0.3). Steam vent 0 is a 1 × 3 copper vent along z; steam pipe 1 is a thin rod.
-- **plugin-tester:** parser cases: list vs single-point smoke, a steam point list, `layout` present/absent; the factory must validate.
+- **plugin-coder:** `ground-depth: 1` (first layer = design y -1: gravel/coarse dirt/podzol/cobblestone only); `points.smoke` / `points.steam` are one-entry lists now (the loop code must not assume two); block entities: 3 wall signs, the campfire, 5 barrels; leaves: none; water: none.
+- **vfx-designer:** one stack: 2 x 2 top (`points.smoke[0]` is the NW cell of the crown; spread <= 0.4, centre offset +0.5, +0.5). The steam vent is 1 x 3 along z on the ridge.
+- **plugin-tester:** parser cases: `ground-depth` with layers, one-entry smoke/steam lists, the layout unchanged.
 
 ## Placeholder / needs a human
-- First pass judged from previews: check in game from the viewpoint (framing, pitch), the roof pitch, the sign text fitting, the oven glow behind the copper bars, campfire smoke inside the stack, and the light level at night.
-- Possible polish later: interior machinery (out of scope), window shutters, a few flower boxes.
+- Judged in textured previews and Chunky shots; check in game: the jetty brackets, the sign text on the stone fascia, the oven glow, the smoke from the single stack, the hatch and belt, night light from the 12 window lanterns.
+- Weak: the flour shed's roof is plain; no interior furniture beyond the shelves and the oven.
