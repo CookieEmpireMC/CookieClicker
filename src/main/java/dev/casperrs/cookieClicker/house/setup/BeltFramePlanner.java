@@ -5,7 +5,6 @@ import dev.casperrs.cookieClicker.house.design.BeltStyle;
 import dev.casperrs.cookieClicker.house.design.DesignFiles;
 import dev.casperrs.cookieClicker.house.design.HouseLayout;
 import dev.casperrs.cookieClicker.plot.Plot;
-import org.bukkit.Bukkit;
 import org.bukkit.block.data.BlockData;
 import org.jspecify.annotations.Nullable;
 
@@ -61,7 +60,7 @@ final class BeltFramePlanner {
         }
         for (String s : r.style().allBlockData()) {
             try {
-                known.computeIfAbsent(s, Bukkit::createBlockData);
+                known.computeIfAbsent(s, DesignBlocks::create);
             } catch (IllegalArgumentException e) {
                 log.warning(FILE + ": '" + s + "' is not valid block data; the belt gets no frame blocks");
                 return BeltStyle.none(r.style().surfaceHeight());

@@ -28,6 +28,7 @@ import java.util.regex.Pattern;
  *     shop: { x: 14.5, y: 64.0, z: -3.5, yaw: 90.0 } # optional: shop panel spot (/bakery plot setup)
  *     clicks: { x: 10.5, y: 64.0, z: -3.5, yaw: 90.0 } # optional: click upgrades panel spot (/bakery plot setup)
  *     house-box: { min: [10, 64, -8], max: [22, 78, 2] }   # optional: the house placed by /bakery plot setup
+ *                                   # (+ ground: N when the design owns N ground layers below min y)
  *     belt: { height: 0.5, cells: [[18, 64, 11], [18, 64, 10], ...] }   # optional: conveyor, hatch -> pedestal
  *     camera: { x: 15.5, y: 73.0, z: -8.5, yaw: 0.0, pitch: 30.0 }      # optional: raised cinematic camera
  * </pre>
@@ -36,6 +37,8 @@ import java.util.regex.Pattern;
 public final class PlotCodec {
 
     private static final Pattern WORLD_KEY = Pattern.compile("[a-z0-9_.-]+:[a-z0-9_./-]+");
+    /** Most ground layers a house box records (a design's ground-depth is 0..2). */
+    private static final int MAX_HOUSE_GROUND = 2;
 
     private PlotCodec() {
     }
@@ -189,6 +192,9 @@ public final class PlotCodec {
                 Map<String, Object> box = new LinkedHashMap<>();
                 box.put("min", List.of(b.minX(), b.minY(), b.minZ()));
                 box.put("max", List.of(b.maxX(), b.maxY(), b.maxZ()));
+                if (b.ground() > 0) {
+                    box.put("ground", b.ground());
+                }
                 spec.put("house-box", box);
             }
             if (p.belt() != null) {
@@ -239,8 +245,9 @@ public final class PlotCodec {
             }
             v[i] = n.intValue();
         }
+        int ground = m.get("ground") instanceof Number g ? Math.clamp(g.intValue(), 0, MAX_HOUSE_GROUND) : 0;
         return new Plot.Box(Math.min(v[0], v[3]), Math.min(v[1], v[4]), Math.min(v[2], v[5]),
-                Math.max(v[0], v[3]), Math.max(v[1], v[4]), Math.max(v[2], v[5]));
+                Math.max(v[0], v[3]), Math.max(v[1], v[4]), Math.max(v[2], v[5]), ground);
     }
 
     private static Plot.@Nullable Belt belt(Object raw) {

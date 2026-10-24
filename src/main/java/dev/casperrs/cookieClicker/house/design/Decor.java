@@ -17,14 +17,15 @@ import java.util.Set;
  *   - {at: [3, 1, 5], block: "minecraft:lantern[hanging=false,waterlogged=false]"}
  * </pre>
  * {@code at} is a plot cell from the plot's min corner (the same frame as {@code layout:} in the house file), y 0 =
- * the first air layer above the ground. A bad entry is a problem and is skipped; the rest still counts. Which cells
+ * the first air layer above the ground; y -1 and -2 replace the plot's ground there (paths, beds, gravel edges; see
+ * {@link DecorKeepOut} for where ground decor may go). A bad entry is a problem and is skipped; the rest still counts. Which cells
  * may hold decor at all is {@link DecorKeepOut}'s job; block data is checked against the server when placing. Blocks
  * keep file order, at most one per cell.
  */
 public record Decor(List<Block> blocks) {
 
-    /** Lowest decor layer: 0 = the first air layer (decor never replaces the ground, design/decor.md). */
-    public static final int MIN_Y = 0;
+    /** Lowest decor layer: -2 (y -1 = the ground's top block, -2 the one below; 0 = the first air layer). */
+    public static final int MIN_Y = -2;
     /** Highest decor layer (exclusive): props stand on the ground, they don't build towers. */
     public static final int MAX_Y = 16;
     public static final int MAX_BLOCKS = 4096;

@@ -169,7 +169,7 @@ public final class FenceLayout {
         Map<Long, Role> fence = new HashMap<>();
         for (long k : border) {
             if (!openSet.contains(k) && !pillars.containsKey(k) && heights.containsKey(k)) {
-                fence.put(k, role(border, k, minX, minZ, style.postEvery()));
+                fence.put(k, role(border, k, minX, minZ, style));
             }
         }
         for (Map.Entry<Long, Role> e : fence.entrySet()) {
@@ -290,8 +290,8 @@ public final class FenceLayout {
         return out;
     }
 
-    /** Corner when the border neighbours aren't one straight line; posts every n along a straight side. */
-    private static Role role(Set<Long> border, long k, int minX, int minZ, int every) {
+    /** Corner when the border neighbours aren't one straight line; posts by the style's spacing along a side. */
+    private static Role role(Set<Long> border, long k, int minX, int minZ, FenceStyle style) {
         int x = kx(k);
         int z = kz(k);
         boolean n = border.contains(key(x, z - 1));
@@ -301,10 +301,10 @@ public final class FenceLayout {
         boolean eastWest = e && w && !n && !s;
         boolean northSouth = n && s && !e && !w;
         if (eastWest) {
-            return Math.floorMod(x - minX, every) == 0 ? Role.POST : Role.RAIL;
+            return style.postAt(x - minX) ? Role.POST : Role.RAIL;
         }
         if (northSouth) {
-            return Math.floorMod(z - minZ, every) == 0 ? Role.POST : Role.RAIL;
+            return style.postAt(z - minZ) ? Role.POST : Role.RAIL;
         }
         return Role.CORNER;
     }
@@ -313,12 +313,11 @@ public final class FenceLayout {
         if (role == Role.CORNER) {
             return true;
         }
-        if (role != Role.POST || style.topperEvery() <= 0) {
+        if (role != Role.POST) {
             return false;
         }
-        int step = style.postEvery() * style.topperEvery();
         boolean eastWest = border.contains(key(x + 1, z)) && border.contains(key(x - 1, z));
-        return Math.floorMod(eastWest ? x - minX : z - minZ, step) == 0;
+        return style.toppedPost(style.postIndex(eastWest ? x - minX : z - minZ));
     }
 
     static long key(int x, int z) {

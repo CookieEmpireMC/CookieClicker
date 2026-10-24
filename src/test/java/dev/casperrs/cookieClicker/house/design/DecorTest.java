@@ -1,5 +1,6 @@
 package dev.casperrs.cookieClicker.house.design;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -29,5 +30,15 @@ class DecorTest {
         Decor.Result r = Decor.parse(YamlFiles.toMap(y));
         assertTrue(r.problems().isEmpty(), r.problems().toString());
         assertFalse(r.decor().blocks().isEmpty());
+    }
+
+    @Test
+    void groundDecorAtMinusOneAndMinusTwoParsesAndMinusThreeIsSkipped() throws Exception {
+        Decor.Result r = parse("blocks:\n"
+                + "  - {at: [1, -1, 1], block: \"minecraft:dirt_path\"}\n"
+                + "  - {at: [2, -2, 1], block: \"minecraft:gravel\"}\n"
+                + "  - {at: [3, -3, 1], block: \"minecraft:gravel\"}\n");
+        assertEquals(2, r.decor().blocks().size());
+        assertEquals(1, r.problems().size(), r.problems().toString());
     }
 }

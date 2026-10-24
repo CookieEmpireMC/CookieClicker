@@ -112,6 +112,11 @@ description = "Build design/review/index.html (local asset review page: textures
 depends = ["sound-previews"]
 run = "python tools/review.py"
 
+[tasks.review-render]
+description = "Place a whole plot on the local review server and render Chunky shots: review-render <design> [--shots eye,34,door]"
+depends = ["assets-deps"]
+run = "python tools/review/review_render.py"
+
 [tasks.team]
 description = "Show commits per team member (agent identities)"
 run = "git shortlog -sn --all"

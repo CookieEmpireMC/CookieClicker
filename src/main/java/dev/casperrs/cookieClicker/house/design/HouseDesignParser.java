@@ -14,6 +14,8 @@ import java.util.Map;
  * <pre>
  * size: [9, 7, 7]            # x (row length), y (number of layers), z (rows per layer)
  * origin: [0, 0, 0]          # optional: the design cell placed on the house region's minimum corner
+ * ground-depth: 0            # optional 0..2: the first N layers lie below the house region's min y (design y -N..-1);
+ *                            # size y counts them; points/signs/origin y count from the first layer above them
  * palette:                   # one character -> block data
  *   "P": "minecraft:oak_planks"
  *   "_": "minecraft:air"     # to clear a cell, map a character to air
@@ -42,6 +44,8 @@ public final class HouseDesignParser {
     public static final String BELT_OUT = "belt_out";
     /** Per axis; a typo in {@code size} must not allocate a huge grid. */
     public static final int MAX_SIZE = 256;
+    /** Most ground layers a design may own below the house region. */
+    public static final int MAX_GROUND_DEPTH = 2;
 
     /** The design, or null with at least one problem. */
     public record Result(@Nullable HouseDesign design, List<String> problems) {
@@ -62,8 +66,9 @@ public final class HouseDesignParser {
             problems.add("size must be [x, y, z] with whole numbers from 1 to " + MAX_SIZE);
             return new Result(null, problems);
         }
+        int ground = groundDepth(yaml.get("ground-depth"), size[1], problems);
         int[] origin = yaml.get("origin") == null ? new int[3] : ints(yaml.get("origin"), 3);
-        if (origin == null || !inside(origin, size)) {
+        if (origin == null || !inside(origin, size, ground)) {
             problems.add("origin must be [x, y, z] whole numbers inside size");
             origin = new int[3];
         }
@@ -72,16 +77,31 @@ public final class HouseDesignParser {
         Map<String, int[]> points = new LinkedHashMap<>();
         List<int[]> smoke = new ArrayList<>();
         List<int[]> steam = new ArrayList<>();
-        points(yaml.get("points"), size, points, smoke, steam, problems);
+        points(yaml.get("points"), size, ground, points, smoke, steam, problems);
         if (smoke.isEmpty() && points.get(CHIMNEY) != null) {
             smoke.add(points.get(CHIMNEY)); // a single chimney = a one-item smoke list
         }
-        List<HouseDesign.SignText> signs = signs(yaml.get("signs"), size, grid, problems);
+        List<HouseDesign.SignText> signs = signs(yaml.get("signs"), size, ground, grid, problems);
         HouseLayout layout = yaml.get("layout") == null ? null : layout(yaml.get("layout"), size, origin, problems);
         return problems.isEmpty()
                 ? new Result(new HouseDesign(name, size[0], size[1], size[2], origin, Map.copyOf(palette), grid,
-                        points, List.copyOf(smoke), List.copyOf(steam), List.copyOf(signs), layout), List.of())
+                        points, List.copyOf(smoke), List.copyOf(steam), List.copyOf(signs), layout, ground),
+                        List.of())
                 : new Result(null, problems);
+    }
+
+    /** {@code ground-depth}: missing = 0; must leave at least one layer above the ground. */
+    private static int groundDepth(@Nullable Object raw, int sizeY, List<String> problems) {
+        if (raw == null) {
+            return 0;
+        }
+        if (!(raw instanceof Number n) || n.doubleValue() != Math.rint(n.doubleValue())
+                || n.intValue() < 0 || n.intValue() > MAX_GROUND_DEPTH || n.intValue() >= sizeY) {
+            problems.add("ground-depth must be a whole number from 0 to " + MAX_GROUND_DEPTH
+                    + " and less than size y");
+            return 0;
+        }
+        return n.intValue();
     }
 
     private static Map<Character, String> palette(@Nullable Object raw, List<String> problems) {
@@ -138,7 +158,8 @@ public final class HouseDesignParser {
         return grid;
     }
 
-    private static void points(@Nullable Object raw, int[] size, Map<String, int[]> points, List<int[]> smoke,
+    private static void points(@Nullable Object raw, int[] size, int ground, Map<String, int[]> points,
+                               List<int[]> smoke,
                                List<int[]> steam, List<String> problems) {
         if (!(raw instanceof Map<?, ?> rawPoints)) {
             if (raw != null) {
@@ -149,13 +170,13 @@ public final class HouseDesignParser {
         for (Map.Entry<?, ?> e : rawPoints.entrySet()) {
             String key = String.valueOf(e.getKey());
             if (key.equals(SMOKE) || key.equals(STEAM)) {
-                pointList(key, e.getValue(), size, key.equals(SMOKE) ? smoke : steam, problems);
+                pointList(key, e.getValue(), size, ground, key.equals(SMOKE) ? smoke : steam, problems);
                 continue;
             }
             int[] p = ints(e.getValue(), 3);
             if (p == null) {
                 problems.add("points." + key + " must be [x, y, z] whole numbers");
-            } else if (!inside(p, size)) {
+            } else if (!inside(p, size, ground)) {
                 problems.add("points." + key + " " + Arrays.toString(p) + " is outside size " + Arrays.toString(size));
             } else {
                 points.put(key, p);
@@ -163,7 +184,7 @@ public final class HouseDesignParser {
         }
     }
 
-    private static List<HouseDesign.SignText> signs(@Nullable Object raw, int[] size, char[][][] grid,
+    private static List<HouseDesign.SignText> signs(@Nullable Object raw, int[] size, int ground, char[][][] grid,
                                                     List<String> problems) {
         List<HouseDesign.SignText> signs = new ArrayList<>();
         if (!(raw instanceof List<?> rawSigns)) {
@@ -179,7 +200,7 @@ public final class HouseDesignParser {
                 continue;
             }
             int[] at = ints(sign.get("at"), 3);
-            if (at == null || !inside(at, size)) {
+            if (at == null || !inside(at, size, ground)) {
                 problems.add(where + ".at must be [x, y, z] inside size " + Arrays.toString(size));
                 continue;
             }
@@ -189,7 +210,7 @@ public final class HouseDesignParser {
             }
             List<String> lines = new ArrayList<>();
             rawLines.forEach(l -> lines.add(l == null ? "" : String.valueOf(l)));
-            char c = grid[at[1]][at[2]][at[0]];
+            char c = grid[at[1] + ground][at[2]][at[0]];
             if (isKeep(c) || c == 0) {
                 problems.add(where + ".at " + Arrays.toString(at) + " is not a palette block");
                 continue;
@@ -214,7 +235,8 @@ public final class HouseDesignParser {
     }
 
     /** {@code points.smoke} / {@code points.steam}: a list of [x, y, z], each inside size. */
-    private static void pointList(String key, Object raw, int[] size, List<int[]> out, List<String> problems) {
+    private static void pointList(String key, Object raw, int[] size, int ground, List<int[]> out,
+                                  List<String> problems) {
         if (!(raw instanceof List<?> list)) {
             problems.add("points." + key + " must be a list of [x, y, z]");
             return;
@@ -223,7 +245,7 @@ public final class HouseDesignParser {
             int[] p = ints(list.get(i), 3);
             if (p == null) {
                 problems.add("points." + key + "[" + i + "] must be [x, y, z] whole numbers");
-            } else if (!inside(p, size)) {
+            } else if (!inside(p, size, ground)) {
                 problems.add("points." + key + "[" + i + "] " + Arrays.toString(p) + " is outside size "
                         + Arrays.toString(size));
             } else {
@@ -232,8 +254,10 @@ public final class HouseDesignParser {
         }
     }
 
-    private static boolean inside(int[] p, int[] size) {
-        return p[0] >= 0 && p[1] >= 0 && p[2] >= 0 && p[0] < size[0] && p[1] < size[1] && p[2] < size[2];
+    /** Inside the design box in design y (ground layers are y {@code -ground..-1}). */
+    private static boolean inside(int[] p, int[] size, int ground) {
+        return p[0] >= 0 && p[1] >= -ground && p[2] >= 0 && p[0] < size[0] && p[1] < size[1] - ground
+                && p[2] < size[2];
     }
 
     private static int @Nullable [] ints(Object raw, int n) {
