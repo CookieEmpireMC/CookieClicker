@@ -23,3 +23,5 @@ Verified 2026-10-24 by running `mise run review-render factory --at 200 -60 0` e
   but `mise run <task> --help` is swallowed by mise ("does not accept any arguments").
 - `tools/review/plot_plan.py` mirrors the Java planner (HouseDesignParser ground-depth, DecorKeepOut incl. ground
   keep-out, FenceStyle spacing, FenceLayout): change both together.
+- Place-only designs (no `layout:`) get box-framed shots from `plot_plan._place_only_shots` (front = `facing` of the
+  door block, else north; Chunky fov 70 is vertical). Verified with default.yml renders 2026-10-24.
