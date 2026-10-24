@@ -20,10 +20,10 @@ Original design; no build was traced.
 |---|---|---|
 | plinth | cobblestone, mossy cobblestone, andesite | y0 ring; moss near the ground |
 | stone | stone bricks, cracked, mossy, andesite | ground storey y1..4, pilasters, oven stack base |
-| plaster | white terracotta, calcite, light grey terracotta | upper floor y5..7 and gables, grey low (under the jetty) |
+| plaster | calcite (base), diorite, polished diorite | upper floor y5..7 and gables: a warm off-white, the polished variant low (under the jetty) |
 | timber | dark oak log, stripped dark oak log, dark oak planks | posts / beams / braces: frame, bressumer, plate, door and hatch frames |
-| roof | spruce stairs (field), dark oak stairs (eave, rake, patches), mud brick stairs (patches) | 45 degrees, dark oak eave and rake |
-| brick | bricks, red nether bricks, mud bricks | the stack shaft (exact quotas, clustered) |
+| roof | spruce stairs (field), dark oak stairs (eave, rake, patches), oak stairs (sun-bleached patches) | 45 degrees, dark oak eave and rake |
+| brick | bricks, mud bricks, stone bricks | the stack shaft (exact quotas, clustered), a collar of top-half brick slabs |
 | floor | spruce, oak, dark oak planks | interior floors |
 | accents | waxed cut copper, copper trapdoor, copper bars / grate | hatch lintel and awning, oven bars, ridge louvre |
 

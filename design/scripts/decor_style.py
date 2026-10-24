@@ -138,7 +138,7 @@ def fringe(cells: set, thr: float = .35) -> set:
     return out - cells
 
 
-def paint(cells: set, ramp: Ramp, fr: float = .35) -> None:
+def paint(cells: set, ramp: Ramp, fr: float = .75) -> None:
     S.ground(b, cells, ramp)
     for (x, z) in sorted(fringe(cells, fr)):
         if b.get(x, -1, z) is None:
@@ -162,9 +162,8 @@ b.scene("portal_yard", "slots")
 paint(blob(27, 4, 2.4, 2.4) | lane([(22, 4), (26, 4)], hl=(1, 1), hr=(1, 1)), YARD)
 
 b.scene("ring_lane", "factory")
-ring = lane([(15, 9), (4, 9)], hl=(1, 1), hr=(1, 1)) | lane([(4, 9), (4, 25)], hl=(0, 1), hr=(1, 1)) \
-    | lane([(4, 25), (26, 25)], hl=(1, 1), hr=(1, 1)) | lane([(26, 25), (26, 9)], hl=(0, 1), hr=(1, 1)) \
-    | lane([(26, 9), (15, 9)], hl=(1, 1), hr=(1, 1))
+ring = lane([(4, 9), (4, 25)], hl=(0, 1), hr=(1, 1)) | lane([(4, 25), (26, 25)], hl=(0, 1), hr=(1, 1)) \
+    | lane([(26, 25), (26, 9)], hl=(0, 1), hr=(1, 1))
 paint(ring, S.PATH, .22)
 
 b.scene("shipping_yard", "slots")

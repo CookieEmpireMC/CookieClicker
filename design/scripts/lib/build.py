@@ -253,10 +253,8 @@ def stack(b: Build, x: int, z: int, y0: int, y_top: int, *, base: Ramp, shaft: R
     for y in range(y0, y_top + 1):
         for (cx, cz) in cells:
             b.put(cx, y, cz, base.pick(cx, y, cz) if y < y0 + base_courses else picked[(cx, y, cz)])
-    yc = y_top - 1                                         # corbel: one ring of inverted stairs flaring under the crown
-    for side, cs in {"north": [(x, z - 1), (x + 1, z - 1)], "south": [(x, z + 2), (x + 1, z + 2)],
-                     "west": [(x - 1, z), (x - 1, z + 1)], "east": [(x + 2, z), (x + 2, z + 1)]}.items():
-        for (cx, cz) in cs:
-            b.put(cx, yc, cz, st("brick", OPP[side], "top"))
+    for (cx, cz) in [(x - 1 + i, z - 1 + j) for i in range(4) for j in range(4)
+                     if (i in (0, 3)) != (j in (0, 3))]:           # slim collar: top-half brick slabs on the 8 edge cells
+        b.put(cx, y_top, cz, sl("brick", "top"))
     b.notes.chimneys.append(name)
     return (x, y_top + 1, z)

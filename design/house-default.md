@@ -12,11 +12,11 @@ Status: placeholder (reworked 2026-10-24 for `build-quality`; textured previews 
 
 ## Look
 A Tudor bakery cottage in two volumes (R1) with a yard around it:
-- **Hall** (walls x3..9, z6..12, ridge along x): two-course cobblestone plinth ramp, plaster ramp walls in a dark oak frame (corner posts, door jambs, mid posts), flower-boxed windows with sills and lit interiors, a dark oak plate (y5), a 45 degree mud-brick roof with brick and spruce patches, dark oak eave and rake, spruce ridge beam with slab cap (ridge y8). Plastered gables with a king post (west gable window with a flower box).
+- **Hall** (walls x3..9, z6..12, ridge along x): two-course cobblestone plinth ramp, calcite plaster ramp walls in a dark oak frame (corner posts, door jambs, mid posts), flower-boxed windows with sills and lit interiors, a dark oak plate (y5), a 45 degree dark oak roof with subtle spruce and oak patches, spruce eave and rake, spruce ridge beam with slab cap (ridge y8). Plastered gables with a king post (west gable window with a flower box).
 - **Door (front, north):** spruce door in a log frame with a lintel, a stair **hood**, a hanging lantern on its west side, a hanging "Bakery" sign on its east side, a stone step and two potted tulips.
-- **Service wing** (x9..14, z7..11, lower, ridge y5, set back one block): shuttered windows on three sides, a plastered east gable.
-- **The one chimney** (R11): a 2 x 2 brick stack on the hall's west gable (x1..2, z8..9) from the ground to y10 on a cobblestone base, corbel ring, two-slab crown at y11; smoke above.
-- **Yard (ground layer + y >= 0):** a wandering 3-wide gravel path from the door to the north edge, two flower beds either side of it, a gravel/coarse-dirt apron around the walls with an irregular outer edge, a woodpile with a chopping block at the back wall, an herb bed, hay and barrels behind the wing. The front yard (5 deep, 9 wide, 3-wide corridor) is kept clear.
+- **Service wing** (x9..14, z7..11, lower, ridge y5, set back one block): its own door with a stoop, barrel and pot on the front, shuttered windows with flower boxes, a plastered east gable.
+- **The one chimney** (R11): a 2 x 2 brick stack on the hall's west gable (x1..2, z8..9) from the ground to y10 on a cobblestone base with a slim slab collar; smoke above (top about 1.5 above the ridge).
+- **Yard (ground layer + y >= 0):** a wandering 3-wide dirt-path track from the door to the north edge, two flower beds either side of it, a one-block gravel apron around the walls with a soft noisy outer edge (no lone squares), a woodpile with a chopping block at the back wall, an herb bed, hay and barrels behind the wing. The front yard (5 deep, 9 wide, 3-wide corridor) is kept clear.
 - 657 blocks (air and keep cells not counted), design box 17 x 13 x 15 above the ground + 1 ground layer.
 
 **What changed (2026-10-24):** the old cottage was one 9 x 7 x 7 box with a flat brick chimney. Design box and block count changed: **the shipped-design test in `HouseDesignParserTest` pins the old 9 x 7 x 7 and 170 blocks and must be updated** (REQUEST to plugin-tester).
@@ -32,7 +32,7 @@ palette:                 # one char -> one block data string
 layers:                  # bottom -> top: size[1] layers; the first ground-depth layers are the ground
   - ["...rso...", ...]   # each layer: size[2] rows (z = 0 first), each row: size[0] chars (x = 0 first)
 points:
-  chimney: [1, 12, 9]    # design cell where chimney smoke starts (air above the crown slab)
+  chimney: [1, 11, 8]    # design cell where chimney smoke starts (air above the top brick)
   door: [6, 1, 6]        # lower half of the front door
 signs:                   # optional: text to set on sign blocks after placing
   - at: [7, 3, 5]
@@ -52,7 +52,7 @@ signs:                   # optional: text to set on sign blocks after placing
 ## Points and signs
 | Name | Design cell | Meaning |
 |---|---|---|
-| `points.chimney` | `[1, 12, 9]` | air above the crown slab of the stack (`[1, 11, 9]` is the slab); smoke and the crackle loop start here; the stack is 2 x 2 (x1..2, z8..9) |
+| `points.chimney` | `[1, 11, 8]` | air above the top brick of the stack (`[1, 10, 8]` is the shaft top); smoke and the crackle loop start here; the stack is 2 x 2 (x1..2, z8..9) |
 | `points.door` | `[6, 1, 6]` | lower door half |
 | `signs[0]` | `[7, 3, 5]`, lines `["", "Bakery", "", ""]` | the hanging sign east of the door hood (`rotation=8`, front faces north); plain text, set on the front side |
 

@@ -80,7 +80,7 @@ SCHEMAS = [
 ]
 FULL = {
     "air", "stone", "cobblestone", "mossy_cobblestone", "andesite", "polished_andesite", "diorite", "granite",
-    "calcite", "tuff", "polished_tuff", "smooth_stone", "stone_bricks", "mossy_stone_bricks", "cracked_stone_bricks",
+    "calcite", "polished_diorite", "tuff", "polished_tuff", "smooth_stone", "stone_bricks", "mossy_stone_bricks", "cracked_stone_bricks",
     "chiseled_stone_bricks", "bricks", "mud_bricks", "terracotta", "white_terracotta", "magma_block", "shroomlight",
     "waxed_cut_copper", "waxed_chiseled_copper", "waxed_copper_block", "white_wool", "glass", "dirt",
     "coarse_dirt", "rooted_dirt", "mud", "packed_mud", "clay", "gravel", "moss_block", "dirt_path", "cobbled_deepslate",

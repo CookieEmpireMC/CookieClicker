@@ -17,9 +17,9 @@ A Norman/Tudor **bakehouse**, three volumes, **one chimney**:
 - **Bake hall** (x6..14, z2..10): cobblestone plinth ramp (y0), stone-brick ramp ground storey (y1..4, a string course of stripped dark oak on the sides and back), a **plastered upper floor** (y5..7, plaster ramp in a dark oak frame: log posts at the corners, bay ends and mid-wall, plank braces) with flower-boxed windows, a stripped-log top plate (y8), and a **45 degree roof** (spruce field with mud-brick and dark-oak patches, **dark oak eave and rake**, spruce ridge beam with slab cap, ridge y12). Both gables are plastered, with a king post and a shuttered loft window with a flower box. A **flush copper louvre** sits in the ridge (z5..7).
 - **Front (north):** the upper floor is a **1-block jetty** (plane z1 over the ground plane z2) on a stripped-log bressumer, carried by stone pilasters (chiselled caps) and inverted-stair brackets. West bay: spruce door in a dark oak frame with stoop, a hanging lantern on a bracket, potted tulips. A stone post, then the **signboard** (three spruce wall signs at y4). East bay: the **loading hatch** (x12, y0..1) between timber jambs under a copper lintel and awning, a wide flower-boxed window above, a barrel.
 - **Oven house** (west lean-to gable, x1..5, z4..8): stone walls, a **cross-gable** roof (ridge along x, y5), the **oven mouth** behind waxed copper bars with a lit campfire, magma and shroomlight, a shuttered flower-boxed window, a window on the west gable.
-- **The one chimney:** a 2 x 2 **oven stack** (x4..5, z5..6) from the oven hood: 3 stone courses, a brick shaft (bricks / red nether / mud bricks in clustered quotas), a corbel ring of inverted brick stairs and a two-slab crown, top y14, crown y15; it stands against the hall's west wall and is the only thing above the ridge. The old 16-high boiler stack, the brick duct and the copper steam pipe are gone.
+- **The one chimney:** a 2 x 2 **oven stack** (x4..5, z5..6) from the oven hood: 3 stone courses, a brick shaft (bricks / mud bricks / stone bricks in clustered quotas) with a slim collar of top-half brick slabs, top y15; it stands against the hall's west wall and is the only thing above the ridge. The old 16-high boiler stack, the brick duct and the copper steam pipe are gone.
 - **Flour shed** (east lean-to, x15..18, z2..8): dark oak posts and beam, stone-brick-wall knee walls, a 26 degree roof with a spruce eave, barrels, flour sacks, a hanging lantern; two lit windows into the hall.
-- **Ground (y -1, inside the design box):** a gravel / coarse-dirt apron around the walls with an irregular outer edge, a gravel path from the door and the hatch to the box edge. Everything outside the box is `decor.yml`.
+- **Ground (y -1, inside the design box):** a one-block gravel apron around the walls whose outer edge is pushed out in soft clusters by smooth noise, a cobblestone path from the door and the hatch to the box edge. Everything outside the box is `decor.yml`.
 
 **Rework 2026-10-24 (build-quality):** before it was two chimneys, flat brick walls, a roof covering most of the facade, skylight glass cubes and stray props. Now: R1-R21 of `design/style-guide.md` and the lint pass.
 
@@ -27,7 +27,7 @@ A Norman/Tudor **bakehouse**, three volumes, **one chimney**:
 ```yaml
 ground-depth: 1                        # the first layer is design y -1 (see house-default.md)
 points:
-  smoke: [[4, 16, 6]]                  # list with ONE entry (R11): the air cell above the oven stack's crown slab
+  smoke: [[4, 16, 5]]                  # list with ONE entry (R11): the air cell above the oven stack's top brick
   steam: [[10, 13, 6]]                 # ONE entry: the air cell above the copper ridge louvre (sound anchor)
   belt_out: [12, 0, 1]                 # the first belt cell outside the loading hatch
   door: [8, 1, 2]
@@ -38,7 +38,7 @@ layout:                                # plot layout (below)
 ## Points
 | Name | Design cell | Meaning |
 |---|---|---|
-| `points.smoke[0]` | `[4, 16, 6]` | above the slab crown of the oven stack (`[4, 15, 6]` is a slab; the shaft top is y14); the stack is 2 x 2 (x4..5, z5..6), spread up to 0.4 |
+| `points.smoke[0]` | `[4, 16, 5]` | above the top of the oven stack (`[4, 15, 5]` is the shaft's top brick); the stack is 2 x 2 (x4..5, z5..6), spread up to 0.4 |
 | `points.steam[0]` | `[10, 13, 6]` | above the copper grate louvre in the ridge (`[10, 12, 6]`, z5..7); sound anchor of `factory_ambient` |
 | `points.belt_out` | `[12, 0, 1]` | unchanged: first belt cell outside the hatch; the hatch opening is `[12, 0..1, 2]`; belt runs north; copper awning at `[11..13, 1, 1]` |
 | `points.door` | `[8, 1, 2]` | unchanged: lower half of the front door |

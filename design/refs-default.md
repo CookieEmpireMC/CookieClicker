@@ -17,14 +17,14 @@ Original design.
 | Role | Blocks | Placement |
 |---|---|---|
 | plinth | cobblestone, mossy cobblestone, andesite | y0..1 ring (2 courses), moss low |
-| plaster | white terracotta, calcite, light grey terracotta | y2..4 walls, gables |
+| plaster | calcite, diorite, polished diorite | y2..4 walls, gables (warm off-white) |
 | timber | dark oak log, stripped dark oak log, dark oak planks | posts, plate, door frame, gable king post |
-| roof | mud brick stairs (field), brick stairs and spruce stairs (patches), dark oak stairs (eave, rake) | 45 degrees |
-| brick | bricks, red nether bricks, mud bricks | the stack |
+| roof | dark oak stairs (field), spruce stairs (eave, rake, patches), oak stairs (sun-bleached patches) | 45 degrees |
+| brick | bricks, mud bricks, stone bricks | the stack (same brick as the factory) |
 | floor | spruce, oak, dark oak planks | interior |
 
 ## Yard
-A wandering gravel path (3 wide) to the door, two flower beds either side (podzol, rooted dirt, coarse dirt; poppies,
+A wandering dirt-path track (3 wide) to the door, two flower beds either side (podzol, rooted dirt, coarse dirt; poppies,
 cornflowers, alliums, tulips ...), a gravel and coarse-dirt apron around the walls with an irregular outer edge, a woodpile
 with a chopping block against the back wall, an herb bed with hay and barrels behind the wing. The front yard (5 deep, 9 wide,
 3-wide corridor) stays free (lint R19).

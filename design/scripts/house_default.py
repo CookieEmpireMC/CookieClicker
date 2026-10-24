@@ -32,18 +32,18 @@ OUT_DIR = ROOT / "design/scripts/previews"
 SX, SY, SZ, GROUND_DEPTH = 17, 13, 15, 1
 
 PLINTH = Ramp(P("cobblestone"), [(P("mossy_cobblestone"), .28, "low"), (P("andesite"), .24, None)], seed=14)
-PLASTER = Ramp(P("calcite"), [(P("diorite"), .18, None), (P("white_terracotta"), .12, "low")], seed=15, height=4, y0=1)
-BRICK = Ramp(P("bricks"), [(P("mud_bricks"), .14, None), (P("terracotta"), .10, None)], seed=16)
+PLASTER = Ramp(P("calcite"), [(P("diorite"), .18, None), (P("polished_diorite"), .12, "low")], seed=15, height=4, y0=1)
+BRICK = Ramp(P("bricks"), [(P("mud_bricks"), .12, None), (P("stone_bricks"), .08, None)], seed=16)
 STONE = Ramp(P("stone_bricks"), [(P("cracked_stone_bricks"), .14, None), (P("mossy_stone_bricks"), .17, "low"),
                                  (P("andesite"), .08, None)], seed=17)
 FLOOR = Ramp(P("spruce_planks"), [(P("oak_planks"), .30, None), (P("dark_oak_planks"), .25, None)], seed=18)
-ROOF = Ramp("dark_oak", [("spruce", .09, None), ("mangrove", .07, None)], seed=19, height=7)
+ROOF = Ramp("dark_oak", [("spruce", .09, None), ("oak", .06, None)], seed=19, height=7)
 RAMPS = {
     "plinth": ["cobblestone", "mossy_cobblestone", "andesite"],
-    "plaster": ["calcite", "diorite", "white_terracotta"],
-    "brick": ["bricks", "mud_bricks", "terracotta"],
+    "plaster": ["calcite", "diorite", "polished_diorite"],
+    "brick": ["bricks", "mud_bricks", "stone_bricks"],
     "timber": ["dark_oak_log", "stripped_dark_oak_log", "dark_oak_planks"],
-    "roof": ["dark_oak_stairs", "spruce_stairs", "mangrove_stairs"],
+    "roof": ["dark_oak_stairs", "spruce_stairs", "oak_stairs"],
     "floor": ["spruce_planks", "oak_planks", "dark_oak_planks"],
 }
 BEAM = "dark_oak"
