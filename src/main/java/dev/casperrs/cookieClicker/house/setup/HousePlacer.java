@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 import java.util.function.IntSupplier;
 import java.util.logging.Level;
 import java.util.regex.Pattern;
@@ -53,15 +54,18 @@ public final class HousePlacer {
     private final IntSupplier maxBlocks;
     private final Executor main;
     private final WorldOperation ops;
+    private final Consumer<String> plotChanged;
 
     /** A checked paste: everything the world step needs once its backup is on disk. */
     private record Paste(String plotId, HouseDesign design, int[] regionMin, List<HouseBackup.Change> changes,
                          Map<String, BlockData> byString, HouseBackup backup, byte[] structure) {
     }
 
+    /** {@code plotChanged} hears the plot id after a paste or undo changed its points or house box (main thread). */
     public HousePlacer(JavaPlugin plugin, PlotRegistry plots, PlotFile plotFile, Messages messages, Executor io,
-                       Executor main, IntSupplier maxBlocks) {
+                       Executor main, IntSupplier maxBlocks, Consumer<String> plotChanged) {
         this.plugin = plugin;
+        this.plotChanged = plotChanged;
         this.plots = plots;
         this.plotFile = plotFile;
         this.messages = messages;
@@ -225,6 +229,7 @@ public final class HousePlacer {
         if (!updated.equals(plot)) {
             plots.put(updated, problem -> plugin.getLogger().warning(problem));
             plotFile.saveAsync(plots.all());
+            plotChanged.accept(updated.id());
         }
         ops.finishNow(op, "house.placed", Placeholder.unparsed("name", design.name()),
                 Placeholder.unparsed("id", paste.plotId()),
@@ -281,6 +286,7 @@ public final class HousePlacer {
             plots.put(plot.withSmoke(backup.previousSmoke()).withSteam(backup.previousSteam()),
                     problem -> plugin.getLogger().warning(problem));
             plotFile.saveAsync(plots.all());
+            plotChanged.accept(plotId);
         });
         int count = backup.cells().size();
         ops.submit(op, () -> {

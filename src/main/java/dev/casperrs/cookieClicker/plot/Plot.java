@@ -83,7 +83,6 @@ public record Plot(String id, String worldKey, @Nullable String plotRegion, @Nul
         }
     }
 
-    /** A block box, inclusive. */
     /**
      * The house box (inclusive). {@code ground}: how many layers of the pasted design lie below {@code minY} (the
      * design's {@code ground-depth}, 0..2); they belong to the house for the build cinematic but not to the box.

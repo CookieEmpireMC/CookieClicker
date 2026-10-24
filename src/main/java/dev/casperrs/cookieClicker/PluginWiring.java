@@ -188,7 +188,7 @@ final class PluginWiring {
         pedestalPrivacy = new PedestalPrivacy(plugin, () -> settings.get().plot().hideOthers(), stations::all);
         pedestalPrivacy.restart();
         houses = new HousePlacer(plugin, plotRegistry, plotFile, messages, io, mainThread,
-                () -> settings.get().house().maxBlocks());
+                () -> settings.get().house().maxBlocks(), cinematics::plotChanged);
         setup = new PlotSetup(plugin, plotRegistry,
                 plot -> {
                     plots.update(plot, problem -> plugin.getLogger().warning(problem));
