@@ -2,6 +2,7 @@ package dev.casperrs.cookieClicker.command;
 
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import dev.casperrs.cookieClicker.config.PluginSettings;
@@ -21,6 +22,7 @@ import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 import java.util.Locale;
@@ -28,8 +30,8 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
- * {@code /bakery plot setup [design]|setup undo|show}, {@code /bakery house place <design>|undo|rebuild <player>} and
- * {@code /bakery reload}, permission {@code cookieempire.admin}. Plot commands act on the plot whose
+ * {@code /bakery plot setup [design]|setup undo|show}, {@code /bakery house place <design>|undo|rebuild <player>},
+ * {@code /bakery db migrate [--force]} ({@link DbCommand}) and {@code /bakery reload}, permission {@code cookieempire.admin}. Plot commands act on the plot whose
  * {@code bakery-plot} region the admin stands in. Built for Paper's Brigadier lifecycle registration
  * ({@link #node()}).
  */
@@ -51,10 +53,19 @@ public final class BakeryCommand {
     private final Supplier<PluginSettings> settings;
     private final Messages messages;
     private final Reloader reloader;
+    private final @Nullable DbCommand db;
 
     public BakeryCommand(PlotService plots, PlotOutlines outlines, HousePlacer houses, PlotSetup setup,
                          HouseCinematics cinematics,
                          Supplier<PluginSettings> settings, Messages messages, Reloader reloader) {
+        this(plots, outlines, houses, setup, cinematics, settings, messages, reloader, null);
+    }
+
+    public BakeryCommand(PlotService plots, PlotOutlines outlines, HousePlacer houses, PlotSetup setup,
+                         HouseCinematics cinematics,
+                         Supplier<PluginSettings> settings, Messages messages, Reloader reloader,
+                         @Nullable DbCommand db) {
+        this.db = db;
         this.cinematics = cinematics;
         this.plots = plots;
         this.outlines = outlines;
@@ -66,7 +77,11 @@ public final class BakeryCommand {
     }
 
     public LiteralCommandNode<CommandSourceStack> node() {
-        return Commands.literal("bakery")
+        LiteralArgumentBuilder<CommandSourceStack> root = Commands.literal("bakery");
+        if (db != null) {
+            root.then(db.node());
+        }
+        return root
                 .requires(src -> src.getSender().hasPermission(PERMISSION))
                 .then(Commands.literal("plot")
                         .then(Commands.literal("setup")

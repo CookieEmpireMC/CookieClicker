@@ -258,8 +258,20 @@ house:
     title: "<gradient:#e0a060:#a0622d><b>Your bakery is open!</b></gradient>"
     subtitle: "<gray>Click the cookie to start baking</gray>"
 
+# /bakery db migrate [--force]: copies the H2 file into MariaDB. <id> = file or table, <count> = rows/players.
+db:
+  migrate:
+    started: "<prefix><gray>Saving online players, then copying <white><id></white> into MariaDB...</gray>"
+    table: "<dark_gray> - </dark_gray><gray><id>: <white><count></white> row(s)</gray>"
+    done: "<prefix><green>Migration finished: <count> row(s) copied. Online players were reloaded from MariaDB.</green>"
+    not-mariadb: "<prefix><red>Set <white>database.type: mariadb</white> in config.yml and restart first; the migration copies the H2 file into MariaDB.</red>"
+    no-h2-file: "<prefix><red>There is no H2 file at <white><id></white> (database.h2.file); nothing to migrate.</red>"
+    not-empty: "<prefix><yellow>MariaDB already holds <count> player(s); nothing was copied. Run <white>/bakery db migrate --force</white> to replace them with the H2 data.</yellow>"
+    running: "<prefix><yellow>A migration is already running.</yellow>"
+    failed: "<prefix><red>Migration failed: <problem>. See the console; tables copied before the error stay copied.</red>"
+
 commands:
-  usage: "<prefix><gray>/bakery plot setup [design]|setup undo|show</gray> <dark_gray>|</dark_gray> <gray>/bakery house place \\<design>|undo|rebuild \\<player></gray> <dark_gray>|</dark_gray> <gray>/bakery reload</gray>"
+  usage: "<prefix><gray>/bakery plot setup [design]|setup undo|show</gray> <dark_gray>|</dark_gray> <gray>/bakery house place \\<design>|undo|rebuild \\<player></gray> <dark_gray>|</dark_gray> <gray>/bakery db migrate [--force]</gray> <dark_gray>|</dark_gray> <gray>/bakery reload</gray>"
   players-only: "<prefix><red>Only players can do that.</red>"
   reload:
     done: "<prefix><green>Reloaded config, messages, sounds, effects, balance and plots.</green>"

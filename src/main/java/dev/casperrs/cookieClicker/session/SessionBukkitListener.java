@@ -17,7 +17,7 @@ public final class SessionBukkitListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onJoin(PlayerJoinEvent event) {
-        sessions.join(event.getPlayer().getUniqueId());
+        sessions.join(event.getPlayer().getUniqueId(), event.getPlayer().getName());
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

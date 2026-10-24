@@ -21,6 +21,8 @@ database:
     username: cookieclicker
     password: ""
     parameters: ""
+    # Max open connections
+    pool-size: 4
 
 # Action bar
 hud:

@@ -11,7 +11,7 @@ import java.util.UUID;
  */
 public interface PlayerStore extends AutoCloseable {
 
-    /** Opens the connection and creates/migrates the schema. */
+    /** Creates/migrates the schema. */
     void init() throws StorageException;
 
     /** Empty when the player has no saved data yet. Repairs bad values (see {@link LoadedPouch#problems()}). */
@@ -23,6 +23,10 @@ public interface PlayerStore extends AutoCloseable {
     /** The last save of a session (quit, disable): always writes. */
     default void saveFinal(UUID player, PouchSnapshot snapshot) throws StorageException {
         save(player, snapshot);
+    }
+
+    /** The player's current name, written with their next load or save (for the website). */
+    default void rememberName(UUID player, String name) {
     }
 
     @Override

@@ -3,6 +3,7 @@ package dev.casperrs.cookieClicker;
 import dev.casperrs.cookieClicker.belt.ConveyorBelts;
 import dev.casperrs.cookieClicker.building.VisibleBuildings;
 import dev.casperrs.cookieClicker.command.BakeryCommand;
+import dev.casperrs.cookieClicker.command.DbCommand;
 import dev.casperrs.cookieClicker.config.PluginSettings;
 import dev.casperrs.cookieClicker.economy.Economy;
 import dev.casperrs.cookieClicker.economy.EconomyConfig;
@@ -26,8 +27,10 @@ import dev.casperrs.cookieClicker.session.SessionManager;
 import dev.casperrs.cookieClicker.sound.SoundService;
 import dev.casperrs.cookieClicker.station.StationFile;
 import dev.casperrs.cookieClicker.station.StationRegistry;
+import dev.casperrs.cookieClicker.storage.DatabaseSettings;
 import dev.casperrs.cookieClicker.storage.DriverConnectionFactory;
 import dev.casperrs.cookieClicker.storage.JdbcPlayerStore;
+import dev.casperrs.cookieClicker.storage.PooledConnectionFactory;
 import dev.casperrs.cookieClicker.text.Messages;
 import dev.casperrs.cookieClicker.vfx.Effects;
 import dev.casperrs.cookieClicker.view.ClickRouter;
@@ -41,6 +44,7 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.scheduler.BukkitTask;
 import org.jspecify.annotations.Nullable;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -58,11 +62,19 @@ final class PluginWiring {
 
     private static final long TICKS_PER_SECOND = 20;
 
+    /** The plugin can't run (e.g. MariaDB unreachable); the message is the one log line, without secrets. */
+    static final class StartupFailure extends Exception {
+        StartupFailure(String message) {
+            super(message);
+        }
+    }
+
     private final CookieClicker plugin;
     private final Supplier<PluginSettings> settings;
     private final Messages messages;
     private final BakeryConfigLoader loader;
 
+    private @Nullable PooledConnectionFactory pool;
     private @Nullable ExecutorService io;
     private @Nullable SessionManager sessions;
     private @Nullable StationRegistry stations;
@@ -94,8 +106,9 @@ final class PluginWiring {
         this.loader = loader;
     }
 
-    void build(WorldGuardHook regions, List<String> problems) {
+    void build(WorldGuardHook regions, List<String> problems) throws StartupFailure {
         PluginSettings s = settings.get();
+        pool = openPool(s.database()); // first: a dead MariaDB stops the enable before anything is registered
         io = PluginExecutors.io();
         Executor mainThread = PluginExecutors.main(plugin);
 
@@ -110,8 +123,7 @@ final class PluginWiring {
         loader.loadSounds(sounds, problems);
 
         plugin.getLogger().info("Storage: " + s.database().describe());
-        JdbcPlayerStore store = new JdbcPlayerStore(new DriverConnectionFactory(s.database()),
-                s.database().tablePrefix());
+        JdbcPlayerStore store = new JdbcPlayerStore(pool, s.database().tablePrefix());
         sessions = new SessionManager(store, io, mainThread, plugin.getLogger());
         sessions.addListener(new SessionListener() {
             @Override
@@ -184,8 +196,9 @@ final class PluginWiring {
                 }, messages, io, mainThread,
                 () -> settings.get().house().maxBlocks(), () -> settings.get().plot().buildings().footprints());
 
+        DbCommand db = new DbCommand(settings, sessions, pool, messages, plugin.getLogger());
         BakeryCommand command = new BakeryCommand(plots, outlines, houses, setup, cinematics, settings, messages,
-                plugin::reload);
+                plugin::reload, db);
         plugin.getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
                 event -> event.registrar().register(command.node(), "Cookie Empire admin commands"));
 
@@ -195,6 +208,25 @@ final class PluginWiring {
         plugin.getLogger().info("Enabled with " + plotRegistry.all().size() + " plot(s), " + stations.all().size()
                 + " pedestal(s), " + economy.config().buildings().size() + " building(s)"
                 + (problems.isEmpty() ? "" : "; " + problems.size() + " config problem(s), see above"));
+    }
+
+    /**
+     * The connection pool. MariaDB is probed once here (blocking, at enable only): unreachable or a refused login
+     * fails the enable, and there is never a fallback to H2. H2 keeps its old behaviour (errors surface at the
+     * schema init on the storage thread).
+     */
+    private static PooledConnectionFactory openPool(DatabaseSettings db) throws StartupFailure {
+        DriverConnectionFactory raw = new DriverConnectionFactory(db);
+        if (db.type() == DatabaseSettings.Type.MARIADB) {
+            try {
+                PooledConnectionFactory.probe(raw);
+            } catch (SQLException e) {
+                throw new StartupFailure("Could not connect to " + db.describe() + ": " + e.getMessage()
+                        + ". Is MariaDB running, and are database.mariadb.* in config.yml right? CookieClicker is"
+                        + " disabled; it never falls back to H2.");
+            }
+        }
+        return new PooledConnectionFactory(db, raw);
     }
 
     /** Everything after the new settings are in place; the order matters (see the inline notes). */
@@ -232,7 +264,7 @@ final class PluginWiring {
 
     /**
      * Shutdown steps in order: tasks, the cinematics first (they restore hidden houses and game modes), world parts,
-     * views, effects, stations, and last the session flush (which also stops the IO thread).
+     * views, effects, stations, the session flush (which also stops the IO thread), and last the connection pool.
      */
     List<PluginPart> shutdownOrder() {
         List<PluginPart> parts = new ArrayList<>();
@@ -255,6 +287,7 @@ final class PluginWiring {
         } else if (io != null) {
             parts.add(new PluginPart("the IO thread", io::shutdown));
         }
+        add(parts, "the database pool", pool, PooledConnectionFactory::close); // after the final saves
         return parts;
     }
 

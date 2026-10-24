@@ -76,7 +76,8 @@ public record PluginSettings(DatabaseSettings database, int autosaveSeconds, int
                 c.getString("database.mariadb.username", "cookieclicker"),
                 c.getString("database.mariadb.password", ""),
                 c.getString("database.mariadb.parameters", ""),
-                prefix);
+                prefix,
+                positive(c, "database.mariadb.pool-size", DatabaseSettings.DEFAULT_POOL_SIZE, problems));
     }
 
     private static ResourcePack resourcePack(ConfigurationSection c, Consumer<String> problems) {
