@@ -149,8 +149,8 @@ right away and the builds once the format is merged.
 ## Status
 | Agent | Status | Branch | Verdict | Notes |
 |---|---|---|---|---|
-| plugin-coder | in progress | `build-quality/plugin-coder` | | |
-| model-designer | in progress | `build-quality/model-designer` | | style guide, lint, renderer first |
+| plugin-coder | done | `build-quality/plugin-coder` (+ `-camera`), merged | READY | fix round: LiquidGuard scope, RCON loopback |
+| model-designer | in progress | `build-quality/model-designer` (not merged) | | orchestrator review round 3 of 3 running; pinned default-design test needs the tester |
 
 ## Merge order
 1. research note (done), 2. plugin-coder, 3. model-designer, then the review rounds (model-designer fixes on its branch).
