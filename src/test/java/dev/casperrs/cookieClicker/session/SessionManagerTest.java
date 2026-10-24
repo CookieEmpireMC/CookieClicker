@@ -346,4 +346,18 @@ class SessionManagerTest {
         assertTrue(sessions.isLoaded(bob), "joins work again after a failed migration");
     }
 
+    @Test
+    void anErrorInsideTheMigrationTaskMustNotStrandPlayers() throws Exception {
+        UUID bob = UUID.randomUUID();
+        assertTrue(sessions.runExclusive(() -> {
+            throw new LinkageError("driver class missing");
+        }, r -> { }));
+        settle();
+        settle();
+        sessions.join(bob);
+        settle();
+        settle();
+        assertTrue(sessions.isLoaded(bob), "an Error must not hold joins for the rest of the uptime");
+    }
+
 }
