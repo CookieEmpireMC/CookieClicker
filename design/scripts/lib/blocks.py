@@ -25,12 +25,13 @@ def plain(block: str) -> str:
     return f"minecraft:{block}"
 
 
-def st(mat: str, facing: str, half: str = "bottom") -> str:
-    return f"minecraft:{mat}_stairs[facing={facing},half={half},shape=straight,waterlogged=false]"
+def st(mat: str, facing: str, half: str = "bottom", wet: bool = False) -> str:
+    return (f"minecraft:{mat}_stairs[facing={facing},half={half},shape=straight,"
+            f"waterlogged={'true' if wet else 'false'}]")
 
 
-def sl(mat: str, kind: str = "bottom") -> str:
-    return f"minecraft:{mat}_slab[type={kind},waterlogged=false]"
+def sl(mat: str, kind: str = "bottom", wet: bool = False) -> str:
+    return f"minecraft:{mat}_slab[type={kind},waterlogged={'true' if wet else 'false'}]"
 
 
 def lg(mat: str, axis: str = "y") -> str:
@@ -41,9 +42,9 @@ def stripped(mat: str, axis: str = "y") -> str:
     return f"minecraft:stripped_{mat}_log[axis={axis}]"
 
 
-def td(mat: str, facing: str, half: str = "bottom", open: bool = False) -> str:
+def td(mat: str, facing: str, half: str = "bottom", open: bool = False, wet: bool = False) -> str:
     return (f"minecraft:{mat}_trapdoor[facing={facing},half={half},open={'true' if open else 'false'},"
-            "powered=false,waterlogged=false]")
+            f"powered=false,waterlogged={'true' if wet else 'false'}]")
 
 
 def dr(mat: str, facing: str, half: str, hinge: str = "left") -> str:
@@ -252,3 +253,27 @@ def to_palette(g: dict, preferred: dict | None = None) -> tuple[dict, dict]:
         palette[c] = data
         rev[data] = c
     return {p: rev[d] for p, d in g.items()}, palette
+
+
+def water(level: int = 0) -> str:
+    return f"minecraft:water[level={level}]"
+
+
+def ladder(facing: str) -> str:
+    return f"minecraft:ladder[facing={facing},waterlogged=false]"
+
+
+def lever(face: str, facing: str) -> str:
+    return f"minecraft:lever[face={face},facing={facing},powered=false]"
+
+
+def grindstone(face: str = "floor", facing: str = "north") -> str:
+    return f"minecraft:grindstone[face={face},facing={facing}]"
+
+
+def hopper(facing: str = "down") -> str:
+    return f"minecraft:hopper[enabled=true,facing={facing}]"
+
+
+def vine(*sides: str) -> str:
+    return "minecraft:vine[" + ",".join(f"{d}={'true' if d in sides else 'false'}" for d in ("east", "north", "south", "up", "west")) + "]"

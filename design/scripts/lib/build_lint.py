@@ -31,7 +31,7 @@ DEPTH_IGNORE_WORDS = ("lantern", "potted_", "barrel", "hay_block", "wool", "carp
 RAMP_EXEMPT_WORDS = ("air", "glass", "door", "lantern", "campfire", "sign", "carpet", "wool", "barrel", "pot",
                      "fence", "bars", "chain", "water", "magma", "shroomlight", "hay", "trapdoor", "grate",
                      "grass", "dirt", "farmland", "leaves", "flower", "tulip", "poppy", "dandelion", "cauldron",
-                     "composter", "log", "wheat", "pumpkin", "bell")
+                     "composter", "log", "wheat", "pumpkin", "bell", "_slab")
 
 
 class LintError(AssertionError):
@@ -53,6 +53,19 @@ class Notes:
     seal: set = field(default_factory=set)                 # openings treated as closed for the inside/outside test
     front_yard: dict | None = None                         # {rect: (x1, z1, x2, z2), corridor: (x1, x2), max_y: n}
     ground_region: tuple | None = None                     # (x0, z0, x1, z1) exclusive box; edges on its border are not judged
+    roof_info: list = field(default_factory=list)          # {name, form, rect, y_eave, ridge_y, cells}: every roof kit call
+    roof_heights: set = field(default_factory=set)         # distinct eave / ridge / dormer / skirt heights (L-F9)
+    gables: list = field(default_factory=list)             # {name, finish, rake: [cells], ...} free gables (L-F11)
+    breaks: list = field(default_factory=list)             # dormers, gablets, ridge steps that break a big roof plane (L-F2)
+    pents: int = 0
+    bridges: int = 0
+    wheel_fallback: set = field(default_factory=set)       # block cells of the static wheel (inside the display's volume)
+    wheel_cells: set = field(default_factory=set)          # slot interior cells
+    race_cells: set = field(default_factory=set)           # enclosed water of channels
+    water_cells: set = field(default_factory=set)
+    vents: set = field(default_factory=set)               # louvre / vent cells (not chimneys)
+    big_doors: list = field(default_factory=list)          # {cells: [(x,y,z)], lintel: [(x,y,z)]}
+    water_exits: set = field(default_factory=set)         # water cells allowed on the box border (stream joins)
     skip: set = field(default_factory=set)                 # rule names skipped on purpose (with a comment in the generator)
 
 
