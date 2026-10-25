@@ -79,12 +79,12 @@ public final class FarmTeleports implements Listener, PlotPresenceListener {
             messages.send(player, "farm.world-missing");
             return;
         }
-        lastTeleport.put(player.getUniqueId(), now);
         UUID id = player.getUniqueId();
         player.teleportAsync(new Location(world, v.x(), v.y(), v.z(), v.yaw(), v.pitch()),
                 PlayerTeleportEvent.TeleportCause.COMMAND).thenAccept(ok -> {
                     Player p = Bukkit.getPlayer(id); // completes on the main thread
                     if (p != null && Boolean.TRUE.equals(ok)) {
+                        lastTeleport.put(id, System.currentTimeMillis());
                         messages.send(p, donePath);
                     }
                 });

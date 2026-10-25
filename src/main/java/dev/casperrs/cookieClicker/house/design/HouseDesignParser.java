@@ -28,7 +28,7 @@ import java.util.Map;
  *   steam: [[5, 6, 3]]       # optional: factory_steam vents
  *   belt_out: [4, 1, 8]      # optional: where the conveyor belt leaves the building
  *   door: [4, 1, 6]          # optional; every point must be inside size
- *   viewpoint: {at: [..], yaw: 0, pitch: 0}   # a section value is a structured place point (farm.PlacePoints)
+ *   viewpoint: {at: [..], yaw: 0, pitch: 0}   # farm files only: a structured place point (farm.PlacePoints)
  * layout: ...                # optional: the fixed plot layout for /bakery plot setup, see HouseLayout
  * signs:                     # optional: plain text set on the sign's front side after pasting
  *   - at: [5, 2, 0]
@@ -63,11 +63,18 @@ public final class HouseDesignParser {
     }
 
     public static Result parse(String name, Map<String, ?> yaml) {
-        return parse(name, yaml, MAX_GROUND_DEPTH);
+        return parse(name, yaml, MAX_GROUND_DEPTH, false);
     }
 
-    /** As {@link #parse(String, Map)} with another ground-depth limit. */
+    /**
+     * A countryside or place file: as {@link #parse(String, Map)} with another ground-depth limit, and section-valued
+     * points (structured place points, checked by {@code farm.PlacePoints}) are let through.
+     */
     public static Result parse(String name, Map<String, ?> yaml, int maxGroundDepth) {
+        return parse(name, yaml, maxGroundDepth, true);
+    }
+
+    private static Result parse(String name, Map<String, ?> yaml, int maxGroundDepth, boolean sectionPoints) {
         List<String> problems = new ArrayList<>();
         int[] size = ints(yaml.get("size"), 3);
         if (size == null || size[0] < 1 || size[1] < 1 || size[2] < 1
@@ -86,7 +93,7 @@ public final class HouseDesignParser {
         Map<String, int[]> points = new LinkedHashMap<>();
         List<int[]> smoke = new ArrayList<>();
         List<int[]> steam = new ArrayList<>();
-        points(yaml.get("points"), size, ground, points, smoke, steam, problems);
+        points(yaml.get("points"), size, ground, sectionPoints, points, smoke, steam, problems);
         if (smoke.isEmpty() && points.get(CHIMNEY) != null) {
             smoke.add(points.get(CHIMNEY)); // a single chimney = a one-item smoke list
         }
@@ -167,7 +174,8 @@ public final class HouseDesignParser {
         return grid;
     }
 
-    private static void points(@Nullable Object raw, int[] size, int ground, Map<String, int[]> points,
+    private static void points(@Nullable Object raw, int[] size, int ground, boolean sectionPoints,
+                               Map<String, int[]> points,
                                List<int[]> smoke,
                                List<int[]> steam, List<String> problems) {
         if (!(raw instanceof Map<?, ?> rawPoints)) {
@@ -182,7 +190,7 @@ public final class HouseDesignParser {
                 pointList(key, e.getValue(), size, ground, key.equals(SMOKE) ? smoke : steam, problems);
                 continue;
             }
-            if (e.getValue() instanceof Map<?, ?>) {
+            if (sectionPoints && e.getValue() instanceof Map<?, ?>) {
                 continue; // a structured place point, checked by farm.PlacePoints
             }
             int[] p = ints(e.getValue(), 3);

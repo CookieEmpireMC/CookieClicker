@@ -6,6 +6,7 @@ import dev.casperrs.cookieClicker.plot.Plot;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -40,6 +41,10 @@ public record FarmPlan(List<Part> parts, Farm.Box box, Map<String, Farm.FarmPlac
         Farm.Box landBox = boxOf(parts.getFirst());
         int lowest = regionMin[1] - HouseDesignParser.MAX_FARM_GROUND_DEPTH;
         List<String> problems = new ArrayList<>();
+        if (landBox.minX() < regionMin[0] || landBox.minZ() < regionMin[2]) {
+            problems.add("the countryside's origin " + Arrays.toString(land.origin())
+                    + " puts it west or north of the farm region's min corner; use origin x and z 0");
+        }
         Map<String, Farm.FarmPlace> places = new LinkedHashMap<>();
         Farm.Box box = landBox;
         for (FarmDesigns.Place place : layout.places().values()) {
@@ -55,7 +60,8 @@ public record FarmPlan(List<Part> parts, Farm.Box box, Map<String, Farm.FarmPlac
                         + ".at) sticks out of the countryside (" + sizeText(landBox.size()) + ")");
             } else if (b.minY() < lowest) {
                 problems.add("place " + place.name() + " reaches more than "
-                        + HouseDesignParser.MAX_FARM_GROUND_DEPTH + " layers below the countryside's base");
+                        + HouseDesignParser.MAX_FARM_GROUND_DEPTH
+                        + " layers below the farm region's min y (the countryside's ground level)");
             }
             parts.add(part);
             box = union(box, b);

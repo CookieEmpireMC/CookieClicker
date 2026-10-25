@@ -13,6 +13,7 @@ import dev.casperrs.cookieClicker.plot.PlotService;
 import dev.casperrs.cookieClicker.plot.RegionShape;
 import dev.casperrs.cookieClicker.text.Messages;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.block.data.BlockData;
@@ -20,12 +21,13 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.structure.Structure;
 import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
@@ -44,8 +46,6 @@ import java.util.logging.Level;
 public final class FarmSetup {
 
     public static final String BACKUP_DIR = "farm-backups";
-    /** A structure snapshot or restore costs about a quarter of a block set per block. */
-    private static final int SLAB_COST_DIVISOR = 4;
 
     private final JavaPlugin plugin;
     private final PlotRegions regions;
@@ -204,41 +204,54 @@ public final class FarmSetup {
         return out;
     }
 
-    /** Main thread: structure snapshots of every slab, a few per tick; then the backup goes to disk. */
+    /**
+     * Main thread: captures the slabs (each at most {@code blocks-per-tick} blocks), about blocks-per-tick blocks per
+     * tick; the IO thread compresses each one as it comes, and the backup goes to disk after the last.
+     */
     private void snapshot(Op op, Paste paste) {
         World world = paste.region().world();
-        List<Farm.Box> slabs = FarmBackup.slabs(paste.plan().box());
-        List<byte[]> saved = new ArrayList<>(slabs.size());
+        int perTick = blocksPerTick.getAsInt();
+        List<Farm.Box> slabs = FarmBackup.slabs(paste.plan().box(), perTick);
+        byte[][] saved = new byte[slabs.size()][]; // filled and read on the IO thread only, in submit order
+        IOException[] failure = new IOException[1];
+        int[] next = {0};
         messages.send(op.sender(), "farm.setup-started", Placeholder.unparsed("id", paste.id()),
                 Placeholder.unparsed("count", Long.toString(paste.cells())));
         start(op, "setup " + paste.id(), () -> {
-            long budget = (long) blocksPerTick.getAsInt() * SLAB_COST_DIVISOR;
-            do {
-                Farm.Box s = slabs.get(saved.size());
-                try {
-                    saved.add(BoxStructures.snapshot(world, s.corner(), s.size()));
-                } catch (IOException e) {
-                    throw new UncheckedIOException("could not snapshot the area for the undo backup", e);
-                }
-                budget -= FarmBackup.volume(s);
-            } while (budget > 0 && saved.size() < slabs.size());
-            return saved.size() == slabs.size();
+            long spent = 0;
+            while (next[0] < slabs.size() && (spent == 0 || spent + FarmBackup.volume(slabs.get(next[0])) <= perTick)) {
+                int i = next[0]++;
+                Farm.Box s = slabs.get(i);
+                Structure captured = BoxStructures.capture(world, s.corner(), s.size());
+                spent += FarmBackup.volume(s);
+                io.execute(() -> {
+                    try {
+                        saved[i] = BoxStructures.serialize(captured);
+                    } catch (IOException e) {
+                        failure[0] = e;
+                    }
+                });
+            }
+            return next[0] == slabs.size();
         }, () -> writeBackup(op, paste, new FarmBackup(paste.id(), world.getKey().asString(),
-                System.currentTimeMillis(), paste.plan().box(), slabs), saved));
+                System.currentTimeMillis(), paste.plan().box(), slabs), saved, failure));
     }
 
-    /** The undo must be on disk before the first block changes. */
-    private void writeBackup(Op op, Paste paste, FarmBackup backup, List<byte[]> slabs) {
+    /** The undo must be on disk before the first block changes; runs after every slab's compression on IO. */
+    private void writeBackup(Op op, Paste paste, FarmBackup backup, byte[][] slabs, IOException[] failure) {
         String manifest = BackupFiles.toYaml(backup.toMap());
         Path dir = farmDir(paste.id()).resolve(Long.toString(backup.createdAt()));
         ops.submit(op, () -> {
             try {
-                FarmBackupFiles.write(dir, manifest, slabs);
+                if (failure[0] != null) {
+                    throw failure[0];
+                }
+                FarmBackupFiles.write(dir, manifest, Arrays.asList(slabs));
             } catch (IOException e) {
                 plugin.getLogger().log(Level.SEVERE, "Could not write the backup of farm " + paste.id()
                         + "; nothing was placed", e);
                 FarmBackupFiles.deleteQuietly(plugin.getLogger(), dir);
-                ops.finish(op, "farm.failed", WorldOperation.problem("could not save the undo backup ("
+                failFromIo(op, "farm.failed", WorldOperation.problem("could not save the undo backup ("
                         + e.getMessage() + ")"));
                 return;
             }
@@ -267,10 +280,13 @@ public final class FarmSetup {
 
     private void finishPaste(Op op, Paste paste) {
         World world = paste.region().world();
-        for (FarmPlan.Part part : paste.plan().parts()) {
-            HousePlacer.writeSigns(plugin, world, part.design(), part.anchor());
+        try {
+            for (FarmPlan.Part part : paste.plan().parts()) {
+                HousePlacer.writeSigns(plugin, world, part.design(), part.anchor());
+            }
+        } finally {
+            chunks.release();
         }
-        chunks.release();
         RegionShape r = paste.region().shape();
         farms.put(new Farm(paste.id(), world.getKey().asString(), r.id(), new Plot.Cell(r.minX(), r.minY(), r.minZ()),
                 paste.plan().box(), paste.plan().places()));
@@ -302,12 +318,22 @@ public final class FarmSetup {
                 ops.finish(op, "farm.nothing-to-undo", Placeholder.unparsed("id", id));
                 return;
             }
-            main.execute(() -> ops.step(op, () -> restore(op, id, read)));
+            Structure[] structures = new Structure[read.slabs().length];
+            try {
+                for (int i = 0; i < structures.length; i++) {
+                    structures[i] = BoxStructures.deserialize(read.slabs()[i]);
+                }
+            } catch (IOException e) {
+                plugin.getLogger().log(Level.SEVERE, "Could not read the backup of farm " + id, e);
+                ops.finish(op, "farm.undo-failed", WorldOperation.problem(e.getMessage()));
+                return;
+            }
+            main.execute(() -> ops.step(op, () -> restore(op, id, read, structures)));
         }));
     }
 
-    /** Main thread: places every slab back, a few per tick. */
-    private void restore(Op op, String id, FarmBackupFiles.Read read) {
+    /** Main thread: places the slabs back, about {@code blocks-per-tick} blocks per tick. */
+    private void restore(Op op, String id, FarmBackupFiles.Read read, Structure[] structures) {
         FarmBackup backup;
         try {
             backup = FarmBackup.fromMap(DesignFiles.parseYaml(read.manifest()));
@@ -320,23 +346,25 @@ public final class FarmSetup {
             ops.finishNow(op, "farm.not-loaded", Placeholder.unparsed("id", id));
             return;
         }
-        chunks.hold(world, backup.box());
         List<Farm.Box> slabs = backup.slabs();
         int[] next = {0};
         PasteProgress progress = new PasteProgress(messages, op.sender(), "farm.undo-progress", slabs.size());
+        if (structures.length != slabs.size()) {
+            ops.finishNow(op, "farm.undo-failed", WorldOperation.problem("backup.yml lists " + slabs.size()
+                    + " slabs but " + structures.length + " were read"));
+            return;
+        }
+        chunks.hold(world, backup.box());
+        int perTick = blocksPerTick.getAsInt();
         start(op, "undo " + id, () -> {
-            long budget = (long) blocksPerTick.getAsInt() * SLAB_COST_DIVISOR;
-            do {
+            long spent = 0;
+            while (next[0] < slabs.size() && (spent == 0 || spent + FarmBackup.volume(slabs.get(next[0])) <= perTick)) {
                 Farm.Box s = slabs.get(next[0]);
-                try {
-                    BoxStructures.place(world, s.corner(), read.slabs()[next[0]]);
-                } catch (IOException e) {
-                    throw new UncheckedIOException("could not place backup slab " + next[0], e);
-                }
-                budget -= FarmBackup.volume(s);
+                BoxStructures.place(world, s.corner(), structures[next[0]]);
+                spent += FarmBackup.volume(s);
                 next[0]++;
                 progress.add(1);
-            } while (budget > 0 && next[0] < slabs.size());
+            }
             return next[0] == slabs.size();
         }, () -> {
             chunks.release();
@@ -345,6 +373,16 @@ public final class FarmSetup {
                 FarmBackupFiles.deleteQuietly(plugin.getLogger(), read.dir());
                 ops.finish(op, "farm.undone", Placeholder.unparsed("id", id));
             });
+        });
+    }
+
+    /** From the IO thread: lets the chunks go (if still this operation's) and ends the operation with a reply. */
+    private void failFromIo(Op op, String path, TagResolver... resolvers) {
+        main.execute(() -> {
+            if (ops.isCurrent(op)) {
+                chunks.release();
+            }
+            ops.finishNow(op, path, resolvers);
         });
     }
 
