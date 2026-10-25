@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.casperrs.cookieClicker.command.BakeryCommand;
+import dev.casperrs.cookieClicker.command.FarmCommand;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -66,5 +67,13 @@ class PluginDescriptorTest {
         assertTrue(y.isConfigurationSection("permissions." + BakeryCommand.PERMISSION),
                 "paper-plugin.yml does not declare " + BakeryCommand.PERMISSION);
         assertEquals("op", y.getString("permissions." + BakeryCommand.PERMISSION + ".default"));
+    }
+
+    @Test
+    void theTeleportPermissionIsDeclaredAndOpenToEveryone() throws Exception {
+        YamlConfiguration y = descriptor();
+        assertTrue(y.isConfigurationSection("permissions." + FarmCommand.TELEPORT_PERMISSION),
+                "paper-plugin.yml does not declare " + FarmCommand.TELEPORT_PERMISSION);
+        assertTrue(y.getBoolean("permissions." + FarmCommand.TELEPORT_PERMISSION + ".default"));
     }
 }

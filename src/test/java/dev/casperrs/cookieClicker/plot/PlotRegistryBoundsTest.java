@@ -189,4 +189,15 @@ class PlotRegistryBoundsTest {
         guard.onFlow(inHouse);
         assertTrue(inHouse.isCancelled(), "water inside a house box stays where the design put it");
     }
+
+    /** A farm region counts in a world with no plots at all (the nether here), with its ground layers below it. */
+    @Test
+    void aFarmRegionIsAPasteAreaEvenWithoutPlotsInItsWorld() {
+        regions.infos.put(nether, List.of(new PlotRegions.RegionInfo("countryside", 0, null, null, "farm1")));
+        regions.shapes.put("countryside", RegionShape.cuboid("countryside", 200, 60, 200, 300, 90, 300));
+        assertTrue(registry.inPasteArea(nether, 250, 70, 250), "inside the farm region");
+        assertTrue(registry.inPasteArea(nether, 250, 56, 250), "the 4 ground layers below it");
+        assertFalse(registry.inPasteArea(nether, 250, 55, 250), "below the countryside's ground");
+        assertFalse(registry.inPasteArea(nether, 400, 70, 400), "natural water outside keeps flowing");
+    }
 }
