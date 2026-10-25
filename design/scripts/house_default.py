@@ -75,12 +75,13 @@ def build() -> tuple:
     for (x, z) in ((3, 6), (9, 6), (3, 12), (9, 12)):
         for y in (2, 3, 4):
             put(x, y, z, lg(BEAM, "y"))
-    for z in (6, 12):                                                          # mid posts, square panels
-        for y in (2, 3, 4):
-            put(6, y, z, lg(BEAM, "y"))
+    for y in (2, 3, 4):                                                        # back mid post only: the front stays plaster
+        put(6, y, 12, lg(BEAM, "y"))
     for x in (3, 9):
         for y in (2, 3, 4):
             put(x, y, 9, lg(BEAM, "y"))
+    for x in (4, 5, 7, 8):                                                     # front: plaster from the first course up
+        put(x, 1, 6, PLASTER.pick(x, 1, 6))
     WN = Wall(b, "north", "east", (0, 6))
     door(WN, 6, 1, mat="spruce", hood=True, jambs=False)
     put(5, 3, 5, B.lantern(True))
@@ -143,7 +144,7 @@ def build() -> tuple:
                   {"name": "wing", "footprint": (9, 7, 14, 11), "top": 6}]
     n.ramps = dict(RAMPS)
     n.plinth = {"blocks": RAMPS["plinth"], "courses": 2,
-                "ring": [(x, z) for x in range(3, 10) for z in range(6, 13) if x in (3, 9) or z in (6, 12)]}
+                "ring": [(x, z) for x in range(3, 10) for z in range(6, 13) if (x in (3, 9) or z in (6, 12)) and not (z == 6 and x in (4, 5, 7, 8))]}
     n.body_box = (3, 6, 14, 12)
     n.wall_rows = (1, 4)
     n.ground_region = (-1, -1, SX, SZ)
