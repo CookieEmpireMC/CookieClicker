@@ -81,4 +81,27 @@ final class EconomyTestSupport {
     static CookiePouch pouch(double pouch, double baked, Map<String, Integer> owned, String... upgrades) {
         return CookiePouch.fromSnapshot(new PouchSnapshot(pouch, baked, owned, Set.of(upgrades)));
     }
+
+    /** One mill producing flour (0.5/s per building). */
+    static Map<String, Object> recipeBuildings() {
+        return map("cost-growth", 1.15, "buildings", map(
+                "mill", map("base-cost", 100, "base-cps", 1, "unlock", map("baked", 0),
+                        "produces", map("ingredient", "flour", "per-second", 0.5))));
+    }
+
+    /** The Recipe Book (one-time) plus the given {@code recipes:} section, or none when null. */
+    static Map<String, Object> recipeUpgrades(Object recipes) {
+        Map<String, Object> u = map("click", map("base-power", 1), "upgrades", map(
+                "recipe_book", map("cost", 1000, "effect", map("type", "recipes-unlock"), "unlock", map("baked", 500))));
+        if (recipes != null) {
+            u.put("recipes", recipes);
+        }
+        return u;
+    }
+
+    /** One recipe: {@code cost} cookies, 20 of {@code ingredient}, +2% CPS, unlocked at 800 baked. */
+    static Map<String, Object> butterRecipe(String ingredient) {
+        return map("cost", 300, "ingredients", map(ingredient, 20), "effect", map("type", "cps-percent", "value", 0.02),
+                "unlock", map("baked", 800));
+    }
 }

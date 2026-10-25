@@ -14,7 +14,9 @@ import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
@@ -173,6 +175,24 @@ class GoldenValuesTest {
         }
     }
 
+    /** Bought recipes are level-1 upgrade entries under their own id (the same pouch shape the store loads). */
+    private static Map<String, Integer> withRecipes(Map<String, Integer> levels, JsonArray recipes) {
+        Map<String, Integer> out = new HashMap<>(levels);
+        recipes.forEach(r -> out.put(r.getAsString(), 1));
+        return out;
+    }
+
+    private static Map<String, Double> doubles(JsonObject json) {
+        Map<String, Double> out = new HashMap<>();
+        json.entrySet().forEach(en -> out.put(en.getKey(), en.getValue().getAsDouble()));
+        return out;
+    }
+
+    private static String recipeBookId(Economy e) {
+        return e.config().upgrades().values().stream().filter(u -> u.type() == EffectType.RECIPES_UNLOCK)
+                .map(UpgradeDef::id).findFirst().orElseThrow();
+    }
+
     @Test
     void cpsAndClickPowerMatchForRecordedStates() throws Exception {
         JsonArray states = golden().getAsJsonArray("states");
@@ -184,9 +204,10 @@ class GoldenValuesTest {
         for (JsonElement el : states) {
             JsonObject s = el.getAsJsonObject();
             Map<String, Integer> owned = levels(s.getAsJsonObject("owned"));
-            Map<String, Integer> upgradeLevels = levels(s.getAsJsonObject("upgrades"));
+            Map<String, Integer> upgradeLevels = withRecipes(levels(s.getAsJsonObject("upgrades")), s.getAsJsonArray("recipes"));
             CookiePouch p = CookiePouch.fromSnapshot(new PouchSnapshot(0, 0, owned, upgradeLevels));
             String label = s.get("profile").getAsString() + "@" + s.get("time").getAsInt() + "s";
+            assertClose(s.get("recipe-percent").getAsDouble(), e.recipeBonus(p), "recipe-percent " + label);
             assertClose(s.get("total-cps").getAsDouble(), e.totalCps(p), "total-cps " + label);
             double power = e.clickPower(p);
             assertClose(s.get("click-power").getAsDouble(), power, "click-power " + label);
@@ -194,6 +215,98 @@ class GoldenValuesTest {
             assertClose(s.get("crit-click").getAsDouble(), power * crit, "crit-click " + label);
             assertClose(s.get("expected-click").getAsDouble(), power * (1 + critChance * (crit - 1)),
                     "expected-click " + label);
+            for (var rate : s.getAsJsonObject("ingredient-rates").entrySet()) {
+                assertClose(rate.getValue().getAsDouble(), e.ingredientRate(p, rate.getKey()),
+                        "ingredient-rates " + rate.getKey() + " " + label);
+            }
+        }
+    }
+
+    @Test
+    void recipePercentMultipliesTotalCpsForRecordedRows() throws Exception {
+        Economy e = economy();
+        for (JsonElement el : golden().getAsJsonArray("recipe-cps")) {
+            JsonObject row = el.getAsJsonObject();
+            CookiePouch p = CookiePouch.fromSnapshot(new PouchSnapshot(0, 0, levels(row.getAsJsonObject("owned")),
+                    withRecipes(Map.of(), row.getAsJsonArray("recipes"))));
+            String label = "recipes " + row.getAsJsonArray("recipes");
+            assertClose(row.get("recipe-percent").getAsDouble(), e.recipeBonus(p), label);
+            assertClose(row.get("total-cps").getAsDouble(), e.totalCps(p), label);
+        }
+    }
+
+    @Test
+    void ingredientsRecipeDefinitionsAndRatesMatch() throws Exception {
+        JsonObject g = golden();
+        Economy e = economy();
+        List<String> ingredients = new ArrayList<>();
+        g.getAsJsonArray("ingredients").forEach(x -> ingredients.add(x.getAsString()));
+        assertEquals(ingredients, e.config().ingredients(), "ingredients, in building order");
+        assertEquals(g.getAsJsonObject("recipes").keySet(), e.config().recipes().keySet(), "recipe IDs");
+        for (var en : g.getAsJsonObject("recipes").entrySet()) {
+            JsonObject spec = en.getValue().getAsJsonObject();
+            RecipeDef r = e.config().recipes().get(en.getKey());
+            assertEquals(spec.get("cost").getAsDouble(), r.cost(), en.getKey() + " cost");
+            assertEquals(spec.get("value").getAsDouble(), r.cpsPercent(), en.getKey() + " value");
+            assertEquals(spec.get("unlock-baked").getAsDouble(), r.unlockBaked(), en.getKey() + " unlock");
+            assertEquals(doubles(spec.getAsJsonObject("ingredients")), r.ingredients(), en.getKey() + " ingredients");
+        }
+        String book = recipeBookId(e);
+        for (var en : g.getAsJsonObject("ingredient-rates").entrySet()) {
+            String building = en.getKey();
+            JsonObject spec = en.getValue().getAsJsonObject();
+            assertEquals(spec.get("ingredient").getAsString(), e.config().buildings().get(building).produces().ingredient());
+            assertEquals(spec.get("per-second").getAsDouble(), e.config().buildings().get(building).produces().perSecond(),
+                    building + " per-second");
+            for (JsonElement el : spec.getAsJsonArray("rates")) {
+                JsonObject row = el.getAsJsonObject();
+                int owned = row.get("owned").getAsInt();
+                Map<String, Integer> upgrades = new HashMap<>();
+                if (row.get("recipe-book").getAsBoolean()) {
+                    upgrades.put(book, 1);
+                }
+                CookiePouch p = CookiePouch.fromSnapshot(new PouchSnapshot(0, 0, Map.of(building, owned), upgrades));
+                assertClose(row.get("rate").getAsDouble(), e.ingredientRate(p, spec.get("ingredient").getAsString()),
+                        building + " x" + owned + " book=" + row.get("recipe-book"));
+            }
+        }
+    }
+
+    @Test
+    void recipeBuysAreAllOrNothingLikeTheRecordedCases() throws Exception {
+        Economy e = economy();
+        RecipeBook book = new RecipeBook(e);
+        String bookId = recipeBookId(e);
+        JsonArray cases = golden().getAsJsonArray("recipe-purchase");
+        assertTrue(cases.size() > 40, "expected the full purchase list, got " + cases.size());
+        for (JsonElement el : cases) {
+            JsonObject c = el.getAsJsonObject();
+            String recipe = c.get("recipe").getAsString();
+            String label = recipe + " (" + c.get("case").getAsString() + ")";
+            Map<String, Integer> upgrades = new HashMap<>();
+            if (c.get("recipe-book").getAsBoolean()) {
+                upgrades.put(bookId, 1);
+            }
+            if (c.get("bought").getAsBoolean()) {
+                upgrades.put(recipe, 1);
+            }
+            Map<String, Double> stock = doubles(c.getAsJsonObject("stock"));
+            double cookies = c.get("pouch").getAsDouble();
+            CookiePouch p = CookiePouch.fromSnapshot(new PouchSnapshot(cookies, c.get("baked").getAsDouble(),
+                    Map.of(), upgrades, stock));
+            RecipePurchase result = book.buy(p, recipe);
+            assertEquals(c.get("affordable").getAsBoolean(), result.bought(), label + " bought");
+            if (result.bought()) {
+                RecipeDef r = e.config().recipes().get(recipe);
+                assertEquals(cookies - r.cost(), p.pouch(), label + " cookies paid");
+                for (var need : r.ingredients().entrySet()) {
+                    double have = stock.getOrDefault(need.getKey(), 0.0);
+                    assertEquals(have - need.getValue(), p.ingredient(need.getKey()), label + " " + need.getKey() + " taken");
+                }
+            } else {
+                assertEquals(cookies, p.pouch(), label + " nothing paid");
+                assertEquals(stock, p.snapshot().ingredients(), label + " nothing taken");
+            }
         }
     }
 

@@ -397,4 +397,50 @@ class JdbcPlayerStoreTest {
             st.execute("SHUTDOWN");
         }
     }
+
+    @Test
+    void aVersionFourDatabaseGainsTheIngredientTableAndKeepsItsBuildings() throws Exception {
+        String v4url = "jdbc:h2:mem:v4db" + COUNTER.incrementAndGet() + ";DB_CLOSE_DELAY=-1";
+        UUID old = UUID.randomUUID();
+        try (Connection c = DriverManager.getConnection(v4url); Statement st = c.createStatement()) {
+            createVersionThreeSchema(st, old);
+            st.execute("ALTER TABLE zz_players ADD COLUMN name VARCHAR(16)");
+            st.execute("CREATE INDEX zz_players_baked_idx ON zz_players (baked)");
+            st.execute("UPDATE zz_schema_version SET version = 4");
+        }
+        JdbcPlayerStore migrating = new JdbcPlayerStore(() -> DriverManager.getConnection(v4url), "zz_", () -> 99L);
+        migrating.init();
+        assertEquals(5, migrating.schemaVersion());
+        assertEquals(Map.of("baker", 7), migrating.load(old).orElseThrow().snapshot().owned());
+        migrating.save(old, new PouchSnapshot(1, 2, Map.of("baker", 7), Map.of("mitts", 2), Map.of("flour", 3.5)));
+        assertEquals(Map.of("flour", 3.5), migrating.load(old).orElseThrow().snapshot().ingredients());
+        migrating.close();
+        try (Connection c = DriverManager.getConnection(v4url); Statement st = c.createStatement()) {
+            st.execute("SHUTDOWN");
+        }
+    }
+
+    @Test
+    void ingredientStockRoundTripsAndTheLatestSaveReplacesIt() throws Exception {
+        store.save(player, new PouchSnapshot(1, 2, Map.of(), Map.of(), Map.of("flour", 12.5, "milk", 0.30000000000000004)));
+        assertEquals(Map.of("flour", 12.5, "milk", 0.30000000000000004), store.load(player).orElseThrow().snapshot().ingredients());
+        // a stock that went to zero is gone from the table, not left as a row
+        store.save(player, new PouchSnapshot(1, 2, Map.of(), Map.of(), Map.of("milk", 1.0)));
+        assertEquals(Map.of("milk", 1.0), store.load(player).orElseThrow().snapshot().ingredients());
+    }
+
+    @Test
+    void aSavedBeehiveLoadsAsAChickenFarmAndTheLargerCountWins() throws Exception {
+        UUID both = UUID.randomUUID();
+        store.save(player, new PouchSnapshot(1, 1, Map.of("beehive", 7), Map.of()));
+        store.save(both, new PouchSnapshot(1, 1, Map.of("beehive", 4, "chicken_farm", 9), Map.of()));
+
+        LoadedPouch renamed = store.load(player).orElseThrow();
+        assertEquals(Map.of("chicken_farm", 7), renamed.snapshot().owned());
+        assertTrue(renamed.problems().stream().anyMatch(p -> p.contains("'beehive' (7) renamed to 'chicken_farm'")));
+
+        LoadedPouch both2 = store.load(both).orElseThrow();
+        assertEquals(Map.of("chicken_farm", 9), both2.snapshot().owned(), "the larger of the two counts is kept");
+        assertTrue(both2.problems().stream().anyMatch(p -> p.contains("kept the larger of 9 and 4")));
+    }
 }
