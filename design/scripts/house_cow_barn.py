@@ -1,10 +1,10 @@
-"""The `cow_barn` place: a long medieval threshing barn whose clay-tile roof is the dominant mass (half-hipped ends, catslide
-outshut at the back), ONE stepped (corbie) gable over a wide cart entrance with braced double doors and a fence gate, three
-small dormers (one with the hoist and a hay bale), a dairy lean-to, a paddock with a drystone wall and a trough, a hay rick.
+"""The `cow_barn` place: a long barn with a STONE ground storey (a rhythm of arched stall openings, upside-down stair arches),
+a wooden hayloft storey above (dark-oak frame, oak boards), ONE steep spruce roof with half-hip ends and four spruce dormers,
+ONE big timber cross-gable in the middle (braced double doors, a loft door with a hoist beam and chain), a lower catslide aisle
+at the back and a lean-to at the east end (stepped silhouette), and a paddock whose fence starts at the barn's west wall
+(hay, trough, mud at the gate). The barn sits against a low terrace with meadow behind.
 
-Outputs:
-  src/main/resources/houses/cow_barn.yml          (place file: house format + points, ground-depth 4; FINAL orientation, road NORTH)
-  design/scripts/previews/place_cow_barn_*.png    (textured previews; written even when the lint fails)
+Outputs: src/main/resources/houses/cow_barn.yml, design/scripts/previews/place_cow_barn_*.png.
 Run with `mise run assets`. Deterministic. Spec: design/countryside.md (Cow Barn), refs: design/refs-cow-barn.md.
 Axes: x west -> east, y up (ground layers y -4..-1), z north -> south.
 """
@@ -13,235 +13,198 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
 import blocks as B  # noqa: E402
 import farm_kits as K  # noqa: E402
 import place_gen as G  # noqa: E402
 import place_views  # noqa: E402
 import scenes as S  # noqa: E402
-from blocks import lg, plain as P, sl, st, stripped  # noqa: E402
+from blocks import lg, plain as P, sl, st  # noqa: E402
 from build import Build, Ramp, Wall, door, window  # noqa: E402
 
-SX, SY, SZ, GROUND = 48, 18, 36, 4
+SX, SY, SZ, GROUND = 46, 18, 38, 4
 SIZE = (SX, SY + GROUND, SZ)
-BX0, BX1 = 8, 32                    # barn body x
-FZ, BZ = 14, 26                     # front wall z, back wall z
-PZ = 11                             # porch front (parapet) plane
-UC = 20                             # porch / door centre column
-Y_EAVE = 5
-BEAM = "dark_oak"
-
-YARD = ((14, 3), (24, 9))
+BX0, BX1, BZ0, BZ1 = 10, 40, 17, 27       # main barn walls
+WX0, WX1, WZ0 = 22, 28, 13                # cross-gable wing walls x, front wall z
+UC = 25
+Y_EAVE = 7
+TRIM = "dark_oak"
 POINTS = {
-    "viewpoint": {"at": [18, 0, 5], "yaw": -12, "pitch": 3},
-    "yard": {"from": list(YARD[0]), "to": list(YARD[1])},
-    "hologram": [19, 1, 7],
-    "panel": {"at": [22, 0, 7], "yaw": 180},
-    "ripe": [14, 0, 7],
+    "viewpoint": {"at": [24, 0, 5], "yaw": -6, "pitch": 4},
+    "yard": {"from": [19, 3], "to": [29, 9]},
+    "hologram": [23, 1, 7],
+    "panel": {"at": [27, 0, 7], "yaw": 180},
+    "ripe": [20, 0, 7],
 }
-SIGNS = [{"at": [17, 2, PZ - 1], "lines": ["", "Cow Barn", "", ""]}]
+SIGNS = [{"at": [22, 3, 12], "lines": ["", "Cow Barn", "", ""]}]
 
-PLINTH = Ramp(P("cobblestone"), [(P("mossy_cobblestone"), .27, "low"), (P("andesite"), .15, None)], seed=4)
-BOARD = Ramp(P("oak_planks"), [(P("spruce_planks"), .2, None), (P("dark_oak_planks"), .12, None)], seed=5)
-PLASTER = Ramp(P("calcite"), [(P("diorite"), .2, None), (P("polished_diorite"), .12, "low")], seed=6, height=6, y0=1)
-ROOF = Ramp("brick", [("mud_brick", .28, None), ("red_nether_brick", .14, None), ("granite", .06, None)], seed=8, height=8, y0=5)
-FLOOR = Ramp(P("spruce_planks"), [(P("oak_planks"), .22, None), (P("dark_oak_planks"), .15, None)], seed=9)
-COARSE = Ramp(P("coarse_dirt"), [(P("podzol[snowy=false]"), .3, None), (P("gravel"), .12, None), (P("mud"), .12, None)], seed=33)
-PADDOCK = Ramp(P("coarse_dirt"), [(P("mud"), .25, None), (P("podzol[snowy=false]"), .15, None), (P("dirt_path"), .1, None)], seed=37)
+PLINTH = Ramp(P("cobblestone"), [(P("mossy_cobblestone"), .3, "low"), (P("andesite"), .15, None)], seed=4)
+STONE = Ramp(P("stone_bricks"), [(P("mossy_stone_bricks"), .2, "low"), (P("cracked_stone_bricks"), .12, None)], seed=5, height=4, y0=1)
+BOARD = Ramp(P("oak_planks"), [(P("dark_oak_planks"), .2, None), (P("birch_planks"), .1, None)], seed=6)
+PADDOCK = Ramp(P("coarse_dirt"), [(P("mud"), .1, None), (P("podzol[snowy=false]"), .15, None), (P("dirt_path"), .1, None)], seed=37)
+INNER = Ramp(P("coarse_dirt"), [(P("podzol[snowy=false]"), .3, None), (P("rooted_dirt"), .25, None), (P("dirt_path"), .2, None)], seed=19)
 RAMPS = {
     "plinth": ["cobblestone", "mossy_cobblestone", "andesite"],
-    "board": ["spruce_planks", "oak_planks", "dark_oak_planks"],
-    "timber": ["dark_oak_log", "stripped_dark_oak_log", "dark_oak_planks"],
-    "plaster": ["calcite", "diorite", "polished_diorite"],
-    "roof": ["spruce_stairs", "deepslate_tile_stairs", "spruce_planks", "deepslate_tiles"],
-    "drystone": ["cobblestone_wall", "mossy_cobblestone_wall", "andesite_wall"],
+    "stone": ["stone_bricks", "mossy_stone_bricks", "cracked_stone_bricks"],
+    "board": ["oak_planks", "dark_oak_planks", "birch_planks"],
+    "roof": ["spruce_stairs", "dark_oak_stairs", "spruce_planks"],
 }
-GATE = "minecraft:spruce_fence_gate[facing=north,in_wall=false,open=false,powered=false]"
+GATE_NS = "minecraft:spruce_fence_gate[facing=north,in_wall=false,open=false,powered=false]"
+ARCH_X = {"N": [12, 17, 31, 36], "S": [12, 17, 22, 27, 32, 37]}
 
 
 def beam(axis: str) -> str:
-    return stripped(BEAM, axis)
+    return B.stripped(TRIM, axis)
 
 
-def drop(b: Build, cells) -> None:
-    for c in cells:
-        b.g.pop(c, None)
-        b.notes.roof_cells.discard(c)
-    for r in b.notes.roofs:
-        r["eave"] = [c for c in r["eave"] if c in b.g]
-        r["field"] = [c for c in r["field"] if c in b.g]
+def arch(b: Build, wall: Wall, u0: int, gate: bool = True) -> None:
+    """A 3-wide, 3-high stall opening in a stone wall: upside-down stairs round the top corners, a stall gate across the bottom."""
+    for du in range(3):
+        for y in (1, 2, 3):
+            wall.put(u0 + du, y, 0, "minecraft:air")
+    wall.put(u0, 3, 0, wall.stair("stone_brick", "top", "along"))
+    wall.put(u0 + 2, 3, 0, wall.stair("stone_brick", "top", "back"))
+    for du in range(3):
+        if gate:
+            wall.put(u0 + du, 1, 0, "@spruce_fence" if du == 1 else "minecraft:air")
+    if gate:
+        wall.put(u0, 1, 0, wall.trapdoor("spruce", "bottom", True, "out"))
+        wall.put(u0 + 2, 1, 0, wall.trapdoor("spruce", "bottom", True, "out"))
+    x, y, z = wall.xyz(u0 + 1, 3, -2)
+    b.put(x, y, z, B.lantern(True))
 
 
 def build() -> Build:
-    b = Build(SIZE[:1] + (SY,) + SIZE[2:], ground=GROUND)
+    b = Build((SX, SY, SZ), ground=GROUND)
     n = b.notes
-    put, fill, rng = b.put, b.fill, b.rng
-    G.lawn(b, SX, SZ)
+    put, fill = b.put, b.fill
+    heights = {(x, z): -1 for x in range(SX) for z in range(SZ)}
+    K.terrace(heights, (0, 34, SX - 1, SZ - 1), 0)
+    G.lawn(b, SX, SZ, heights)
+    K.retaining_wall(b, 0, 33, SX - 1, 33, -1, 0, ramp=PLINTH, coping="stone_brick")
 
-    # ================= body: plinth, board-and-batten walls on a dark log frame =================
-    ring = [(x, z) for x in range(BX0, BX1 + 1) for z in range(FZ, BZ + 1) if x in (BX0, BX1) or z in (FZ, BZ)]
-    posts_x = list(range(BX0, BX1 + 1, 4))                                        # 8 12 16 20 24 28 32
-    posts_z = [FZ, 18, 22, BZ]
+    # ================= main barn: kerb, stone ground storey with arches, beam course, boarded loft =================
+    ring = [(x, z) for x in range(BX0, BX1 + 1) for z in range(BZ0, BZ1 + 1) if x in (BX0, BX1) or z in (BZ0, BZ1)]
     for (x, z) in ring:
         put(x, 0, z, PLINTH.pick(x, 0, z))
-    for x in range(BX0, BX1 + 1):                                                 # front and back walls
-        for z, ytop in ((FZ, 4), (BZ, 2)):
-            if z == FZ and 17 <= x <= 23:
-                continue
-            for y in range(1, ytop + 1):
-                if x in posts_x:
-                    put(x, y, z, lg(BEAM, "y"))
-                elif (x - BX0) % 4 == 2:
-                    put(x, y, z, P("stripped_spruce_log[axis=y]"))
-                else:
-                    put(x, y, z, BOARD.pick(x, y, z))
-            put(x, ytop + 1, z, beam("x"))
-    for x in posts_x:                                                             # proud posts under the eaves
-        if not 17 <= x <= 23:
-            put(x, 0, FZ - 1, PLINTH.pick(x, 0, FZ - 1))
-            fill(x, 1, FZ - 1, x, 4, FZ - 1, lg(BEAM, "y"))
-        put(x, 0, BZ + 1, PLINTH.pick(x, 0, BZ + 1))
-        fill(x, 1, BZ + 1, x, 2, BZ + 1, lg(BEAM, "y"))
-    for z in posts_z:
-        for x in (BX0 - 1, BX1 + 1):
-            put(x, 0, z, PLINTH.pick(x, 0, z))
-            fill(x, 1, z, x, 4 if z <= 22 else 2, z, lg(BEAM, "y"))
-
-    # ================= main roof (half-hipped ends) and catslide outshut =================
-    pick = lambda x, y, z: ROOF.pick(x, y, z)                                      # noqa: E731
-    main = K.hipped_roof(b, (BX0 - 1, FZ - 1, BX1 + 1, 23), Y_EAVE, {"N": 0, "S": 0, "W": 3, "E": 3}, field="spruce",
-                         eave="deepslate_tile", rake="deepslate_tile", ridge=P("deepslate_tiles"), cap=sl("deepslate_tile"),
-                         name="nave", form="half-hip", riser=P("spruce_planks"))
-    cat = K.catslide_roof(b, (BX0 - 1, 23, BX1 + 1, 27), "N", Y_EAVE, field="spruce", eave="deepslate_tile", name="outshut")
-    surface = dict(main["surface"])
-    surface.update({k: v for k, v in cat["surface"].items()})
-    for side_x, outward in ((BX0, "west"), (BX1, "east")):                          # end walls: boards below, brick gable above
-        for z in range(FZ, BZ + 1):
-            top = surface.get((side_x, z))
-            if top is None:
-                continue
-            for y in range(1, top):
-                if b.get(side_x, y, z) is not None:
-                    continue
-                if y <= 4:
-                    put(side_x, y, z, P("stripped_spruce_log[axis=y]") if (z - FZ) % 4 == 2 else BOARD.pick(side_x, y, z))
-                elif y == 5 and z <= 22:
-                    put(side_x, y, z, beam("z"))
-                else:
-                    put(side_x, y, z, BOARD.pick(side_x, y, z))
-        for z in posts_z:
-            put(side_x, 5, z, beam("z")) if z <= 22 and b.get(side_x, 5, z) is None else None
+        for y in range(1, 4):
+            put(x, y, z, STONE.pick(x, y, z))
+        put(x, 4, z, beam("x" if z in (BZ0, BZ1) else "z"))
+    for x in range(BX0 + 1, BX1):                                      # interior floor: straw ground and the loft floor
+        for z in range(BZ0 + 1, BZ1):
+            put(x, -1, z, INNER.pick(x, 0, z))
+            put(x, 4, z, P("spruce_planks"))
+    posts_x = [10, 16, 21, 29, 34, 40]
+    for z in (BZ0, BZ1):                                               # loft walls
+        for x in range(BX0, BX1 + 1):
+            for y in (5, 6):
+                put(x, y, z, lg(TRIM, "y") if x in posts_x else BOARD.pick(x, y, z))
+            put(x, 7, z, beam("x"))
+    for x in (BX0, BX1):
+        for z in range(BZ0, BZ1 + 1):
+            for y in (5, 6):
+                put(x, y, z, lg(TRIM, "y") if z in (BZ0, 22, BZ1) else BOARD.pick(x, y, z))
+            put(x, 7, z, beam("z"))
+    # main roof: steep spruce, half-hipped ends
+    main = K.hipped_roof(b, (BX0 - 1, BZ0 - 1, BX1 + 1, BZ1 + 1), Y_EAVE, {"N": 0, "S": 0, "W": 3, "E": 3}, field="spruce",
+                         eave=TRIM, rake=TRIM, ridge=beam("x"), cap=sl(TRIM), name="main", form="half-hip",
+                         riser=P("spruce_planks"))
+    for xin in (BX0, BX1):
+        K.fill_gable_wall(b, main, [(xin, z) for z in range(BZ0, BZ1 + 1)], 8, lambda x, y, z: BOARD.pick(x, y, z))
+    n.volumes.append({"name": "main", "footprint": (BX0, BZ0, BX1, BZ1), "top": main["ridge_y"] + 1})
+    # arches along the long north side (and the back), pilasters between
+    WN = Wall(b, "north", "east", (0, BZ0))
+    for u0 in ARCH_X["N"]:
+        arch(b, WN, u0)
+    for x in (BX0, 15, 16, 20, 21, 29, 30, 34, 35, BX1):               # proud pilasters on the pier lines
+        if x in (15, 16, 20, 21, 29, 30, 34, 35):
+            continue
+        put(x, 0, BZ0 - 1, PLINTH.pick(x, 0, BZ0 - 1))
+        for y in (1, 2, 3):
+            put(x, y, BZ0 - 1, STONE.pick(x, y, BZ0 - 1))
+    for x in (13, 18, 32, 37):
+        pass
+    # four spruce dormers
+    oak = lambda x, y, z: BOARD.pick(x, y, z)                           # noqa: E731
+    for uc in (14, 18, 32, 36):
+        K.dormer(b, main, WN, uc, 0, 8, wall_mat=oak, trim=TRIM, roof_mat="spruce", name=f"dormer{uc}", h=3, shutters=None)
+    # back wall: arches into the aisle, a door, stone steps
+    WS = Wall(b, "south", "east", (0, BZ1))
+    for u0 in (12, 17, 32, 37):
+        arch(b, WS, u0, gate=False)
+    door(WS, 25, 1, mat="spruce", frame=TRIM, hood=False)
+    # west end: paddock door (wide arch) and a loft hatch
     WW = Wall(b, "west", "south", (BX0, 0))
-    WE = Wall(b, "east", "south", (BX1, 0))
-    K.vent_slits(WW, 16, 7, 3)
-    K.vent_slits(WE, 16, 7, 3)
-    for wl in (WW, WE):                                                            # louvre slits keep their stone surround
-        for u in (15, 21):
-            for y in (7, 8):
-                if wl.get(u, y, 0) is not None and B.block_id(wl.get(u, y, 0)) == "air":
-                    pass
-    n.volumes.append({"name": "nave", "footprint": (BX0, FZ, BX1, 22), "top": main["ridge_y"] + 1})
-    n.volumes.append({"name": "outshut", "footprint": (BX0, 23, BX1, BZ), "top": 4})
+    for du in range(3):
+        for y in (1, 2, 3):
+            WW.put(21 + du, y, 0, "minecraft:air")
+    WW.put(21, 3, 0, WW.stair("stone_brick", "top", "along")); WW.put(23, 3, 0, WW.stair("stone_brick", "top", "back"))
+    WW.put(22, 1, 0, "@spruce_fence")
+    door(WW, 22, 8, mat="spruce", frame=TRIM, hood=False)
+    put(9, 7, 22, sl(TRIM, "top")); put(9, 7, 21, sl(TRIM, "top")); put(9, 7, 23, sl(TRIM, "top"))
+    door(Wall(b, "east", "south", (BX1, 0)), 22, 8, mat="spruce", frame=TRIM, hood=False)
 
-    # ================= cart porch: piers, lintel, gate, braced doors, corbie gable, cross-gable roof =================
-    WF = Wall(b, "north", "east", (0, FZ))
-    WP = Wall(b, "north", "east", (0, PZ))
-    for du in (-3, 3):
-        for z in (PZ, PZ + 1, PZ + 2):
-            x = UC + du
+    # ================= cross-gable wing (timber): braced doors, loft door, hoist =================
+    for z in range(WZ0, BZ0):
+        for x in (WX0, WX1):
             put(x, 0, z, PLINTH.pick(x, 0, z))
-            for y in range(1, 5):
-                put(x, y, z, lg(BEAM, "y"))
-            put(x, 5, z, beam("z"))
-    for du in range(-3, 4):
-        WP.put(UC + du, 5, 0, WP.log(BEAM, "along", True))
-        for z in (PZ + 1, PZ + 2):
-            put(UC + du, 0, z, PLINTH.pick(UC + du, 0, z))
-    for du in range(-2, 3):
-        put(UC + du, 0, PZ, PLINTH.pick(UC + du, 0, PZ))
-    for du in (-2, -1, 1, 2):
-        WP.put(UC + du, 1, 0, GATE)
-    WP.put(UC, 1, 0, "@spruce_fence")
-    WP.put(UC, 2, 0, "@spruce_fence")
-    K.barn_door_double(b, WF, UC, 1, width=5, height=4, leaf=lambda x, y, z: P("spruce_planks"),
-                       brace=P("dark_oak_planks"))
-    for du in (-2, 2):
-        WF.put(UC + du, 4, 1, B.lantern(True))
-    K.corbie_gable(b, WP, UC, 3, 6, {3: 7, 2: 9, 1: 10, 0: 11}, body=lambda x, y, z: BOARD.pick(x, y, z), cap="dark_oak")
-    for du in (-3, 3):                                                             # pier tops carry the first step
+            for y in range(1, 8):
+                put(x, y, z, lg(TRIM, "y") if z in (WZ0, BZ0 - 1) else BOARD.pick(x, y, z))
+            put(x, 8, z, beam("z"))
+    WF = Wall(b, "north", "east", (0, WZ0))
+    put(22, 3, 12, B.wall_sign("spruce", "north"))
+    for x in range(WX0, WX1 + 1):
+        put(x, 0, WZ0, PLINTH.pick(x, 0, WZ0))
         for y in (6, 7):
-            if WP.get(UC + du, y, 0) is None:
-                WP.put(UC + du, y, 0, BOARD.pick(*WP.xyz(UC + du, y, 0)))
-    for du in (-1, 1):                                                             # slits in the gable
-        for y in (7, 8):
-            WP.put(UC + du, y, 0, "@iron_bars")
-    WP.put(UC, 7, 0, P("stripped_spruce_log[axis=y]"))
-    before = {c for c in main["cells"]}
-    porch = K.hipped_roof(b, (UC - 4, PZ + 1, UC + 4, 17), Y_EAVE, {"W": 0, "E": 0, "N": None, "S": None}, field="spruce",
-                          eave="deepslate_tile", rake="deepslate_tile", ridge=P("deepslate_tiles"), cap=sl("deepslate_tile"),
-                          name="porch", form="gable", riser=P("spruce_planks"), clip=main)
-    n.gables[:] = [g for g in n.gables if g["name"] not in ("porch:S", "porch:N")]
-    drop(b, [(x, Y_EAVE, FZ - 1) for x in range(UC - 3, UC + 4)] + [(x, Y_EAVE, FZ - 1) for x in range(UC - 3, UC + 4)])
-    for du in range(-2, 3):
-        for z in (PZ + 1, PZ + 2):
-            put(UC + du, 5, z, beam("x"))
-    n.volumes.append({"name": "porch", "footprint": (UC - 3, PZ, UC + 3, FZ), "top": 12})
-    for x in range(UC - 2, UC + 3):                                                # paved porch floor
-        for z in (PZ + 1, PZ + 2):
-            put(x, -1, z, G.COBBLE.pick(x, 0, z))
-    put(17, 2, PZ - 1, B.wall_sign("spruce", "north"))
+            put(x, y, WZ0, lg(TRIM, "y") if x in (WX0, WX1) else BOARD.pick(x, y, WZ0))
+        put(x, 8, WZ0, beam("x"))
+    K.barn_door_double(b, WF, UC, 1, width=5, height=4, leaf=lambda x, y, z: P("spruce_planks"), brace=P("dark_oak_planks"))
+    for x in (WX0 + 1, WX1 - 1):
+        put(x, 5, WZ0 - 1, B.lantern(True))
+        put(x, 6, WZ0 - 1, st(TRIM, "south", "top"))
+    for du in (-1, 1):                                                  # loft door: jambs, door, lintel
+        for y in (6, 7):
+            put(UC + du, y, WZ0, lg(TRIM, "y"))
+    put(UC, 6, WZ0, B.dr("spruce", "north", "lower")); put(UC, 7, WZ0, B.dr("spruce", "north", "upper"))
+    for x in range(UC - 1, UC + 2):
+        put(x, 8, WZ0, beam("x"))
+    wing = K.hipped_roof(b, (WX0 - 1, WZ0 - 1, WX1 + 1, BZ0 - 1), 8, {"W": 0, "E": 0, "N": None, "S": None}, field="spruce",
+                         eave=TRIM, rake=TRIM, ridge=beam("z"), cap=sl(TRIM), name="wing", form="gable",
+                         riser=P("spruce_planks"), clip=main)
+    n.gables[:] = [g for g in n.gables if g["name"] != "wing:S"]
+    K.fill_gable_wall(b, wing, [(x, WZ0) for x in range(WX0, WX1 + 1)], 9, lambda x, y, z: BOARD.pick(x, y, z))
+    for y in (10,):                                                    # hoist beam out of the gable, chain and hook
+        put(UC, y, WZ0 - 1, beam("z")); put(UC, y, WZ0 - 2, beam("z"))
+    put(UC, 9, WZ0 - 2, B.chain("y")); put(UC, 8, WZ0 - 2, B.chain("y"))
+    put(UC - 1, 9, WZ0 - 1, st(TRIM, "east", "top")); put(UC + 1, 9, WZ0 - 1, st(TRIM, "west", "top"))
+    n.volumes.append({"name": "wing", "footprint": (WX0, WZ0, WX1, BZ0 - 1), "top": wing["ridge_y"] + 1})
+    n.roof_heights |= {Y_EAVE, 8}
 
-    # ================= dormers on the front slope (one with the hoist and a hay bale) =================
-    roof_mat = "spruce"
-    oak = lambda x, y, z: P("dark_oak_planks")                                    # noqa: E731
-    for uc in (12, 27, 31):
-        hoist = uc == 27
-        K.dormer(b, main, WF, uc, 0, 6, wall_mat=oak, trim=BEAM, roof_mat=roof_mat, name=f"dormer{uc}",
-                 beam=hoist, hatch=hoist, h=3)
-
-    # ================= back wall: stall half-doors, muck hatches =================
-    WB = Wall(b, "south", "east", (0, BZ))
-    for x in (11, 17, 23, 29):
-        door(WB, x, 1, mat="spruce", hood=False, lintel=False, jambs=False)
-        put(x, 3, BZ, beam("x"))
-    for x in (14, 20, 26):
-        WB.put(x, 2, 1, WB.trapdoor("spruce", "bottom", True))
-        WB.put(x, 1, 1, B.hay())
-    n.roof_heights.add(Y_EAVE)
-
-    # ================= dairy lean-to on the east gable =================
-    DX0, DX1, DZ0, DZ1 = 33, 39, 17, 21
-    dcat = K.catslide_roof(b, (DX0, DZ0 - 1, DX1 + 1, DZ1 + 1), "W", 7, field="spruce", eave="deepslate_tile", name="dairy")
-    ds = dcat["surface"]
-    ring_d = [(x, z) for x in range(DX0, DX1 + 1) for z in range(DZ0, DZ1 + 1) if x == DX1 or z in (DZ0, DZ1)]
-    for (x, z) in ring_d:
+    # ================= lean-to at the east end and catslide aisle at the back =================
+    east = K.catslide_roof(b, (BX1 + 1, BZ0, SX - 1, BZ1), "W", 5, field="spruce", eave=TRIM, name="east")
+    for (x, z) in [(x, z) for x in range(BX1 + 1, SX - 1) for z in (BZ0 + 1, BZ1 - 1)] + [(SX - 2, z) for z in range(BZ0 + 1, BZ1)]:
         put(x, 0, z, PLINTH.pick(x, 0, z))
-        for y in range(1, ds[(x, z)]):
-            put(x, y, z, lg(BEAM, "y") if (x in (DX0 + 3, DX1) and z in (DZ0, DZ1)) or (x == DX0 and z in (DZ0, DZ1)) else PLASTER.pick(x, y, z))
-    for x in range(DX0, DX1 + 1):
-        for z in range(DZ0 + 1, DZ1):
-            put(x, 0, z, FLOOR.pick(x, 0, z))
-    for z in range(DZ0, DZ1 + 1):
-        put(DX1 + 1, 0, z, PLINTH.pick(DX1 + 1, 0, z)) if False else None
-    for x in range(DX0, DX1 + 1):
-        for z, w in ((DZ0, "n"), (DZ1, "s")):
-            top = ds[(x, z)]
-            if top - 1 >= 1:
-                put(x, top - 1, z, beam("x")) if b.block(x, top - 1, z) != "air" else None
-    WDN = Wall(b, "north", "east", (0, DZ0))
-    WDS = Wall(b, "south", "east", (0, DZ1))
-    window(WDN, 34, 2, shutters="spruce", box=None, sill="spruce")
-    door(WDN, 37, 1, mat="spruce", hood=False)
-    window(WDS, 35, 2, shutters="spruce", box=None, sill="spruce")
-    window(Wall(b, "east", "south", (DX1, 0)), 19, 2, shutters="spruce", box=None, sill="spruce")
-    put(36, 0, DZ0 - 1, B.barrel()); put(36, 1, DZ0 - 1, P("iron_bars")) if False else None
-    put(38, 0, DZ0 - 1, B.barrel()); put(38, 1, DZ0 - 1, B.barrel())
-    put(34, 8, 19, "minecraft:dark_oak_trapdoor[facing=east,half=bottom,open=true,powered=false,waterlogged=false]")
-    put(34, 8, 20, "minecraft:dark_oak_trapdoor[facing=west,half=bottom,open=true,powered=false,waterlogged=false]")
-    put(34, 9, 19, sl("dark_oak", "bottom")); put(34, 9, 20, sl("dark_oak", "bottom"))
-    n.vents |= {(34, 8, 19), (34, 8, 20)}
-    n.volumes.append({"name": "dairy", "footprint": (DX0, DZ0, DX1, DZ1), "top": 8})
+        for y in range(1, east["surface"][(x, z)]):
+            put(x, y, z, STONE.pick(x, y, z))
+    n.volumes.append({"name": "east", "footprint": (BX1 + 1, BZ0 + 1, SX - 2, BZ1 - 1), "top": 5})
+    aisle = K.catslide_roof(b, (BX0 - 1, BZ1 + 1, BX1 + 1, BZ1 + 5), "N", 5, field="spruce", eave=TRIM, name="aisle")
+    ring2 = [(x, BZ1 + 4) for x in range(BX0, BX1 + 1)] + [(x, z) for x in (BX0, BX1) for z in range(BZ1 + 1, BZ1 + 4)]
+    for (x, z) in ring2:
+        put(x, 0, z, PLINTH.pick(x, 0, z))
+        for y in range(1, aisle["surface"][(x, z)]):
+            put(x, y, z, STONE.pick(x, y, z))
+    n.volumes.append({"name": "aisle", "footprint": (BX0, BZ1 + 1, BX1, BZ1 + 4), "top": 5})
+    WA = Wall(b, "south", "east", (0, BZ1 + 4))
+    for u0 in (13, 20, 27, 34):
+        for du in range(2):
+            for y in (1, 2):
+                WA.put(u0 + du, y, 0, "minecraft:air")
+        WA.put(u0, 1, 0, WA.trapdoor("spruce", "bottom", True, "out"))
+    for x in range(BX0 + 1, BX1):
+        for z in range(BZ1 + 1, BZ1 + 4):
+            put(x, -1, z, INNER.pick(x, 0, z))
+    n.roof_heights |= {3, 5}
+    n.plinth = {"blocks": RAMPS["plinth"], "courses": 1, "ring": ring}
     return b
 
 
@@ -249,71 +212,57 @@ def scenery(b: Build) -> None:
     n = b.notes
     put, rng = b.put, b.rng
     road = G.road(b, SX)
-    yard = S.noisy_rect(b, 14, 3, 24, 9, wobble=1)
+    yard = S.noisy_rect(b, 19, 3, 29, 9, wobble=1)
     S.ground(b, yard - road, G.COBBLE)
-    # path to the gate, front-of-barn beds, backdrop for the panel
-    pathc = {(x, z) for z in range(10, 14) for x in range(18 + (z % 2), 21 + (z % 2))}
+    pathc = {(x, z) for z in range(10, 13) for x in range(23 + (z % 2), 27 + (z % 2) - 1)}
     S.ground(b, pathc - yard, G.GRAVEL)
-    S.flower_bed(b, {(x, z) for x in range(9, 16) for z in range(11, 13)}, density=.65)
-    S.flower_bed(b, {(x, z) for x in range(25, 32) for z in range(11, 13)}, density=.65)
-    for x in range(22, 26):
-        put(x, 0, 10, "@stone_brick_wall" if x % 2 else "@mossy_stone_brick_wall")
-    put(22, 1, 10, B.lantern(False)); put(25, 1, 10, B.lantern(False))
-    S.apron(b, 21, 10, 26, 10, G.COBBLE, force=True)
-    S.lamp_post(b, 13, 3, 3)
-    S.lamp_post(b, 25, 3, 3)
-    # vines between the posts on the front wall
-    for x in (9, 10, 14, 15, 25, 26, 29, 30):
-        for y in range(1, 2 + rng.randint(2, 3)):
-            put(x, y, FZ - 1, B.vine("south"))
-    # paddock: drystone wall, trough, feeder, trampled ground
-    pad = {(x, z) for x in range(2, 13) for z in range(5, 13)}
-    S.ground(b, {c for c in pad if rng.random() < .5}, PADDOCK)
-    G.drystone(b, [(1, z) for z in range(4, 13)] + [(x, 4) for x in range(1, 13)] + [(x, 13) for x in range(1, 8)]
-               + [(x, 13) for x in (9, 10, 11)] + [(13, z) for z in list(range(4, 7)) + list(range(8, 13))], high=2)
-    put(13, 0, 7, "minecraft:spruce_fence_gate[facing=east,in_wall=false,open=false,powered=false]")
-    put(13, -1, 7, P("coarse_dirt")); put(14, -1, 7, P("coarse_dirt")); put(12, -1, 7, P("mud"))
-    G.trough(b, 3, 5, "x", 4)
-    put(2, 0, 11, B.hay()); put(2, 0, 10, B.hay()); put(3, 0, 11, B.hay())
-    S.tree(b, 5, 8, kind="oak", height=5, spread=2.4, y0=0)
-    # east side: hay rick, haycart, milk churns
-    G.hay_rick(b, 36, 5, w=6, d=3, layers=3)
-    for dx in (0, 1, 2):
-        for dz in (0, 1):
-            put(30 + dx, 0, 8 + dz, sl("spruce", "bottom"))
-    for (x, z) in ((30, 7), (32, 10)):
-        put(x, 0, z, B.hay())
-    put(30, 1, 8, B.hay()); put(31, 1, 8, B.hay()); put(31, 1, 9, B.hay())
-    for z in (7, 10):
-        put(31, 0, z, "minecraft:spruce_trapdoor[facing=north,half=bottom,open=true,powered=false,waterlogged=false]")
-    S.apron(b, 29, 6, 33, 10, G.GRAVEL, force=True)
-    S.woodpile(b, 40, 12, axis="x", length=4)
-    S.bench(b, 42, 18, facing="west", length=2, along="z")
-    # south: pasture trees, a field wall, hedges
-    for (x, z, k) in ((12, 32, "oak"), (36, 32, "oak"), (46, 22, "oak"), (2, 22, "birch")):
-        S.tree(b, x, z, kind=k, height=5 if k == "oak" else 6, spread=2.6 if k == "oak" else 2.2, y0=0)
-    G.drystone(b, [(x, 32) for x in range(25, 35)] + [(34, z) for z in range(29, 33)], high=1)
-    G.hedge(b, [(1, 6, 34), (9, 14, 34), (17, 22, 34), (25, 30, 34), (33, 38, 34), (41, 46, 34), ("z", 20, 24, 0), ("z", 27, 31, 0)])
+    S.ground(b, {(x, z) for x in range(21, 30) for z in range(11, 13)}, G.COBBLE)
+    S.flower_bed(b, {(x, z) for x in range(14, 21) for z in range(11, 13)}, density=.65)
+    S.flower_bed(b, {(x, z) for x in range(31, 38) for z in range(11, 13)}, density=.65)
+    S.lamp_post(b, 18, 10, 3)
+    S.lamp_post(b, 31, 10, 3)
+    put(21, 0, 12, B.barrel("up")); put(21, 1, 12, B.barrel("up")); put(20, 0, 12, B.barrel("up"))
+    # paddock: fence starts at the barn's west wall, mud at the gate, trough, hay
+    px0, pz0, pz1 = 1, BZ0, BZ1
+    for x in range(px0, BX0):
+        put(x, 0, pz0, "@spruce_fence"); put(x, 0, pz1, "@spruce_fence")
+    for z in range(pz0, pz1 + 1):
+        put(px0, 0, z, "@spruce_fence")
+    for (x, z) in ((px0, pz0), (px0, pz1), (BX0 - 1, pz0), (BX0 - 1, pz1), (4, pz0), (6, pz0), (px0, 22)):
+        put(x, 0, z, lg(TRIM, "y")); put(x, 1, z, "@dark_oak_fence"); put(x, 2, z, B.lantern(False))
+    put(5, 0, pz0, GATE_NS)
+    S.ground(b, {(x, z) for x in range(px0 + 1, BX0) for z in range(pz0 + 1, pz1)}, PADDOCK)
+    S.ground(b, {(x, z) for x in range(4, 8) for z in range(14, 17)}, Ramp(P("coarse_dirt"), [(P("mud"), .25, None), (P("podzol[snowy=false]"), .2, None)], seed=11))
+    G.trough(b, 3, 25, "x", 4)
+    G.hay_rick(b, 2, 18, w=3, d=2, layers=2, axis="x")
+    put(8, 0, 24, B.hay()); put(8, 0, 25, B.hay())
+    S.tree(b, 4, 31, kind="oak", height=5, spread=2.4, y0=0)
+    S.tree(b, 7, 12, kind="oak", height=5, spread=2.3, y0=0)
+    # east: wagon of hay and the lean-to's cart yard
+    S.ground(b, {(x, z) for x in range(41, 45) for z in range(12, 17)}, G.GRAVEL)
+    G.hay_rick(b, 38, 12, w=4, d=3, layers=2, axis="x")
+    S.woodpile(b, 38, 29, axis="x", length=3)
+    S.tree(b, 43, 7, kind="oak", height=5, spread=2.3, y0=0)
+    S.tree(b, 13, 5, kind="oak", height=5, spread=2.3, y0=0)
+    S.tree(b, 35, 6, kind="birch", height=6, spread=2.1, y0=0)
+    G.hedge(b, [(1, 6, 36), (9, 14, 36), (20, 26, 36), (33, 38, 36), (41, 44, 36)])
+    G.meadow(b, SX, SZ, lambda x, z: 12 <= x <= 37 and z <= 13)
     S.ground(b, road, G.GRAVEL)
-    n.front_yard = {"rect": (14, 3, 24, 9), "corridor": (18, 20), "max_y": 1}
+    n.front_yard = {"rect": (19, 3, 29, 9), "corridor": (24, 26), "max_y": 1}
     n.ground_region = (-1, -1, SX, SZ)
     n.ramps = {k: list(v) for k, v in RAMPS.items()}
-    n.plinth = {"blocks": RAMPS["plinth"], "courses": 1,
-                "ring": [(x, z) for x in range(BX0, BX1 + 1) for z in range(FZ, BZ + 1) if x in (BX0, BX1) or z in (FZ, BZ)]}
-    n.body_box = (BX0, FZ, BX1, BZ)
+    n.body_box = (BX0, BZ0, BX1, BZ1)
     n.wall_rows = (1, 3)
 
 
 def previews(g: dict, out: Path) -> list:
     shots = {
-        "eye": ((18.5, 1.62, 5.5), (22, 6, 15)),
-        "front": ((20, 6, -9), (20, 5, 16)),
-        "ne": ((58, 16, -6), (22, 4, 17)),
-        "nw": ((-12, 16, -6), (20, 4, 17)),
-        "back": ((50, 14, 50), (20, 4, 17)),
-        "porch": ((20.5, 3.0, 5.5), (20.5, 3, 14)),
-        "dairy": ((46, 6, 10), (36, 3, 19)),
-        "paddock": ((13, 5, 17), (6, 1, 8)),
+        "eye": ((24.5, 1.62, 5.5), (25, 5, 15)),
+        "front": ((25, 7, -9), (25, 6, 16)),
+        "ne": ((60, 17, -6), (24, 4, 18)),
+        "nw": ((-12, 17, -6), (22, 4, 18)),
+        "back": ((50, 15, 52), (24, 4, 20)),
+        "paddock": ((12, 7, 36), (5, 1, 22)),
         "above": ("iso", 215, 52),
     }
     return place_views.place_previews("cow_barn", g, out, (0, 0, SX - 1, SZ - 1), shots)
@@ -322,7 +271,8 @@ def previews(g: dict, out: Path) -> list:
 def main() -> int:
     b = build()
     scenery(b)
-    G.finish("cow_barn", b, points=POINTS, signs=SIGNS, size=SIZE, ground=GROUND, hero=True, previews=previews)
+    G.finish("cow_barn", b, points=POINTS, signs=SIGNS, size=SIZE, ground=GROUND, hero=True, previews=previews,
+             size_range=(1800, 3500))
     return 0
 
 
