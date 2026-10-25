@@ -60,5 +60,13 @@ belt:
   enabled: true
   max-cookies: 8
 
+# The countryside (/bakery farm setup <id> in a region with the bakery-farm <id> flag)
+farm:
+  # Seconds between two /bakery farm or /bakery home teleports per player (0 = no cooldown)
+  teleport-cooldown-seconds: 5
+  paste:
+    # Blocks the setup places per tick; lower it if the server lags during a setup
+    blocks-per-tick: 5000
+
 debug:
   log-click-events: false

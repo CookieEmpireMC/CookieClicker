@@ -30,7 +30,7 @@ public final class CookieClicker extends JavaPlugin {
             WorldGuardHook.registerFlags();
             flagsRegistered = true;
         } catch (RuntimeException | LinkageError e) { // conflict, or WorldGuard not usable
-            getLogger().log(Level.SEVERE, "Could not register the WorldGuard flags bakery-plot / bakery-house", e);
+            getLogger().log(Level.SEVERE, "Could not register the WorldGuard flags bakery-plot / bakery-house / bakery-farm", e);
         }
     }
 

@@ -14,8 +14,14 @@ import java.util.Optional;
  */
 public interface PlotRegions {
 
-    /** A region of {@code world} with the values of our two flags (lower case, null when unset). */
-    record RegionInfo(String id, int priority, @Nullable String plotFlag, @Nullable String houseFlag) {
+    /** A region of {@code world} with the values of our flags (lower case, null when unset). */
+    record RegionInfo(String id, int priority, @Nullable String plotFlag, @Nullable String houseFlag,
+                      @Nullable String farmFlag) {
+
+        /** A region without a {@code bakery-farm} value. */
+        public RegionInfo(String id, int priority, @Nullable String plotFlag, @Nullable String houseFlag) {
+            this(id, priority, plotFlag, houseFlag, null);
+        }
     }
 
     /**

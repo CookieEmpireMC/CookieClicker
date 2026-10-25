@@ -27,7 +27,7 @@ import java.util.Optional;
 import java.util.logging.Logger;
 
 /**
- * The only class that imports WorldGuard/WorldEdit (docs/integrations.md, WorldGuard section). Registers our two
+ * The only class that imports WorldGuard/WorldEdit (docs/integrations.md, WorldGuard section). Registers our three
  * {@link StringFlag}s in {@code onLoad} and answers {@link PlotRegions} queries through WorldGuard's
  * {@code RegionContainer} / {@code RegionQuery}. Never keeps {@code ProtectedRegion} objects. Read-only: the plugin
  * never creates regions or sets flags. Main thread only.
@@ -36,11 +36,13 @@ public final class WorldGuardHook implements PlotRegions {
 
     public static final String PLOT_FLAG_NAME = "bakery-plot";
     public static final String HOUSE_FLAG_NAME = "bakery-house";
+    public static final String FARM_FLAG_NAME = "bakery-farm";
     /** The oldest WorldGuard release confirmed for Paper 26.3 (docs/research/worldguard-plot.md). */
     public static final String MIN_VERSION = "7.0.20";
 
     private static @Nullable StringFlag plotFlag;
     private static @Nullable StringFlag houseFlag;
+    private static @Nullable StringFlag farmFlag;
 
     private final WarnOnce warnings;
 
@@ -68,7 +70,7 @@ public final class WorldGuardHook implements PlotRegions {
     }
 
     /**
-     * Registers {@code bakery-plot} and {@code bakery-house}. Must run in {@code onLoad} (WorldGuard locks its flag
+     * Registers {@code bakery-plot}, {@code bakery-house} and {@code bakery-farm}. Must run in {@code onLoad} (WorldGuard locks its flag
      * registry when it enables). A flag of the same name and type that is already there (a second {@code onLoad}) is
      * reused; one of another type is a hard conflict.
      */
@@ -76,6 +78,7 @@ public final class WorldGuardHook implements PlotRegions {
         FlagRegistry registry = WorldGuard.getInstance().getFlagRegistry();
         plotFlag = register(registry, PLOT_FLAG_NAME);
         houseFlag = register(registry, HOUSE_FLAG_NAME);
+        farmFlag = register(registry, FARM_FLAG_NAME);
     }
 
     private static StringFlag register(FlagRegistry registry, String name) {
@@ -95,7 +98,7 @@ public final class WorldGuardHook implements PlotRegions {
 
     /** The hook, or empty when the flags were not registered in {@code onLoad} (then plots can't work). */
     public static Optional<WorldGuardHook> create(Logger log) {
-        return plotFlag == null || houseFlag == null ? Optional.empty() : Optional.of(new WorldGuardHook(log));
+        return plotFlag == null || houseFlag == null || farmFlag == null ? Optional.empty() : Optional.of(new WorldGuardHook(log));
     }
 
     @Override
@@ -135,7 +138,7 @@ public final class WorldGuardHook implements PlotRegions {
         List<RegionInfo> out = new ArrayList<>();
         for (ProtectedRegion r : rm.getRegions().values()) {
             out.add(new RegionInfo(r.getId().toLowerCase(Locale.ROOT), r.getPriority(), value(r, plotFlag),
-                    value(r, houseFlag)));
+                    value(r, houseFlag), value(r, farmFlag)));
         }
         return out;
     }

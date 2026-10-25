@@ -358,6 +358,11 @@ public final class HousePlacer {
         return true;
     }
 
+    /** One block of a ticked paste ({@link FarmSetup}), with the same no-physics rule as {@link #worldAccess}. */
+    static void setBlock(World world, int x, int y, int z, BlockData data) {
+        world.getBlockAt(x, y, z).setBlockData(data, false);
+    }
+
     /**
      * The real world behind {@link HouseBackup.BlockAccess}; the only block writes of both world writers go through
      * here ({@code known} caches parsed block data). No physics, so a paste never drops or updates neighbours and

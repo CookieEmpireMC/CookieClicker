@@ -31,7 +31,8 @@ import java.util.function.Supplier;
 
 /**
  * {@code /bakery plot setup [design]|setup undo|show}, {@code /bakery house place <design>|undo|rebuild <player>},
- * {@code /bakery db migrate [--force]} ({@link DbCommand}) and {@code /bakery reload}, permission {@code cookieempire.admin}. Plot commands act on the plot whose
+ * {@code /bakery db migrate [--force]} ({@link DbCommand}) and {@code /bakery reload}, permission {@code cookieempire.admin};
+ * the farm commands and {@code /bakery home} come from {@link FarmCommand}. Plot commands act on the plot whose
  * {@code bakery-plot} region the admin stands in. Built for Paper's Brigadier lifecycle registration
  * ({@link #node()}).
  */
@@ -54,6 +55,7 @@ public final class BakeryCommand {
     private final Messages messages;
     private final Reloader reloader;
     private final @Nullable DbCommand db;
+    private final @Nullable FarmCommand farm;
 
     public BakeryCommand(PlotService plots, PlotOutlines outlines, HousePlacer houses, PlotSetup setup,
                          HouseCinematics cinematics,
@@ -65,7 +67,15 @@ public final class BakeryCommand {
                          HouseCinematics cinematics,
                          Supplier<PluginSettings> settings, Messages messages, Reloader reloader,
                          @Nullable DbCommand db) {
+        this(plots, outlines, houses, setup, cinematics, settings, messages, reloader, db, null);
+    }
+
+    public BakeryCommand(PlotService plots, PlotOutlines outlines, HousePlacer houses, PlotSetup setup,
+                         HouseCinematics cinematics,
+                         Supplier<PluginSettings> settings, Messages messages, Reloader reloader,
+                         @Nullable DbCommand db, @Nullable FarmCommand farm) {
         this.db = db;
+        this.farm = farm;
         this.cinematics = cinematics;
         this.plots = plots;
         this.outlines = outlines;
@@ -79,11 +89,15 @@ public final class BakeryCommand {
     public LiteralCommandNode<CommandSourceStack> node() {
         LiteralArgumentBuilder<CommandSourceStack> root = Commands.literal("bakery");
         if (db != null) {
-            root.then(db.node());
+            root.then(db.node().requires(FarmCommand::isAdmin));
+        }
+        if (farm != null) {
+            root.then(farm.farmNode()).then(farm.homeNode());
         }
         return root
-                .requires(src -> src.getSender().hasPermission(PERMISSION))
+                .requires(src -> FarmCommand.isAdmin(src) || (farm != null && FarmCommand.canTeleport(src)))
                 .then(Commands.literal("plot")
+                        .requires(FarmCommand::isAdmin)
                         .then(Commands.literal("setup")
                                 .executes(ctx -> setup(ctx, PlotSetup.DEFAULT_DESIGN))
                                 .then(Commands.literal("undo").executes(this::setupUndo))
@@ -92,6 +106,7 @@ public final class BakeryCommand {
                                                 .toLowerCase(Locale.ROOT)))))
                         .then(Commands.literal("show").executes(this::show)))
                 .then(Commands.literal("house")
+                        .requires(FarmCommand::isAdmin)
                         .then(Commands.literal("place")
                                 .then(Commands.argument("design", StringArgumentType.word())
                                         .executes(this::place)))
@@ -103,9 +118,10 @@ public final class BakeryCommand {
                                             return b.buildFuture();
                                         })
                                         .executes(this::rebuild))))
-                .then(Commands.literal("reload").executes(this::reload))
+                .then(Commands.literal("reload").requires(FarmCommand::isAdmin).executes(this::reload))
                 .executes(ctx -> {
-                    messages.send(ctx.getSource().getSender(), "commands.usage");
+                    messages.send(ctx.getSource().getSender(), FarmCommand.isAdmin(ctx.getSource())
+                            ? "commands.usage" : "commands.usage-player");
                     return Command.SINGLE_SUCCESS;
                 })
                 .build();

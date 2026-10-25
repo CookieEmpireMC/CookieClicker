@@ -95,6 +95,11 @@ final class WorldOperation {
         }
     }
 
+    /** Inside a {@link #step}: the operation goes on in a later tick (a ticked task), so the step must not end it. */
+    void hold() {
+        handedOff = true;
+    }
+
     /** Continues on IO; an exception there replies and ends the operation, a rejected task ends it right away. */
     void submit(Op op, Runnable task) {
         try {

@@ -13,6 +13,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitTask;
+import org.jspecify.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.List;
@@ -42,15 +43,23 @@ public final class PlotOutlines implements Listener {
     /**
      * Starts (or restarts) the outline for {@code viewer}.
      */
-    public void show(Player viewer, World world, RegionShape plot, @org.jspecify.annotations.Nullable RegionShape house) {
+    public void show(Player viewer, World world, RegionShape plot, @Nullable RegionShape house) {
+        PlotSettings.Show s = settings.get();
+        showPoints(viewer, world, Outline.points(plot, s.particleStep(), s.maxPoints()),
+                house == null ? List.of() : Outline.points(house, s.particleStep(), s.maxPoints()));
+    }
+
+    /**
+     * Starts (or restarts) an outline from ready points: {@code outline} with the plot effect, {@code marks} with the
+     * house effect ({@code /bakery farm show}).
+     */
+    public void showPoints(Player viewer, World world, List<double[]> plotPoints, List<double[]> housePoints) {
         if (!registered) {
             plugin.getServer().getPluginManager().registerEvents(this, plugin);
             registered = true;
         }
         stop(viewer.getUniqueId());
         PlotSettings.Show s = settings.get();
-        List<double[]> plotPoints = Outline.points(plot, s.particleStep(), s.maxPoints());
-        List<double[]> housePoints = house == null ? List.of() : Outline.points(house, s.particleStep(), s.maxPoints());
         UUID id = viewer.getUniqueId();
         long until = Bukkit.getCurrentTick() + s.durationSeconds() * 20L;
         BukkitTask task = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
