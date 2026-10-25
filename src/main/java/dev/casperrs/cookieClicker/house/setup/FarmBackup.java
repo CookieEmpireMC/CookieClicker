@@ -20,12 +20,24 @@ public record FarmBackup(String farmId, String worldKey, long createdAt, Farm.Bo
 
     /** The box cut along chunk borders (16 x 16 columns, full height), in x then z order. */
     public static List<Farm.Box> slabs(Farm.Box box) {
+        return slabs(box, Long.MAX_VALUE);
+    }
+
+    /**
+     * The box cut along chunk borders, each column also cut into y ranges so that one slab holds at most
+     * {@code maxBlocks} blocks (at least one layer); x, then z, then y order.
+     */
+    public static List<Farm.Box> slabs(Farm.Box box, long maxBlocks) {
         List<Farm.Box> out = new ArrayList<>();
         for (int x = box.minX(); x <= box.maxX(); x = (x & ~15) + 16) {
             int toX = Math.min(box.maxX(), (x & ~15) + 15);
             for (int z = box.minZ(); z <= box.maxZ(); z = (z & ~15) + 16) {
                 int toZ = Math.min(box.maxZ(), (z & ~15) + 15);
-                out.add(new Farm.Box(x, box.minY(), z, toX, box.maxY(), toZ));
+                long layer = (long) (toX - x + 1) * (toZ - z + 1);
+                int height = (int) Math.max(1, Math.min(box.maxY() - box.minY() + 1L, maxBlocks / layer));
+                for (int y = box.minY(); y <= box.maxY(); y += height) {
+                    out.add(new Farm.Box(x, y, z, toX, Math.min(box.maxY(), y + height - 1), toZ));
+                }
             }
         }
         return out;
