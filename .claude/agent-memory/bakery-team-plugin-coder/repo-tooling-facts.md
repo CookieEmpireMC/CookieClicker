@@ -18,6 +18,7 @@ metadata:
   `-cp "target/classes:$(cat <scratch>/cp.txt)"` (that `$(cat)` is allowed).
 - Pure classes, default package: single-file launch `mise exec -- java -cp ... <ABSOLUTE>/Smoke.java` from the worktree.
 - Package-private access: same package needs `javac -d out` + `java @argfile` (single-file launch hits split-package IllegalAccessError).
+- Run the tester's new tests against a fix (2026-10-25): `git checkout <name>/plugin-tester -- src/test`, `mise run check-quiet`, then `git restore --staged src/test && git checkout -- src/test && git clean -fdq src/test` (never commit them).
 - Other agents' files: `git show feature/<name>:<path> > <scratch>/x` (branches are deleted after merge); `git worktree list` shows their paths.
 
 **Ownership / repo** (stable)
