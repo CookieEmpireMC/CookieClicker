@@ -76,7 +76,7 @@ later. `/bakery home` takes me back to my bakery.
       placeholder) and `design/refs-<place>.md`. Every place has textured previews.
 ### Placing the countryside (plugin-coder)
 - [ ] The WorldGuard flag **`bakery-farm <id>`**, registered in `onLoad` like `bakery-plot`.
-- [ ] `/bakery farm setup <id>` (permission `cookieclicker.admin`) pastes `countryside.yml` and every place file at its
+- [ ] `/bakery farm setup <id>` (permission `cookieempire.admin`, the plugin's existing admin permission) pastes `countryside.yml` and every place file at its
       layout spot into that region.
   - It uses the same paste, ground-depth, liquid and leaf rules and backup as the house paste.
   - It is spread over ticks, with no long main-thread stalls.
@@ -146,11 +146,11 @@ none. Decided with the user on 2026-10-25:
 | Kind | ID | Owner | Notes |
 |---|---|---|---|
 | house design file | `src/main/resources/houses/{market,mill,cow_barn,sugar_works,cocoa_grove,chicken_farm}.yml` | model-designer | house format + ground-depth; cells from the file's own min corner |
-| house design file | `src/main/resources/houses/countryside.yml` | model-designer | the format is decided by the coder with the designer and documented in `design/countryside.md`: `size`, ground/terrain layers, `places: { <place>: { at: [x,y,z], yaw } }` |
-| design points | `viewpoint {at,yaw,pitch}`, `yard {from,to}`, `hologram`, `panel {at,yaw}`, `ripe`, `smoke` (0–1), `wheel {at,axis}` (mill), `recipe_book`, `notice_board` (market) | model-designer | in each place file under `points:`; the parser rejects a missing required point |
+| house design file | `src/main/resources/houses/countryside.yml` | model-designer | the format is decided by the coder with the designer and documented in `design/countryside.md`: `size`, ground/terrain layers, `places: { <place>: { at: [x,y,z] } }` (unrotated; a non-zero yaw is rejected) |
+| design points | `viewpoint {at,yaw,pitch}`, `yard {from,to}`, `hologram`, `panel {at,yaw}`, `ripe`, `smoke` (0–1), `wheel {at,axis}` (mill), `recipe_book`, `notice_board` (market) | model-designer | in each place file under `points:`; required: viewpoint, yard, hologram, panel, ripe (the others optional for every place); the countryside's origin lands on the region's min corner, so the region's min y is ground level |
 | item model | `cookieclicker:waterwheel` | model-designer | rotation about its local x axis through the model centre |
 | WorldGuard flag | `bakery-farm` (string id) | plugin-coder | |
-| command | `/bakery farm`, `/bakery home`, `/bakery farm setup <id>`, `/bakery farm undo <id>`, `/bakery farm show <id>` | plugin-coder | perms `cookieclicker.teleport` (default true), `cookieclicker.admin` |
+| command | `/bakery farm`, `/bakery home`, `/bakery farm setup <id>`, `/bakery farm undo <id>`, `/bakery farm show <id>` | plugin-coder | perms `cookieclicker.teleport` (default true), `cookieempire.admin` |
 | plots.yml | `farms.<id>` (region, origin, the points of every place) | plugin-coder | |
 | config key | `config.yml: farm.teleport-cooldown-seconds`, `farm.wheel.rpm`, `farm.wheel.view-range`, `farm.paste.blocks-per-tick` | plugin-coder | |
 | message key | `farm.*` (setup progress/done/too small, undo, teleport, cooldown, no farm) | plugin-coder | messages.yml |
@@ -176,6 +176,8 @@ format section through the designer.
 | Agent | Status | Branch | Verdict | Notes |
 |---|---|---|---|---|
 | resource-pack-researcher | done | merged | — | `docs/research/farm-buildings.md` |
+| plugin-coder (setup) | review | `countryside-builds/plugin-coder-setup` | | 417 tests green; admin perm is `cookieempire.admin` |
+| model-designer (run 1) | in progress | `countryside-builds/model-designer` | | kits, lint, Mill, waterwheel |
 
 ## Merge order
 0. research (done), 1. model-designer run 1 (Mill), 2. plugin-coder (setup), 3. plugin-coder (wheel+review),
