@@ -161,16 +161,78 @@ class HouseDesignParserTest {
         HouseDesignParser.Result r = HouseDesignParser.parse("default", YamlFiles.toMap(yaml));
         assertNotNull(r.design(), r.problems().toString());
         HouseDesign d = r.design();
-        assertEquals(9, d.sizeX());
-        assertEquals(7, d.sizeY());
-        assertEquals(7, d.sizeZ());
-        assertEquals(170, d.cells().stream().filter(c -> !c.blockData().equals("minecraft:air")).count(),
-                "the generator header says 170 blocks (not counting air/keep)");
+        assertEquals(17, d.sizeX());
+        assertEquals(14, d.sizeY());
+        assertEquals(15, d.sizeZ());
+        assertEquals(590, d.cells().stream().filter(c -> !c.blockData().equals("minecraft:air")).count(),
+                "the generator header says 590 blocks (not counting air/keep)");
         assertNotNull(d.points().get("chimney"));
         assertEquals(1, d.signs().size());
         // every palette entry is used, none is missing (the parser already rejected unknown characters)
         for (Map.Entry<Character, String> e : d.palette().entrySet()) {
             assertTrue(e.getValue().startsWith("minecraft:"), e.toString());
         }
+    }
+
+    /** {@link #base()} with {@code depth} ground layers (all dirt, palette G) put below its layers; size y counts them. */
+    private static Map<String, Object> withGround(int depth) {
+        Map<String, Object> m = base();
+        m.put("size", List.of(3, 2 + depth, 2));
+        m.put("ground-depth", depth);
+        Map<String, Object> palette = new LinkedHashMap<>((Map<String, Object>) m.get("palette"));
+        palette.put("G", "minecraft:dirt");
+        m.put("palette", palette);
+        List<Object> layers = new ArrayList<>();
+        for (int i = 0; i < depth; i++) {
+            layers.add(List.of("GGG", "GGG"));
+        }
+        layers.addAll((List<?>) m.get("layers"));
+        m.put("layers", layers);
+        return m;
+    }
+
+    @Test
+    void groundLayersLieBelowTheHouseAndExistingCellsAndPointsDoNotShift() {
+        HouseDesign old = parse(base()).design();
+        assertNotNull(old);
+        assertEquals(0, old.groundDepth(), "a missing key is no ground, as before");
+        assertArrayEquals(new int[] {10, 64, 10}, old.corner(new int[] {10, 64, 10}));
+        assertEquals(old.sizeY(), old.houseHeight());
+
+        Map<String, Object> g = withGround(1);
+        g.put("points", Map.of("chimney", List.of(1, 1, 1)));
+        HouseDesign d = parse(g).design();
+        assertNotNull(d);
+        assertEquals(1, d.groundDepth());
+        assertEquals(3, d.sizeY(), "size y counts the ground layer");
+        assertEquals(2, d.houseHeight());
+        int[] region = {10, 64, 10};
+        assertArrayEquals(new int[] {10, 63, 10}, d.corner(region), "the ground layer is one below the house box");
+        assertArrayEquals(new int[] {3, 3, 2}, d.size());
+        List<HouseDesign.Cell> ground = d.cells().stream().filter(c -> c.blockData().equals("minecraft:dirt")).toList();
+        assertEquals(6, ground.size());
+        assertTrue(ground.stream().allMatch(c -> c.y() == -1), "ground cells are design y -1");
+        assertEquals(old.cells().size() + 6, d.cells().size());
+        for (HouseDesign.Cell c : old.cells()) {
+            assertTrue(d.cells().contains(c), "house cell keeps its design y: " + c);
+            assertArrayEquals(old.toWorld(region, c.x(), c.y(), c.z()), d.toWorld(region, c.x(), c.y(), c.z()));
+        }
+        assertArrayEquals(new int[] {1, 1, 1}, d.points().get("chimney"), "points keep their design y");
+        assertEquals(65, d.toWorld(region, 1, 1, 1)[1]);
+    }
+
+    @Test
+    void groundDepthIsAWholeNumberUpToTwoAndLeavesAHouseLayer() {
+        for (Object bad : new Object[] {3, -1, 2.5, "1"}) {
+            Map<String, Object> m = withGround(1);
+            m.put("ground-depth", bad);
+            assertTrue(problems(m).contains("ground-depth"), String.valueOf(bad));
+        }
+        Map<String, Object> noHouseLayer = base();
+        noHouseLayer.put("ground-depth", 2); // size y is 2: nothing left above the ground
+        assertTrue(problems(noHouseLayer).contains("ground-depth"));
+        Map<String, Object> belowGround = base();
+        belowGround.put("points", Map.of("chimney", List.of(0, -1, 0))); // no ground declared: -1 is outside
+        assertTrue(problems(belowGround).contains("points.chimney"));
     }
 }

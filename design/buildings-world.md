@@ -38,7 +38,7 @@ Format `slots: { <id>: [ {at: [x, 0, z], yaw: <deg>}, ... ] }`, plot cells from 
 Simple rule for the coder: the keep-out of a slot is the square of cells `floor(c+0.5-h) .. ceil(c+0.5+h)-1` with h = footprint/2 above. The generator asserts the squares stay inside the fence (>= 0.2 blocks), off the factory zone (x5..25, z9..24) and front zone (x12..23, z1..8), and 0.25 blocks apart. `decor.yml` keeps a further 0.35 blocks clear.
 
 ## Decor rework
-`decor.yml` regenerated (282 blocks, 7 clusters): west store, wheat bed and scarecrow moved to the front-west corner (x1..4), east yard now holds lamps and flowers along x 29, portal corner gets flowers and hay, back yard keeps hedges, log pile and trees clear of the belts. Details in `design/decor.md`; preview `design/scripts/previews/decor_plot.png` (slot zones pink).
+`decor.yml` regenerated (282 blocks, 7 clusters): west store, wheat bed and scarecrow moved to the front-west corner (x1..4), east yard now holds lamps and flowers along x 29, portal corner gets flowers and hay, back yard keeps hedges, log pile and trees clear of the belts. Details in `design/decor.md`; preview `design/scripts/previews/decor_sheet.png` (slot zones pink).
 
 ## Placeholder / needs a human
 Everything. Judge in game: scale next to the factory and basket, the 180 deg item display turn, stage 3 readability from the camera point, texture density.

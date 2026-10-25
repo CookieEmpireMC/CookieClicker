@@ -2,8 +2,11 @@ package dev.casperrs.cookieClicker.house.setup;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import dev.casperrs.cookieClicker.house.design.HouseDesign;
+import dev.casperrs.cookieClicker.house.design.HouseDesignParser;
 import dev.casperrs.cookieClicker.plot.Plot;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -123,4 +126,54 @@ class HouseBackupTest {
         assertThrows(IllegalArgumentException.class, () -> HouseBackup.fromMap(badCorner));
     }
 
+    @Test
+    void groundLayersAreInTheBackupAndUndoPutsTheGroundBackExactly() {
+        // one ground layer (design y -1) under a one-layer house; the air cell at 11,63,11 cuts a ditch into the grass
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("size", List.of(2, 2, 2));
+        m.put("ground-depth", 1);
+        Map<String, Object> palette = new LinkedHashMap<>();
+        palette.put("G", "minecraft:dirt");
+        palette.put("P", "minecraft:oak_planks");
+        palette.put("_", "minecraft:air");
+        m.put("palette", palette);
+        m.put("layers", List.of(List.of("GG", "G_"), List.of("PP", "P_")));
+        HouseDesign d = HouseDesignParser.parse("ground", m).design();
+        assertNotNull(d);
+        int[] region = {10, 64, 10};
+        int[] corner = d.corner(region);
+        int[] size = d.size();
+        assertArrayEquals(new int[] {10, 63, 10}, corner, "the backup box starts at the ground layer");
+
+        FakeWorld w = new FakeWorld();
+        for (int x = 10; x < 12; x++) {
+            for (int z = 10; z < 12; z++) {
+                w.blocks.put(FakeWorld.key(x, 63, z), "minecraft:grass_block");
+            }
+        }
+        w.blocks.put(FakeWorld.key(10, 62, 10), "minecraft:stone");
+        w.blocks.put(FakeWorld.key(11, 64, 11), "minecraft:chest[facing=east,type=single,waterlogged=false]");
+        Map<String, String> before = new HashMap<>(w.blocks);
+
+        List<HouseBackup.Change> changes = new ArrayList<>();
+        for (HouseDesign.Cell c : d.cells()) {
+            int[] p = d.toWorld(region, c.x(), c.y(), c.z());
+            changes.add(new HouseBackup.Change(p[0], p[1], p[2], c.blockData()));
+        }
+        HouseBackup backup = HouseBackup.capture("main", "ground", "minecraft:overworld", 1000L, corner, size, null,
+                changes, w);
+        apply(w, changes);
+        assertEquals("minecraft:air", w.get(11, 63, 11), "the ditch is cut");
+        assertEquals("minecraft:dirt", w.get(10, 63, 10), "the ground layer is placed");
+
+        backup.restoreCells(w);
+        for (int x = corner[0]; x < corner[0] + size[0]; x++) {
+            for (int y = corner[1]; y < corner[1] + size[1]; y++) {
+                for (int z = corner[2]; z < corner[2] + size[2]; z++) {
+                    String k = FakeWorld.key(x, y, z);
+                    assertEquals(before.getOrDefault(k, "minecraft:air"), w.get(x, y, z), k);
+                }
+            }
+        }
+    }
 }

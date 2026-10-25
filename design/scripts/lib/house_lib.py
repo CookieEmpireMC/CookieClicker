@@ -3,11 +3,13 @@
 A design is built as a grid {(x, y, z): char} plus a palette {char: block data}. This module:
 - checks block data strings against 26.3 vanilla property schemas (check_block_data),
 - runs the structural checks every design must pass (validate): bounds, smoke/door/sign points,
-  support for doors/hanging/standing/wall-mounted blocks, pane/bars/fence connections against the
-  neighbours, straight stairs, no gravity blocks, volume < house.max-blocks,
-- writes the YAML (write_yaml) and renders previews (layer_sheet, iso_sheet).
-Format spec: design/house-default.md (+ the list points in design/factory.md).
-Axes: x = west -> east, y = bottom -> top, z = north -> south.
+  support for doors/hanging/standing/wall-mounted blocks and plants, connection flags and stair shapes
+  (they must equal what blocks.resolve() computes = what the game computes), no gravity blocks, volume,
+- writes the YAML (write_yaml) and renders the flat-colour previews (layer_sheet, iso_sheet); the textured previews
+  are in design_views.py.
+Format spec: design/house-default.md (+ the list points in design/factory.md, ground-depth in house-default.md).
+Axes: x = west -> east, y = bottom -> top, z = north -> south. With `ground` > 0 the first `ground` layers lie below
+design y 0 (grid y -ground..-1); points/signs/origin always use design y (0 = the first air layer above the ground).
 """
 from __future__ import annotations
 
@@ -15,6 +17,7 @@ import re
 
 from PIL import Image, ImageDraw, ImageFont
 
+import blocks as B
 from voxel_render import render
 
 KEEP = "."
@@ -26,7 +29,8 @@ BOOL = {"true", "false"}
 HORIZONTAL = {"north", "south", "west", "east"}
 ALL_DIRS = HORIZONTAL | {"up", "down"}
 CONNECT4 = {d: BOOL for d in ("east", "north", "south", "west", "waterlogged")}
-# property schemas (26.3 vanilla, checked against the paper-api 26.3 Material/BlockData classes)
+WALL4 = {**{d: {"none", "low", "tall"} for d in ("east", "north", "south", "west")}, "up": BOOL, "waterlogged": BOOL}
+# property schemas (26.3 vanilla; names and values cross-checked with the client jar's blockstates by build_lint)
 SCHEMAS = [
     (lambda b: b.endswith("_stairs"), {"facing": HORIZONTAL, "half": {"top", "bottom"},
      "shape": {"straight", "inner_left", "inner_right", "outer_left", "outer_right"},
@@ -36,8 +40,12 @@ SCHEMAS = [
      "hinge": {"left", "right"}, "open": BOOL, "powered": BOOL}),
     (lambda b: b.endswith("_trapdoor"), {"facing": HORIZONTAL, "half": {"top", "bottom"}, "open": BOOL,
      "powered": BOOL, "waterlogged": BOOL}),
-    (lambda b: b.endswith("glass_pane") or b.endswith("_bars") or b.endswith("_fence"), CONNECT4),
-    (lambda b: b.endswith("_log") or b == "hay_block", {"axis": {"x", "y", "z"}}),
+    (lambda b: b.endswith("_fence_gate"), {"facing": HORIZONTAL, "in_wall": BOOL, "open": BOOL, "powered": BOOL}),
+    (lambda b: b.endswith("glass_pane") or b.endswith("_bars") or (b.endswith("_fence") and "gate" not in b),
+     CONNECT4),
+    (lambda b: b.endswith("_wall") and "sign" not in b, WALL4),
+    (lambda b: (b.endswith("_log") or b.endswith("_wood") or b == "hay_block" or b.endswith("_stem")
+                or b == "bone_block" or b.startswith(("basalt", "polished_basalt"))), {"axis": {"x", "y", "z"}}),
     (lambda b: b.endswith("_hanging_sign") and "_wall_" not in b,
      {"attached": BOOL, "rotation": {str(i) for i in range(16)}, "waterlogged": BOOL}),
     (lambda b: b.endswith("_wall_sign") and "hanging" not in b, {"facing": HORIZONTAL, "waterlogged": BOOL}),
@@ -47,32 +55,56 @@ SCHEMAS = [
     (lambda b: b == "campfire", {"facing": HORIZONTAL, "lit": BOOL, "signal_fire": BOOL, "waterlogged": BOOL}),
     (lambda b: b == "barrel", {"facing": ALL_DIRS, "open": BOOL}),
     (lambda b: b == "composter", {"level": {str(i) for i in range(9)}}),
+    (lambda b: b == "water_cauldron", {"level": {"1", "2", "3"}}),
     (lambda b: b.endswith("copper_grate"), {"waterlogged": BOOL}),
     (lambda b: b.startswith("potted_"), {}),
     (lambda b: b.endswith("_leaves"), {"distance": {str(i) for i in range(1, 8)}, "persistent": BOOL,
      "waterlogged": BOOL}),
-    (lambda b: b == "grass_block", {"snowy": BOOL}),
+    (lambda b: b in ("grass_block", "podzol", "mycelium"), {"snowy": BOOL}),
     (lambda b: b == "farmland", {"moisture": {str(i) for i in range(8)}}),
-    (lambda b: b == "wheat", {"age": {str(i) for i in range(8)}}),
+    (lambda b: b in ("wheat", "carrots", "potatoes"), {"age": {str(i) for i in range(8)}}),
+    (lambda b: b == "beetroots", {"age": {"0", "1", "2", "3"}}),
+    (lambda b: b == "sweet_berry_bush", {"age": {"0", "1", "2", "3"}}),
+    (lambda b: b == "sugar_cane", {"age": {str(i) for i in range(16)}}),
     (lambda b: b == "water", {"level": {str(i) for i in range(16)}}),
-    (lambda b: b == "carved_pumpkin", {"facing": HORIZONTAL}),
-    (lambda b: b in {"poppy", "dandelion", "cornflower", "azure_bluet", "oxeye_daisy", "allium", "pink_tulip",
-                     "lily_of_the_valley"}, {}),
-    (lambda b: b in {"air", "stone_bricks", "mossy_stone_bricks", "chiseled_stone_bricks", "spruce_planks",
-                     "dark_oak_planks", "white_terracotta", "terracotta", "bricks", "magma_block", "shroomlight",
-                     "waxed_cut_copper", "white_wool", "white_carpet", "glass"}, {}),
+    (lambda b: b == "carved_pumpkin" or b == "jack_o_lantern", {"facing": HORIZONTAL}),
+    (lambda b: b in ("lily_pad", "short_grass", "fern", "dead_bush", "poppy", "dandelion", "cornflower",
+                     "azure_bluet", "oxeye_daisy", "allium", "pink_tulip", "red_tulip", "orange_tulip",
+                     "white_tulip", "lily_of_the_valley", "blue_orchid", "pumpkin", "melon", "moss_carpet",
+                     "bush", "flower_pot", "cauldron"), {}),
+    (lambda b: b in ("tall_grass", "large_fern", "rose_bush", "lilac", "peony", "sunflower"),
+     {"half": {"upper", "lower"}}),
+    (lambda b: b.endswith("_carpet") or b.endswith("_wool") or b.endswith("_planks") or b.endswith("_terracotta")
+     or b.endswith("_bricks") or b.endswith("_concrete"), {}),
+    (lambda b: b in FULL, {}),
 ]
-GRAVITY = {"sand", "red_sand", "gravel", "anvil", "dragon_egg", "pointed_dripstone", "scaffolding"}
-# full cubes with sturdy faces (panes, bars and fences connect to them; they carry anything)
-SOLID = {"stone_bricks", "mossy_stone_bricks", "chiseled_stone_bricks", "spruce_planks", "dark_oak_planks",
-         "white_terracotta", "terracotta", "bricks", "magma_block", "shroomlight", "waxed_cut_copper",
-         "white_wool", "glass", "barrel", "hay_block", "waxed_copper_grate"}
-LOGS = lambda b: b.endswith("_log")  # noqa: E731
-# neighbours a pane/bars/fence is known NOT to connect to (anything else that is not solid fails the check)
-NO_CONNECT = {"air"}
-DIRS = {"north": (0, 0, -1), "south": (0, 0, 1), "west": (-1, 0, 0), "east": (1, 0, 0),
-        "up": (0, 1, 0), "down": (0, -1, 0)}
-OPPOSITE = {"north": "south", "south": "north", "west": "east", "east": "west", "up": "down", "down": "up"}
+FULL = {
+    "air", "stone", "cobblestone", "mossy_cobblestone", "andesite", "polished_andesite", "diorite", "granite",
+    "calcite", "polished_diorite", "tuff", "polished_tuff", "smooth_stone", "stone_bricks", "mossy_stone_bricks", "cracked_stone_bricks",
+    "chiseled_stone_bricks", "bricks", "mud_bricks", "terracotta", "white_terracotta", "magma_block", "shroomlight",
+    "waxed_cut_copper", "waxed_chiseled_copper", "waxed_copper_block", "white_wool", "glass", "dirt",
+    "coarse_dirt", "rooted_dirt", "mud", "packed_mud", "clay", "gravel", "moss_block", "dirt_path", "cobbled_deepslate",
+    "deepslate_bricks", "deepslate_tiles", "polished_deepslate", "smooth_stone_slab", "oak_planks", "bookshelf",
+    "hay_block", "bone_block", "chiseled_bookshelf", "crafting_table", "smoker", "furnace", "blast_furnace",
+    "stripped_oak_log", "lodestone", "iron_block", "glowstone", "sea_lantern", "red_nether_bricks", "nether_bricks",
+    "sandstone", "smooth_sandstone", "cut_sandstone", "blackstone", "polished_blackstone", "polished_blackstone_bricks",
+    "chiseled_deepslate", "chiseled_tuff_bricks", "tuff_bricks", "lectern", "loom", "grindstone", "bell",
+    "scaffolding", "composter", "snow_block", "cut_copper", "waxed_copper_bulb", "oak_sign", "azalea",
+    "flowering_azalea", "podzol_block", "chiseled_copper", "dripstone_block", "soul_soil", "sand",
+}
+GRAVITY = {"sand", "red_sand", "anvil", "dragon_egg", "pointed_dripstone", "scaffolding"}      # gravel: ground only
+NON_FULL_SUFFIXES = ("_stairs", "_slab", "_trapdoor", "_door", "_sign", "lantern", "_carpet", "_fence_gate",
+                     "campfire", "_fence", "glass_pane", "_bars", "_wall", "_leaves", "barrel_x")
+PLANTS = {"poppy", "dandelion", "cornflower", "azure_bluet", "oxeye_daisy", "allium", "pink_tulip", "red_tulip",
+          "orange_tulip", "white_tulip", "lily_of_the_valley", "blue_orchid", "short_grass", "fern", "tall_grass",
+          "large_fern", "rose_bush", "lilac", "peony", "sunflower", "wheat", "carrots", "potatoes", "beetroots",
+          "sweet_berry_bush", "sugar_cane", "dead_bush", "bush", "lily_pad"}
+SOIL = {"grass_block", "dirt", "coarse_dirt", "podzol", "rooted_dirt", "farmland", "moss_block", "mud", "mycelium",
+        "sand", "red_sand", "clay"}
+LOGS = lambda b: b.endswith("_log") or b.endswith("_wood")  # noqa: E731
+DIRS = B.DIRS
+OPPOSITE = B.OPP
+HORIZ = B.HORIZ
 
 
 def parse_block_data(data: str) -> tuple[str, dict[str, str]]:
@@ -94,36 +126,39 @@ def check_block_data(data: str) -> None:
             for k, v in props.items():
                 if v not in schema[k]:
                     raise ValueError(f"{data}: {k}={v} not in {sorted(schema[k])}")
+            if block.endswith("_leaves") and props["persistent"] != "true":
+                raise ValueError(f"{data}: design leaves must be persistent=true (they would decay)")
             return
     raise ValueError(f"no schema for block {block}; add one before using it")
 
 
 def is_solid(block: str) -> bool:
-    return block in SOLID or LOGS(block)
+    """A full cube with sturdy faces (panes/bars/fences connect to it, it carries anything)."""
+    if block == "air" or block.endswith(NON_FULL_SUFFIXES) or block in PLANTS or block.startswith("potted_"):
+        return False
+    return B.sturdy(block)
 
 
 def family(block: str) -> str | None:
-    if block.endswith("glass_pane") or block.endswith("_bars"):
-        return "pane"
-    if block.endswith("_fence") and "nether" not in block:
-        return "wood_fence"
-    return None
+    return B._family(block)
 
 
 # --- structural checks -------------------------------------------------------------------------
 def validate(g: dict, layers: list[list[str]], palette: dict, size: tuple, origin: tuple,
-             points: dict, signs: list, smoke_keys=("chimney", "smoke")) -> int:
-    """Every check the cottage ran, generalised from block data. Returns the block count (no air/keep)."""
+             points: dict, signs: list, smoke_keys=("chimney", "smoke"), ground: int = 0) -> int:
+    """Every structural check a design must pass. `g` maps design cells (y may be -ground..-1) to chars.
+    Returns the block count (no air/keep)."""
     sx, sy, sz = size
+    top = sy - ground                                     # design height above y 0
     for c, data in palette.items():
-        assert len(c) == 1 and c not in (KEEP, " "), c
+        assert len(c) == 1 and c not in (KEEP, " ", '"', "\\"), c
         check_block_data(data)
     assert len(layers) == sy and all(len(l) == sz and all(len(r) == sx for r in l) for l in layers)
     for layer in layers:
         for row in layer:
             for c in row:
                 assert c == KEEP or c in palette, f"unknown char {c!r}"
-    inside = lambda p: all(0 <= p[i] < size[i] for i in range(3))  # noqa: E731
+    inside = lambda p: 0 <= p[0] < sx and 0 <= p[1] < top and 0 <= p[2] < sz  # noqa: E731
     assert inside(origin)
 
     def plist(v):
@@ -132,21 +167,22 @@ def validate(g: dict, layers: list[list[str]], palette: dict, size: tuple, origi
     for name, v in points.items():
         for p in plist(v):
             assert inside(p), f"point {name} {p} out of bounds"
+    dg = {p: palette[c] for p, c in g.items()}
     blk = {c: parse_block_data(d) for c, d in palette.items()}
-    at = lambda x, y, z: g.get((x, y, z), KEEP)  # noqa: E731
 
     def bid(x, y, z):
-        c = at(x, y, z)
-        return "air" if c == KEEP else blk[c][0]
+        v = dg.get((x, y, z))
+        return "air" if v is None else parse_block_data(v)[0]
 
     def props(x, y, z):
-        c = at(x, y, z)
-        return {} if c == KEEP else blk[c][1]
+        v = dg.get((x, y, z))
+        return {} if v is None else parse_block_data(v)[1]
 
     for key in smoke_keys:
-        for p in plist(points.get(key, [[]])) if key in points else []:
-            assert bid(*p) == "air" and is_solid(bid(p[0], p[1] - 1, p[2])), f"{key} {p} must sit on its stack"
-    for p in plist(points.get("steam", [[]])) if "steam" in points else []:
+        for p in plist(points[key]) if key in points else []:
+            below = bid(p[0], p[1] - 1, p[2])
+            assert bid(*p) == "air" and below != "air", f"{key} {p} must sit on its stack"
+    for p in plist(points["steam"]) if "steam" in points else []:
         assert bid(*p) == "air" and bid(p[0], p[1] - 1, p[2]) != "air", f"steam {p} must sit on its vent"
     if "door" in points:
         b, pr = bid(*points["door"]), props(*points["door"])
@@ -158,7 +194,14 @@ def validate(g: dict, layers: list[list[str]], palette: dict, size: tuple, origi
         b, pr = blk[c]
         below, above = bid(x, y - 1, z), bid(x, y + 1, z)
         ceiling_ok = is_solid(above) or above.endswith("_stairs") and props(x, y + 1, z)["half"] == "bottom" \
-            or above.endswith("_slab") and props(x, y + 1, z)["type"] != "top" or above.endswith("_chain")
+            or above.endswith("_slab") and props(x, y + 1, z)["type"] != "top" or above.endswith("_chain") \
+            or above.endswith("_trapdoor") and props(x, y + 1, z)["half"] == "top" \
+            or above.endswith("_stairs") and props(x, y + 1, z)["half"] == "top" or above.endswith("_slab") \
+            and props(x, y + 1, z)["type"] == "top" or above.endswith("_log")
+        if y < 0 and b in GRAVITY:
+            raise AssertionError(f"gravity block {b} in the ground layers {(x, y, z)}")
+        if b == "gravel":
+            assert y < 0, f"gravel {(x, y, z)} is only allowed in the ground layers (it would fall)"
         if b.endswith("_door"):
             if pr["half"] == "lower":
                 up = props(x, y + 1, z)
@@ -178,46 +221,43 @@ def validate(g: dict, layers: list[list[str]], palette: dict, size: tuple, origi
         if b.endswith("_wall_sign"):
             dx, dy, dz = DIRS[OPPOSITE[pr["facing"]]]
             assert is_solid(bid(x + dx, y + dy, z + dz)), f"wall sign {(x, y, z)} needs a wall behind it"
-        if b == "white_carpet":
+        if b.endswith("_carpet") and b != "moss_carpet":
             assert below != "air", f"carpet needs a floor {(x, y, z)}"
-        # panes/bars/fences: connection flags must match the neighbours (outside / keep = no connection)
-        fam = family(b)
-        if fam:
-            for d in HORIZONTAL:
-                dx, _, dz = DIRS[d]
-                nb = bid(x + dx, y, z + dz)
-                if is_solid(nb) or family(nb) == fam:
-                    want = True
-                elif nb in NO_CONNECT or nb.endswith("_door") or nb.endswith("_wall_sign") \
-                        or nb.endswith("lantern") or nb.startswith("potted_") or nb == "campfire" \
-                        or nb.endswith("_trapdoor") or nb.endswith("lightning_rod") \
-                        or nb.endswith("_slab") and props(x + dx, y, z + dz)["type"] != "double":
-                    # none of these has a sturdy full side face
-                    want = False
-                elif fam == "wood_fence" and nb.endswith("_fence_gate"):
-                    want = True
-                else:
-                    raise AssertionError(f"{b} {(x, y, z)}: neighbour {nb} {d} has no known connection rule")
-                assert (pr[d] == "true") == want, f"{b} {(x, y, z)} {d}: {pr[d]} vs neighbour {nb!r}"
-        # straight stairs: no stair with a perpendicular facing (same half) in front of / behind them
-        if b.endswith("_stairs"):
-            assert pr["shape"] == "straight", (x, y, z)
-            for d in (pr["facing"], OPPOSITE[pr["facing"]]):
-                dx, _, dz = DIRS[d]
-                nb = bid(x + dx, y, z + dz)
-                if nb.endswith("_stairs"):
-                    np_ = props(x + dx, y, z + dz)
-                    perp = {np_["facing"], pr["facing"]} not in ({"north", "south"}, {"east", "west"}) \
-                        and np_["facing"] != pr["facing"]
-                    if perp and np_["half"] == pr["half"]:
-                        raise AssertionError(f"stair {(x, y, z)} would bend: neighbour {d} faces {np_['facing']}")
+        if b in PLANTS and (y > 0 or (x, y - 1, z) in dg):
+            assert below in SOIL or (b == "lily_pad" and below == "water"), \
+                f"{b} {(x, y, z)} needs soil below, has {below}"
+        if b == "cocoa":
+            raise AssertionError("cocoa needs a jungle log behind it; add a rule before using it")
+    # connection flags and stair shapes: exactly what the game assigns on placement
+    probe = dict(dg)
+    for p, d in dg.items():
+        ident, pr = parse_block_data(d)
+        if B._family(ident):
+            probe[p] = B.CONNECT + f"minecraft:{ident}"
+    B.resolve(probe)
+    stair_probe = dict(dg)
+    for p, d in dg.items():
+        if parse_block_data(d)[0].endswith("_stairs"):
+            stair_probe[p] = d.replace("shape=" + parse_block_data(d)[1]["shape"], "shape=straight")
+    B.resolve_stairs(stair_probe)
+    for p, d in dg.items():
+        ident = parse_block_data(d)[0]
+        if B._family(ident):
+            assert canon(probe[p]) == canon(d), f"{ident} {p}: written {d} but the neighbours give {probe[p]}"
+        if ident.endswith("_stairs"):
+            assert canon(stair_probe[p]) == canon(d), f"stair {p}: written {d} but placement gives {stair_probe[p]}"
     assert sx * sy * sz < MAX_VOLUME
     return sum(1 for c in g.values() if blk[c][0] != "air")
 
 
-def to_layers(g: dict, size: tuple) -> list[list[str]]:
+def canon(data: str) -> str:
+    b, pr = parse_block_data(data.removeprefix(B.CONNECT) if data.startswith(B.CONNECT) else data)
+    return b + "[" + ",".join(f"{k}={pr[k]}" for k in sorted(pr)) + "]"
+
+
+def to_layers(g: dict, size: tuple, ground: int = 0) -> list[list[str]]:
     sx, sy, sz = size
-    return [["".join(g.get((x, y, z), KEEP) for x in range(sx)) for z in range(sz)] for y in range(sy)]
+    return [["".join(g.get((x, y - ground, z), KEEP) for x in range(sx)) for z in range(sz)] for y in range(sy)]
 
 
 def _q(s: str) -> str:
@@ -231,16 +271,18 @@ def _vec(v) -> str:
 
 
 def write_yaml(header: list[str], layers, palette: dict, size: tuple, origin: tuple, points: dict,
-               signs: list) -> str:
+               signs: list, ground: int = 0) -> str:
     out = list(header) + [
         f"size: [{size[0]}, {size[1]}, {size[2]}]",
         f"origin: [{origin[0]}, {origin[1]}, {origin[2]}]",
-        "palette:",
     ]
+    if ground:
+        out.append(f"ground-depth: {ground}")
+    out.append("palette:")
     out += [f"  {_q(c)}: {_q(d)}" for c, d in palette.items()]
     out.append("layers:")
     for y, layer in enumerate(layers):
-        out.append(f"  # y={y}")
+        out.append(f"  # y={y - ground}")
         out.append("  - [" + ", ".join(_q(r) for r in layer) + "]")
     out.append("points:")
     out += [f"  {k}: {_vec(v)}" for k, v in points.items()]
@@ -251,7 +293,7 @@ def write_yaml(header: list[str], layers, palette: dict, size: tuple, origin: tu
     return "\n".join(out) + "\n"
 
 
-# --- previews ----------------------------------------------------------------------------------
+# --- flat-colour previews (belt/fence use these; the houses use design_views.py) ------------------
 def font(size: int):
     try:
         return ImageFont.load_default(size=size)
@@ -259,7 +301,8 @@ def font(size: int):
         return ImageFont.load_default()
 
 
-def layer_sheet(layers, size: tuple, colours: dict, title: str, cell: int = 30, cols: int = 4) -> Image.Image:
+def layer_sheet(layers, size: tuple, colours: dict, title: str, cell: int = 30, cols: int = 4,
+                ground: int = 0) -> Image.Image:
     sx, _, sz = size
     pad, head = 16, 24
     lw, lh = sx * cell, sz * cell
@@ -271,7 +314,7 @@ def layer_sheet(layers, size: tuple, colours: dict, title: str, cell: int = 30, 
     for y, layer in enumerate(layers):
         ox = pad + (y % cols) * (lw + pad)
         oy = pad + 22 + (y // cols) * (lh + head + pad)
-        d.text((ox, oy), f"y={y}", fill=(240, 240, 240), font=f)
+        d.text((ox, oy), f"y={y - ground}", fill=(240, 240, 240), font=f)
         for z, row in enumerate(layer):
             for x, c in enumerate(row):
                 x0, y0 = ox + x * cell, oy + head + z * cell

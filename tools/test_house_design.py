@@ -24,15 +24,21 @@ spec.loader.exec_module(gen)
 sys.path.insert(0, os.path.join(REPO, "design", "scripts", "lib"))
 import house_lib  # noqa: E402
 
-SIZE = (gen.SX, gen.SY, gen.SZ)
+SIZE = (gen.SX, gen.SY + gen.GROUND_DEPTH, gen.SZ)
 
 
-def to_layers(g):
-    return house_lib.to_layers(g, SIZE)
+def generate():
+    """The generator's own steps from main() up to the written file: (chars, layers, palette, points)."""
+    b, smoke = gen.build()
+    points = {"chimney": list(smoke), "door": gen.POINTS["door"]}
+    g = dict(b.g)
+    gen.B.resolve(g)
+    chars, palette = gen.B.to_palette(g)
+    return chars, house_lib.to_layers(chars, SIZE, gen.GROUND_DEPTH), palette, points
 
 
-def validate(g, layers):
-    return house_lib.validate(g, layers, gen.PALETTE, SIZE, gen.ORIGIN, gen.POINTS, gen.SIGNS)
+def validate(chars, layers, palette, points):
+    return house_lib.validate(chars, layers, palette, SIZE, (0, 0, 0), points, gen.SIGNS, ground=gen.GROUND_DEPTH)
 
 
 BLOCK_RE = re.compile(r"^minecraft:[a-z0-9_]+(\[[a-z0-9_]+=[a-z0-9_]+(,[a-z0-9_]+=[a-z0-9_]+)*\])?$")
@@ -49,14 +55,15 @@ class DesignFileTest(unittest.TestCase):
 
     def test_contract_shape(self):
         d = self.d
-        self.assertEqual(d["size"], [9, 7, 7])
+        self.assertEqual(d["size"], [17, 14, 15])
+        self.assertEqual(d["ground-depth"], 1)
         self.assertEqual(d["origin"], [0, 0, 0])
-        self.assertEqual(len(d["layers"]), 7)
+        self.assertEqual(len(d["layers"]), 14)
         for layer in d["layers"]:
-            self.assertEqual(len(layer), 7)
+            self.assertEqual(len(layer), 15)
             for row in layer:
                 self.assertIsInstance(row, str)
-                self.assertEqual(len(row), 9)
+                self.assertEqual(len(row), 17)
 
     def test_every_char_known_and_every_palette_entry_used(self):
         pal = self.d["palette"]
@@ -67,11 +74,12 @@ class DesignFileTest(unittest.TestCase):
     def test_points_and_signs_in_bounds_and_meaningful(self):
         d = self.d
         sx, sy, sz = d["size"]
+        ground = d["ground-depth"]
 
         def cell(p):
             x, y, z = p
-            self.assertTrue(0 <= x < sx and 0 <= y < sy and 0 <= z < sz, p)
-            return d["layers"][y][z][x]
+            self.assertTrue(0 <= x < sx and -ground <= y < sy - ground and 0 <= z < sz, p)
+            return d["layers"][y + ground][z][x]
 
         pal = d["palette"]
         self.assertIn(cell(d["points"]["chimney"]), ".")
@@ -86,17 +94,14 @@ class DesignFileTest(unittest.TestCase):
 
 class GeneratorValidationTest(unittest.TestCase):
     def test_generator_accepts_its_own_design(self):
-        g = gen.build()
-        layers = to_layers(g)
-        self.assertEqual(validate(g, layers), 170)
+        chars, layers, palette, points = generate()
+        self.assertEqual(validate(chars, layers, palette, points), 590)
 
     def test_committed_file_matches_generator(self):
-        g = gen.build()
-        self.assertEqual(load()["layers"], to_layers(g))
+        self.assertEqual(load()["layers"], generate()[1])
 
     def test_validate_rejects_broken_layouts(self):
-        g = gen.build()
-        good = to_layers(g)
+        chars, good, palette, points = generate()
 
         def mutated(fn):
             layers = [[r for r in layer] for layer in good]
@@ -112,7 +117,7 @@ class GeneratorValidationTest(unittest.TestCase):
         for name, fn in cases.items():
             with self.subTest(name):
                 with self.assertRaises(AssertionError):
-                    validate(g, mutated(fn))
+                    validate(chars, mutated(fn), palette, points)
 
 
 if __name__ == "__main__":

@@ -13,7 +13,6 @@ import dev.casperrs.cookieClicker.plot.Plot;
 import dev.casperrs.cookieClicker.plot.PlotRegistry;
 import dev.casperrs.cookieClicker.plot.RegionShape;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
-import org.bukkit.Bukkit;
 import org.bukkit.HeightMap;
 import org.bukkit.Material;
 import org.bukkit.Tag;
@@ -139,7 +138,7 @@ final class SetupPlanner {
         all.addAll(fence.allBlockData());
         for (String s : all) {
             try {
-                known.computeIfAbsent(s, Bukkit::createBlockData);
+                known.computeIfAbsent(s, DesignBlocks::create);
             } catch (IllegalArgumentException e) {
                 throw new SetupRefusal("plot.setup.failed", WorldOperation.problem("'" + s
                         + "' (design or fence style) is not valid block data"));
@@ -168,13 +167,14 @@ final class SetupPlanner {
         HouseDesign design = c.design();
         HouseLayout layout = c.layout();
         int[] houseAt = {c.ax() + layout.houseAt()[0], y0 + layout.houseAt()[1], c.az() + layout.houseAt()[2]};
-        int[] corner = design.toWorld(houseAt, 0, 0, 0);
-        int[] size = {design.sizeX(), design.sizeY(), design.sizeZ()};
+        int[] corner = design.corner(houseAt); // ground layers included: the backup covers them
+        int[] size = design.size();
         if (corner[1] < world.getMinHeight() || corner[1] + size[1] > world.getMaxHeight()) {
             throw new SetupRefusal("plot.setup.not-loaded", Placeholder.unparsed("id", c.plotId()));
         }
-        Plot.Box houseBox = new Plot.Box(corner[0], corner[1], corner[2], corner[0] + size[0] - 1,
-                corner[1] + size[1] - 1, corner[2] + size[2] - 1);
+        int[] base = design.toWorld(houseAt, 0, 0, 0); // the house box starts above the design's ground layers
+        Plot.Box houseBox = new Plot.Box(base[0], base[1], base[2], base[0] + size[0] - 1,
+                base[1] + design.houseHeight() - 1, base[2] + size[2] - 1, design.groundDepth());
         byte[] structure = snapshot(c, corner, size);
         ChangeList changes = new ChangeList(world);
         for (HouseDesign.Cell cell : design.cells()) {
@@ -273,7 +273,7 @@ final class SetupPlanner {
         for (Decor.Block b : keepOut.allowed(parsed.decor(), problems)) {
             BlockData data;
             try {
-                data = c.known().computeIfAbsent(b.blockData(), Bukkit::createBlockData);
+                data = c.known().computeIfAbsent(b.blockData(), DesignBlocks::create);
             } catch (IllegalArgumentException e) {
                 problems.add("'" + b.blockData() + "' is not valid block data; skipped");
                 continue;

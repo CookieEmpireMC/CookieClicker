@@ -38,6 +38,26 @@ Format: URL | confirmed | checked | stable/volatile
 - BukkitScheduler 26.3 Javadoc: "async tasks should never access any API in Bukkit"; Player Javadoc has no thread notes; WG managers page: save/load any thread only
 - Dead ends: docs.papermc.io .../folia-support and .../getting-started/plugin-yml 404; PaperPluginMeta.java path 404
 
+## Build quality research (2026-10-24, see docs/research/build-quality.md)
+- https://westeroscraft.com/docs/building/fundamentals/{gradients,exteriors,layout-foundation,research-planning} | build-team rules: gradients, eaves, thatch >=45deg, depth must be structural | stable
+- https://minecraft.wiki/w/Tutorial%3ARoof_construction_guidelines | pitches 63.4/45/22.5, roof 1-2 storeys, >15x15 split roof | stable
+- https://www.conquestreforged.com/guides/gradients | gradient rules | stable
+- https://thespike.gg/minecraft/house-ideas/{medieval-house,minecraft-farm-house} | credited builders + palettes | stable
+- https://github.com/Philogag/deepslate-mcp (MIT, Node20+, headless-gl+Xvfb, .schem/.litematic/.nbt), https://github.com/chunky-dev/chunky (GPL-3, scene via GUI first), Sponge schematic-3 spec | volatile
+- Dead ends: minecraft.net landscaping article fetch timed out (snippet only); minecraft.wiki Tutorial:Building_techniques 404; web search for medieval MC builds is mostly SEO spam
+- Planet Minecraft: per-creator licences, no site-wide one
+
+## Build quality pass 2 + review pipeline (2026-10-24)
+- https://chunky-dev.github.io/docs/{reference/user_interface/chunky_launcher/headless,reference/technical/scene_format,support/minecraft_compatibility,getting_started/your_first_render}/ | headless flags (-render -scene-dir -threads -target -texture -download-mc -snapshot); scene JSON; stable 2.4.6 <=1.20.4, snapshot 2.5.0 <=26.2-snap8; camera conv: Y+1.62, yaw=90-mcyaw, pitch=mcpitch-90 | volatile
+- github chunky-dev/chunky PRs #1870 (new dir layout dimensions/minecraft/overworld, dimension is string), #1915 (26.3 chunk format, merged 2026-10-13); API search endpoint api.github.com/search/issues works | volatile
+- https://fill.papermc.io/v3/projects/paper/versions/26.3/builds/latest | build 218 STABLE, jar url + sha256 | volatile
+- minecraft.wiki: Server.properties (white-list default true since 26.3s2), Superflat (flat top Y=-60), Game_rule (advance_time, advance_weather, spawn_mobs, max_command_sequence_length 65536), Commands/setblock (strict mode 1.21.5), Chain (iron_chain rename 25w32a) | stable
+- Mineflayer README: supports up to 26.1 only; minecraft-data 26.3 PR #1300 open | volatile
+- Material javadoc jd.papermc.io/paper/26.3/org/bukkit/Material.html (431k chars): summary list in chunks offset 100000-300000; WebFetch rubber-stamps ids, so ask for the found list. CHAIN gone -> IRON_CHAIN
+- Wiki Tutorials: Roof_types, Adding_beauty_to_constructions, Walls_and_buttresses, Settlement_guide, Architectural_terms; WC docs exteriors/interiors; forum tutorials (Rillian, xRILLIANx), piratemc.com houses-better-builds | stable
+- Dead ends: chunkyupdate channel ids unknown (LauncherSettings/ReleaseChannel raw 404); minecraft.net landscaping timeout x2; web.archive.org blocked; wiki Tutorials has no mill/barn how-to; WebSearch for MC build guides = spam
+- Fact: /bakery house place is player-only + WorldGuard plot region; headless review fills via RCON setblock strict
+
 ## Searches that worked
 - "WorldEdit FAWE Minecraft 26.3 support release" (found Hangar WE beta)
 - API endpoints beat HTML pages: Modrinth v2, Hangar v1 (WorldEdit only), GitHub API for IntellectualSites (EngineHub GitHub releases is empty)

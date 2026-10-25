@@ -28,5 +28,6 @@ metadata:
 **Worktree Bash guard** (refuses with "names git in a form too complex"; the repo path contains "GitHub", so many commands trip it)
 - Refused: `for` loops over files or tasks, `$VAR` / `$(ls ..)` in paths, brace expansion, `{ ..; } >`, cd chains ending in git,
   heredoc edits combined with sed/grep/git in one call, multi-heredoc file writes, heredocs mentioning `.gitignore`.
-- Works: `cd <worktree> && python3 - <<'EOF' ... EOF` doing str.replace edits plus a following grep (2026-10-23);
+- Works: Write a python edit script to the scratchpad, then `python3 <abs script>` alone (2026-10-24; a heredoc
+  python + grep in one call was refused that day). `$D/...` path variables in sed/cat are refused too;
   `grep -n pattern file1 file2 ...` instead of a loop; Edit/Write tools; git add/commit as plain commands with literal paths.

@@ -1,7 +1,7 @@
 # mariadb
 
-**Status:** review  <!-- planned | in progress | review | done -->
-**Created:** 2026-10-24 · **Depends on:** tidy (merged, PR #15, 1.2.2)
+**Status:** done  <!-- planned | in progress | review | done -->
+**Created:** 2026-10-24 · **Depends on:** tidy (merged, PR #15, 1.2.2) · **Merged:** PR #16, released as mariadb-test-1 (1.3.0)
 
 ## Goal
 Make MariaDB a first-class storage backend so the live server can run on it and a website (leaderboard etc., a
