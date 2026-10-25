@@ -1,9 +1,12 @@
 package dev.casperrs.cookieClicker.economy;
 
+import static dev.casperrs.cookieClicker.economy.EconomyTestSupport.butterRecipe;
 import static dev.casperrs.cookieClicker.economy.EconomyTestSupport.config;
 import static dev.casperrs.cookieClicker.economy.EconomyTestSupport.fixed;
 import static dev.casperrs.cookieClicker.economy.EconomyTestSupport.map;
 import static dev.casperrs.cookieClicker.economy.EconomyTestSupport.pouch;
+import static dev.casperrs.cookieClicker.economy.EconomyTestSupport.recipeBuildings;
+import static dev.casperrs.cookieClicker.economy.EconomyTestSupport.recipeUpgrades;
 import static dev.casperrs.cookieClicker.economy.EconomyTestSupport.upgradesYaml;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -292,5 +295,44 @@ class EconomyTest {
         CookiePouch focus = CookiePouch.fromSnapshot(new PouchSnapshot(0, 0, Map.of(), Map.of("focus", 3)));
         assertEquals(8.0, repeatable.clickPower(focus), 1e-9); // ×2 per level: 2³ × base 1
         assertEquals(8.0, repeatable.clickPowerGain(focus, "focus", 1), 1e-9); // 2⁴ − 2³
+    }
+
+    private static CookiePouch recipePouch(double cookies, double baked, Map<String, Integer> upgrades, double flour) {
+        return CookiePouch.fromSnapshot(new PouchSnapshot(cookies, baked, Map.of(), upgrades,
+                flour > 0 ? Map.of("flour", flour) : Map.of()));
+    }
+
+    @Test
+    void recipeBuyIsAllOrNothingAndSaysWhyItFailed() throws Exception {
+        Economy e = new Economy(EconomyConfigParser.parse(recipeBuildings(),
+                recipeUpgrades(map("butter", butterRecipe("flour")))).config(), new java.util.Random(1));
+        RecipeBook book = new RecipeBook(e);
+        Map<String, Integer> withBook = Map.of("recipe_book", 1);
+
+        CookiePouch noBook = recipePouch(1000, 1000, Map.of(), 100);
+        assertEquals(PurchaseResult.LOCKED, book.buy(noBook, "butter").result());
+        assertEquals(1000, noBook.pouch());
+
+        CookiePouch tooEarly = recipePouch(1000, 700, withBook, 100);
+        assertEquals(PurchaseResult.LOCKED, book.buy(tooEarly, "butter").result());
+
+        CookiePouch oneFlourShort = recipePouch(1000, 1000, withBook, 19);
+        RecipePurchase short1 = book.buy(oneFlourShort, "butter");
+        assertEquals(PurchaseResult.CANT_AFFORD, short1.result());
+        assertEquals(Map.of("flour", 1.0), short1.status().missingIngredients());
+        assertEquals(19, oneFlourShort.ingredient("flour"));
+        assertEquals(1000, oneFlourShort.pouch());
+
+        CookiePouch oneCookieShort = recipePouch(299, 1000, withBook, 100);
+        assertEquals(PurchaseResult.CANT_AFFORD, book.buy(oneCookieShort, "butter").result());
+        assertEquals(100, oneCookieShort.ingredient("flour"));
+        assertEquals(299, oneCookieShort.pouch());
+
+        CookiePouch enough = recipePouch(300, 1000, withBook, 20);
+        assertEquals(PurchaseResult.BOUGHT, book.buy(enough, "butter").result());
+        assertEquals(0, enough.pouch());
+        assertEquals(0, enough.ingredient("flour"));
+        assertEquals(PurchaseResult.ALREADY_OWNED, book.buy(enough, "butter").result());
+        assertEquals(PurchaseResult.UNKNOWN, book.buy(enough, "nope").result());
     }
 }

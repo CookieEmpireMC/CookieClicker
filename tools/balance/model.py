@@ -4,15 +4,19 @@ Keep this file and docs/balance/model.md in sync; the Java economy implements th
 and is checked against golden-values.json generated from here.
 """
 import math
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
 import yaml
 
-EFFECT_TYPES = {"click-multiplier", "click-add", "click-cps-fraction", "building-multiplier", "global-multiplier"}
+EFFECT_TYPES = {"click-multiplier", "click-add", "click-cps-fraction", "building-multiplier", "global-multiplier",
+                "recipes-unlock"}
+RECIPE_EFFECT_TYPES = {"cps-percent"}
 MULTIPLIER_TYPES = {"click-multiplier", "building-multiplier", "global-multiplier"}
 MAX_BULK = 10_000           # hard upper bound for any bulk / Max count (model.md)
 UNLIMITED_LEVEL = 2_147_483_647   # level cap of a repeatable upgrade without max-level (Java int max)
+ID_PATTERN = re.compile(r"[a-z][a-z0-9_]*")
 
 
 class ConfigError(Exception):
@@ -26,6 +30,16 @@ class Building:
     base_cps: float
     unlock_baked: float
     milestones: tuple[int, ...] | None = None   # per-building override of the top-level list; None = use it
+    produces: tuple[str, float] | None = None   # (ingredient id, per second per copy); None = no ingredient
+
+
+@dataclass(frozen=True)
+class Recipe:
+    id: str
+    cost: float                          # cookies
+    ingredients: tuple[tuple[str, float], ...]   # (ingredient id, amount), in config order
+    value: float                         # cps-percent as a fraction: 0.02 = +2 % CPS
+    unlock_baked: float
 
 
 @dataclass(frozen=True)
@@ -62,6 +76,16 @@ class Economy:
     crit_chance: float = 0.0        # probability a click is a crit, 0..1
     crit_multiplier: float = 1.0    # a crit multiplies the whole click value by this (>= 1)
     milestones: tuple[int, ...] = ()        # owned counts; each one reached doubles that building's CPS
+    recipes: dict[str, Recipe] = field(default_factory=dict)
+
+    @property
+    def ingredients(self) -> tuple[str, ...]:
+        """Every ingredient some building produces, in buildings.yml order."""
+        seen = []
+        for b in self.buildings.values():
+            if b.produces and b.produces[0] not in seen:
+                seen.append(b.produces[0])
+        return tuple(seen)
 
 
 @dataclass
@@ -70,6 +94,8 @@ class State:
     baked: float = 0.0
     owned: dict[str, int] = field(default_factory=dict)
     upgrades: dict[str, int] = field(default_factory=dict)   # upgrade id -> level (one-time = 1)
+    ingredients: dict[str, float] = field(default_factory=dict)   # ingredient id -> stock
+    recipes: set[str] = field(default_factory=set)               # bought recipe ids
 
     def __post_init__(self):
         if isinstance(self.upgrades, (set, frozenset, list, tuple)):   # old form: a set of bought ids
@@ -79,7 +105,8 @@ class State:
         return self.upgrades.get(uid, 0)
 
     def copy(self) -> "State":
-        return State(self.pouch, self.baked, dict(self.owned), dict(self.upgrades))
+        return State(self.pouch, self.baked, dict(self.owned), dict(self.upgrades), dict(self.ingredients),
+                     set(self.recipes))
 
 
 def _number(raw, where: str) -> float:
@@ -108,7 +135,8 @@ def load(config_dir: Path) -> Economy | None:
                                   _number(spec.get("base-cps"), f"{where}.base-cps"),
                                   _number(unlock.get("baked", 0), f"{where}.unlock.baked"),
                                   _milestones(spec["milestones"], f"{where}.milestones")
-                                  if "milestones" in spec else None)
+                                  if "milestones" in spec else None,
+                                  _produces(spec["produces"], f"{where}.produces") if "produces" in spec else None)
     if not buildings:
         raise ConfigError("buildings.yml has no buildings")
 
@@ -137,8 +165,11 @@ def load(config_dir: Path) -> Economy | None:
         cost = _number(spec.get("cost"), f"{where}.cost")
         if cost <= 0:
             raise ConfigError(f"{where}.cost must be > 0")
+        if effect["type"] == "recipes-unlock" and growth is not None:
+            raise ConfigError(f"{where}: a recipes-unlock upgrade is one-time (no cost-growth)")
+        value = effect.get("value", 0) if effect["type"] == "recipes-unlock" else effect.get("value")
         upgrades[uid] = Upgrade(uid, cost, effect["type"],
-                                _number(effect.get("value"), f"{where}.effect.value"), target,
+                                _number(value, f"{where}.effect.value"), target,
                                 unlock_building, int(unlock.get("owned", 0)),
                                 _number(unlock.get("baked", 0), f"{where}.unlock.baked"), growth, max_level)
 
@@ -154,7 +185,47 @@ def load(config_dir: Path) -> Economy | None:
     if crit_multiplier < 1:
         raise ConfigError("upgrades.yml: click.crit-multiplier must be >= 1")
     milestones = _milestones(b_raw.get("milestones"), "buildings.yml: milestones")
-    return Economy(growth, base_click, buildings, upgrades, crit_chance, crit_multiplier, milestones)
+    produced = {b.produces[0] for b in buildings.values() if b.produces}
+    recipes = {}
+    for rid, spec in (u_raw.get("recipes") or {}).items():
+        where = f"upgrades.yml: recipes.{rid}"
+        if rid in upgrades:
+            raise ConfigError(f"{where}: id is also an upgrade id")
+        spec = spec or {}
+        effect, unlock = spec.get("effect") or {}, spec.get("unlock") or {}
+        if effect.get("type") not in RECIPE_EFFECT_TYPES:
+            raise ConfigError(f"{where}.effect.type must be one of {sorted(RECIPE_EFFECT_TYPES)}")
+        value = _number(effect.get("value"), f"{where}.effect.value")
+        cost = _number(spec.get("cost"), f"{where}.cost")
+        if cost <= 0 or value <= 0:
+            raise ConfigError(f"{where}: cost and effect.value must be > 0")
+        raw_ing = spec.get("ingredients") or {}
+        if not isinstance(raw_ing, dict) or not raw_ing:
+            raise ConfigError(f"{where}.ingredients must be a non-empty map ingredient -> amount")
+        ingredients = []
+        for ing, amount in raw_ing.items():
+            if ing not in produced:
+                raise ConfigError(f"{where}.ingredients: '{ing}' is not produced by any building")
+            amount = _number(amount, f"{where}.ingredients.{ing}")
+            if amount <= 0:
+                raise ConfigError(f"{where}.ingredients.{ing} must be > 0")
+            ingredients.append((ing, amount))
+        recipes[rid] = Recipe(rid, cost, tuple(ingredients), value,
+                              _number(unlock.get("baked", 0), f"{where}.unlock.baked"))
+    if recipes and not any(u.type == "recipes-unlock" for u in upgrades.values()):
+        raise ConfigError("upgrades.yml: recipes need a recipes-unlock upgrade, or they can never show")
+    return Economy(growth, base_click, buildings, upgrades, crit_chance, crit_multiplier, milestones, recipes)
+
+
+def _produces(raw, where: str) -> tuple[str, float]:
+    """`produces: { ingredient: <id>, per-second: <rate > 0> }`."""
+    if not isinstance(raw, dict) or not isinstance(raw.get("ingredient"), str) \
+            or not ID_PATTERN.fullmatch(raw["ingredient"]):
+        raise ConfigError(f"{where} needs ingredient: <id> (lowercase letters, digits, _), got {raw!r}")
+    rate = _number(raw.get("per-second"), f"{where}.per-second")
+    if rate <= 0:
+        raise ConfigError(f"{where}.per-second must be > 0")
+    return raw["ingredient"], rate
 
 
 def _milestones(raw, where: str) -> tuple[int, ...]:
@@ -255,11 +326,56 @@ def building_cps(eco: Economy, state: State, bid: str) -> float:
 
 
 def total_cps(eco: Economy, state: State) -> float:
+    """(Σ building_cps) × Π global multipliers × (1 + recipe percent), in that order."""
     total = 0.0
     for bid in eco.buildings:              # buildings.yml order (model.md), so sums match the Java economy bit for bit
         if state.owned.get(bid, 0):
             total += building_cps(eco, state, bid)
-    return total * math.prod(_effect(u, lv) for u, lv in _bought(eco, state, "global-multiplier"))
+    total *= math.prod(_effect(u, lv) for u, lv in _bought(eco, state, "global-multiplier"))
+    return total * (1.0 + recipe_percent(eco, state))
+
+
+def recipe_percent(eco: Economy, state: State) -> float:
+    """Σ value of bought recipes, from 0.0 in upgrades.yml `recipes:` order."""
+    pct = 0.0
+    for rid, r in eco.recipes.items():
+        if rid in state.recipes:
+            pct += r.value
+    return pct
+
+
+def recipes_unlocked(eco: Economy, state: State) -> bool:
+    """True once any recipes-unlock upgrade (the Recipe Book) is bought."""
+    return any(lv > 0 for _, lv in _bought(eco, state, "recipes-unlock"))
+
+
+def ingredient_rate(eco: Economy, state: State, ingredient: str) -> float:
+    """Per second: Σ owned × per_second × milestone factor over its producers (buildings.yml order); 0 before the
+    Recipe Book. Building/global multipliers and recipes don't apply."""
+    if not recipes_unlocked(eco, state):
+        return 0.0
+    rate = 0.0
+    for bid, b in eco.buildings.items():
+        n = state.owned.get(bid, 0)
+        if b.produces and b.produces[0] == ingredient and n:
+            rate += n * b.produces[1] * milestone_factor(eco, bid, n)
+    return rate
+
+
+def recipe_visible(eco: Economy, state: State, rid: str) -> bool:
+    """Shown in the book: Recipe Book owned, baked >= unlock, not bought yet."""
+    return (rid not in state.recipes and recipes_unlocked(eco, state)
+            and state.baked >= eco.recipes[rid].unlock_baked)
+
+
+def recipe_ingredients_ready(eco: Economy, state: State, rid: str) -> bool:
+    return all(state.ingredients.get(ing, 0.0) >= amount for ing, amount in eco.recipes[rid].ingredients)
+
+
+def recipe_affordable(eco: Economy, state: State, rid: str) -> bool:
+    """Visible, pouch >= cost and every ingredient stock >= its amount (all or nothing)."""
+    return (recipe_visible(eco, state, rid) and state.pouch >= eco.recipes[rid].cost
+            and recipe_ingredients_ready(eco, state, rid))
 
 
 def click_power(eco: Economy, state: State) -> float:

@@ -104,6 +104,23 @@ public final class Messages {
         return yaml.isString(path) ? MM.deserialize(yaml.getString(path)) : Component.text(upgradeId);
     }
 
+    /** Display name of an ingredient from {@code ingredients.<id>.name}; the id when not configured. */
+    public Component ingredientName(String ingredientId) {
+        String path = "ingredients." + ingredientId + ".name";
+        return yaml.isString(path) ? MM.deserialize(yaml.getString(path)) : Component.text(ingredientId);
+    }
+
+    /**
+     * An ingredient's small icon: {@code ingredients.<id>.icon} (the pack glyph) or, without the pack or when that is
+     * missing, {@code ingredients.<id>.icon-no-pack}; empty when neither is configured.
+     */
+    public Component ingredientIcon(String ingredientId, boolean withPack) {
+        String glyph = "ingredients." + ingredientId + ".icon";
+        String plain = "ingredients." + ingredientId + ".icon-no-pack";
+        String path = withPack && yaml.isString(glyph) ? glyph : plain;
+        return yaml.isString(path) ? MM.deserialize(yaml.getString(path)) : Component.empty();
+    }
+
     /**
      * What one level of an upgrade does, from {@code upgrades.<id>.effect} with {@code <value>} (formatted) and
      * {@code <level>}; empty when not configured.

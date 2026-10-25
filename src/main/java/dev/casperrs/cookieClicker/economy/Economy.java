@@ -4,7 +4,6 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.random.RandomGenerator;
 
@@ -15,6 +14,9 @@ import java.util.random.RandomGenerator;
  * <p>Upgrades have levels: one-time upgrades are 0 or 1, repeatable ones (with {@code cost-growth}) go
  * up to {@code max-level}. Effects apply at the upgrade's level ({@link UpgradeDef#effectAt}).
  * Bulk buys use {@link BulkMath} (geometric sum rounded up once, closed-form Max).
+ *
+ * <p>Recipes (bought in the Recipe Book, see {@link RecipeBook}) add a percentage to total CPS; the Recipe Book
+ * upgrade ({@code recipes-unlock}) also starts ingredient production.
  *
  * <p>Holds the current {@link EconomyConfig}; {@link #setConfig} swaps it on reload. Call from the
  * main thread only, like {@link CookiePouch}.
@@ -144,7 +146,7 @@ public final class Economy {
     /**
      * What {@code count} more of {@code buildingId} would add to {@link #totalCps}: the building's
      * production at {@code owned + count} minus at {@code owned} (milestones crossed included),
-     * {@code × Π(building-multiplier for b) × Π(global-multiplier)}. For the shop panel.
+     * {@code × Π(building-multiplier for b) × Π(global-multiplier) × (1 + Σ recipe percents)}. For the shop panel.
      */
     public double buildingCpsGain(CookiePouch pouch, String buildingId, int count) {
         BuildingDef b = config.buildings().get(buildingId);
@@ -155,10 +157,10 @@ public final class Economy {
         int after = (int) Math.min(Integer.MAX_VALUE, (long) owned + count);
         double delta = b.production(after) - b.production(owned);
         return SafeMath.sanitize(delta * buildingMultiplier(pouch, buildingId, null, 0)
-                * product(pouch, EffectType.GLOBAL_MULTIPLIER, null, 0));
+                * product(pouch, EffectType.GLOBAL_MULTIPLIER, null, 0) * (1 + recipeBonus(pouch)));
     }
 
-    /** {@code Σ building_cps × Π(global-multiplier)}. */
+    /** {@code Σ building_cps × Π(global-multiplier) × (1 + Σ cps-percent of bought recipes)}. */
     public double totalCps(CookiePouch pouch) {
         return totalCps(pouch, null, 0);
     }
@@ -214,15 +216,55 @@ public final class Economy {
 
     private double totalCps(CookiePouch pouch, @Nullable String overrideId, int overrideLevel) {
         double total = 0;
-        for (Map.Entry<String, Integer> e : pouch.ownedView().entrySet()) {
-            BuildingDef b = config.buildings().get(e.getKey());
-            if (b == null || e.getValue() == 0) {
+        for (BuildingDef b : config.buildings().values()) { // buildings.yml order, so doubles match the golden values
+            int owned = pouch.owned(b.id());
+            if (owned == 0) {
                 continue;
             }
-            total += SafeMath.sanitize(b.production(e.getValue())
-                    * buildingMultiplier(pouch, e.getKey(), overrideId, overrideLevel));
+            total += SafeMath.sanitize(b.production(owned) * buildingMultiplier(pouch, b.id(), overrideId, overrideLevel));
         }
-        return SafeMath.sanitize(total * product(pouch, EffectType.GLOBAL_MULTIPLIER, overrideId, overrideLevel));
+        return SafeMath.sanitize(total * product(pouch, EffectType.GLOBAL_MULTIPLIER, overrideId, overrideLevel)
+                * (1 + recipeBonus(pouch)));
+    }
+
+    /** {@code Σ cps-percent} of the bought recipes, in {@code recipes:} order (0.02 = +2%). */
+    public double recipeBonus(CookiePouch pouch) {
+        double bonus = 0;
+        for (RecipeDef r : config.recipes().values()) {
+            if (pouch.hasUpgrade(r.id())) {
+                bonus += r.cpsPercent();
+            }
+        }
+        return bonus;
+    }
+
+    /** True once the player owns an upgrade of type {@code recipes-unlock} (the Recipe Book). */
+    public boolean recipesUnlocked(CookiePouch pouch) {
+        for (String uid : pouch.upgradesView()) {
+            UpgradeDef u = config.upgrades().get(uid);
+            if (u != null && u.type() == EffectType.RECIPES_UNLOCK) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Units per second of {@code ingredientId}: {@code Σ owned × per_second × 2^(milestones reached)} over the
+     * buildings that produce it, in {@code buildings.yml} order; 0 without the Recipe Book.
+     */
+    public double ingredientRate(CookiePouch pouch, String ingredientId) {
+        return recipesUnlocked(pouch) ? rawIngredientRate(pouch, ingredientId) : 0;
+    }
+
+    private double rawIngredientRate(CookiePouch pouch, String ingredientId) {
+        double rate = 0;
+        for (BuildingDef b : config.buildings().values()) {
+            if (b.produces() != null && b.produces().ingredient().equals(ingredientId)) {
+                rate += b.ingredientProduction(pouch.owned(b.id()));
+            }
+        }
+        return SafeMath.sanitize(rate);
     }
 
     private double clickPower(CookiePouch pouch, @Nullable String overrideId, int overrideLevel) {
@@ -270,10 +312,18 @@ public final class Economy {
         return new ClickResult(amount, crit);
     }
 
-    /** Production for {@code seconds} (the ticker calls this with 1 once per second). Returns the amount added. */
+    /**
+     * Production for {@code seconds} (the ticker calls this with 1 once per second): cookies, and once the Recipe
+     * Book is owned every ingredient's {@code rate × seconds}. Returns the cookies added.
+     */
     public double produce(CookiePouch pouch, double seconds) {
         double amount = SafeMath.multiply(totalCps(pouch), seconds);
         pouch.earn(amount);
+        if (!config.ingredients().isEmpty() && recipesUnlocked(pouch)) {
+            for (String ingredient : config.ingredients()) {
+                pouch.addIngredient(ingredient, SafeMath.multiply(rawIngredientRate(pouch, ingredient), seconds));
+            }
+        }
         return amount;
     }
 

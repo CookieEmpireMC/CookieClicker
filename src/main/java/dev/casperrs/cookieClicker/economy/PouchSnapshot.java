@@ -6,14 +6,22 @@ import java.util.Set;
 
 /**
  * Immutable copy of a {@link CookiePouch}, safe to pass to other threads (saving). upgradeLevels keeps only levels
- * {@code > 0}.
+ * {@code > 0} (bought recipes are level-1 entries there); ingredients keeps only finite amounts {@code > 0}.
  */
-public record PouchSnapshot(double pouch, double baked, Map<String, Integer> owned, Map<String, Integer> upgradeLevels) {
+public record PouchSnapshot(double pouch, double baked, Map<String, Integer> owned, Map<String, Integer> upgradeLevels,
+                            Map<String, Double> ingredients) {
 
     public static final PouchSnapshot EMPTY = new PouchSnapshot(0, 0, Map.of(), Map.of());
 
     public PouchSnapshot {
         owned = Map.copyOf(owned);
+        Map<String, Double> stock = new HashMap<>();
+        ingredients.forEach((id, amount) -> {
+            if (id != null && amount != null && amount > 0 && Double.isFinite(amount)) {
+                stock.put(id, amount);
+            }
+        });
+        ingredients = Map.copyOf(stock);
         Map<String, Integer> levels = new HashMap<>();
         upgradeLevels.forEach((id, level) -> {
             if (id != null && level != null && level > 0) {
@@ -21,6 +29,11 @@ public record PouchSnapshot(double pouch, double baked, Map<String, Integer> own
             }
         });
         upgradeLevels = Map.copyOf(levels);
+    }
+
+    /** Without ingredients. */
+    public PouchSnapshot(double pouch, double baked, Map<String, Integer> owned, Map<String, Integer> upgradeLevels) {
+        this(pouch, baked, owned, upgradeLevels, Map.of());
     }
 
     /** Old save format: a set of bought upgrade IDs, each loaded as level 1 (model.md migration rule). */

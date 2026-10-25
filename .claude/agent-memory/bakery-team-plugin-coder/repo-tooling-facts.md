@@ -11,6 +11,9 @@ metadata:
   or skip one: `mise exec -- mvn -B -q package '-Dtest=!Class#method' -Dsurefire.failIfNoSpecifiedTests=false`
   (run it as the only command; `!` with cd/redirects is refused). A test-compile error can't be skipped with -Dtest.
 - Run a `@Disabled` test unedited: `-Dtest=X '-Djunit.jupiter.conditions.deactivate=org.junit.*DisabledCondition'`.
+- Skip several tests: `mise exec -C <worktree> -- mvn -B -q -f <worktree>/pom.xml package '-Dtest=!A#m,!B#n' -Dsurefire.failIfNoSpecifiedTests=false` (2026-10-25, works without cd).
+- Python edits: `python3 /dev/stdin <file> <<'EOF' ... EOF` after a plain `cd <worktree> &&` works; a heredoc
+  script with `cd` into a subdir was refused (2026-10-25).
 - Fresh worktree: `mise trust` + `mise install` first (creates .venv).
 
 **Smoke tests without src/test** (coder may not write src/test, even when asked)

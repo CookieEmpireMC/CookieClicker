@@ -21,8 +21,8 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).parent))
 from model import (ConfigError, Economy, State, building_cps, building_max, bulk_cost, click_power,  # noqa: E402
-                   click_value, crit_factor, expected_click, load, milestone_factor, milestones_of, milestones_reached,
-                   total_cps,
+                   click_value, crit_factor, expected_click, ingredient_rate, load, milestone_factor, milestones_of,
+                   milestones_reached, recipe_affordable, recipe_percent, total_cps,
                    upgrade_bulk_cost, upgrade_max)
 from sim import Profile, Result, simulate  # noqa: E402
 
@@ -70,7 +70,30 @@ def metric(eco: Economy, result: Result, target: dict) -> float | None:
         return first_time(result, "upgrade", target["upgrade"])
     if kind == "baked":
         return baked_time(result, float(target["cookies"]))
+    if kind == "recipes":
+        return recipes_time(eco, result, target)
+    if kind == "recipe-ingredient-wait":
+        return recipe_wait(result)
     raise ConfigError(f"unknown metric '{kind}' in target {target.get('id')}")
+
+
+def recipes_time(eco: Economy, result: Result, target: dict) -> int | None:
+    """Seconds until `count` recipes are bought (default: all); with `since: <upgrade>`, counted from that buy."""
+    count = int(target.get("count", len(eco.recipes)))
+    times = [p.time for p in result.purchases if p.kind == "recipe"]
+    if count < 1 or len(times) < count:
+        return None
+    if "since" not in target:
+        return times[count - 1]
+    start = first_time(result, "upgrade", target["since"])
+    return None if start is None else times[count - 1] - start
+
+
+def recipe_wait(result: Result) -> int:
+    """Longest wait of any recipe on its ingredients alone (see sim.Result.recipe_waits); an unfinished wait runs
+    to the end of the horizon."""
+    end = len(result.baked) + 1
+    return max(((ready or end) - start for start, ready in result.recipe_waits.values()), default=0)
 
 
 def baked_time(result: Result, cookies: float) -> int | None:
@@ -158,6 +181,8 @@ def golden_values(eco: Economy, results: dict[str, Result]) -> dict:
                                                        (0, u.cost * 1000, "rich, one-time"),
                                                        (1, u.cost * 1000, "already bought"))]
         upgrades[uid] = entry
+    recipes = {rid: {"cost": r.cost, "ingredients": dict(r.ingredients), "type": "cps-percent", "value": r.value,
+                     "unlock-baked": r.unlock_baked} for rid, r in eco.recipes.items()}
     sample = State(owned={}, upgrades={})
     click = {"base-power": eco.base_click, "crit-chance": eco.crit_chance, "crit-multiplier": eco.crit_multiplier,
              "expected-factor": crit_factor(eco), "base-state": {
@@ -173,10 +198,16 @@ def golden_values(eco: Economy, results: dict[str, Result]) -> dict:
                     break
                 if p.kind == "building":
                     snap.owned[p.id] = p.owned_after
+                elif p.kind == "recipe":
+                    snap.recipes.add(p.id)
                 else:
                     snap.upgrades[p.id] = p.owned_after
             states.append({"profile": name, "time": t, "owned": dict(sorted(snap.owned.items())),
-                           "upgrades": dict(sorted(snap.upgrades.items())), "total-cps": total_cps(eco, snap),
+                           "upgrades": dict(sorted(snap.upgrades.items())),
+                           "recipes": [rid for rid in eco.recipes if rid in snap.recipes],
+                           "recipe-percent": recipe_percent(eco, snap),
+                           "ingredient-rates": {ing: ingredient_rate(eco, snap, ing) for ing in eco.ingredients},
+                           "total-cps": total_cps(eco, snap),
                            "click-power": click_power(eco, snap),
                            "normal-click": click_value(eco, snap, False), "crit-click": click_value(eco, snap, True),
                            "expected-click": expected_click(eco, snap)})
@@ -185,9 +216,58 @@ def golden_values(eco: Economy, results: dict[str, Result]) -> dict:
                          "cps": building_cps(eco, State(owned={bid: n}, upgrades={}), bid)}
                         for n in MILESTONE_OWNED]
                   for bid in eco.buildings}
+    book = next((uid for uid, u in eco.upgrades.items() if u.type == "recipes-unlock"), None)
+    ingredient_rates = {}
+    for bid, b in eco.buildings.items():
+        if b.produces:
+            rows = [{"owned": n, "recipe-book": False,
+                     "rate": ingredient_rate(eco, State(owned={bid: n}, upgrades={}), b.produces[0])}
+                    for n in (1, 10)]
+            rows += [{"owned": n, "recipe-book": True,
+                      "rate": ingredient_rate(eco, State(owned={bid: n}, upgrades={book: 1}), b.produces[0])}
+                     for n in MILESTONE_OWNED]
+            ingredient_rates[bid] = {"ingredient": b.produces[0], "per-second": b.produces[1], "rates": rows}
     return {"cost-growth": eco.cost_growth, "max-bulk": MAX_BULK, "milestones": list(eco.milestones),
             "building-milestones": {bid: list(milestones_of(eco, bid)) for bid in eco.buildings}, "click": click, "costs": costs,
-            "building-cps": production, "upgrades": upgrades, "max-affordable": max_cases, "states": states}
+            "building-cps": production, "upgrades": upgrades, "max-affordable": max_cases,
+            "ingredients": list(eco.ingredients), "ingredient-rates": ingredient_rates, "recipes": recipes,
+            "recipe-purchase": _recipe_cases(eco, book), "recipe-cps": _recipe_cps_cases(eco, book),
+            "states": states}
+
+
+def _recipe_cases(eco: Economy, book: str | None) -> list[dict]:
+    """Affordability (all or nothing) at the boundaries of each recipe's cookie and ingredient costs."""
+    cases = []
+    for rid, r in eco.recipes.items():
+        full = {ing: amount for ing, amount in r.ingredients}
+
+        def add(label, pouch, stock, baked=r.unlock_baked, has_book=True, bought=False):
+            st = State(pouch=float(pouch), baked=float(baked), upgrades={book: 1} if has_book else {},
+                       ingredients=dict(stock), recipes={rid} if bought else set())
+            cases.append({"recipe": rid, "case": label, "pouch": st.pouch, "baked": st.baked, "recipe-book": has_book,
+                          "bought": bought, "stock": st.ingredients, "affordable": recipe_affordable(eco, st, rid)})
+        add("exact", r.cost, full)
+        add("one cookie short", _below(r.cost), full)
+        for ing, amount in r.ingredients:
+            add(f"one {ing} short", r.cost, {**full, ing: _below(amount)})
+        add("no stock", r.cost * 10, {})
+        add("no recipe book", r.cost, full, has_book=False)
+        if r.unlock_baked > 0:
+            add("below unlock", r.cost, full, baked=_below(r.unlock_baked))
+        add("already bought", r.cost, full, bought=True)
+    return cases
+
+
+def _recipe_cps_cases(eco: Economy, book: str | None) -> list[dict]:
+    """total_cps with buildings owned and 0, 1, some and all recipes bought."""
+    owned = {bid: 10 for bid in eco.buildings}
+    ids = list(eco.recipes)
+    out = []
+    for chosen in ([], ids[:1], ids[::2], ids):
+        st = State(owned=dict(owned), upgrades={book: 1} if book else {}, recipes=set(chosen))
+        out.append({"owned": owned, "recipes": chosen, "recipe-percent": recipe_percent(eco, st),
+                    "total-cps": total_cps(eco, st)})
+    return out
 
 
 def _below(x: float) -> float:
@@ -298,6 +378,25 @@ def write_report(eco: Economy, targets: dict, results: dict[str, Result], rows: 
                 cell += f" (level {r.final.level(uid)} at end)"
             cells.append(cell)
         out.append(f"| {uid} | " + " | ".join(cells) + " |")
+    if eco.recipes:
+        out += ["", "## Recipes", "",
+                "Time bought, and in brackets the longest wait on ingredients alone (shown, producers running, "
+                "stock short).", "", "| Recipe | Needs | +CPS | " + " | ".join(results) + " |",
+                "|---|---|---|" + "---|" * len(results)]
+        end = {name: len(r.baked) + 1 for name, r in results.items()}
+        for rid, rec in eco.recipes.items():
+            cells = []
+            for name, r in results.items():
+                start, ready = r.recipe_waits.get(rid, (None, None))
+                wait = "" if start is None else f" ({fmt_time((ready or end[name]) - start)})"
+                cells.append(fmt_time(first_time(r, "recipe", rid)) + wait)
+            needs = ", ".join(f"{a:,g} {i}" for i, a in rec.ingredients) + f" + {rec.cost:,.0f} cookies"
+            out.append(f"| {rid} | {needs} | {rec.value:.0%} | " + " | ".join(cells) + " |")
+        out += ["", "| Ingredient stock at the end | " + " | ".join(results) + " |", "|---|" + "---|" * len(results)]
+        for ing in eco.ingredients:
+            out.append(f"| {ing} | " + " | ".join(f"{r.final.ingredients.get(ing, 0):,.0f} "
+                                                  f"(+{ingredient_rate(eco, r.final, ing):,.1f}/s)"
+                                                  for r in results.values()) + " |")
     out += ["", "## Per profile", "", "| Profile | Purchases | Longest dead zone (first 15 min) | Longest dead zone | "
             "Longest gap between purchases | Final CPS |", "|---|---|---|---|---|---|"]
     for name, r in results.items():

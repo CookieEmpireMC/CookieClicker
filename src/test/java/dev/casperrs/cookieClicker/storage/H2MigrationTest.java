@@ -95,7 +95,7 @@ class H2MigrationTest {
         H2Migration.Result result = new H2Migration(factory(sourceUrl), factory(targetUrl), "cc_").run(false);
 
         assertFalse(result.refused());
-        assertEquals(Map.of("players", 2, "buildings", 2, "upgrades", 2, "house_seen", 1), result.copied());
+        assertEquals(Map.of("players", 2, "buildings", 2, "upgrades", 2, "house_seen", 1, "ingredients", 0), result.copied());
         assertEquals(7, result.total());
         for (String table : JdbcPlayerStore.TABLES) {
             assertEquals(dump(sourceUrl, table), dump(targetUrl, table), table + " differs after the copy");

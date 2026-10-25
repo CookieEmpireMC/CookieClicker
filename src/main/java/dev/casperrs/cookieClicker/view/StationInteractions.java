@@ -38,6 +38,7 @@ public final class StationInteractions {
     static final String UPGRADE_SHELVED = "upgrade_shelved";
     static final String BASKET_TIER_UP = "basket_tier_up";
     static final String BULK_TOGGLE = "bulk_toggle";
+    static final String RECIPES_UNLOCK = "recipes_unlock";
 
     private final StationViews views;
     private final SessionManager sessions;
@@ -104,6 +105,7 @@ public final class StationInteractions {
         BulkMode mode = views.mode(player.getUniqueId(), kind);
         String effect = PURCHASE;
         boolean oneTime = false;
+        boolean recipesUnlock = false;
         BulkPurchase result;
         if (kind == PanelKind.BUILDINGS) {
             result = mode.max() ? economy.buyMaxBuildings(pouch, id) : economy.buyBuildings(pouch, id, mode.count());
@@ -114,6 +116,7 @@ public final class StationInteractions {
             }
             if (!u.repeatable()) {
                 oneTime = true;
+                recipesUnlock = u.type() == EffectType.RECIPES_UNLOCK;
                 effect = UPGRADE_BOUGHT;
                 result = economy.buyUpgrades(pouch, id, 1);
             } else if (mode.max()) {
@@ -135,7 +138,14 @@ public final class StationInteractions {
         } else {
             effects.play(effect, loc, player);
         }
-        sounds.play(player, PURCHASE, loc);
+        if (recipesUnlock) {
+            Location at = player.getLocation();
+            effects.play(RECIPES_UNLOCK, at, player);
+            sounds.play(player, RECIPES_UNLOCK, at);
+            messages.send(player, "upgrades.recipe_book.unlocked");
+        } else {
+            sounds.play(player, PURCHASE, loc);
+        }
         hud.refresh(player, pouch);
         views.refreshPanels(player, pouch, true);
         if (kind == PanelKind.BUILDINGS) {

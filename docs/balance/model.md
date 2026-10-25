@@ -4,7 +4,7 @@ The single definition of the CookieClicker economy maths. The balance simulator 
 
 Owner: **balance-designer**. Changing a formula or config field is a contract change: propose it under `CONTRACT CHANGES`, and the orchestrator schedules the matching coder and tester work.
 
-Last updated: 2026-10-22 (building-roster: building milestones)
+Last updated: 2026-10-25 (ingredients: ingredient production, the Recipe Book, recipes)
 
 ---
 
@@ -16,8 +16,11 @@ Last updated: 2026-10-22 (building-roster: building milestones)
 | `baked` | cookies baked all time (double, never decreases; used for unlocks and stats) |
 | `owned[b]` | number of building `b` owned (int) |
 | `upgrades` | map upgrade ID → **level** (int). One-time upgrades have level 1 once bought; missing = 0. An older save that stores a *set* of IDs loads as level 1 for each. |
+| `ingredients` | map ingredient ID → **stock** (double, `>= 0`, no cap); missing = 0 |
+| `recipes` | set of bought recipe IDs (one-time; recipe IDs never clash with upgrade IDs, so they may be stored as level-1 upgrades) |
 
-Clicking and production add to both `pouch` and `baked`. Purchases subtract from `pouch` only.
+Clicking and production add to both `pouch` and `baked`. Purchases subtract from `pouch` only (recipes also
+subtract ingredients).
 
 ## Buildings (`src/main/resources/buildings.yml`)
 
@@ -30,6 +33,7 @@ buildings:                   # listed in cost / unlock order: the shop's default
     base-cps: 0.1
     unlock: { baked: 0 }     # visible & purchasable once baked >= this
     milestones: [10, 25]     # optional; replaces the top-level list for this building only
+    produces: { ingredient: flour, per-second: 0.2 }   # optional; see "Ingredients"
 ```
 
 - **Cost of the next building:** `cost(b) = bulk_cost(base_cost[b], cost_growth, owned[b], 1) = ceil(base_cost[b] × cost_growth ^ owned[b])`
@@ -59,6 +63,29 @@ milestone_factor(b, owned)   = 2 ^ milestones_reached(b, owned)                 
 - Displays that show a building's CPS (`+<cps>/s` in the panel, the HUD total) use the value with the factor. The
   "+CPS of the next copy" is `building_cps` with `owned + 1` minus `building_cps` now (it includes the doubling when
   the next copy reaches a milestone).
+
+## Ingredients
+
+A building with `produces: { ingredient: <id>, per-second: <rate> }` also makes that ingredient. The shipped ones:
+`wheat_farm` → `flour`, `cow_barn` → `milk`, `sugar_cane_field` → `sugar`, `chicken_farm` → `eggs`,
+`cocoa_plantation` → `chocolate`.
+
+```
+recipes_unlocked         = some upgrade of type recipes-unlock (the Recipe Book) has level >= 1
+ingredient_rate(i)       = 0                                                        if not recipes_unlocked
+                         = Σ over buildings b with produces.ingredient == i, in buildings.yml order, from 0.0:
+                             owned[b] × per_second[b] × milestone_factor(b, owned[b])
+```
+
+- Evaluate each term left to right as written (`owned × per_second`, then the factor). Building-multiplier and
+  global-multiplier upgrades and recipes do **not** apply to ingredients; the building's cookie CPS is unchanged.
+- Applied on the same once-per-second tick as cookies, with the rates from **before** that tick's purchases:
+  `ingredients[i] += ingredient_rate(i)`. Only while the player is online (offline progress is later, GDD §8).
+- Stock has no cap and never limits anything except a recipe purchase.
+- The ingredient IDs are the ones some building produces (`ingredients` = first appearance in buildings.yml order);
+  there's no separate list.
+- Validation: `ingredient` is a string of `[a-z][a-z0-9_]*`; `per-second` a number `> 0`. Missing `produces` =
+  no ingredient.
 
 ## Upgrades (`src/main/resources/upgrades.yml`)
 
@@ -93,6 +120,7 @@ Effect types:
 | `click-cps-fraction` | `value` | each click also gives `value × total CPS` |
 | `building-multiplier` | `building`, `value` | multiplies one building's CPS |
 | `global-multiplier` | `value` | multiplies total CPS |
+| `recipes-unlock` | none (`value` optional, ignored, default 0) | one-time only (no `cost-growth`); once bought, ingredient production starts and recipes can show |
 
 `upgrades: {}` (an empty map) is valid: a slice with only click values and no upgrades.
 
@@ -105,7 +133,31 @@ An upgrade is **available** when its `unlock` condition holds (`owned[building] 
 | `click-add`, `click-cps-fraction` | `value × L` |
 | `click-multiplier`, `building-multiplier`, `global-multiplier` | `value ^ L` |
 
-For one-time upgrades `L` is 0 or 1, so this is the same as before.
+For one-time upgrades `L` is 0 or 1, so this is the same as before. `recipes-unlock` has no numeric effect.
+
+## Recipes (`upgrades.yml: recipes`)
+
+```yaml
+recipes:
+  butter:                    # ID; name/lore in messages.yml (recipes.<id>.name / .lore)
+    cost: 3000               # cookies, > 0
+    ingredients: { milk: 200 }                     # ingredient -> amount (> 0); at least one
+    effect: { type: cps-percent, value: 0.02 }     # fraction: 0.02 = +2 % CPS
+    unlock: { baked: 10000 }                       # optional, default 0
+```
+
+- A recipe is **visible** when `recipes_unlocked` and `baked >= unlock.baked` and it isn't bought.
+- It is **affordable** when visible, `pouch >= cost` and `ingredients[i] >= amount` for **every** ingredient.
+- Buying is atomic: if affordable, `pouch -= cost` and `ingredients[i] -= amount` for each; otherwise nothing changes.
+  One-time; there's no bulk or Max.
+- Validation: the only `effect.type` is `cps-percent`, `value > 0`; every ingredient must be produced by some
+  building (else it could never be bought); a recipe ID must not also be an upgrade ID; recipes without any
+  `recipes-unlock` upgrade are a config error. `recipes:` missing or `{}` = no recipes.
+- Order: the `recipes:` order is the summing order below (and the default book order).
+
+```
+recipe_percent = Σ value of bought recipes, in recipes: order, starting from 0.0
+```
 
 ## Bulk cost and Max (buildings and repeatable upgrades)
 
@@ -144,15 +196,17 @@ return k
 
 ```
 building_cps(b) = owned[b] × base_cps[b] × milestone_factor(b, owned[b]) × Π(effect of building-multiplier upgrades for b)
-total_cps       = Σ building_cps(b) × Π(effect of global-multiplier upgrades)
+total_cps       = (Σ building_cps(b) × Π(effect of global-multiplier upgrades)) × (1 + recipe_percent)
 click_power     = (base_power + Σ effect of click-add) × Π(effect of click-multiplier)
                   + Σ(effect of click-cps-fraction) × total_cps
 ```
 
 "effect" is the effect at the upgrade's current level (table above); upgrades at level 0 contribute nothing (Σ adds 0, Π multiplies 1).
 Evaluate `building_cps` left to right in the order written (`owned × base_cps`, then the milestone factor, then the
-upgrade product), and add up `total_cps` starting from 0.0 in `buildings.yml` order, so doubles match the
-golden values exactly.
+upgrade product), and add up `total_cps` starting from 0.0 in `buildings.yml` order, then multiply by the global
+product, then by `(1.0 + recipe_percent)`, so doubles match the golden values exactly. Everything that shows or uses
+CPS (HUD, panel `+<cps>/s`, `click-cps-fraction`) uses this `total_cps`. The "+CPS of the next copy" of a building
+is the change in `total_cps`, so it includes the recipe bonus.
 
 
 - Production is applied once per second: `pouch += total_cps; baked += total_cps`.
@@ -185,4 +239,9 @@ Generated by `mise run balance`; the Java economy must reproduce them exactly.
 | `costs.<b>.bulk[]` | `{owned, count, cost}`: `bulk_cost` for several owned/count pairs |
 | `upgrades.<id>` | `cost`, `repeatable`, `cost-growth`, `max-level` (null = none), `type`, `value`; repeatable ones also `single[L]` (cost of the next level at level `L`) and `bulk[]` (`{level, count, cost}`) |
 | `max-affordable[]` | `{kind: building\|upgrade, id, owned, pouch, max, case}`: `max_affordable` at `owned` (= level for upgrades) with that pouch. Cases cover an empty pouch, one cookie short of 1, exactly / one short of / just over k for several k, a huge pouch, the `max-level` cap and "already at max-level" |
-| `states[]` | snapshots from the simulation: `owned`, `upgrades` (map id → level), `total-cps`, `click-power` (non-crit), `normal-click`, `crit-click`, `expected-click` |
+| `ingredients` | the ingredient IDs in buildings.yml order |
+| `ingredient-rates.<b>` | `ingredient`, `per-second`, `rates[]` of `{owned, recipe-book, rate}`: `ingredient_rate` with only `owned` of `b` (0 without the Recipe Book; with it at the milestone owned counts) |
+| `recipes.<id>` | `cost`, `ingredients` (map), `type` (`cps-percent`), `value`, `unlock-baked` |
+| `recipe-purchase[]` | `{recipe, case, pouch, baked, recipe-book, bought, stock, affordable}`: affordability at exact / one cookie short / one of each ingredient short / no stock / no Recipe Book / below unlock / already bought |
+| `recipe-cps[]` | `{owned, recipes, recipe-percent, total-cps}`: 10 of every building with 0, 1, every other and all recipes bought (Recipe Book owned) |
+| `states[]` | snapshots from the simulation: `owned`, `upgrades` (map id → level, includes `recipe_book`), `recipes` (bought, in config order), `recipe-percent`, `ingredient-rates` (map), `total-cps`, `click-power` (non-crit), `normal-click`, `crit-click`, `expected-click` |

@@ -18,6 +18,8 @@ public final class CookiePouch {
     private final Map<String, Integer> owned = new HashMap<>();
     /** Upgrade ID → level; only levels {@code >= 1} are stored. */
     private final Map<String, Integer> upgrades = new HashMap<>();
+    /** Ingredient ID → stock; only amounts {@code > 0} are stored. */
+    private final Map<String, Double> ingredients = new HashMap<>();
     private int revision;
 
     public CookiePouch() {
@@ -33,11 +35,12 @@ public final class CookiePouch {
             }
         });
         p.upgrades.putAll(snapshot.upgradeLevels());
+        p.ingredients.putAll(snapshot.ingredients());
         return p;
     }
 
     public PouchSnapshot snapshot() {
-        return new PouchSnapshot(pouch, baked, owned, upgrades);
+        return new PouchSnapshot(pouch, baked, owned, upgrades, ingredients);
     }
 
     /** Spendable cookies. */
@@ -78,6 +81,16 @@ public final class CookiePouch {
         return Collections.unmodifiableMap(upgrades);
     }
 
+    /** Stock of one ingredient (0 when none). */
+    public double ingredient(String ingredientId) {
+        return ingredients.getOrDefault(ingredientId, 0.0);
+    }
+
+    /** Ingredient ID → stock, only amounts {@code > 0} (read-only, live). */
+    public Map<String, Double> ingredientsView() {
+        return Collections.unmodifiableMap(ingredients);
+    }
+
     /** Changes whenever a building or upgrade level is added: a cheap "did the CPS inputs change" key. */
     public int revision() {
         return revision;
@@ -95,6 +108,24 @@ public final class CookiePouch {
     /** Subtracts from the pouch only; caller checked affordability. */
     void spend(double amount) {
         pouch = Math.max(0, pouch - amount);
+    }
+
+    /** Adds to one ingredient's stock (no cap). Negative or non-finite amounts are ignored. */
+    void addIngredient(String ingredientId, double amount) {
+        if (!(amount > 0) || !Double.isFinite(amount)) {
+            return;
+        }
+        ingredients.merge(ingredientId, amount, SafeMath::add);
+    }
+
+    /** Takes from one ingredient's stock; caller checked the stock. */
+    void spendIngredient(String ingredientId, double amount) {
+        double left = ingredient(ingredientId) - amount;
+        if (left > 0) {
+            ingredients.put(ingredientId, left);
+        } else {
+            ingredients.remove(ingredientId);
+        }
     }
 
     void addBuilding(String buildingId, int count) {

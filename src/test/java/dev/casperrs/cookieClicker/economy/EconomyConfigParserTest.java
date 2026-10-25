@@ -1,7 +1,10 @@
 package dev.casperrs.cookieClicker.economy;
 
+import static dev.casperrs.cookieClicker.economy.EconomyTestSupport.butterRecipe;
 import static dev.casperrs.cookieClicker.economy.EconomyTestSupport.buildingsYaml;
 import static dev.casperrs.cookieClicker.economy.EconomyTestSupport.map;
+import static dev.casperrs.cookieClicker.economy.EconomyTestSupport.recipeBuildings;
+import static dev.casperrs.cookieClicker.economy.EconomyTestSupport.recipeUpgrades;
 import static dev.casperrs.cookieClicker.economy.EconomyTestSupport.upgradesYaml;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -94,4 +97,29 @@ class EconomyConfigParserTest {
         assertTrue(error(buildingsYaml(), u).contains("unlock.building"));
     }
 
+    @Test
+    void rejectsRecipesThatCouldNeverBeBoughtOrShown() {
+        assertTrue(error(recipeBuildings(), recipeUpgrades(map("recipe_book", butterRecipe("flour"))))
+                .contains("same id as an upgrade"));
+        assertTrue(error(recipeBuildings(), withoutBook(map("butter", butterRecipe("flour"))))
+                .contains("recipes-unlock"));
+        assertTrue(error(recipeBuildings(), recipeUpgrades(map("butter", butterRecipe("gold"))))
+                .contains("not produced by any building"));
+        Map<String, Object> repeatableBook = recipeUpgrades(map("butter", butterRecipe("flour")));
+        ((Map<String, Object>) ((Map<String, Object>) repeatableBook.get("upgrades")).get("recipe_book")).put("cost-growth", 1.2);
+        assertTrue(error(recipeBuildings(), repeatableBook).contains("one-time"));
+    }
+
+    private static Map<String, Object> withoutBook(Map<String, Object> recipes) {
+        return map("click", map("base-power", 1), "recipes", recipes);
+    }
+
+    @Test
+    void parsesARecipeBookAndItsRecipesWithTheIngredientsOfEachBuilding() throws Exception {
+        EconomyConfig config = parse(recipeBuildings(), recipeUpgrades(map("butter", butterRecipe("flour")))).config();
+        RecipeDef butter = config.recipes().get("butter");
+        assertEquals(0.02, butter.cpsPercent());
+        assertEquals(Map.of("flour", 20.0), butter.ingredients());
+        assertEquals(List.of("flour"), config.ingredients());
+    }
 }

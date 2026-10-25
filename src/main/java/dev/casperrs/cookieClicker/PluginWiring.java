@@ -7,6 +7,7 @@ import dev.casperrs.cookieClicker.command.DbCommand;
 import dev.casperrs.cookieClicker.config.PluginSettings;
 import dev.casperrs.cookieClicker.economy.Economy;
 import dev.casperrs.cookieClicker.economy.EconomyConfig;
+import dev.casperrs.cookieClicker.economy.RecipeBook;
 import dev.casperrs.cookieClicker.house.cinematic.HouseCinematics;
 import dev.casperrs.cookieClicker.house.setup.HousePlacer;
 import dev.casperrs.cookieClicker.house.cinematic.HouseSeen;
@@ -22,6 +23,7 @@ import dev.casperrs.cookieClicker.plot.PlotOutlines;
 import dev.casperrs.cookieClicker.plot.PlotRegistry;
 import dev.casperrs.cookieClicker.plot.PlotService;
 import dev.casperrs.cookieClicker.plot.PlotTracker;
+import dev.casperrs.cookieClicker.recipe.RecipeService;
 import dev.casperrs.cookieClicker.session.SessionBukkitListener;
 import dev.casperrs.cookieClicker.session.SessionListener;
 import dev.casperrs.cookieClicker.session.SessionManager;
@@ -86,6 +88,7 @@ final class PluginWiring {
     private @Nullable ResourcePackSender packSender;
     private @Nullable SoundService sounds;
     private @Nullable Hud hud;
+    private @Nullable RecipeService recipes;
     private @Nullable BakeryTicker ticker;
     private @Nullable StationViews views;
     private @Nullable Effects effects;
@@ -166,6 +169,8 @@ final class PluginWiring {
                 messages);
         views.setShelfLanding(interactions::iconShelved);
         views.setBasketTierUp(interactions::basketTierUp);
+        recipes = new RecipeService(sessions, economy, new RecipeBook(economy), sounds, effects, hud);
+        recipes.setCpsChanged(views::refreshPanels);
         pm.registerEvents(new ClickRouter(views, interactions, () -> settings.get().visuals(), plugin.getLogger()),
                 plugin);
         views.start();
