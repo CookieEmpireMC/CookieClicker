@@ -425,7 +425,7 @@ def scenery(b: Build, pond: set) -> None:
     S.tree(b, 4, 15, kind="oak", height=5, spread=2.6, y0=0)
     S.tree(b, 3, 28, kind="birch", height=6, spread=2.4, y0=0)
     S.tree(b, 41, 28, kind="oak", height=5, spread=2.7, y0=2)
-    S.tree(b, 29, 2, kind="oak", height=6, spread=3.0, y0=0)
+    S.tree(b, 30, 2, kind="oak", height=6, spread=2.8, y0=0)
     S.tree(b, 7, 31, kind="oak", height=5, spread=2.5, y0=0)
     # --- meadow tufts and flowers in clusters on the empty lawn (cells with two or more neighbours only)
     import numpy as np
@@ -437,7 +437,8 @@ def scenery(b: Build, pond: set) -> None:
     tufts = {}
     for x in range(1, SX - 1):
         for z in range(3, SZ - 1):
-            if ground_ok(x, z) and not (11 <= x <= 22 and z <= 14) and field[x, z] > 0.55 and (x, z) not in taken:
+            near_pond = any((x + dx, z + dz) in pond for dx in range(-3, 4) for dz in range(-3, 4))
+            if ground_ok(x, z) and not (11 <= x <= 22 and z <= 14) and field[x, z] > (0.2 if near_pond else 0.55) and (x, z) not in taken:
                 tufts[(x, z)] = rng.random()
     for (x, z), r in sorted(tufts.items()):
         nb = sum(1 for dx in (-1, 0, 1) for dz in (-1, 0, 1) if (dx, dz) != (0, 0) and (x + dx, z + dz) in tufts)
@@ -451,6 +452,12 @@ def scenery(b: Build, pond: set) -> None:
     for (z0, z1) in ((18, 23), (26, 31)):
         for z in range(z0, z1 + 1):
             put(0, 0, z, B.leaves("oak")); put(0, 1, z, B.leaves("oak")) if z % 3 else None
+    for z in range(5, 11):                                                # west edge beside the granary
+        put(0, 0, z, B.leaves("oak")); put(0, 1, z, B.leaves("oak")) if z % 3 else None
+    for (z0, z1) in ((15, 20), (23, 28)):                                 # east edge of the terrace
+        for z in range(z0, z1 + 1):
+            put(45, 2, z, B.leaves("oak")); put(45, 3, z, B.leaves("oak")) if z % 3 else None
+    S.tree(b, 41, 18, kind="oak", height=4, spread=2.0, y0=2)
     # --- orchard on the terrace (quincunx), willow-like vines on the pond tree
     for (x, z) in K.orchard_grid(37, 25, 44, 31, 7, 0, seed=4):
         if 36 <= x <= 44 and 22 <= z <= 31 and (x, 2, z) not in b.g:
