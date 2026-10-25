@@ -42,3 +42,4 @@ Verified 2026-10-23 at tidy integration (395 Java tests, 73 tools tests). Re-che
 - `mise run check-quiet` writes the full log to `<worktree>/.check.log`; its stdout is only the failing test names.
 - `git worktree add -b <new> <path> <base>` works when `<base>` is checked out in another worktree (a plain `git checkout -b` in a new worktree would fail).
 - Python helper scripts in the scratchpad (`python3 -I`) are the reliable way to edit Java tests with multi-line anchors; assert `count == 1` before replacing.
+- (2026-10-25) Package-private classes (`RecipeIcons`, `RecipeGlyphs`, `RecipeGuiSettings.from`) are tested from a test class in the same package; contract tests read shipped yml with `YamlConfiguration.loadConfiguration(new File("src/main/resources/..."))` (`RecipeBookContentTest`). A reviewer worktree may be a leftover coder worktree: `git checkout -b ingredients/plugin-tester` inside it works.

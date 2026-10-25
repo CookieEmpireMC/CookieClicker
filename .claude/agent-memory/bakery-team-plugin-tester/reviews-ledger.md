@@ -23,3 +23,5 @@ Older per-feature ledgers (starter-house, upgrade-holograms, plot-polish, buildi
 Re-review: `git diff 318f1d5..HEAD -- src/main/java/dev/casperrs/cookieClicker/sound`.
 
 | ingredients economy (`economy/**` recipes + Recipe Book, `storage/JdbcPlayerStore` v5 + `LegacyIds`, `hud/Hud` stock, `text/Messages` ingredient keys) | `ingredients/plugin-coder-economy` 69f57e5 (tests `ingredients/plugin-tester` 9dbbddb, 427 Java, only chicken_farm item-model test red until model-designer merges) | READY (2026-10-25): no HIGH/MEDIUM; LOWs + PERF-LOW listed in `ingredients-economy.md`. Branch is 8 commits behind feature/ingredients (merge needed). |
+
+| ingredients Recipe Book GUI (`recipe/RecipeBookMenu`, `RecipeIcons`, `RecipeGlyphs`, `config/RecipeGuiSettings`, `view/panel/PanelRows` recipe row, `BakeryCommand` recipes, `PluginWiring`) + integration | `ingredients/plugin-coder-gui` 2bcd34d, tests/docs at `ingredients/plugin-tester` (439 Java) | READY both (2026-10-25): no HIGH/MEDIUM. LOW: shop Recipe Book row not pinned (off screen); see `docs/reviews/2026-10-25-ingredients-gui-integration.md`. |
