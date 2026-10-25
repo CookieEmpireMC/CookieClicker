@@ -214,6 +214,7 @@ def scenery(b: Build) -> None:
         for i, (x, z) in enumerate(cells):
             put(x, 0, z, "@spruce_fence")
         for (x, z) in cells[::post_every]:
+            put(x, 0, z, lg(TRIM, "y"))
     x0, x1, x2, z0, z1 = 7, 22, 32, 10, 26
     edge([(x, z0) for x in range(x0, x1 + 1)], 5)
     edge([(x, z1) for x in range(x0, x1 + 1)], 4)
