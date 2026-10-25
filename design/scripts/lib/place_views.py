@@ -49,3 +49,21 @@ def mill_previews(g: dict, out: Path) -> list:
     if len(imgs) >= 4:
         tr.contact_sheet(imgs[:4], cols=2).save(out / "place_mill_sheet.png")
     return imgs
+
+
+def place_previews(name: str, g: dict, out: Path, box: tuple, shots: dict) -> list:
+    """Textured shots of any place: shots = {label: (eye, target)} or {label: ("iso", yaw, pitch)}; box = (x0, z0, x1, z1)
+    of the place. Writes place_<name>_<label>.png and a 2x2 sheet of the first four."""
+    if not bm.available():
+        print("  (client jar not found: textured previews skipped)")
+        return []
+    world = place_world(g, pad=6, box=box)
+    imgs = []
+    for label, spec in shots.items():
+        im = dv.render_iso(world, spec[1], spec[2]) if spec[0] == "iso" else \
+            dv.render_world(world, spec[0], spec[1], (1280, 720), ground_y=-6.0)
+        im.save(out / f"place_{name}_{label}.png")
+        imgs.append(im)
+    if len(imgs) >= 4:
+        tr.contact_sheet(imgs[:4], cols=2).save(out / f"place_{name}_sheet.png")
+    return imgs

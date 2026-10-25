@@ -20,6 +20,14 @@ PITCH_STEEP = (0, 1, 3, 4, 6, 7, 9, 10, 12, 13, 15, 16)      # y rise per level,
 PITCH_45 = tuple(range(0, 16))
 
 
+def _claim(b: Build, cells) -> None:
+    """Cells just written by a roof kit leave the registered eave/field lists of earlier roofs (they hold other blocks now)."""
+    cs = set(cells)
+    for r in b.notes.roofs:
+        r["eave"] = [c for c in r["eave"] if c not in cs]
+        r["field"] = [c for c in r["field"] if c not in cs]
+
+
 # --- roofs ---------------------------------------------------------------------------------------------------------------
 def roof_level(rect: tuple, ks: dict, x: int, z: int) -> tuple[int, str]:
     """(level, side) of a roof cell. ks maps a side (N, S, W, E) to None (that side does not slope = a gable end), 0
@@ -36,12 +44,13 @@ def roof_level(rect: tuple, ks: dict, x: int, z: int) -> tuple[int, str]:
 
 def hipped_roof(b: Build, rect: tuple, y_eave: int, ks: dict, *, field: str, eave: str, rake: str, ridge: str,
                 cap: str | None, pitch=PITCH_STEEP, name: str = "roof", form: str = "hip", ramp_pick=None,
-                riser: str | None = None, overhang: int = 1) -> dict:
+                riser: str | None = None, overhang: int = 1, clip: dict | None = None) -> dict:
     """One solver for gable, half-hip and hip roofs: level = min over sloping sides of (distance to the edge + k).
     Stairs of `field` (or ramp_pick(x, y, z)); eave rows in `eave`, gable-end rake rows in `rake`; the highest level is
     the ridge (a `ridge` block with a `cap` slab on top). Steep pitches (default 1.5 per step) fill the 2-block risers
     with a full block of `riser` (the field block id). Returns {'surface': {(x, z): y of the top roof block},
-    'ridge_y', 'lmax', 'rect', 'y': pitch table, 'cells': set}."""
+    'ridge_y', 'lmax', 'rect', 'y': pitch table, 'cells': set}. `clip` = another roof dict: cells at or below its surface
+    (a cross-gable buried in the main roof) are not placed."""
     x0, z0, x1, z1 = rect
     lv = {(x, z): roof_level(rect, ks, x, z) for x in range(x0, x1 + 1) for z in range(z0, z1 + 1)}
     lmax = max(v[0] for v in lv.values())
@@ -51,6 +60,9 @@ def hipped_roof(b: Build, rect: tuple, y_eave: int, ks: dict, *, field: str, eav
     for (x, z), (L, side) in sorted(lv.items()):
         is_ridge = L == lmax
         y = y_eave + pitch[max(L - 1, 0) if is_ridge else L]
+        under = clip["surface"].get((x, z), -10 ** 6) if clip else -10 ** 6
+        if under >= y + (1 if is_ridge and cap else 0):
+            continue
         if is_ridge:
             b.put(x, y, z, ridge)
             if cap:
@@ -69,11 +81,12 @@ def hipped_roof(b: Build, rect: tuple, y_eave: int, ks: dict, *, field: str, eav
         if is_rake:
             mat = rake
         b.put(x, y, z, st(mat, OPP[COMPASS[side]]))
-        if L > 0 and pitch[L] - pitch[L - 1] == 2:
+        if L > 0 and pitch[L] - pitch[L - 1] == 2 and under < y - 1:
             b.put(x, y - 1, z, riser)
         surface[(x, z)] = y
         cells.add((x, y, z))
         (eave_c if is_eave or is_rake else field_c).append((x, y, z))
+    _claim(b, cells | {(x, y - 1, z) for (x, y, z) in cells})
     b.notes.roof_cells |= cells
     b.notes.roofs.append({"name": name, "eave": eave_c, "field": field_c, "overhang": overhang})
     ridge_y = y_eave + pitch[max(lmax - 1, 0)]
@@ -156,12 +169,13 @@ def pent_skirt(b: Build, wall: Wall, u0: int, u1: int, y: int, mat: str, *, dept
 
 def dormer(b: Build, roof: dict, wall: Wall, uc: int, front_w: int, y0: int, *, wall_mat, trim: str, roof_mat: str,
            glass: str = "@glass_pane", hatch: bool = False, h: int = 3, depth: int = 12, name: str = "dormer",
-           beam: bool = False, light: bool = True, box: str | None = "potted_poppy") -> None:
+           beam: bool = False, light: bool = True, box: str | None = None,
+           shutters: str | None = "spruce") -> None:
     """A 3-wide gabled dormer standing on the main roof. `wall` frame: u along the facade, w outward; the front plane is
     w = front_w, the first wall row y0. Cheek columns uc-1/uc+1 are wall_mat(x, y, z) for h rows, the middle column is a
     2-high window (or an open hatch: hatch=True) with a trim lintel, the roof is a stair on each cheek at y0 + h and a
     trim ridge log in the middle at y0 + h. It runs back from the front plane until the main roof surface reaches that
-    height. beam=True adds the hoist: a trim beam two cells out of the ridge, a chain and a barrel on it."""
+    height. beam=True adds the hoist: a trim beam two cells out of the ridge with a two-block chain hanging from it (no block-sized props in openings)."""
     yr = y0 + h
     done = set()
     for w in range(front_w, front_w - depth, -1):
@@ -192,20 +206,22 @@ def dormer(b: Build, roof: dict, wall: Wall, uc: int, front_w: int, y0: int, *, 
         if b.block(x, y0 - 1, z) == "air":
             b.put(x, y0 - 1, z, sl("spruce", "top"))
         b.put(x, y0, z, B.lantern(False))
-        if hatch:
-            b.put(*wall.xyz(uc, y0, front_w - 1), B.hay())
     if beam:
         for w in (front_w + 1, front_w + 2):
             wall.put(uc, yr, w, wall.log(trim, "depth", True))
         wall.put(uc, yr - 1, front_w + 2, B.chain("y"))
-        wall.put(uc, yr - 2, front_w + 2, B.barrel())
+        wall.put(uc, yr - 2, front_w + 2, B.chain("y"))
     if box and not hatch:
         wall.put(uc, y0, front_w + 1, P(box))
+    if shutters and not box and not hatch:
+        for du in (-1, 1):
+            for yy in (y0, y0 + 1):
+                wall.put(uc + du, yy, front_w + 1, wall.trapdoor(shutters, "bottom", True))
     if hatch:
         b.notes.seal |= {wall.xyz(uc, y0, front_w), wall.xyz(uc, y0 + 1, front_w)}
     for r in b.notes.roofs:                                   # the dormer replaced some roof cells
-        r["eave"] = [c for c in r["eave"] if b.block(*c) != "air"]
-        r["field"] = [c for c in r["field"] if b.block(*c) != "air"]
+        r["eave"] = [c for c in r["eave"] if b.block(*c).endswith(("_stairs", "_slab"))]
+        r["field"] = [c for c in r["field"] if b.block(*c).endswith(("_stairs", "_slab"))]
     b.notes.breaks.append({"name": name, "cell": wall.xyz(uc, y0, front_w)})
     b.notes.roof_heights.add(yr)
 
@@ -220,7 +236,9 @@ def coped_gable(b: Build, wall: Wall, u0: int, u1: int, y_from: int, profile, ca
         if body:
             wall.put(u, y, 0, body)
         wall.put(u, y + (1 if body else 0), 0, sl(cap, "bottom"))
-    b.notes.gables.append({"name": "coped", "finish": "coping", "rake": [wall.xyz(u, profile(u), 0) for u in range(u0, u1 + 1)]})
+    rake = [wall.xyz(u, profile(u) + (1 if body else 0), 0) for u in range(u0, u1 + 1)]
+    b.notes.gables.append({"name": "coped", "finish": "coping", "rake": rake})
+    b.notes.roof_cells |= set(rake)
 
 
 # --- walls and parts --------------------------------------------------------------------------------------------------------
@@ -510,6 +528,105 @@ def cut_and_fill(heights: dict, rect: tuple, level: int, slope: int = 1) -> None
             heights[(x, z)] = max(min(h, level + d * slope), level - d * slope) if h != level else level
 
 
+
+# --- barn kits (cow barn) ---------------------------------------------------------------------------------------------------
+def catslide_roof(b: Build, rect: tuple, high: str, y_high: int, *, field, eave: str, name: str = "catslide") -> dict:
+    """A shallow (about 26 degree) lean-to / catslide of alternating top and bottom slabs over rect (x0, z0, x1, z1), sloping
+    away from the `high` side (N, S, W or E; the building wall). Row k from the high edge: even k a stair (facing the wall)
+    at y_high - k/2, odd k a bottom slab at y_high - (k-1)/2, the last row always a bottom slab: the surface drops half a block per row. `field` is a material name or
+    f(x, y, z) -> name; the last row and both side edges use `eave`. Returns {'surface': {(x, z): y of the slab}, 'rows': [...]}."""
+    x0, z0, x1, z1 = rect
+    along_x = high in ("W", "E")
+    n = (x1 - x0 + 1) if along_x else (z1 - z0 + 1)
+    surface, eave_c, field_c = {}, [], []
+    for x in range(x0, x1 + 1):
+        for z in range(z0, z1 + 1):
+            k = {"W": x - x0, "E": x1 - x, "N": z - z0, "S": z1 - z}[high]
+            y = y_high - k // 2
+            side_edge = (z in (z0, z1)) if along_x else (x in (x0, x1))
+            is_eave = k == n - 1 or side_edge
+            mat = eave if is_eave else (field(x, y, z) if callable(field) else field)
+            facing = {"W": "east", "E": "west", "N": "south", "S": "north"}[high]
+            b.put(x, y, z, (st(mat, facing) if (k % 2 == 0 and k < n - 1) else sl(mat, "bottom")) if not (k % 2 == 0 and k == n - 1) else sl(mat, "bottom"))
+            surface[(x, z)] = y
+            b.notes.roof_cells.add((x, y, z))
+            (eave_c if is_eave else field_c).append((x, y, z))
+    _claim(b, {(x, y, z) for (x, z), y in surface.items()})
+    lowest = y_high - (n - 1) // 2
+    b.notes.roofs.append({"name": name, "eave": eave_c, "field": field_c, "overhang": 1})
+    b.notes.roof_info.append({"name": name, "form": "catslide", "rect": rect, "y_eave": lowest, "ridge_y": y_high + 1,
+                              "cells": {(x, y, z) for (x, z), y in surface.items()}})
+    b.notes.roof_heights |= {lowest, y_high + 1}
+    return {"surface": surface, "rect": rect, "high": high}
+
+
+def fill_under(b: Build, surface: dict, cells, y_from: int, pick) -> int:
+    """Wall infill at the (x, z) `cells` from y_from up to just below the roof block of `surface` {(x, z): y}."""
+    n = 0
+    for (x, z) in cells:
+        top = surface.get((x, z))
+        if top is None:
+            continue
+        for y in range(y_from, top):
+            if b.get(x, y, z) is None:
+                b.put(x, y, z, pick(x, y, z))
+                n += 1
+    return n
+
+
+def corbie_gable(b: Build, wall: Wall, uc: int, half_w: int, y_from: int, tops: dict, *, body, cap: str = "stone_brick") -> list:
+    """A stepped (crow-step / corbie) gable wall in the wall plane (w = 0): columns uc - half_w .. uc + half_w, each from
+    y_from up to tops[|du|] in `body(x, y, z)` (a block data string) with a bottom slab `cap` on top. The roof behind it
+    starts one cell back, so the steps stand clear of the roof surface. Registers a gable (finish 'corbie'). Returns the cap cells."""
+    caps = []
+    for du in range(-half_w, half_w + 1):
+        top = tops[abs(du)]
+        for y in range(y_from, top + 1):
+            wall.put(uc + du, y, 0, body(*wall.xyz(uc + du, y, 0)))
+        wall.put(uc + du, top + 1, 0, sl(cap, "bottom"))
+        caps.append(wall.xyz(uc + du, top + 1, 0))
+    b.notes.gables.append({"name": "corbie", "finish": "corbie", "rake": caps})
+    b.notes.roof_cells |= set(caps)
+    b.notes.roof_heights.add(max(tops.values()) + 1)
+    return caps
+
+
+def barn_door_double(b: Build, wall: Wall, uc: int, y0: int, *, width: int = 5, height: int = 4, leaf, brace: str,
+                     post: str = "dark_oak", stile: bool = True, lintel_y: int | None = None) -> dict:
+    """Braced double barn doors in the wall plane: `width` (odd) x `height` cells centred on uc from y0, leaves from
+    leaf(x, y, z), a rail at the top and bottom of each leaf and a Z-brace (the brace block on the diagonal that rises
+    towards the middle), a centre stile standing one block proud, log jambs one cell outside each side and a
+    stripped-log lintel one block wider each side above (L-F5). Registers a big door. Returns {'cells', 'lintel'}."""
+    assert width % 2 == 1 and width >= 3 and height >= 3
+    half = width // 2
+    cells = []
+    for du in range(-half, half + 1):
+        for dy in range(height):
+            y = y0 + dy
+            c = wall.xyz(uc + du, y, 0)
+            cells.append(c)
+            a = half - abs(du)                                    # 0 at the outer edge, half - 1 next to the stile
+            rail = dy in (0, height - 1)
+            diag = (not rail) and du != 0 and dy - 1 == round((a / max(half - 1, 1)) * (height - 3))
+            if du == 0 and stile:
+                b.put(*c, wall.log(post, "y", True))
+            else:
+                b.put(*c, brace if (rail or diag) else leaf(*c))
+    if stile:
+        for dy in range(height):
+            wall.put(uc, y0 + dy, 1, wall.log(post, "y", True))
+    for s in (-half - 1, half + 1):
+        for dy in range(height):
+            wall.put(uc + s, y0 + dy, 0, wall.log(post, "y"))
+    ly = y0 + height if lintel_y is None else lintel_y
+    lintel = []
+    for s in range(-half - 1, half + 2):
+        wall.put(uc + s, ly, 0, wall.log(post, "along", True))
+        lintel.append(wall.xyz(uc + s, ly, 0))
+    b.notes.big_doors.append({"cells": cells, "lintel": lintel})
+    return {"cells": cells, "lintel": lintel}
+
+
 # --- not built yet (run 2) ---------------------------------------------------------------------------------------------
 def _todo(name: str):
     def f(*a, **k):
@@ -518,20 +635,17 @@ def _todo(name: str):
     return f
 
 
-catslide_roof = _todo("catslide_roof")
 round_building = _todo("round_building")
 cone_roof = _todo("cone_roof")
 hay_roll_thatch = _todo("hay_roll_thatch")
-corbie_gable = _todo("corbie_gable")
 eyebrow_dormer = _todo("eyebrow_dormer")
-barn_door_double = _todo("barn_door_double")
 
 KITS = {
-    "done (Mill, tested)": ["hipped_roof", "half_hip_roof", "gable_roof_s", "pyramid_roof", "pent_skirt", "dormer (+hoist gablet)",
+    "done (Mill, Cow Barn, tested)": ["catslide_roof", "corbie_gable", "barn_door_double", "fill_under", "hipped_roof(clip=) cross-gable",
+                                    "hipped_roof", "half_hip_roof", "gable_roof_s", "pyramid_roof", "pent_skirt", "dormer (+hoist gablet)",
                             "coped_gable", "staddle_stones", "retaining_wall", "stone_bridge", "wheel_slot", "mill_race", "pond",
                             "height_field_ground", "terrace", "cut_and_fill"],
     "simple (tested, small)": ["vent_slits", "board_and_batten", "nest_box_row", "hurdle_fence", "stone_pillar_fence",
                                "buttress", "awning", "drying_rack", "orchard_grid", "furrow_field"],
-    "stub (run 2)": ["catslide_roof", "round_building", "cone_roof", "hay_roll_thatch", "corbie_gable", "eyebrow_dormer",
-                     "barn_door_double"],
+    "stub (run 2b)": ["round_building", "cone_roof", "hay_roll_thatch", "eyebrow_dormer"],
 }
