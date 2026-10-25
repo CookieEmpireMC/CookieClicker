@@ -341,15 +341,15 @@ somewhere you don't expect. The schema (tables, columns, index) is created and u
 ### 4. Move the old H2 saves: `/bakery db migrate`
 Once, after the restart on MariaDB, as console or a player with `cookieempire.admin`:
 - **Back up the H2 file first** (copy `plugins/CookieClicker/data/cookies.mv.db`): the migrate upgrades its schema to
-  version 4 in place, and CookieClicker 1.2.x can't open it after that.
-- `/bakery db migrate` copies `players`, `buildings`, `upgrades` and `house_seen` from the H2 file at
+  the current version (5) in place, and older CookieClicker versions can't open it after that.
+- `/bakery db migrate` copies `players`, `buildings`, `upgrades`, `house_seen` and `ingredients` from the H2 file at
   `database.h2.file` (`plugins/CookieClicker/data/cookies.mv.db`) into MariaDB and reports the rows per table.
 - Online players are saved and unloaded first; the copy runs on the storage thread (never the main thread) and
   then everyone online is loaded again from MariaDB. Each table is replaced in one transaction.
 - It refuses when `database.type` isn't `mariadb`, when the H2 file doesn't exist, or when MariaDB already holds
   player rows. `/bakery db migrate --force` replaces them with the H2 data (an admin who joined before migrating
   already has a row, so run it from the console with nobody online, or use `--force`).
-- The H2 file is kept (only its schema is upgraded to version 4); your copy from the first step is the backup for 1.2.x.
+- The H2 file is kept (only its schema is upgraded); your copy from the first step is the backup for older versions.
 
 ### 5. Backups
 ```sh
@@ -359,7 +359,7 @@ gunzip < cookieclicker-2026-10-24.sql.gz | mariadb cookieclicker      # restore 
 `--single-transaction` takes a consistent snapshot without locking (all tables are InnoDB), so it can run while the
 server plays; put it in a daily cron job and keep a few days.
 
-### Website contract (schema version 4)
+### Website contract (schema version 5)
 All tables use the configured prefix (default `cc_`), `ENGINE=InnoDB` and `utf8mb4`. These names are stable: later
 versions only **add** tables or columns, never rename or remove these. The website only reads (`SELECT`); the
 plugin keeps live players in memory and saves them every `autosave-seconds` (300 by default) and on quit, so the
@@ -375,11 +375,13 @@ data is at most that old.
 | | `prestige` | `DOUBLE` | reserved for prestige (0 for now) |
 | `cc_buildings` | `uuid`, `building_id` PK | `VARCHAR(36)`, `VARCHAR(64)` | building ids as in `buildings.yml` |
 | | `owned` | `INT` | how many the player owns (> 0) |
-| `cc_upgrades` | `uuid`, `upgrade_id` PK | `VARCHAR(36)`, `VARCHAR(64)` | upgrade ids as in `upgrades.yml` |
-| | `upgrade_level` | `INT` | level bought (>= 1) |
+| `cc_upgrades` | `uuid`, `upgrade_id` PK | `VARCHAR(36)`, `VARCHAR(64)` | upgrade ids as in `upgrades.yml`, and bought recipe ids (`upgrades.yml: recipes`, never the same as an upgrade id) |
+| | `upgrade_level` | `INT` | level bought (>= 1; recipes are always 1) |
+| `cc_ingredients` | `uuid`, `ingredient` PK | `VARCHAR(36)`, `VARCHAR(64)` | ingredient stock (`flour`, `milk`, `sugar`, `chocolate`, `eggs`) (v5) |
+| | `amount` | `DOUBLE` | units in stock (> 0; no row = 0) |
 | `cc_house_seen` | `uuid`, `plot_id` PK | `VARCHAR(36)`, `VARCHAR(64)` | first house cinematic seen on a plot |
 | | `seen_at` | `BIGINT` | epoch milliseconds |
-| `cc_schema_version` | `id` = 1, `version` | `INT` | schema version (4); the website can refuse to run on a newer one |
+| `cc_schema_version` | `id` = 1, `version` | `INT` | schema version (5); the website can refuse to run on a newer one |
 
 Index `cc_players_baked_idx` on `cc_players(baked)` makes the leaderboard cheap:
 ```sql

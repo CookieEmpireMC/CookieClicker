@@ -36,3 +36,10 @@ Verified 2026-10-23 at tidy integration (395 Java tests, 73 tools tests). Re-che
 **Tools**: `tools/github_app/test_github_app.py`: throwaway key via `openssl genrsa`, fake GitHub = `http.server` on 127.0.0.1, point `$GITHUB_API_URL` at it, pass `environ` dict, always set `GITHUB_APP_CONFIG` to an EXISTING empty file. `tools/balance/test_balance.py` has seeded brute-force series tests. `tools-test` 73 tests, 1 env skip (ownership LibSync without a hooks dir).
 
 **Sandbox quirks (this worktree)**: Bash refuses compound commands that contain `git` (also inside a filename such as `github`) together with loops, `$VAR`, heredocs or redirects, and commands with `for`/`$VAR` paths even without git. Use plain single commands with literal paths, or Write a script to the scratchpad and run `python3 -I <script>`. Pipes (`| grep | tail`) are fine. Use the Read tool for files with odd names.
+
+**Added 2026-10-25 (ingredients)**
+- Recipe fixtures: `EconomyTestSupport.recipeBuildings()` / `recipeUpgrades(recipes)` / `butterRecipe(ingredient)` (package economy). HUD test builds its own small recipe map (hud package cannot import economy test support).
+- `mise run check-quiet` writes the full log to `<worktree>/.check.log`; its stdout is only the failing test names.
+- `git worktree add -b <new> <path> <base>` works when `<base>` is checked out in another worktree (a plain `git checkout -b` in a new worktree would fail).
+- Python helper scripts in the scratchpad (`python3 -I`) are the reliable way to edit Java tests with multi-line anchors; assert `count == 1` before replacing.
+- (2026-10-25) Package-private classes (`RecipeIcons`, `RecipeGlyphs`, `RecipeGuiSettings.from`) are tested from a test class in the same package; contract tests read shipped yml with `YamlConfiguration.loadConfiguration(new File("src/main/resources/..."))` (`RecipeBookContentTest`). A reviewer worktree may be a leftover coder worktree: `git checkout -b ingredients/plugin-tester` inside it works.

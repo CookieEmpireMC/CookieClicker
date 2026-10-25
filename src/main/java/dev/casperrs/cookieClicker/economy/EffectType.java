@@ -9,7 +9,9 @@ public enum EffectType {
     CLICK_ADD("click-add"),
     CLICK_CPS_FRACTION("click-cps-fraction"),
     BUILDING_MULTIPLIER("building-multiplier"),
-    GLOBAL_MULTIPLIER("global-multiplier");
+    GLOBAL_MULTIPLIER("global-multiplier"),
+    /** One-time: opens the Recipe Book and starts ingredient production. No {@code value}, no maths effect. */
+    RECIPES_UNLOCK("recipes-unlock");
 
     private final String configName;
 

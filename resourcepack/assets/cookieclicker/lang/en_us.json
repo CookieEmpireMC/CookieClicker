@@ -13,5 +13,8 @@
   "subtitles.cookieclicker.factory_ambient": "Cookie factory hums",
   "subtitles.cookieclicker.factory_belt_loop": "Conveyor belt rattles",
   "subtitles.cookieclicker.building_appear": "Building pops up",
-  "subtitles.cookieclicker.building_milestone": "Building upgraded"
+  "subtitles.cookieclicker.building_milestone": "Building upgraded",
+  "subtitles.cookieclicker.recipe_unlock": "Recipe Book unlocked",
+  "subtitles.cookieclicker.recipe_open": "Recipe Book opens",
+  "subtitles.cookieclicker.recipe_buy": "Recipe baked"
 }

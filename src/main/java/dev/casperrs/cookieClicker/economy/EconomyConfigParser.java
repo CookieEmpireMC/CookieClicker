@@ -3,9 +3,12 @@ package dev.casperrs.cookieClicker.economy;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * Turns the raw YAML trees of {@code buildings.yml} and {@code upgrades.yml} into an {@link EconomyConfig}.
@@ -28,6 +31,7 @@ public final class EconomyConfigParser {
         for (Map.Entry<String, ?> e : optionalMap(upgradesYaml.get("upgrades"), "upgrades.yml: upgrades").entrySet()) {
             upgrades.put(e.getKey(), upgrade(e.getKey(), e.getValue(), buildings));
         }
+        Map<String, RecipeDef> recipes = recipes(upgradesYaml, buildings, upgrades);
         double growth = number(buildingsYaml.get("cost-growth"), "buildings.yml: cost-growth");
         if (growth < 1) {
             throw new EconomyConfigException("buildings.yml: cost-growth must be >= 1, got " + growth);
@@ -45,7 +49,8 @@ public final class EconomyConfigParser {
         } else {
             warnings.add("upgrades.yml: click.crit-chance / click.crit-multiplier missing, crits are off");
         }
-        return new Result(new EconomyConfig(growth, basePower, critChance, critMultiplier, buildings, upgrades), warnings);
+        return new Result(new EconomyConfig(growth, basePower, critChance, critMultiplier, buildings, upgrades, recipes),
+                warnings);
     }
 
     private static Map<String, BuildingDef> buildings(Map<String, ?> buildingsYaml) throws EconomyConfigException {
@@ -63,7 +68,8 @@ public final class EconomyConfigParser {
             buildings.put(id, new BuildingDef(id, baseCost,
                     number(spec.get("base-cps"), where + ".base-cps"),
                     unlock.containsKey("baked") ? number(unlock.get("baked"), where + ".unlock.baked") : 0,
-                    spec.containsKey("milestones") ? milestones(spec.get("milestones"), where + ".milestones") : milestones));
+                    spec.containsKey("milestones") ? milestones(spec.get("milestones"), where + ".milestones") : milestones,
+                    produces(spec.get("produces"), where + ".produces")));
         }
         if (buildings.isEmpty()) {
             throw new EconomyConfigException("buildings.yml has no buildings");
@@ -98,12 +104,94 @@ public final class EconomyConfigParser {
             }
         }
         int maxLevel = maxLevel(spec.get("max-level"), costGrowth, where);
+        if (type == EffectType.RECIPES_UNLOCK && costGrowth > 0) {
+            throw new EconomyConfigException(where + ": recipes-unlock is one-time (no cost-growth)");
+        }
         double cost = number(spec.get("cost"), where + ".cost");
         if (cost <= 0) {
             throw new EconomyConfigException(where + ".cost must be > 0");
         }
-        return new UpgradeDef(id, cost, type, number(effect.get("value"), where + ".effect.value"),
-                target, unlockBuilding, unlockOwned, unlockBaked, costGrowth, maxLevel);
+        // recipes-unlock has no value: it switches the Recipe Book on
+        double value = type == EffectType.RECIPES_UNLOCK && effect.get("value") == null
+                ? 0 : number(effect.get("value"), where + ".effect.value");
+        return new UpgradeDef(id, cost, type, value, target, unlockBuilding, unlockOwned, unlockBaked, costGrowth,
+                maxLevel);
+    }
+
+    /** {@code produces: { ingredient: <id>, per-second: <rate> }}; absent = no ingredient. */
+    private static @Nullable IngredientOutput produces(@Nullable Object raw, String where) throws EconomyConfigException {
+        if (raw == null) {
+            return null;
+        }
+        Map<String, ?> spec = asMap(raw, where);
+        return new IngredientOutput(id(spec.get("ingredient"), where + ".ingredient"),
+                positive(spec.get("per-second"), where + ".per-second"));
+    }
+
+    /**
+     * {@code recipes:} (optional) in upgrades.yml. Every ingredient must be produced by a building (else the recipe
+     * could never be bought), recipe ids must differ from upgrade ids (bought recipes share the upgrade levels), and
+     * recipes need a {@code recipes-unlock} upgrade to ever show.
+     */
+    private static Map<String, RecipeDef> recipes(Map<String, ?> upgradesYaml, Map<String, BuildingDef> buildings,
+                                                  Map<String, UpgradeDef> upgrades) throws EconomyConfigException {
+        Map<String, RecipeDef> recipes = new LinkedHashMap<>();
+        Set<String> produced = new HashSet<>();
+        buildings.values().forEach(b -> {
+            if (b.produces() != null) {
+                produced.add(b.produces().ingredient());
+            }
+        });
+        Map<String, ?> section = optionalMap(upgradesYaml.get("recipes"), "upgrades.yml: recipes");
+        if (!section.isEmpty() && upgrades.values().stream().noneMatch(u -> u.type() == EffectType.RECIPES_UNLOCK)) {
+            throw new EconomyConfigException("upgrades.yml: recipes need an upgrade with effect type recipes-unlock");
+        }
+        for (Map.Entry<String, ?> e : section.entrySet()) {
+            String id = e.getKey();
+            String where = "upgrades.yml: recipes." + id;
+            if (upgrades.containsKey(id)) {
+                throw new EconomyConfigException(where + " has the same id as an upgrade");
+            }
+            Map<String, ?> spec = asMap(e.getValue(), where);
+            double cost = number(spec.get("cost"), where + ".cost");
+            if (cost <= 0) {
+                throw new EconomyConfigException(where + ".cost must be > 0");
+            }
+            Map<String, Double> ingredients = new LinkedHashMap<>();
+            for (Map.Entry<String, ?> i : optionalMap(spec.get("ingredients"), where + ".ingredients").entrySet()) {
+                if (!produced.contains(i.getKey())) {
+                    throw new EconomyConfigException(where + ".ingredients." + i.getKey()
+                            + " is not produced by any building");
+                }
+                ingredients.put(i.getKey(), positive(i.getValue(), where + ".ingredients." + i.getKey()));
+            }
+            if (ingredients.isEmpty()) {
+                throw new EconomyConfigException(where + ".ingredients needs at least one ingredient");
+            }
+            Map<String, ?> effect = section(spec, "effect", where);
+            if (!"cps-percent".equals(String.valueOf(effect.get("type")))) {
+                throw new EconomyConfigException(where + ".effect.type must be cps-percent, got " + effect.get("type"));
+            }
+            Map<String, ?> unlock = optionalMap(spec.get("unlock"), where + ".unlock");
+            recipes.put(id, new RecipeDef(id, cost, ingredients, positive(effect.get("value"), where + ".effect.value"),
+                    unlock.containsKey("baked") ? number(unlock.get("baked"), where + ".unlock.baked") : 0));
+        }
+        return recipes;
+    }
+
+    private static String id(@Nullable Object raw, String where) throws EconomyConfigException {
+        if (!(raw instanceof String text) || !text.matches("[a-z][a-z0-9_]*")) {
+            throw new EconomyConfigException(where + " must be an id ([a-z][a-z0-9_]*), got " + raw);
+        }
+        return text;
+    }
+
+    private static double positive(@Nullable Object raw, String where) throws EconomyConfigException {
+        double v = number(raw, where);
+        if (v <= 0) {
+            throw new EconomyConfigException(where + " must be > 0, got " + raw);
+        }
+        return v;
     }
 
     /** One-time upgrades have level 1; repeatable ones (with cost-growth) are unbounded unless max-level is set. */
@@ -132,7 +220,7 @@ public final class EconomyConfigParser {
         if (!(raw instanceof List<?> list)) {
             throw new EconomyConfigException(where + " must be a list of owned counts, got " + raw);
         }
-        java.util.TreeSet<Integer> counts = new java.util.TreeSet<>();
+        TreeSet<Integer> counts = new TreeSet<>();
         for (Object o : list) {
             if (!(o instanceof Integer || o instanceof Long) || ((Number) o).longValue() < 1
                     || ((Number) o).longValue() > Integer.MAX_VALUE) {

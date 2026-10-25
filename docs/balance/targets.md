@@ -7,7 +7,7 @@ What "good pacing" means for CookieClicker. **Edit the YAML block below**; `mise
 - **casual:** 3 clicks/s.
 - **active:** 8 clicks/s.
 
-All profiles buy with the same "optimal-ish" strategy: among unlocked buildings and upgrades, pick the one with the lowest cost per extra cookie/s (clicks count as cookies/s at the profile's click rate), wait until it's affordable, buy it, repeat.
+All profiles buy with the same "optimal-ish" strategy: among unlocked buildings and upgrades, pick the one with the lowest cost per extra cookie/s (clicks count as cookies/s at the profile's click rate), wait until it's affordable, buy it, repeat. Recipes count once their ingredients are in stock (scored by cookie cost per extra cookie/s); the Recipe Book adds no CPS itself, so it is bought as soon as it's affordable.
 
 ## Metrics
 | Metric | Meaning |
@@ -18,6 +18,8 @@ All profiles buy with the same "optimal-ish" strategy: among unlocked buildings 
 | `time-to` | seconds until `count` of `building` are owned (needs `building`, `count`) |
 | `upgrade` | seconds until upgrade `upgrade` is bought (needs `upgrade`) |
 | `baked` | seconds until `cookies` have been baked in total (needs `cookies`) |
+| `recipes` | seconds until `count` recipes are bought (default: all of them); with `since: <upgrade>`, counted from when that upgrade was bought |
+| `recipe-ingredient-wait` | longest time any recipe waits on its ingredients alone: from when it is shown **and** every ingredient it needs has a producer running, until the stock covers it (an unfinished wait counts to the end of the horizon) |
 
 Every target has `max-seconds` (reached no later than this), `min-seconds` (not before this, so content isn't
 blown through), or both. "Never reached within the horizon" fails a `max-seconds` target and passes a target
@@ -91,23 +93,23 @@ targets:
     building: industrial_oven
     count: 1
     max-seconds: 7200
-  - id: first-beehive
-    description: Beehive (Expansion 3 tier) not before 1.5 hours, within the 4-hour horizon
+  - id: first-chicken-farm
+    description: Chicken Farm (Expansion 3 tier) not before 1.5 hours, within the 4-hour horizon
     profiles: [casual]
     metric: time-to
-    building: beehive
+    building: chicken_farm
     count: 1
     min-seconds: 5400
     max-seconds: 14400
-  - id: first-beehive-active
-    description: Active players reach the Beehive within the 4-hour horizon
+  - id: first-chicken-farm-active
+    description: Active players reach the Chicken Farm within the 4-hour horizon
     profiles: [active]
     metric: time-to
-    building: beehive
+    building: chicken_farm
     count: 1
     max-seconds: 14400
   - id: rebirth-threshold-not-early
-    description: 1B baked (the Rebirth threshold) not before 3.5 hours, before golden cookies, recipes and stars exist
+    description: 1B baked (the Rebirth threshold) not before 3.5 hours, before golden cookies and stars exist
     profiles: [casual]
     metric: baked
     cookies: 1000000000
@@ -128,4 +130,44 @@ targets:
     profiles: [idle]
     metric: longest-dead-zone
     max-seconds: 600
+  # ingredients (2026-10-25): the Recipe Book (about 10K baked, the Expansion 1 tier) starts ingredient
+  # production; the 7 recipes cost cookies + ingredients and give +% CPS.
+  - id: recipe-book
+    description: Recipe Book bought between 5 and 20 minutes (the Expansion 1 window)
+    profiles: [casual]
+    metric: upgrade
+    upgrade: recipe_book
+    min-seconds: 300
+    max-seconds: 1200
+  - id: recipe-book-active
+    description: Active players buy the Recipe Book within 20 minutes
+    profiles: [active]
+    metric: upgrade
+    upgrade: recipe_book
+    max-seconds: 1200
+  - id: recipe-book-idle
+    description: Idle players buy the Recipe Book within 30 minutes
+    profiles: [idle]
+    metric: upgrade
+    upgrade: recipe_book
+    max-seconds: 1800
+  - id: first-recipe-soon
+    description: The first recipe within 10 minutes of the Recipe Book
+    profiles: [idle, casual, active]
+    metric: recipes
+    count: 1
+    since: recipe_book
+    max-seconds: 600
+  - id: all-recipes
+    description: All 7 recipes within the 4-hour horizon, not in the first 2 hours
+    profiles: [casual, active]
+    metric: recipes
+    count: 7
+    min-seconds: 7200
+    max-seconds: 14400
+  - id: recipe-ingredient-wait
+    description: No recipe waits more than 15 minutes on ingredients alone once its producers run
+    profiles: [idle, casual, active]
+    metric: recipe-ingredient-wait
+    max-seconds: 900
 ```

@@ -58,6 +58,11 @@ Format: URL | confirmed | checked | stable/volatile
 - Dead ends: chunkyupdate channel ids unknown (LauncherSettings/ReleaseChannel raw 404); minecraft.net landscaping timeout x2; web.archive.org blocked; wiki Tutorials has no mill/barn how-to; WebSearch for MC build guides = spam
 - Fact: /bakery house place is player-only + WorldGuard plot region; headless review fills via RCON setblock strict
 
+## Textured GUI (2026-10-25, docs/research/textured-gui.md)
+- jd.papermc.io/paper/26.3 MenuType (GENERIC_9X1..6, create), InventoryView (setTitle(String) deprecated, no title(Component) setter), Bukkit.createInventory(holder,int,Component) ok, TooltipDisplay(+Builder), DataComponentTypes has TOOLTIP_DISPLAY/TOOLTIP_STYLE | stable
+- docs.papermc.io/paper/dev/menu-type-api/ (generic 9x6 example); minecraft.wiki/w/Font (256x256 glyph max); minecraft.wiki/w/Data_component_format offset 100000 (tooltip_display, tooltip_style sprite paths); docs.oraxen.com/configuration/glyphs/custom-gui (ascent 13, height 256, shift -8); mcfonts.readthedocs.io bitmap (ascent<=height) | stable
+- Dead ends: docs.papermc.io/paper/dev/menu-type and /inventory-api 404; oraxen f3g7k page not fetched. Container label coords and +1 advance only from own knowledge, not sourced.
+
 ## Searches that worked
 - "WorldEdit FAWE Minecraft 26.3 support release" (found Hangar WE beta)
 - API endpoints beat HTML pages: Modrinth v2, Hangar v1 (WorldEdit only), GitHub API for IntellectualSites (EngineHub GitHub releases is empty)

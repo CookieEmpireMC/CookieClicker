@@ -1,6 +1,6 @@
 {
   "model": {
     "type": "minecraft:model",
-    "model": "cookieclicker:item/building/beehive"
+    "model": "cookieclicker:item/recipe/butter"
   }
 }

@@ -35,6 +35,22 @@ Checked against the tidy layout (feature/tidy, 2026-10-23). Package map: `docs/a
   never the `mayContainPlot` union box (Gandalf HIGH: froze natural water between plots). HousePlacer calls a plotChanged hook.
 - Decor y -1/-2 uses `DecorKeepOut.groundReason` (ring, house box no margin, belt cells only).
 
+**Ingredients / recipes (ingredients economy, 2026-10-25)**
+- Bought recipes live in the pouch's upgrade-level map (level 1, recipe id; parser rejects id clashes with upgrades),
+  so storage/snapshots carry them for free; `Economy` ignores ids not in `config.upgrades()`. Recipe Book =
+  any owned upgrade of `EffectType.RECIPES_UNLOCK`. Pure API: `economy/RecipeBook` (statuses/status/buy);
+  Bukkit side: `recipe/RecipeService` (wired in PluginWiring, feedback sounds/effects).
+- Renamed building ids: `economy/LegacyIds.BUILDING_RENAMES`, applied in `JdbcPlayerStore.load`.
+- Recipe Book GUI (2026-10-25): `recipe/RecipeBookMenu` (MenuType view per player, refreshed from the ticker's
+  afterProduce), `recipe/RecipeIcons`, glyphs in `recipe/RecipeGlyphs`; Bakery Shop row = `PanelRows.RECIPE_BOOK`
+  appended after the buildings (sealed `PanelRowState` now also permits `RecipeBookRowState`). `/bakery` root requires
+  admin OR `cookieclicker.recipes`; every admin literal has its own `.requires(admin)`.
+- `MessagesTest` literal scan covers only commands/storage/hud/panel/click/resource-pack/plot/house prefixes; messages
+  must parse in STRICT mode (close every tag) except `.name` paths.
+- There is no `purchase_denied` sound event; the deny sound is `cant_afford`.
+- Shipped-content tests tie messages.yml/VisualFallbacks building ids to buildings.yml (designer-owned): a building
+  rename is red on the coder branch until the balance branch is merged first.
+
 **Engine behaviour**
 - `EffectTicker.start(job)` runs the first step synchronously (a pop's step 0 happens inside the click handler).
 - `Effects.play` may keep the Location for multi-tick jobs: pass a fresh Location per call.

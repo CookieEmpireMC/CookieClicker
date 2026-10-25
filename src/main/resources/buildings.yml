@@ -5,11 +5,14 @@ milestones: [10, 25, 50, 100, 150, 200]
 # Unlocks stand in for the plot expansions (GDD §5): about the cookies baked when the matching expansion would be
 # bought. Mid/late tiers are a little slower than GDD §4.2 (docs/balance/report-2026-10-22.md).
 # Keep buildings in cost / unlock order: the shop's default view relies on the file order.
+# produces: an ingredient per second per copy, times the building's milestone factor, only once the Recipe Book
+# (upgrades.yml) is bought. Its cookie CPS is unchanged.
 buildings:
   wheat_farm:                # Wheat Field
     base-cost: 15
     base-cps: 0.15           # GDD 0.1: payback 100 s like the Apprentice, so it's a real first buy
     unlock: { baked: 0 }
+    produces: { ingredient: flour, per-second: 0.2 }
   villager_baker:            # Baker's Apprentice
     base-cost: 75            # GDD 100: first Apprentice within ~20 s of clicking (targets.md)
     base-cps: 1
@@ -18,26 +21,30 @@ buildings:
     base-cost: 1100
     base-cps: 8
     unlock: { baked: 10000 }
+    produces: { ingredient: milk, per-second: 0.5 }
   sugar_cane_field:
     base-cost: 12000
     base-cps: 47
     unlock: { baked: 10000 }
+    produces: { ingredient: sugar, per-second: 0.5 }
   industrial_oven:
     base-cost: 160000
     base-cps: 240
     unlock: { baked: 750000 }
   extra_belt:
-    base-cost: 2000000
+    base-cost: 2500000        # was 2M: offsets the recipe bonus so 1B stays past 3.5 h casual
     base-cps: 1300
     unlock: { baked: 750000 }
-  beehive:
+  chicken_farm:              # was beehive (renamed 1.5.0; the save migration maps the old id)
     base-cost: 30000000
     base-cps: 6000
     unlock: { baked: 25000000 }
+    produces: { ingredient: eggs, per-second: 5 }
   cocoa_plantation:
-    base-cost: 400000000
-    base-cps: 40000
+    base-cost: 150000000      # was 400M / 40000: bought ~2h35m casual, so the chocolate recipes fit the run
+    base-cps: 24000
     unlock: { baked: 25000000 }
+    produces: { ingredient: chocolate, per-second: 10 }
   shipping_centre:
     base-cost: 5100000000
     base-cps: 260000

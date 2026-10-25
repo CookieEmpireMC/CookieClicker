@@ -2,7 +2,7 @@
 
 My notes on how incremental games are balanced, in my own words, and how they apply to Cookie Empire. Sources are at the bottom. I took the techniques from them, not their tables, names or numbers.
 
-Last updated: 2026-10-22 (building-roster)
+Last updated: 2026-10-25 (ingredients)
 
 ---
 
@@ -50,6 +50,21 @@ An idle economy is a race between **production**, which grows roughly linearly w
 - Measured: with milestones, the old tiers keep pace so well that the run is faster overall. Late tier prices
   (or the later buffs) have to absorb that. A buyer model has to look ahead to the next milestone, or the
   simulation undervalues it.
+
+### Secondary resources and percent bonuses (2026-10-25, ingredients)
+- A second resource made by the same generators adds a gate without adding a new curve: the main lever is
+  *how many seconds of production* an amount costs when the item shows. Pecorella (Part I) describes the same idea
+  for an exchange currency: the layer between generator and spend gives a separate tuning knob.
+- Percent-of-CPS bonuses get better as CPS grows, so the cookie price must be set for the moment they show:
+  `cost ≈ percent × CPS then × the building payback then`. If the price is set from the unlock alone, early
+  recipes are ignored for many minutes and late ones are bought instantly.
+- Additive percents (`1 + Σ`) are deliberately weak against the ×2 milestones: +23 % over the run is a nudge, not a
+  new engine, so it can't break the tier pacing. Multiplied together they would compound.
+- Keep the resource from ever blocking: no cap, no decay, and amounts small enough that the stock fills in a few
+  minutes once the producer runs. The waiting is on cookies, which the player already understands.
+- A lone ingredient producer high in the roster (Cocoa) drags its recipes along: if the tier's payback is worse
+  than the one below it, an optimal player never buys it and its recipes never happen. Its payback has to be in
+  line with the tier below, and a smaller first-copy price shortens the saving gap.
 
 ## 6. Dead zones and walls
 - **Dead zone** (our metric): stretches where *nothing* is affordable. These are what feel like "stuck". A long wait for the *best* item while a cheaper one is affordable is a choice, not a dead zone.

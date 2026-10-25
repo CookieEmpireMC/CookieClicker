@@ -31,3 +31,17 @@ Dated notes from each balance job: which lever moved which metric and by how muc
 - Simulator: a one-step greedy buyer undervalues the copies before a milestone. The milestone lookahead (score the push to the next milestone as one choice, ≤ 5 copies) fixed that, but buying the push as one lump made the buyer save 52 min for 5 Beehives. Buying a push copy by copy (re-scoring after each) brought the longest casual gap to ~12 min.
 - Handy Fingers I: 50M → 25M moved it from 3h42m to 2h18m casual (1h33m active); it's +4.35 % CPS per click-second for casual (3 × 1.45 × 1 %), so it needs a CPS ~1e5 to pay back.
 - Didn't work: the Rebirth floor of 4 h for both profiles; active players are always ~25 min faster, so the active floor is 3 h.
+
+## 2026-10-25: ingredients (production, Recipe Book, 7 recipes)
+- Percent-of-CPS recipes priced from their unlock threshold sit unbought: butter at 20K for +2 % waited 11 min on
+  cookies. Pricing them as `percent × CPS when shown × ~5,000 s` (≈ the late building payback) made each one land
+  within minutes of its ingredients (butter 3K, macadamia 10M, hazelnut 20M, chips 30M).
+- The ingredient wait is set by `amount ÷ (rate × producers owned × milestone factor)` when the recipe shows.
+  Eggs 1 → 5/s cut macadamia's wait 28m → 8m; chocolate 1 → 10/s and 10K → 4K needed cut chips' wait from
+  "never" to 10 min.
+- +23 % CPS from recipes moved 1B ~6 min earlier (3h49m → 3h43m before compensation); Extra Belt 2M → 2.5M gave
+  back +7 min. Mid tiers are still the 1B lever.
+- A tier with a 2× worse payback than the one below is never bought by an optimal player (Cocoa at 400M/40K).
+  Same payback but a smaller first price (150M/24K) is bought at 2h35m casual and shortens the saving gap 44 → 26 min.
+- The Recipe Book adds no CPS, so the cost-per-CPS buyer never picks it; the simulator buys `recipes-unlock`
+  upgrades as soon as affordable instead.

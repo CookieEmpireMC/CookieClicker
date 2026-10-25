@@ -3,3 +3,4 @@
 - [Review ledger](reviews-ledger.md) — per area the commit last verified + verdict; re-review only `git diff <commit>..HEAD`
 - [Test only the important parts](feedback-important-tests-only.md) — user rule 2026-10-23: keep/drop list; 686 -> 395 tests
 - [MariaDB storage](storage-mariadb.md) — schema v4, HikariCP pool, db migrate via runExclusive; open Error-strands-joins MEDIUM (2026-10-24)
+- [Ingredients economy](ingredients-economy.md) — recipes, Recipe Book, schema v5, beehive->chicken_farm, golden keys; open LOWs (float epsilon) (2026-10-25)

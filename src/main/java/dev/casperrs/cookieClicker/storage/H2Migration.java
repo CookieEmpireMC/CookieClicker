@@ -32,6 +32,7 @@ public final class H2Migration {
         m.put("buildings", List.of("uuid", "building_id", "owned"));
         m.put("upgrades", List.of("uuid", "upgrade_id", "upgrade_level"));
         m.put("house_seen", List.of("uuid", "plot_id", "seen_at"));
+        m.put("ingredients", List.of("uuid", "ingredient", "amount"));
         if (!m.keySet().equals(new java.util.LinkedHashSet<>(JdbcPlayerStore.TABLES))) {
             throw new IllegalStateException("H2Migration columns are out of date with JdbcPlayerStore.TABLES");
         }

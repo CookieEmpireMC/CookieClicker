@@ -1,0 +1,36 @@
+{
+  "providers": [
+    {
+      "type": "space",
+      "advances": {
+        "\ue100": -1,
+        "\ue101": -2,
+        "\ue102": -4,
+        "\ue103": -8,
+        "\ue104": -16,
+        "\ue105": -32,
+        "\ue106": -64,
+        "\ue107": -128,
+        "\ue108": 1,
+        "\ue109": 2,
+        "\ue10a": 4,
+        "\ue10b": 8,
+        "\ue10c": 16,
+        "\ue10d": 32,
+        "\ue10e": 64,
+        "\ue10f": 128,
+        "\ue110": -169,
+        "\ue111": -177
+      }
+    },
+    {
+      "type": "bitmap",
+      "file": "cookieclicker:font/gui/recipe_book.png",
+      "ascent": 13,
+      "height": 186,
+      "chars": [
+        "\ue200"
+      ]
+    }
+  ]
+}

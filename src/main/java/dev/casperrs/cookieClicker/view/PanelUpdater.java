@@ -14,6 +14,7 @@ import dev.casperrs.cookieClicker.view.panel.PanelPages;
 import dev.casperrs.cookieClicker.view.panel.PanelRowState;
 import dev.casperrs.cookieClicker.view.panel.PanelRows;
 import dev.casperrs.cookieClicker.view.panel.PriceTween;
+import dev.casperrs.cookieClicker.view.panel.RecipeBookRowState;
 import dev.casperrs.cookieClicker.view.panel.RowState;
 import dev.casperrs.cookieClicker.view.panel.UpgradeRowState;
 import net.kyori.adventure.text.Component;
@@ -72,7 +73,8 @@ final class PanelUpdater {
     }
 
     private int defaultTop(CookiePouch pouch, int rows) {
-        return PanelRows.defaultTop(economy.config(), id -> economy.buildingUnlocked(pouch, id), rows);
+        return PanelRows.defaultTop(economy.config(), id -> economy.buildingUnlocked(pouch, id), rows,
+                economy.recipesUnlocked(pouch));
     }
 
     /** Scrolls the buildings window one row (-1 up, +1 down); false at that end, or when the panel doesn't page. */
@@ -82,7 +84,7 @@ final class PanelUpdater {
         }
         int rows = panel.rows.size();
         boolean moved = pages.scroll(view.owner, panel.kind, delta, defaultTop(pouch, rows),
-                PanelRows.maxTop(economy.config(), rows));
+                PanelRows.maxTop(economy.config(), rows, economy.recipesUnlocked(pouch)));
         panel.scrolled |= moved;
         return moved;
     }
@@ -104,13 +106,14 @@ final class PanelUpdater {
     private List<String> updateBuildingsToggle(StationView view, StationView.Panel panel, CookiePouch pouch,
                                                BulkMode mode) {
         int rows = panel.rows.size();
-        int maxTop = PanelRows.maxTop(economy.config(), rows);
+        boolean recipeBook = economy.recipesUnlocked(pouch);
+        int maxTop = PanelRows.maxTop(economy.config(), rows, recipeBook);
         int top = pages.top(view.owner, panel.kind, defaultTop(pouch, rows), maxTop);
         boolean up = maxTop > 0 && top > 0;
         boolean down = maxTop > 0 && top < maxTop;
         String pageKey = maxTop > 0 ? (up ? "^" : "-") + (down ? "v" : "-") : "";
         showToggle(panel, mode, pageKey, up, down);
-        return PanelRows.buildings(economy.config(), top, rows);
+        return PanelRows.buildings(economy.config(), top, rows, recipeBook);
     }
 
     private List<String> updateClicksToggle(StationView.Panel panel, CookiePouch pouch, BulkMode mode) {
@@ -161,7 +164,7 @@ final class PanelUpdater {
         boolean hadItem = row.id != null;
         row.id = id;
         row.state = state;
-        row.icon.setItemStack(id == null ? ItemStack.empty() : icons.icon(panel.kind, id, view.withPack));
+        row.icon.setItemStack(id == null ? ItemStack.empty() : icons.icon(iconKind(panel.kind, id), id, view.withPack));
         row.cost = PriceTween.fixed(state == null ? 0 : state.cost());
         row.gain = PriceTween.fixed(state == null ? 0 : state.gain());
         if (hadItem && id != null && !scrolled) {
@@ -169,6 +172,11 @@ final class PanelUpdater {
         }
         row.animating = true;
         render(panel, row, now);
+    }
+
+    /** The Recipe Book row shows the book's upgrade icon. */
+    private static PanelKind iconKind(PanelKind kind, String id) {
+        return kind == PanelKind.BUILDINGS && PanelRows.RECIPE_BOOK.equals(id) ? PanelKind.CLICKS : kind;
     }
 
     private void retarget(StationView.Panel panel, StationView.Row row, PanelRowState state, long now, boolean pulse) {
@@ -201,7 +209,10 @@ final class PanelUpdater {
 
     private @Nullable PanelRowState state(PanelKind kind, CookiePouch pouch, String id, BulkMode mode) {
         if (kind == PanelKind.BUILDINGS) {
-            return economy.config().buildings().containsKey(id) ? RowState.of(economy, pouch, id, mode) : null;
+            if (economy.config().buildings().containsKey(id)) {
+                return RowState.of(economy, pouch, id, mode);
+            }
+            return PanelRows.RECIPE_BOOK.equals(id) && economy.recipesUnlocked(pouch) ? RecipeBookRowState.INSTANCE : null;
         }
         return UpgradeRowState.of(economy, pouch, id, mode);
     }
@@ -249,6 +260,7 @@ final class PanelUpdater {
         Component line = switch (state) {
             case RowState b -> renderBuildingRow(row, id, b, cost, gain, mode, p);
             case UpgradeRowState u -> renderUpgradeRow(row, id, u, cost, gain, mode, p);
+            case RecipeBookRowState r -> renderRecipeBookRow(row, p);
         };
         if (line != null) {
             send(panel, row, line, p);
@@ -280,6 +292,15 @@ final class PanelUpdater {
         }
         row.renderedKey = key;
         return text.clickRow(path, p.textPadding(), id, u, cost, gain, mode);
+    }
+
+    private @Nullable Component renderRecipeBookRow(StationView.Row row, StationVisualSettings.Panel p) {
+        String key = PanelRows.RECIPE_BOOK + '|' + messages.revision();
+        if (key.equals(row.renderedKey)) {
+            return null;
+        }
+        row.renderedKey = key;
+        return text.recipeBookRow(p.textPadding());
     }
 
     private void send(StationView.Panel panel, StationView.Row row, Component line, StationVisualSettings.Panel p) {

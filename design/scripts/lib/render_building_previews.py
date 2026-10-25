@@ -11,7 +11,7 @@ from PIL import Image  # noqa: E402
 
 import model_render  # noqa: E402
 
-IDS = ["villager_baker", "industrial_oven", "extra_belt", "shipping_centre", "alchemy_lab", "portal_bakery"]
+IDS = ["villager_baker", "industrial_oven", "extra_belt", "shipping_centre", "alchemy_lab", "portal_bakery", "chicken_farm"]
 
 
 def main():

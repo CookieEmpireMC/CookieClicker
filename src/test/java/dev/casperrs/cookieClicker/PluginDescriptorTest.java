@@ -67,4 +67,12 @@ class PluginDescriptorTest {
                 "paper-plugin.yml does not declare " + BakeryCommand.PERMISSION);
         assertEquals("op", y.getString("permissions." + BakeryCommand.PERMISSION + ".default"));
     }
+
+    @Test
+    void thePlayerPermissionOfTheRecipeCommandIsDeclaredAndOpenToEveryone() throws Exception {
+        YamlConfiguration y = descriptor();
+        assertTrue(y.isConfigurationSection("permissions." + BakeryCommand.RECIPES_PERMISSION));
+        assertTrue(y.getBoolean("permissions." + BakeryCommand.RECIPES_PERMISSION + ".default"),
+                "default must be true (not 'op')");
+    }
 }

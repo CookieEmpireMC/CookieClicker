@@ -1,6 +1,7 @@
 package dev.casperrs.cookieClicker.hud;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.casperrs.cookieClicker.economy.CookiePouch;
@@ -55,6 +56,23 @@ class HudAndTickerTest {
         // the cookie glyph (U+E000, cookieclicker:hud font) is only in the with-pack line
         assertTrue(withPack.indexOf('\uE000') >= 0, "with-pack variant carries the glyph: " + withPack);
         assertTrue(noPack.indexOf('\uE000') < 0, "no-pack variant must not show a box: " + noPack);
+    }
+
+    @Test
+    void stockAppearsOnlyOnceTheRecipeBookIsOwnedAndShowsTheAmounts() throws Exception {
+        Map<String, Object> buildings = Map.of("cost-growth", 1.15, "buildings", Map.of("mill",
+                Map.of("base-cost", 100, "base-cps", 1, "produces", Map.of("ingredient", "flour", "per-second", 0.5))));
+        Map<String, Object> upgrades = Map.of("click", Map.of("base-power", 1), "upgrades", Map.of("recipe_book",
+                Map.of("cost", 1000, "effect", Map.of("type", "recipes-unlock"), "unlock", Map.of("baked", 500))));
+        Economy economy = new Economy(EconomyConfigParser.parse(buildings, upgrades).config(), new java.util.Random(1));
+        Hud hud = new Hud(messages(), economy, p -> false);
+        CookiePouch noBook = CookiePouch.fromSnapshot(new PouchSnapshot(5, 5, Map.of("mill", 1), Map.of(), Map.of("flour", 12.0)));
+        String without = PlainTextComponentSerializer.plainText().serialize(hud.render(noBook, false));
+        assertFalse(without.contains("Flour"), without);
+        CookiePouch book = CookiePouch.fromSnapshot(new PouchSnapshot(5, 5, Map.of("mill", 1), Map.of("recipe_book", 1),
+                Map.of("flour", 12.0)));
+        String with = PlainTextComponentSerializer.plainText().serialize(hud.render(book, false));
+        assertTrue(with.contains("Flour 12"), with);
     }
 
     @Test

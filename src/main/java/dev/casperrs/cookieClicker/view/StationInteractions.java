@@ -2,6 +2,7 @@ package dev.casperrs.cookieClicker.view;
 
 import dev.casperrs.cookieClicker.view.panel.BulkMode;
 import dev.casperrs.cookieClicker.view.panel.PanelKind;
+import dev.casperrs.cookieClicker.view.panel.PanelRows;
 import dev.casperrs.cookieClicker.economy.BulkPurchase;
 import dev.casperrs.cookieClicker.economy.ClickResult;
 import dev.casperrs.cookieClicker.economy.CookiePouch;
@@ -38,6 +39,7 @@ public final class StationInteractions {
     static final String UPGRADE_SHELVED = "upgrade_shelved";
     static final String BASKET_TIER_UP = "basket_tier_up";
     static final String BULK_TOGGLE = "bulk_toggle";
+    static final String RECIPES_UNLOCK = "recipes_unlock";
 
     private final StationViews views;
     private final SessionManager sessions;
@@ -48,6 +50,7 @@ public final class StationInteractions {
     private final Messages messages;
     /** Told after every building purchase that went through (the visible buildings). */
     private Consumer<Player> buildingsBought = player -> { };
+    private Consumer<Player> openRecipeBook = player -> { };
 
     public StationInteractions(StationViews views, SessionManager sessions, Economy economy, Effects effects,
                                SoundService sounds, Hud hud, Messages messages) {
@@ -62,6 +65,11 @@ public final class StationInteractions {
 
     public void setBuildingsBought(Consumer<Player> buildingsBought) {
         this.buildingsBought = buildingsBought;
+    }
+
+    /** What a click on the Bakery Shop's Recipe Book row does. */
+    public void setOpenRecipeBook(Consumer<Player> openRecipeBook) {
+        this.openRecipeBook = openRecipeBook;
     }
 
     /** {@code hit} is the world hit position, or null (left click) for the cookie centre. */
@@ -100,10 +108,15 @@ public final class StationInteractions {
         if (id == null) {
             return; // empty slot
         }
+        if (kind == PanelKind.BUILDINGS && PanelRows.RECIPE_BOOK.equals(id)) {
+            openRecipeBook.accept(player);
+            return;
+        }
         Location loc = new Location(player.getWorld(), row.centre[0], row.centre[1], row.centre[2]);
         BulkMode mode = views.mode(player.getUniqueId(), kind);
         String effect = PURCHASE;
         boolean oneTime = false;
+        boolean recipesUnlock = false;
         BulkPurchase result;
         if (kind == PanelKind.BUILDINGS) {
             result = mode.max() ? economy.buyMaxBuildings(pouch, id) : economy.buyBuildings(pouch, id, mode.count());
@@ -114,6 +127,7 @@ public final class StationInteractions {
             }
             if (!u.repeatable()) {
                 oneTime = true;
+                recipesUnlock = u.type() == EffectType.RECIPES_UNLOCK;
                 effect = UPGRADE_BOUGHT;
                 result = economy.buyUpgrades(pouch, id, 1);
             } else if (mode.max()) {
@@ -135,7 +149,14 @@ public final class StationInteractions {
         } else {
             effects.play(effect, loc, player);
         }
-        sounds.play(player, PURCHASE, loc);
+        if (recipesUnlock) {
+            Location at = player.getLocation();
+            effects.play(RECIPES_UNLOCK, at, player);
+            sounds.play(player, RECIPES_UNLOCK, at);
+            messages.send(player, "upgrades.recipe_book.unlocked");
+        } else {
+            sounds.play(player, PURCHASE, loc);
+        }
         hud.refresh(player, pouch);
         views.refreshPanels(player, pouch, true);
         if (kind == PanelKind.BUILDINGS) {

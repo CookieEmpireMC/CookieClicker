@@ -138,3 +138,27 @@ building_milestone:
   pitch-min: 1.0
   pitch-max: 1.0
   source: block
+
+recipes_unlock:
+  key: "cookieclicker:recipe.unlock"
+  fallback: "minecraft:ui.toast.challenge_complete"
+  volume: 0.8
+  pitch-min: 1.0
+  pitch-max: 1.0
+  source: ui
+
+recipe_book_open:
+  key: "cookieclicker:recipe.open"
+  fallback: "minecraft:item.book.page_turn"
+  volume: 0.6
+  pitch-min: 0.95
+  pitch-max: 1.08
+  source: ui
+
+recipe_buy:
+  key: "cookieclicker:recipe.buy"
+  fallback: "minecraft:entity.player.levelup"
+  volume: 0.8
+  pitch-min: 0.98
+  pitch-max: 1.04
+  source: ui
