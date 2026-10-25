@@ -36,6 +36,8 @@ import java.util.function.Predicate;
 public final class FarmWheels {
 
     public static final Key MODEL = Key.key("cookieclicker", "waterwheel");
+    /** design/waterwheel.md: the model is 3 blocks across, centred on its axle at (8, 8, 8); 7/3 makes it 7. */
+    private static final float SCALE = 7f / 3f;
     private static final long STEP_TICKS = 20;
     private static final double TICKS_PER_MINUTE = 20 * 60;
     /** Display view range 1.0 = 64 blocks (scaled by the client's entity distance). */
@@ -154,7 +156,7 @@ public final class FarmWheels {
     }
 
     private static Transformation turned(float angle) {
-        return new Transformation(new Vector3f(), new Quaternionf().rotateX(angle), new Vector3f(1, 1, 1),
+        return new Transformation(new Vector3f(), new Quaternionf().rotateX(angle), new Vector3f(SCALE, SCALE, SCALE),
                 new Quaternionf());
     }
 
