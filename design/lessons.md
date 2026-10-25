@@ -60,3 +60,9 @@ One dated bullet per lesson: what worked, what looked wrong, how it was fixed.
 - 2026-10-25: a cross-gable porch is easiest as a second `hipped_roof(clip=main)`: cells at or below the main roof surface are skipped; parapet caps must be registered as roof cells or the chimney check flags them.
 - 2026-10-25: the shallow catslide reads best with stairs on even rows and bottom slabs on odd rows (top slabs looked like a giant staircase); a brick roof needs `bricks` risers in its roof ramp.
 - 2026-10-25: leaves, hedges and meadow count as blocks; the chicken farm needed two trees and half the hedges cut to land under 1,200.
+- 2026-10-25 (run 2c): a raised building needs a plinth ring that points at its stilt footings (the lint wants the course above the ring to be non-plinth); posts proud of an inset wall give the depth rhythm for free.
+- 2026-10-25: arches = 3-wide opening with upside-down stairs on the two top corners and a gate across the bottom; a ground-storey interior needs a floor (coarse dirt ramp, not one block) and a loft ceiling or the openings show the sky.
+- 2026-10-25: trees within 2 blocks of a low roof are flagged as chimneys; keep them 3+ out. Iron bars on a gable also count. Hanging lanterns need a ceiling block (a stair top-half works).
+- 2026-10-25: don't mix a roof ramp's planks with a wall ramp's planks (risers count for the roof); choose wall planks that the roof doesn't use.
+- 2026-10-25 (run 2c review): organic pens = a rounded rectangle with run-length wobble, wall or fence on its perimeter, ground picked by distance to trough/gate/shelter; mud blocks render near-black, packed_mud reads as muddy brown. `iron_trapdoor` on a birch log is a cream box, not a churn; barrels read better. The depth lint casts rays from 3 cells in front of body_box: set its north edge at the front-most wall.
+- 2026-10-25: ground-depth is free per place (the cow place uses 2) so a bigger footprint fits the 40,000 box limit.

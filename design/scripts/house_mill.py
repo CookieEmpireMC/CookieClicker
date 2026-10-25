@@ -42,7 +42,7 @@ STONE = Ramp(P("stone_bricks"), [(P("cracked_stone_bricks"), .13, None), (P("mos
                                  (P("tuff_bricks"), .09, None)], seed=3)
 PLINTH = Ramp(P("cobblestone"), [(P("mossy_cobblestone"), .27, "low"), (P("andesite"), .15, None)], seed=4)
 PLASTER = Ramp(P("calcite"), [(P("diorite"), .18, None), (P("polished_diorite"), .12, "low")], seed=5, height=3, y0=5)
-ROOF = Ramp("dark_oak", [("deepslate_tile", .1, None), ("cobbled_deepslate", .08, None)], seed=8, height=14, y0=8)
+ROOF = Ramp("dark_oak", [], seed=8, height=14, y0=8)
 FLOOR = Ramp(P("spruce_planks"), [(P("oak_planks"), .22, None), (P("dark_oak_planks"), .15, None)], seed=9)
 COBBLE = Ramp(P("cobblestone"), [(P("mossy_cobblestone"), .16, None), (P("andesite"), .14, None)], seed=31)
 GRAVEL = Ramp(P("gravel"), [(P("andesite"), .12, None)], seed=22)
@@ -56,7 +56,7 @@ RAMPS = {
     "plinth": ["cobblestone", "mossy_cobblestone", "andesite"],
     "plaster": ["calcite", "diorite", "polished_diorite"],
     "timber": ["dark_oak_log", "stripped_dark_oak_log", "dark_oak_planks"],
-    "roof": ["dark_oak_stairs", "cobbled_deepslate_stairs", "deepslate_tile_stairs"],
+    "roof": ["dark_oak_stairs", "deepslate_tile_stairs", "deepslate_tile_slab"],
     "floor": ["spruce_planks", "oak_planks", "dark_oak_planks"],
 }
 
@@ -219,7 +219,7 @@ def build():
         put(19, y, 15, lg(BEAM, "y")) if y == 2 else None
     # north upper windows and the hoist hatch above window 1
     for i, x in enumerate((18, 22, 26)):
-        window(WNU, x, 6, height=2, shutters="spruce", box=None,
+        window(WNU, x, 6, height=2, shutters=None, box=None,
                sill="spruce")
 
     # ================= hall roof (steep, half-hip at the east end) =================
@@ -263,32 +263,19 @@ def rest(b: Build, roof: dict, slot: dict, pond: set) -> dict:
     for x in (24, 28):
         window(WSG, x, 2, height=2, shutters="spruce", box=None, sill="spruce") if x == 24 else None
     for i, x in enumerate((17, 21, 25, 29)):
-        window(WSG, x, 6, height=2, shutters="spruce", box=None, sill="spruce")
+        window(WSG, x, 6, height=2, shutters=None, box=None, sill="spruce")
     for x in (29,):
-        window(Wall(b, "north", "east", (0, ZU0)), x, 6, height=2, shutters="spruce", box=None, sill="spruce")
+        window(Wall(b, "north", "east", (0, ZU0)), x, 6, height=2, shutters=None, box=None, sill="spruce")
     window(WEG, 21, 2, height=2, shutters="spruce", box=None, sill="spruce")
-    window(WEG, 19, 6, height=2, shutters="spruce", box=None, sill="spruce")
-    window(WEG, 19, 10, height=1, shutters="spruce", box=None, sill="spruce")
+    window(WEG, 19, 6, height=2, shutters=None, box=None, sill="spruce")
+    window(WEG, 19, 10, height=1, shutters=None, box=None, sill="spruce")
     for z in (17, 21):                                                  # west gable windows above the wing roof
-        window(WWG, z, 11, height=2, shutters="spruce", box=None, sill="spruce")
+        window(WWG, z, 11, height=2, shutters=None, box=None, sill="spruce")
     for y in range(9, 15):                                              # king post
         if b.get(X0, y, 19) is not None and "plaster" not in b.block(X0, y, 19) and b.block(X0, y, 19) != "air":
             put(X0, y, 19, lg(BEAM, "y"))
     put(23, 2, 14, B.wall_sign("spruce", "north"))
 
-    # ---- sluice tunnel through the east pier, channel, pond B, gate, bridge
-    put(32, 0, 16, td_gate("west")); put(32, 0, 17, td_gate("west"))
-    put(32, 1, 16, "@iron_bars"); put(32, 1, 17, "@iron_bars")
-    chan = [(x, z) for x in range(33, 45) for z in (16, 17)]
-    water = K.mill_race(b, chan, 0, -1, ramp=BASE, coping="stone_brick", coping_y=2)
-    for z in (15, 18):
-        put(34, 2, z, lg(BEAM, "y")); put(34, 3, z, lg(BEAM, "y"))
-    for z in (15, 16, 17, 18):
-        put(34, 4, z, beam("z"))
-    put(34, 3, 16, "@iron_bars"); put(34, 3, 17, "@iron_bars")
-    put(35, 3, 15, B.lever("wall", "east"))
-    K.stone_bridge(b, 37, 14, 6, axis="z", y_deck=2, width=3, ramp=Ramp(P("stone_bricks"), [(P("mossy_stone_bricks"), .25, None), (P("cracked_stone_bricks"), .1, None)], seed=40),
-                   open_under=frozenset((x, z) for x in range(37, 40) for z in (16, 17)))
 
     # ================= wing (store), in line with the hall, abutting its west gable =================
     WX0, WX1 = ML.WING_X
@@ -309,7 +296,7 @@ def rest(b: Build, roof: dict, slot: dict, pond: set) -> dict:
     WWW = Wall(b, "west", "south", (WX0, 0))
     for u in (10, 13):
         window(WWN, u, 2, height=2, shutters="spruce", box=None, sill="spruce")
-    window(WWS, 11, 2, height=2, shutters="spruce", box=None, sill="spruce")
+    window(WWS, 11, 2, height=2, shutters=None, box=None, sill="spruce")
     door(WWW, 19, 1, mat="spruce", hood=True)
     put(7, 0, 19, st("stone_brick", "east"))
     wing = K.gable_roof_s(b, (WX0 - 1, WZ0 - 1, WX1, WZ1 + 1), ML.Y_EAVE_WING, axis="x", field="dark_oak", eave="deepslate_tile",
@@ -380,9 +367,9 @@ def rest(b: Build, roof: dict, slot: dict, pond: set) -> dict:
     door(WGE, 7, 3, mat="spruce", hood=False)
     put(8, 2, 7, P("stone_bricks")); put(9, 0, 7, P("stone_bricks")); put(9, 1, 7, st("stone_brick", "west"))
     put(10, 0, 7, st("stone_brick", "west"))
-    window(WGN, 4, 3, height=1, shutters="spruce", box=None, sill="spruce")
-    window(WGS, 4, 3, height=1, shutters="spruce", box=None, sill="spruce")
-    window(WGW, 7, 3, height=1, shutters="spruce", box=None, sill="spruce")
+    window(WGN, 4, 3, height=1, shutters=None, box=None, sill="spruce")
+    window(WGS, 4, 3, height=1, shutters=None, box=None, sill="spruce")
+    window(WGW, 7, 3, height=1, shutters=None, box=None, sill="spruce")
     gran = K.pyramid_roof(b, (GX0 - 1, GZ0 - 1, GX1 + 1, GZ1 + 1), 5, field="dark_oak", eave="deepslate_tile",
                           rake="deepslate_tile", ridge=P("dark_oak_planks"), cap=sl("deepslate_tile"), name="granary",
                           ramp_pick=lambda x, y, z: ROOF.pick(x, y, z), riser=P("dark_oak_planks"))
@@ -438,7 +425,7 @@ def scenery(b: Build, pond: set) -> None:
     S.tree(b, 4, 15, kind="oak", height=5, spread=2.6, y0=0)
     S.tree(b, 3, 28, kind="birch", height=6, spread=2.4, y0=0)
     S.tree(b, 41, 28, kind="oak", height=5, spread=2.7, y0=2)
-    S.tree(b, 29, 2, kind="oak", height=6, spread=3.0, y0=0)
+    S.tree(b, 30, 2, kind="oak", height=6, spread=2.8, y0=0)
     S.tree(b, 7, 31, kind="oak", height=5, spread=2.5, y0=0)
     # --- meadow tufts and flowers in clusters on the empty lawn (cells with two or more neighbours only)
     import numpy as np
@@ -450,7 +437,8 @@ def scenery(b: Build, pond: set) -> None:
     tufts = {}
     for x in range(1, SX - 1):
         for z in range(3, SZ - 1):
-            if ground_ok(x, z) and not (11 <= x <= 22 and z <= 14) and field[x, z] > 0.55 and (x, z) not in taken:
+            near_pond = any((x + dx, z + dz) in pond for dx in range(-3, 4) for dz in range(-3, 4))
+            if ground_ok(x, z) and not (11 <= x <= 22 and z <= 14) and field[x, z] > (0.2 if near_pond else 0.55) and (x, z) not in taken:
                 tufts[(x, z)] = rng.random()
     for (x, z), r in sorted(tufts.items()):
         nb = sum(1 for dx in (-1, 0, 1) for dz in (-1, 0, 1) if (dx, dz) != (0, 0) and (x + dx, z + dz) in tufts)
@@ -464,6 +452,12 @@ def scenery(b: Build, pond: set) -> None:
     for (z0, z1) in ((18, 23), (26, 31)):
         for z in range(z0, z1 + 1):
             put(0, 0, z, B.leaves("oak")); put(0, 1, z, B.leaves("oak")) if z % 3 else None
+    for z in range(5, 11):                                                # west edge beside the granary
+        put(0, 0, z, B.leaves("oak")); put(0, 1, z, B.leaves("oak")) if z % 3 else None
+    for (z0, z1) in ((15, 20), (23, 28)):                                 # east edge of the terrace
+        for z in range(z0, z1 + 1):
+            put(45, 2, z, B.leaves("oak")); put(45, 3, z, B.leaves("oak")) if z % 3 else None
+    S.tree(b, 41, 18, kind="oak", height=4, spread=2.0, y0=2)
     # --- orchard on the terrace (quincunx), willow-like vines on the pond tree
     for (x, z) in K.orchard_grid(37, 25, 44, 31, 7, 0, seed=4):
         if 36 <= x <= 44 and 22 <= z <= 31 and (x, 2, z) not in b.g:
@@ -507,7 +501,7 @@ def generate(write: bool = True) -> dict:
     try:
         build_lint.lint_house(g, b.notes, {}, palette)
         farm_lint.lint_place(g, b.notes, points, palette, hero=True, name="mill", water_frontage=(11, 3, 44, 14),
-                             size=size, ground=GROUND, strict_roofs=False)
+                             size=size, ground=GROUND)
     except build_lint.LintError:
         OUT_DIR.mkdir(parents=True, exist_ok=True)
         place_views.mill_previews(g, OUT_DIR)

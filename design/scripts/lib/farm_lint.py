@@ -314,6 +314,86 @@ def lf12_roof_families(g: dict, notes: Notes) -> list[str]:
     return errs
 
 
+def ld1_gates(g: dict) -> list[str]:
+    """Every fence gate stands between two full blocks (posts or pillars), never beside a bare fence piece or air."""
+    errs = []
+    for (x, y, z), d in g.items():
+        if not bid(d).endswith("_fence_gate"):
+            continue
+        along = (1, 0) if B.props_of(d).get("facing") in ("north", "south") else (0, 1)
+        for s in (1, -1):
+            n = g.get((x + along[0] * s, y, z + along[1] * s))
+            nb = bid(n) if n else "air"
+            if nb == "air" or nb.endswith(("_fence", "_trapdoor", "_slab", "_stairs")):
+                errs.append(f"L-D1 gate: the gate at {(x, y, z)} is not flanked by a full-block post ({nb})")
+    return errs
+
+
+def ld2_trapdoors(g: dict, budget: int) -> list[str]:
+    errs = []
+    cells = {p for p, d in g.items() if bid(d).endswith("_trapdoor") and p[1] >= 0}
+    if len(cells) > budget:
+        errs.append(f"L-D2 trapdoors: {len(cells)} trapdoors, budget {budget}")
+    for (x, y, z) in cells:
+        for dx, dz in ((1, 0), (0, 1)):
+            run = 1
+            while (x + dx * run, y, z + dz * run) in cells:
+                run += 1
+            if run >= 6 and (x - dx, y, z - dz) not in cells:
+                errs.append(f"L-D2 trapdoors: a row of {run} trapdoors at {(x, y, z)}")
+    return errs
+
+
+def ld3_fence_family(g: dict) -> list[str]:
+    fam = {bid(d) for p, d in g.items() if p[1] >= 0 and bid(d).endswith("_fence")}
+    return [f"L-D3 fence family: {sorted(fam)}; one fence block family per place"] if len(fam) > 1 else []
+
+
+def ld4_race_open(g: dict, notes: Notes) -> list[str]:
+    errs = []
+    for (x, y, z) in notes.race_cells:
+        if not _is_air(g.get((x, y + 1, z))):
+            errs.append(f"L-D4 race: {bid(g[(x, y + 1, z)])} sits over the race water at {(x, y, z)}")
+    return errs
+
+
+def ld5_flume(g: dict, notes: Notes) -> list[str]:
+    errs = []
+    for (x, y, z) in notes.flume:
+        ok = any(not _is_air(g.get((x, y - k, z))) and (x, y - k, z) not in notes.flume for k in range(1, 4))
+        ok = ok or any(not _is_air(g.get((x + dx, y, z + dz))) and (x + dx, y, z + dz) not in notes.flume
+                       for dx, dz in ((1, 0), (-1, 0), (0, 1), (0, -1)))
+        if not ok:
+            errs.append(f"L-D5 flume: the flume block at {(x, y, z)} has no support within 3 blocks")
+    return errs
+
+
+def ld6_pen(g: dict, notes: Notes) -> list[str]:
+    pen = notes.pen
+    if not pen:
+        return []
+    errs = []
+    area, build = len(set(pen["cells"])), len(set(pen["building"]))
+    if build and area < 1.3 * build:
+        errs.append(f"L-D6 pen: the fenced yard is {area} cells, the building {build}; need at least 1.3x")
+    kinds = {bid(g[(x, -1, z)]) for (x, z) in pen["cells"] if (x, -1, z) in g}
+    if len(kinds) < 2:
+        errs.append(f"L-D6 pen: the pen ground has {len(kinds)} block type(s), need 2 or more")
+    return errs
+
+
+def ld7_props(notes: Notes) -> list[str]:
+    errs = []
+    zones: dict = {}
+    for zone, name, hero in notes.props:
+        zones.setdefault(zone, []).append((name, hero))
+    for zone, items in zones.items():
+        heroes = [n for n, h in items if h]
+        if len(heroes) > 1:
+            errs.append(f"L-D7 props: zone {zone} has {len(heroes)} hero props {heroes}")
+    return errs
+
+
 def lf_size(g: dict, hero: bool, size_range: tuple | None = None) -> list[str]:
     n = sum(1 for (x, y, z), d in g.items() if y >= 0 and bid(d) not in ("air", "water"))
     lo, hi = size_range or (HERO_BLOCKS if hero else SMALL_BLOCKS)
@@ -324,7 +404,7 @@ def lf_size(g: dict, hero: bool, size_range: tuple | None = None) -> list[str]:
 
 def lint_place(g: dict, notes: Notes, points: dict, palette: dict | None = None, *, hero: bool = True, name: str = "place",
                water_frontage: tuple | None = None, roof_share: tuple | None = None, size: tuple | None = None,
-               ground: int = 4, size_range: tuple | None = None, strict_roofs: bool = True) -> None:
+               ground: int = 4, size_range: tuple | None = None, strict_roofs: bool = True, trapdoor_budget: int | None = None) -> None:
     errs: list[str] = []
     errs += lf1_volumes(notes, hero)
     errs += lf2_roof_forms(g, notes)
@@ -339,6 +419,10 @@ def lint_place(g: dict, notes: Notes, points: dict, palette: dict | None = None,
     errs += lf11_gables(g, notes)
     if strict_roofs:
         errs += lf12_roof_families(g, notes)
+    errs += ld1_gates(g) + ld4_race_open(g, notes)
+    if trapdoor_budget is not None:                      # the animal places (L-D2, L-D3)
+        errs += ld2_trapdoors(g, trapdoor_budget) + ld3_fence_family(g)
+    errs += ld5_flume(g, notes) + ld6_pen(g, notes) + ld7_props(notes)
     errs += lf_size(g, hero, size_range)
     if errs:
         raise LintError(f"farm lint failed for {name} (design/build-lint.md, L-F rules):\n  - " + "\n  - ".join(sorted(set(errs))))

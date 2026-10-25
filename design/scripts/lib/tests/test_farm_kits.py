@@ -313,5 +313,48 @@ class LintTests(unittest.TestCase):
         self.assertEqual(FL.lf6_ground(g, Notes()), [])
 
 
+class DetailLintTests(unittest.TestCase):
+    GATE = "minecraft:spruce_fence_gate[facing=north,in_wall=false,open=false,powered=false]"
+
+    def test_gate_needs_full_block_posts(self):
+        g = {(1, 0, 0): self.GATE, (0, 0, 0): "minecraft:spruce_fence[east=true,north=false,south=false,waterlogged=false,west=false]",
+             (2, 0, 0): P("cobblestone")}
+        self.assertEqual(len(FL.ld1_gates(g)), 1)
+        g[(0, 0, 0)] = P("cobblestone")
+        self.assertEqual(FL.ld1_gates(g), [])
+
+    def test_trapdoor_budget_and_rows(self):
+        td = B.td("spruce", "north", "bottom", True)
+        g = {(x, 0, 0): td for x in range(7)}
+        msgs = FL.ld2_trapdoors(g, 12)
+        self.assertEqual(len(msgs), 1)
+        self.assertEqual(len(FL.ld2_trapdoors({(x, 0, 0): td for x in range(0, 14, 2)}, 5)), 1)
+
+    def test_one_fence_family(self):
+        f = "minecraft:%s_fence[east=false,north=false,south=false,waterlogged=false,west=false]"
+        self.assertEqual(FL.ld3_fence_family({(0, 0, 0): f % "spruce", (2, 0, 0): f % "spruce"}), [])
+        self.assertEqual(len(FL.ld3_fence_family({(0, 0, 0): f % "spruce", (2, 0, 0): f % "oak"})), 1)
+
+    def test_race_open_and_flume_support(self):
+        n = Notes()
+        n.race_cells = {(0, 0, 0)}
+        self.assertEqual(len(FL.ld4_race_open({(0, 1, 0): P("stone_bricks")}, n)), 1)
+        self.assertEqual(FL.ld4_race_open({}, n), [])
+        n.flume = {(0, 5, 0)}
+        self.assertEqual(len(FL.ld5_flume({(0, 5, 0): P("spruce_planks")}, n)), 1)
+        self.assertEqual(FL.ld5_flume({(0, 5, 0): P("spruce_planks"), (0, 3, 0): P("dark_oak_log")}, n), [])
+
+    def test_pen_ratio_and_props(self):
+        n = Notes()
+        n.pen = {"building": [(x, 0) for x in range(10)], "cells": [(x, z) for x in range(5) for z in range(2)]}
+        g = {(x, -1, z): P("coarse_dirt") for x in range(5) for z in range(2)}
+        self.assertEqual(len(FL.ld6_pen(g, n)), 2)
+        n.pen["cells"] = [(x, z) for x in range(8) for z in range(2)]
+        g = {(x, -1, z): P("coarse_dirt" if x % 2 else "grass_block") for x in range(8) for z in range(2)}
+        self.assertEqual(FL.ld6_pen(g, n), [])
+        n.props = [("yard", "rick", True), ("yard", "cart", True), ("gate", "churns", True)]
+        self.assertEqual(len(FL.ld7_props(n)), 1)
+
+
 if __name__ == "__main__":
     unittest.main()

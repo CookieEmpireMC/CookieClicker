@@ -1,6 +1,6 @@
 # Countryside: place files, `countryside.yml` and the Mill
 
-Status: placeholder (Mill gate: run 1 of `countryside-builds`; textured previews reviewed once, needs the user's look and a Chunky pass). Target Paper 26.3 (`26.3.build.205-stable`), pack format 97.1. Research: `docs/research/farm-buildings.md`. Build rules: `design/style-guide.md` (R1-R21, D1-D7), `design/build-lint.md` (R rules and the farm rules L-F1..L-F11). Vanilla blocks only, except the waterwheel item model.
+Status: placeholder (the Mill is the only place; needs the user's look and a Chunky pass). Target Paper 26.3 (`26.3.build.205-stable`), pack format 97.1. Build rules: `design/style-guide.md`, `design/build-lint.md`. Vanilla blocks only, except the waterwheel item model.
 
 ## 1. File format (agreed with the coder, implemented in the plugin)
 
@@ -75,17 +75,17 @@ L-F1 volumes, L-F2 roof forms and big planes, L-F3 yard, L-F4 clearance (wheel d
 | Pond A | one broad organic pond (noisy ellipse + the strip against the hall wall), about x 23..44, z 3..14 (z <= 12 east of x 34), water y -3..-2, mud/clay/moss shore, lily pads; the tail race leaves through the east edge at z 8..9 (water exits `x 45`) |
 | Wing (store) | x 8..14, z 15..23, in line with the hall, abuts its west gable; ridge y10 |
 | Sack shed | lean-to x 25..31, z 25..27 on the south wall, barrels and sacks |
-| Terrace + head race | terrace surface y 1 for x 35..45, z 13..30 behind a stone retaining wall (z 13) to the pond; a stone-lined channel x 33..44, z 16..17 (water y 0) runs from the east wall through the east pier into the slot (gate: trapdoors + bars at x 32, sluice gate with lever at x 34); **fenced stone bridge** x 37..39, z 14..19 (deck y 2); orchard on the terrace |
+| Terrace | terrace surface y 1 for x 35..45, z 13..30 behind a stone retaining wall (z 13) to the pond; orchard (3 trees) and a hedge along its east edge (the earlier leat, sluice tunnel and stone bridge are gone: the wheel pit takes its water straight from the pond, nothing stands over water) |
 | Granary | staddle stones, 7 x 7 at x 2..8, z 4..10, floor y2, walls y3..4, pyramid roof ridge y9 + cap y10, door + stone steps on the east face (towards the yard), shuttered lit windows |
 | Scenery | meadow clusters, trees (one with vines over the pond), hedge segments at the south and west edge, back garden (farmland, water channel) at x 9..15 z 28..32, woodpile, bench, sack cart west of the yard |
 
 ### Look (factory craft, scaled)
-Stone ground storey in a stone-brick ramp on a cobble/mossy plinth, jettied plastered upper floor in a dark-oak frame (posts every 4, braces, flower-boxed shuttered lit windows), brackets under the bressumer, **steep (about 56 degrees) dark-oak shingle roof** with dark deepslate patches only (no light blocks), **deepslate-tile eave and rake** and a dark-oak ridge with a slab cap, **half-hip** east end, **two dark-oak dormers** and the **hoist gablet** (open hatch, beam, chain and barrel) on the north slope plus one dormer on the south slope, roofs at 8 heights (3, 4, 5, 8, 10, 11, 12, 16). One chimney budget unused (**no chimney**, `smoke` omitted).
+Stone ground storey in a stone-brick ramp on a cobble/mossy plinth, jettied plastered upper floor in a dark-oak frame (posts every 4, braces, lit windows with sills (shutters on 4 only, no pots)), brackets under the bressumer, **steep (about 56 degrees) dark-oak shingle roof** (one block family: dark-oak field, deepslate-tile trim; no patches), **deepslate-tile eave and rake** and a dark-oak ridge with a slab cap, **half-hip** east end, **two dark-oak dormers** and the **hoist gablet** (open hatch, beam, chain and barrel) on the north slope plus one dormer on the south slope, roofs at 8 heights (3, 4, 5, 8, 10, 11, 12, 16). One chimney budget unused (**no chimney**, `smoke` omitted).
 
 ### Points (design cells)
 | Point | Value |
 |---|---|
-| `viewpoint` | `at [16, 0, 5]`, yaw -20, pitch 3 (the north edge of the yard, looking south-east at the front, the wheel and the pond) |
+| `viewpoint` | `at [16, 0, 5]`, yaw -42, pitch -4 (the north edge of the yard, looking south-east at the front, the wheel and the pond) |
 | `yard` | `from [11, 3]`, `to [21, 9]` |
 | `hologram` | `[16, 1, 7]` (yard centre) |
 | `panel` | `at [20, 0, 7]`, yaw 180 |
@@ -104,36 +104,9 @@ Breastshot, **7 blocks across, 2 wide**, **16 paddles** (not 12: single-axis ele
 - Waterwheel texture and the rotation sign (checked in the renderer only; verify the paddles look radial in game).
 - Open: the head race does not drive a visible water jet onto the wheel (physics off); pond lily pads and mossy shore are random but seeded.
 
-## 6. Cow Barn (`houses/cow_barn.yml`, generator `design/scripts/house_cow_barn.py`)
-- **Purpose:** milk place. A long medieval threshing barn whose clay-tile roof is the dominant mass (eaves y 5, ridge y 11 + stone-brick cap y 12; about 58% of the facade height).
-- **File:** `size: [48, 22, 36]` (volume 38,016); 9,049 blocks written, **2,137 above ground** (1,500-3,500), 132 palette entries. Road on the north edge (3-wide gravel z 0..2).
-- **Parts (design cells):** barn body x 8..32, front wall z 14, back wall z 26: plinth y0 (cobble ramp), board-and-batten walls (spruce / oak / dark oak planks, stripped-spruce battens) on dark-oak log posts every 4 (proud under the eaves), plate y5. Roof: half-hipped both ends (k 3), 56 degree brick / mud-brick / resin-brick stairs, dark-oak eave and rake, stone-brick ridge with slab cap; **catslide outshut** z 23..27 on the back (stairs + slabs, 26 degrees, low plate y3) with stall half-doors; brick gables with iron-bar vent slits. **Cart porch** x 17..23, z 11..14: stone piers, log lintel, **one corbie (stepped) gable** (tops 7, 9, 10, 11, slab caps), spruce fence gates and a post across the opening, **braced double doors** (5 wide, 4 high, centre stile, Z-braces) behind, hanging lanterns, cross-gable roof clipped into the main roof. **Three dormers** on the front (x 12, 27, 31); the one at x 27 is the **hoist** (open hatch, beam, chain, hay bale). **Dairy lean-to** x 33..39, z 17..21 on the east gable (calcite plaster ramp, dark-oak frame, door, shuttered lit windows, barrels, louvre at (34, 8, 19..20), no chimney). Vines on the front wall.
-- **Surroundings:** yard x 14..24, z 3..9 (cobble ramp); gravel path to the gate; flower beds; backdrop wall z 10 (x 22..25) with lanterns; lamp posts at (13,3), (25,3); **paddock** x 1..13, z 4..13 west of the yard with a 2-high drystone wall, trough, hay feeder, trampled mud, gate at (13, 0, 7); hay rick (x 36..41, z 5..7), haycart, woodpile, bench, pasture trees, hedges and a field wall south.
-- **Points:** `viewpoint` at [18,0,5] yaw -12 pitch 3; `yard` [14,3]..[24,9]; `hologram` [19,1,7] (2.4 from the viewpoint); `panel` at [22,0,7] yaw 180 (4.5); `ripe` [14,0,7] beside the paddock gate (4.5); no `smoke` (no chimney). Sign "Cow Barn" at [17,2,10].
-- **Previews:** `design/scripts/previews/place_cow_barn_*.png` (sheet, eye, front, ne, nw, back, porch, dairy, paddock, above). 2 preview rounds.
-- **Placeholder / open:** whole place until the user's look; the resin-brick patches are rare (4%) but bright; the back (south) side and the paddock interior are plain; cows/hay are display entities added by code.
 
-## 7. Chicken Farm (`houses/chicken_farm.yml`, generator `design/scripts/house_chicken_farm.py`)
-- **Purpose:** egg place. Stone coop with a steep clay-tile roof, **coped gable parapets** (slab caps) at both ends, a stepped buttress at the west gable, nest boxes on the west wall, dark shuttered windows, pop hole with ramp on the run side; **square dovecote** 5 x 5 (x 25..29, z 13..17) with a rat ledge (stone-brick slabs at y3), open dark-oak trapdoor nesting holes, pyramid roof and a **louvre cupola** (fence, 4 open trapdoors, lantern; registered as vents, not a chimney).
-- **File:** `size: [40, 20, 34]` (27,200); 6,634 blocks, **1,194 above ground** (600-1,200, close to the top), 106 palette entries.
-- **Parts:** coop walls x 10..20, z 13..19 (stone / andesite / stone-brick ramp on a cobble plinth), ridge y 8 + cap; pilasters for depth; run x 9..23, z 22..30 fenced with 2-high cobblestone-wall pillars every 4 and spruce fence between, hurdle divider, trough, hay, scarecrow, gates at (9,26) and (12,22); terraced backdrop x 32..39 (two levels, retaining walls with coping), haystack, two orchard trees; hedges south.
-- **Points:** `viewpoint` [15,0,5] yaw -10 pitch 3; `yard` [12,3]..[22,9]; `hologram` [16,1,7] (2.4); `panel` at [19,0,7] yaw 180 (4.5, backdrop wall at z 10 with lanterns); `ripe` [12,0,8] (4.2, hay nest at x 10); no `smoke`. Sign "Chicken Farm" at [14,2,11].
-- **Previews:** `design/scripts/previews/place_chicken_farm_*.png`. **Open:** the run interior is empty on purpose (hens are display entities); the place is at the top of the size range, so extras must replace something.
-
-## 8. Market village (`houses/market.yml`, generator `design/scripts/house_market.py`)
-- **Purpose:** hub of the countryside (Recipe Book, notice board, signpost). Roofs dark-oak shingle like the Mill.
-- **File:** `size: [44, 20, 34]` (29,920); 6,831 blocks, **847 above ground** (600-2,000 allowed for the hub; lint `size_range`), 89 palette entries. The yard is outside the village wall; the square is inside.
-- **Parts:** 2-high drystone village wall along z 11 (x 2..41) with the **roofed timber lychgate** x 18..22, z 11..13 (gable roof, planked gable ends, hanging lantern); **notice board** at x 11..14, z 10 (posts, planks, open trapdoor notices); cobbled **square** (noisy ellipse x 3..40, z 12..30); old stone **well** at (31, 17) (S.well); stepped **market cross** at (22, 20); **Recipe Book shelter** x 8..12, z 17..21: dais, corner posts, spruce balustrade with three openings, bookshelves on the west side, pyramid shingle roof with a lantern finial; **three striped stalls** (red/white at x 27..30, z 5..8 = the produce stall beside the yard and ripe spot; blue/white x 28..31, z 24..27; yellow/white x 34..37, z 20..23); **signpost** at (36, 0..3, 14) with two wall signs (Mill / Cow Barn / Sugar Works / Cocoa Grove / Chicken Farm); lamp posts, benches, crates, two trees, hedges.
-- **Points:** `viewpoint` [21,0,5] yaw 0 pitch 3 (looks at the lychgate); `yard` [15,3]..[25,9]; `hologram` [20,1,7] (2.4); `panel` at [23,0,7] yaw 180 (2.8, wall and lanterns behind); `ripe` [25,0,7] (4.5, in front of the produce stall); **`recipe_book` [10,1,19]** (the lectern is placed by code on the dais cell [10,0,19]; no lectern in the file because the house format has no lectern block); **`notice_board` at [12,0,9] yaw 180**; no `smoke`.
-- **Previews:** `design/scripts/previews/place_market_*.png`. **Open:** the market is sparse (no cottage this run); lint skips the depth rule (open timber structures); the sign texts are placeholders; the produce stall's goods are barrels and pumpkins only.
-
-## 9. Run 2a status
-Kits done: see section 2. Stubs left for run 2b: `round_building`, `cone_roof`, `hay_roll_thatch`, `eyebrow_dormer`. Sugar Works, Cocoa Grove and `countryside.yml` are run 2b. Checks: `mise run assets`, `validate-assets`, `tools-test` green.
-
-## 10. Review round 1 (run 2a)
-- **Roof rule (L-F12, style guide F6):** every roof field is ONE block family (stairs + slabs + risers), the trim (eave and rake rows) ONE other family. Cow Barn and Chicken Farm: `brick` field, `deepslate_tile` trim and ridge; Market: `dark_oak` field, `deepslate_tile` trim. The Mill predates the rule (dark-oak field with deepslate patches): it runs with `strict_roofs=False`, unchanged.
-- **Road:** re-stamped last in every generator, plain gravel/andesite (no dirt flecks), full width z 0..2 with a wobbling south edge.
-- **No meadow tufts** any more (they were unanchored clumps); beds only against walls.
-- **Chicken Farm recomposed as one cluster:** coop x 8..18, z 14..20; dovecote x 22..26, z 18..22 (offset SE, ledge touches the run's fence and a low wall to the coop); run x 6..20, z 22..30 wrapping the coop's south side; bending gravel path yard -> door -> dovecote; terraced orchard touching the dovecote (retaining walls x 28 and 32), haystack, two trees. 1,279 blocks above ground (range raised to 600-1,400). Points unchanged.
-- **Market:** two cottages (7 x 7, timber frame + calcite plaster, dark-oak shingle gable) at x 4..10 and 13..19, z 25..31 close the square on the south-west; stalls moved in around the well and cross. 1,245 blocks above ground.
-- **Cow Barn:** the mixed tile roof is gone; one brick family with deepslate-tile trim and ridge.
+## 6. Scope change: Mill only, and `countryside.yml`
+The market, Cow Barn and Chicken Farm were deleted (files, generators, previews, refs) at the user's request; the farm is the Mill alone for now. The kits and lint rules (L-F1..L-F12, L-D1..L-D7) and `lib/place_gen.py` stay.
+- **`houses/countryside.yml`** (generator `design/scripts/countryside.py`): size = the Mill's box, `[46, 24, 36]`, `ground-depth: 4`, every cell keep (`.`), `places: {mill: {at: [0, 0, 0]}}`. The Mill's road meets the box's north edge as in the Mill file.
+- **Mill pass (run 2c):** shutters on 4 windows only; one-family dark-oak roof with deepslate-tile trim; sluice tunnel, beam box, coping and stone bridge removed; viewpoint yaw -42 pitch -4 (the eye view shows the mill, the wheel and the pond, not cobble); meadow clusters thicker around the pond; hedge along the west edge beside the granary and along the terrace's east edge, one more tree on the terrace. The block fallback of the wheel stays inside radius 3.2 of the axle (the item display is 7 across). No footbridge: nothing in the Mill needs a way across the pond.
+- **Final:** 9,472 blocks written, 3,059 above ground; volume 39,744. Points unchanged except the viewpoint's yaw/pitch.
