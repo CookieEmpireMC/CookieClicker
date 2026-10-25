@@ -129,3 +129,11 @@ Breastshot, **7 blocks across, 2 wide**, **16 paddles** (not 12: single-axis ele
 
 ## 9. Run 2a status
 Kits done: see section 2. Stubs left for run 2b: `round_building`, `cone_roof`, `hay_roll_thatch`, `eyebrow_dormer`. Sugar Works, Cocoa Grove and `countryside.yml` are run 2b. Checks: `mise run assets`, `validate-assets`, `tools-test` green.
+
+## 10. Review round 1 (run 2a)
+- **Roof rule (L-F12, style guide F6):** every roof field is ONE block family (stairs + slabs + risers), the trim (eave and rake rows) ONE other family. Cow Barn and Chicken Farm: `brick` field, `deepslate_tile` trim and ridge; Market: `dark_oak` field, `deepslate_tile` trim. The Mill predates the rule (dark-oak field with deepslate patches): it runs with `strict_roofs=False`, unchanged.
+- **Road:** re-stamped last in every generator, plain gravel/andesite (no dirt flecks), full width z 0..2 with a wobbling south edge.
+- **No meadow tufts** any more (they were unanchored clumps); beds only against walls.
+- **Chicken Farm recomposed as one cluster:** coop x 8..18, z 14..20; dovecote x 22..26, z 18..22 (offset SE, ledge touches the run's fence and a low wall to the coop); run x 6..20, z 22..30 wrapping the coop's south side; bending gravel path yard -> door -> dovecote; terraced orchard touching the dovecote (retaining walls x 28 and 32), haystack, two trees. 1,279 blocks above ground (range raised to 600-1,400). Points unchanged.
+- **Market:** two cottages (7 x 7, timber frame + calcite plaster, dark-oak shingle gable) at x 4..10 and 13..19, z 25..31 close the square on the south-west; stalls moved in around the well and cross. 1,245 blocks above ground.
+- **Cow Barn:** the mixed tile roof is gone; one brick family with deepslate-tile trim and ridge.

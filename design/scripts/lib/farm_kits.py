@@ -20,6 +20,14 @@ PITCH_STEEP = (0, 1, 3, 4, 6, 7, 9, 10, 12, 13, 15, 16)      # y rise per level,
 PITCH_45 = tuple(range(0, 16))
 
 
+def _claim(b: Build, cells) -> None:
+    """Cells just written by a roof kit leave the registered eave/field lists of earlier roofs (they hold other blocks now)."""
+    cs = set(cells)
+    for r in b.notes.roofs:
+        r["eave"] = [c for c in r["eave"] if c not in cs]
+        r["field"] = [c for c in r["field"] if c not in cs]
+
+
 # --- roofs ---------------------------------------------------------------------------------------------------------------
 def roof_level(rect: tuple, ks: dict, x: int, z: int) -> tuple[int, str]:
     """(level, side) of a roof cell. ks maps a side (N, S, W, E) to None (that side does not slope = a gable end), 0
@@ -78,6 +86,7 @@ def hipped_roof(b: Build, rect: tuple, y_eave: int, ks: dict, *, field: str, eav
         surface[(x, z)] = y
         cells.add((x, y, z))
         (eave_c if is_eave or is_rake else field_c).append((x, y, z))
+    _claim(b, cells | {(x, y - 1, z) for (x, y, z) in cells})
     b.notes.roof_cells |= cells
     b.notes.roofs.append({"name": name, "eave": eave_c, "field": field_c, "overhang": overhang})
     ridge_y = y_eave + pitch[max(lmax - 1, 0)]
@@ -208,8 +217,8 @@ def dormer(b: Build, roof: dict, wall: Wall, uc: int, front_w: int, y0: int, *, 
     if hatch:
         b.notes.seal |= {wall.xyz(uc, y0, front_w), wall.xyz(uc, y0 + 1, front_w)}
     for r in b.notes.roofs:                                   # the dormer replaced some roof cells
-        r["eave"] = [c for c in r["eave"] if b.block(*c) != "air"]
-        r["field"] = [c for c in r["field"] if b.block(*c) != "air"]
+        r["eave"] = [c for c in r["eave"] if b.block(*c).endswith(("_stairs", "_slab"))]
+        r["field"] = [c for c in r["field"] if b.block(*c).endswith(("_stairs", "_slab"))]
     b.notes.breaks.append({"name": name, "cell": wall.xyz(uc, y0, front_w)})
     b.notes.roof_heights.add(yr)
 
@@ -539,6 +548,7 @@ def catslide_roof(b: Build, rect: tuple, high: str, y_high: int, *, field, eave:
             surface[(x, z)] = y
             b.notes.roof_cells.add((x, y, z))
             (eave_c if is_eave else field_c).append((x, y, z))
+    _claim(b, {(x, y, z) for (x, z), y in surface.items()})
     lowest = y_high - (n - 1) // 2
     b.notes.roofs.append({"name": name, "eave": eave_c, "field": field_c, "overhang": 1})
     b.notes.roof_info.append({"name": name, "form": "catslide", "rect": rect, "y_eave": lowest, "ridge_y": y_high + 1,

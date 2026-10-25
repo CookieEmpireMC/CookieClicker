@@ -46,7 +46,7 @@ MASON = Ramp(P("stone_bricks"), [(P("cracked_stone_bricks"), .2, None), (P("moss
 PLINTH = Ramp(P("cobblestone"), [(P("mossy_cobblestone"), .27, "low"), (P("andesite"), .15, None)], seed=4)
 BOARD = Ramp(P("spruce_planks"), [(P("oak_planks"), .2, None), (P("dark_oak_planks"), .12, None)], seed=5)
 PLASTER = Ramp(P("calcite"), [(P("diorite"), .2, None), (P("polished_diorite"), .12, "low")], seed=6, height=6, y0=1)
-ROOF = Ramp("brick", [("mud_brick", .24, None), ("resin_brick", .04, None)], seed=8, height=8, y0=5)
+ROOF = Ramp("brick", [("mud_brick", .28, None), ("red_nether_brick", .14, None), ("granite", .06, None)], seed=8, height=8, y0=5)
 FLOOR = Ramp(P("spruce_planks"), [(P("oak_planks"), .22, None), (P("dark_oak_planks"), .15, None)], seed=9)
 COARSE = Ramp(P("coarse_dirt"), [(P("podzol[snowy=false]"), .3, None), (P("gravel"), .12, None), (P("mud"), .12, None)], seed=33)
 PADDOCK = Ramp(P("coarse_dirt"), [(P("mud"), .25, None), (P("podzol[snowy=false]"), .15, None), (P("dirt_path"), .1, None)], seed=37)
@@ -56,7 +56,7 @@ RAMPS = {
     "board": ["spruce_planks", "oak_planks", "dark_oak_planks"],
     "timber": ["dark_oak_log", "stripped_dark_oak_log", "dark_oak_planks"],
     "plaster": ["calcite", "diorite", "polished_diorite"],
-    "roof": ["brick_stairs", "mud_brick_stairs", "resin_brick_stairs", "dark_oak_stairs", "bricks"],
+    "roof": ["brick_stairs", "deepslate_tile_stairs", "bricks", "deepslate_tiles"],
     "drystone": ["cobblestone_wall", "mossy_cobblestone_wall", "andesite_wall"],
 }
 GATE = "minecraft:spruce_fence_gate[facing=north,in_wall=false,open=false,powered=false]"
@@ -113,9 +113,9 @@ def build() -> Build:
     # ================= main roof (half-hipped ends) and catslide outshut =================
     pick = lambda x, y, z: ROOF.pick(x, y, z)                                      # noqa: E731
     main = K.hipped_roof(b, (BX0 - 1, FZ - 1, BX1 + 1, 23), Y_EAVE, {"N": 0, "S": 0, "W": 3, "E": 3}, field="brick",
-                         eave="dark_oak", rake="dark_oak", ridge=P("stone_bricks"), cap=sl("stone_brick"),
-                         name="nave", form="half-hip", ramp_pick=pick, riser=P("bricks"))
-    cat = K.catslide_roof(b, (BX0 - 1, 23, BX1 + 1, 27), "N", Y_EAVE, field=pick, eave="dark_oak", name="outshut")
+                         eave="deepslate_tile", rake="deepslate_tile", ridge=P("deepslate_tiles"), cap=sl("deepslate_tile"),
+                         name="nave", form="half-hip", riser=P("bricks"))
+    cat = K.catslide_roof(b, (BX0 - 1, 23, BX1 + 1, 27), "N", Y_EAVE, field="brick", eave="deepslate_tile", name="outshut")
     surface = dict(main["surface"])
     surface.update({k: v for k, v in cat["surface"].items()})
     for side_x, outward in ((BX0, "west"), (BX1, "east")):                          # end walls: boards below, brick gable above
@@ -181,8 +181,8 @@ def build() -> Build:
     WP.put(UC, 7, 0, P("stripped_spruce_log[axis=y]"))
     before = {c for c in main["cells"]}
     porch = K.hipped_roof(b, (UC - 4, PZ + 1, UC + 4, 17), Y_EAVE, {"W": 0, "E": 0, "N": None, "S": None}, field="brick",
-                          eave="dark_oak", rake="dark_oak", ridge=P("stone_bricks"), cap=sl("stone_brick"),
-                          name="porch", form="gable", ramp_pick=pick, riser=P("bricks"), clip=main)
+                          eave="deepslate_tile", rake="deepslate_tile", ridge=P("deepslate_tiles"), cap=sl("deepslate_tile"),
+                          name="porch", form="gable", riser=P("bricks"), clip=main)
     n.gables[:] = [g for g in n.gables if g["name"] not in ("porch:S", "porch:N")]
     drop(b, [(x, Y_EAVE, FZ - 1) for x in range(UC - 3, UC + 4)] + [(x, Y_EAVE, FZ - 1) for x in range(UC - 3, UC + 4)])
     for du in range(-2, 3):
@@ -216,7 +216,7 @@ def build() -> Build:
 
     # ================= dairy lean-to on the east gable =================
     DX0, DX1, DZ0, DZ1 = 33, 39, 17, 21
-    dcat = K.catslide_roof(b, (DX0, DZ0 - 1, DX1 + 1, DZ1 + 1), "W", 7, field=pick, eave="dark_oak", name="dairy")
+    dcat = K.catslide_roof(b, (DX0, DZ0 - 1, DX1 + 1, DZ1 + 1), "W", 7, field="brick", eave="deepslate_tile", name="dairy")
     ds = dcat["surface"]
     ring_d = [(x, z) for x in range(DX0, DX1 + 1) for z in range(DZ0, DZ1 + 1) if x == DX1 or z in (DZ0, DZ1)]
     for (x, z) in ring_d:
@@ -298,8 +298,7 @@ def scenery(b: Build) -> None:
         S.tree(b, x, z, kind=k, height=5 if k == "oak" else 6, spread=2.6 if k == "oak" else 2.2, y0=0)
     G.drystone(b, [(x, 32) for x in range(25, 35)] + [(34, z) for z in range(29, 33)], high=1)
     G.hedge(b, [(1, 6, 34), (9, 14, 34), (17, 22, 34), (25, 30, 34), (33, 38, 34), (41, 46, 34), ("z", 20, 24, 0), ("z", 27, 31, 0)])
-    taken = lambda x, z: (14 <= x <= 24 and z <= 9) or (x <= 13 and z <= 13)         # noqa: E731
-    G.meadow(b, SX, SZ, taken, seed=77)
+    S.ground(b, road, G.GRAVEL)
     n.front_yard = {"rect": (14, 3, 24, 9), "corridor": (18, 20), "max_y": 1}
     n.ground_region = (-1, -1, SX, SZ)
     n.ramps = {k: list(v) for k, v in RAMPS.items()}

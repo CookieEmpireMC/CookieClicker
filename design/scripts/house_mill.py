@@ -511,7 +511,7 @@ def generate(write: bool = True) -> dict:
     try:
         build_lint.lint_house(g, b.notes, {}, palette)
         farm_lint.lint_place(g, b.notes, points, palette, hero=True, name="mill", water_frontage=(11, 3, 44, 14),
-                             size=size, ground=GROUND)
+                             size=size, ground=GROUND, strict_roofs=False)
     except build_lint.LintError:
         OUT_DIR.mkdir(parents=True, exist_ok=True)
         place_views.mill_previews(g, OUT_DIR)

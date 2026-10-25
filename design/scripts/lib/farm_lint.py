@@ -297,6 +297,23 @@ def lf11_gables(g: dict, notes: Notes) -> list[str]:
     return errs
 
 
+def _family(block: str) -> str:
+    f = block.removesuffix("_stairs").removesuffix("_slab")
+    return f[:-1] if f.endswith("s") else f
+
+
+def lf12_roof_families(g: dict, notes: Notes) -> list[str]:
+    """Every roof field uses one block family (stairs, slabs, risers), the trim (eave and rake rows) one other family."""
+    field = {_family(bid(g[c])) for r in notes.roofs for c in r["field"] if c in g and bid(g[c]).endswith(("_stairs", "_slab"))}
+    trim = {_family(bid(g[c])) for r in notes.roofs for c in r["eave"] if c in g and bid(g[c]).endswith(("_stairs", "_slab"))}
+    errs = []
+    if len(field) > 1:
+        errs.append(f"L-F12 roof: the roof field mixes {len(field)} block families {sorted(field)}; use one")
+    if len(trim) > 1:
+        errs.append(f"L-F12 roof: the trim (eave and rake rows) mixes {len(trim)} block families {sorted(trim)}; use one")
+    return errs
+
+
 def lf_size(g: dict, hero: bool, size_range: tuple | None = None) -> list[str]:
     n = sum(1 for (x, y, z), d in g.items() if y >= 0 and bid(d) not in ("air", "water"))
     lo, hi = size_range or (HERO_BLOCKS if hero else SMALL_BLOCKS)
@@ -307,7 +324,7 @@ def lf_size(g: dict, hero: bool, size_range: tuple | None = None) -> list[str]:
 
 def lint_place(g: dict, notes: Notes, points: dict, palette: dict | None = None, *, hero: bool = True, name: str = "place",
                water_frontage: tuple | None = None, roof_share: tuple | None = None, size: tuple | None = None,
-               ground: int = 4, size_range: tuple | None = None) -> None:
+               ground: int = 4, size_range: tuple | None = None, strict_roofs: bool = True) -> None:
     errs: list[str] = []
     errs += lf1_volumes(notes, hero)
     errs += lf2_roof_forms(g, notes)
@@ -320,6 +337,8 @@ def lint_place(g: dict, notes: Notes, points: dict, palette: dict | None = None,
     errs += lf9_roof_heights(notes, roof_share)
     errs += lf10_water(g, water_frontage)
     errs += lf11_gables(g, notes)
+    if strict_roofs:
+        errs += lf12_roof_families(g, notes)
     errs += lf_size(g, hero, size_range)
     if errs:
         raise LintError(f"farm lint failed for {name} (design/build-lint.md, L-F rules):\n  - " + "\n  - ".join(sorted(set(errs))))

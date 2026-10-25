@@ -123,3 +123,4 @@ All five farm places and the market follow the **factory's** craft (R1-R21), not
 - **F3** every place has its 11 x 7 yard on the road side, the points within 5 blocks of the viewpoint, lanterns, a low calm backdrop wall behind the panel; the road meets the place's north edge (3 wide, gravel).
 - **F4** previews are looked at from the viewpoint's eye (player height), the front, both 3/4 sides, the back, above, plus the signature detail (slot, water, yard).
 - **F5** animated parts are item displays with a block fallback underneath; no block inside the display's volume other than the registered fallback.
+- **F6** one roof, one material family: the roof field (every slope, dormer roof, outshut) is stairs + slabs + risers of ONE block family; the trim (eave course, rake edges) is ONE second, contrasting family. No patch mixing, no resin or nether bricks on roofs (L-F12; the Mill predates the rule and is exempt via `strict_roofs=False`).

@@ -18,7 +18,7 @@ import place_gen as G  # noqa: E402
 import place_views  # noqa: E402
 import scenes as S  # noqa: E402
 from blocks import lg, plain as P, sl, st, stripped  # noqa: E402
-from build import Build, Ramp  # noqa: E402
+from build import Build, Ramp, Wall, door, window  # noqa: E402
 
 SX, SY, SZ, GROUND = 44, 16, 34, 4
 SIZE = (SX, SY + GROUND, SZ)
@@ -36,12 +36,14 @@ POINTS = {
 }
 SIGNS = [{"at": [36, 2, 14], "lines": ["", "Mill", "Cow Barn", ""]}, {"at": [34, 1, 14], "lines": ["Sugar Works", "Cocoa Grove", "Chicken Farm", ""]}]
 
+PLASTER = Ramp(P("calcite"), [(P("diorite"), .2, None), (P("polished_diorite"), .12, "low")], seed=6, height=4, y0=1)
 PLINTH = Ramp(P("cobblestone"), [(P("mossy_cobblestone"), .27, "low"), (P("andesite"), .15, None)], seed=4)
 ROOF = Ramp("dark_oak", [("deepslate_tile", .1, None), ("cobbled_deepslate", .08, None)], seed=8, height=6, y0=4)
 SQUARE = Ramp(P("cobblestone"), [(P("mossy_cobblestone"), .16, None), (P("andesite"), .16, None), (P("gravel"), .08, None)], seed=31)
 RAMPS = {
     "plinth": ["cobblestone", "mossy_cobblestone", "andesite"],
-    "roof": ["dark_oak_stairs", "cobbled_deepslate_stairs", "deepslate_tile_stairs"],
+    "roof": ["dark_oak_stairs", "deepslate_tile_stairs", "dark_oak_planks"],
+    "plaster": ["calcite", "diorite", "polished_diorite"],
     "timber": ["dark_oak_log", "stripped_dark_oak_log", "dark_oak_planks"],
     "drystone": ["cobblestone_wall", "mossy_cobblestone_wall", "andesite_wall"],
 }
@@ -88,6 +90,39 @@ def stall(b: Build, x0: int, z0: int, c1: str, c2: str, goods: str) -> None:
     b.notes.volumes.append({"name": f"stall{x0}_{z0}", "footprint": (x0, z0, x0 + 3, z0 + 3), "top": 4})
 
 
+def cottage(b: Build, x0: int, z0: int, tag: str) -> None:
+    """A 7 x 7 timber-frame cottage facing north onto the square: cobble plinth, plaster between dark-oak posts, dark-oak shingle
+    gable roof (ridge along x), gable ends filled with plaster, a door, two shuttered lit windows and a flower box."""
+    n = b.notes
+    x1, z1 = x0 + 6, z0 + 6
+    ring = [(x, z) for x in range(x0, x1 + 1) for z in range(z0, z1 + 1) if x in (x0, x1) or z in (z0, z1)]
+    for x in range(x0, x1 + 1):
+        for z in range(z0, z1 + 1):
+            b.put(x, 0, z, PLINTH.pick(x, 0, z))
+    for (x, z) in ring:
+        post = (x in (x0, x1) and z in (z0, z1)) or (x - x0) % 3 == 0 and z in (z0, z1) or (z - z0) % 3 == 0 and x in (x0, x1)
+        for y in (1, 2, 3):
+            b.put(x, y, z, lg(BEAM, "y") if post else PLASTER.pick(x, y, z))
+        b.put(x, 4, z, beam("x" if z in (z0, z1) else "z"))
+    S.apron(b, x0 - 1, z0 - 3, x1 + 1, z0 - 1, G.COBBLE, force=True)
+    pick = lambda x, y, z: ROOF.pick(x, y, z)                                      # noqa: E731
+    roof = K.gable_roof_s(b, (x0 - 1, z0 - 1, x1 + 1, z1 + 1), 4, axis="x", field="dark_oak", eave="deepslate_tile",
+                          rake="deepslate_tile", ridge=stripped("dark_oak", "x"), cap=sl("deepslate_tile"), name=f"cottage{tag}",
+                          riser=P("dark_oak_planks"))
+    for x in (x0, x1):
+        K.fill_gable_wall(b, roof, [(x, z) for z in range(z0, z1 + 1)], 5, lambda x, y, z: PLASTER.pick(x, y, z))
+    WN = Wall(b, "north", "east", (0, z0))
+    WS = Wall(b, "south", "east", (0, z1))
+    door(WN, x0 + 3, 1, mat="spruce", hood=False)
+    b.put(x0 + 3, 0, z0 - 1, st("stone_brick", "south"))
+    window(WN, x0 + 1, 2, height=2, shutters="spruce", box="potted_poppy", sill="spruce") if False else None
+    window(WN, x0 + 5, 2, height=1, shutters="spruce", box="potted_cornflower", sill="spruce")
+    window(WS, x0 + 2, 2, height=1, shutters="spruce", box="potted_azure_bluet", sill="spruce")
+    window(Wall(b, "west", "south", (x0, 0)), z0 + 3, 2, height=1, shutters=None, box="potted_dandelion", sill="spruce")
+    n.volumes.append({"name": f"cottage{tag}", "footprint": (x0, z0, x1, z1), "top": roof["ridge_y"] + 1})
+    n.cottage_ring = getattr(n, "cottage_ring", []) + ring
+
+
 def build() -> Build:
     b = Build((SX, SY, SZ), ground=GROUND)
     n = b.notes
@@ -107,8 +142,8 @@ def build() -> Build:
     for z in (11, 12, 13):
         put(18, 4, z, beam("z")); put(22, 4, z, beam("z"))
     gate = K.hipped_roof(b, (17, 10, 23, 14), 4, {"W": 0, "E": 0, "N": None, "S": None}, field="dark_oak",
-                         eave="cobbled_deepslate", rake="deepslate_tile", ridge=stripped("dark_oak", "z"), cap=sl("deepslate_tile"),
-                         name="lychgate", form="gable", ramp_pick=pick, riser=P("dark_oak_planks"))
+                         eave="deepslate_tile", rake="deepslate_tile", ridge=stripped("dark_oak", "z"), cap=sl("deepslate_tile"),
+                         name="lychgate", form="gable", riser=P("dark_oak_planks"))
     for z in (11, 13):
         K.fill_gable_wall(b, gate, [(x, z) for x in range(18, 23)], 5, lambda x, y, z: P("dark_oak_planks"))
     put(20, 3, 12, B.lantern(True))
@@ -134,8 +169,8 @@ def build() -> Build:
     put(10, 0, 19, PLINTH.pick(10, 0, 19))
     put(10, 3, 19, B.lantern(True)); put(10, 4, 19, beam("x"))
     put(11, 4, 19, beam("x")); put(9, 4, 19, beam("x"))
-    roof = K.pyramid_roof(b, (x0 - 2, z0 - 2, x1 + 2, z1 + 2), 4, field="dark_oak", eave="cobbled_deepslate", rake="deepslate_tile",
-                          ridge=P("dark_oak_planks"), cap=None, name="shelter", ramp_pick=pick, riser=P("dark_oak_planks"))
+    roof = K.pyramid_roof(b, (x0 - 2, z0 - 2, x1 + 2, z1 + 2), 4, field="dark_oak", eave="deepslate_tile", rake="deepslate_tile",
+                          ridge=P("dark_oak_planks"), cap=None, name="shelter", riser=P("dark_oak_planks"))
     put(10, roof["ridge_y"] + 1, 19, "@dark_oak_fence")
     put(10, roof["ridge_y"] + 2, 19, B.lantern(False))
     n.volumes.append({"name": "shelter", "footprint": (x0, z0, x1, z1), "top": roof["ridge_y"] + 3})
@@ -176,26 +211,27 @@ def scenery(b: Build) -> None:
     put(cx - 1, 3, cz, "@mossy_stone_brick_wall"); put(cx + 1, 3, cz, "@mossy_stone_brick_wall")
     put(cx, 4, cz, "@stone_brick_wall"); put(cx, 5, cz, sl("stone_brick", "bottom"))
     stall(b, 27, 5, "red", "white", "barrels")
-    stall(b, 28, 24, "blue", "white", "hay")
-    stall(b, 34, 20, "yellow", "white", "barrels")
+    stall(b, 27, 22, "blue", "white", "hay")
+    stall(b, 34, 19, "yellow", "white", "barrels")
     for y in range(4):
         put(36, y, 14, lg(BEAM, "y"))
     put(35, 2, 14, B.wall_sign("spruce", "west")); put(37, 2, 14, B.wall_sign("spruce", "east"))
     SIGNS[:] = [{"at": [35, 2, 14], "lines": ["", "Mill", "Cow Barn", ""]}, {"at": [37, 2, 14], "lines": ["Sugar Works", "Cocoa Grove", "Chicken Farm", ""]}]
     S.apron(b, 34, 13, 38, 15, G.COBBLE, force=True)
-    S.bench(b, 26, 22, facing="north", length=3)
-    S.bench(b, 15, 24, facing="south", length=3)
+    S.bench(b, 24, 25, facing="north", length=3)
+    S.bench(b, 15, 22, facing="south", length=3)
     for (x, z) in ((16, 15), (38, 26), (14, 28)):
         S.lamp_post(b, x, z, 3)
     S.crates(b, [(5, 0, 14), (6, 0, 14), (5, 1, 14)], sacks=[(7, 0, 14)])
-    S.tree(b, 5, 30, kind="oak", height=5, spread=2.5, y0=0)
+    cottage(b, 4, 25, "A")
+    cottage(b, 13, 25, "B")
     S.tree(b, 40, 31, kind="oak", height=5, spread=2.5, y0=0)
     G.hedge(b, [(9, 14, 33), (17, 22, 33), (25, 30, 33), ("z", 14, 19, 43), ("z", 22, 27, 43)])
-    taken = lambda x, z: (14 <= x <= 25 and z <= 10) or ((x, z) in sq)                # noqa: E731
-    G.meadow(b, SX, SZ, taken, seed=61, thresh=.7)
+    S.ground(b, road, G.GRAVEL)
     n.front_yard = {"rect": (15, 3, 25, 9), "corridor": (18, 20), "max_y": 1}
     n.ground_region = (-1, -1, SX, SZ)
     n.ramps = {k: list(v) for k, v in RAMPS.items()}
+    n.plinth["ring"] = n.plinth["ring"] + n.cottage_ring
     n.body_box = None
     n.wall_rows = (1, 3)
 

@@ -232,6 +232,15 @@ POINTS = {"viewpoint": {"at": [7, 0, 4], "yaw": 0, "pitch": 10}, "yard": {"from"
 
 
 class LintTests(unittest.TestCase):
+    def test_f12_roof_families(self):
+        b, r = roof_build({"N": 0, "S": 0, "W": None, "E": None})
+        g = dict(b.g)
+        self.assertEqual(FL.lf12_roof_families(g, b.notes), [])
+        b2 = Build((20, 24, 20), ground=2)
+        K.hipped_roof(b2, (1, 1, 15, 9), 2, {"N": 0, "S": 0, "W": None, "E": None}, riser=P("dark_oak_planks"), name="t",
+                      ramp_pick=lambda x, y, z: "brick" if (x + z) % 2 else "mud_brick", **ROOF)
+        self.assertTrue(any("L-F12" in e for e in FL.lf12_roof_families(dict(b2.g), b2.notes)))
+
     def test_f3_yard_ok_and_blocked(self):
         g = small_grid()
         self.assertEqual(FL.lf3_yard(g, POINTS, Notes()), [])
