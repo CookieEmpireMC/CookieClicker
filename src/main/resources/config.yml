@@ -67,6 +67,11 @@ farm:
   paste:
     # Blocks the setup places per tick; lower it if the server lags during a setup
     blocks-per-tick: 5000
+  wheel:
+    # Turns per minute of the mill's waterwheel (0..10, 0 = still)
+    rpm: 2
+    # The wheel exists only while a player with the resource pack is within this many blocks (8..256)
+    view-range: 64
 
 debug:
   log-click-events: false

@@ -18,8 +18,10 @@ import org.bukkit.event.player.PlayerTeleportEvent;
 import org.jspecify.annotations.Nullable;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.IntSupplier;
 
@@ -38,6 +40,7 @@ public final class FarmTeleports implements Listener, PlotPresenceListener {
     private final IntSupplier cooldownSeconds;
     private final Map<UUID, Long> lastTeleport = new HashMap<>();
     private final Map<UUID, String> lastPlot = new HashMap<>();
+    private final Set<UUID> pending = new HashSet<>();
 
     public FarmTeleports(FarmRegistry farms, PlotRegistry plots, Messages messages, IntSupplier cooldownSeconds) {
         this.farms = farms;
@@ -80,9 +83,13 @@ public final class FarmTeleports implements Listener, PlotPresenceListener {
             return;
         }
         UUID id = player.getUniqueId();
+        if (!pending.add(id)) {
+            return; // one teleport in flight per player; the cooldown starts only when it lands
+        }
         player.teleportAsync(new Location(world, v.x(), v.y(), v.z(), v.yaw(), v.pitch()),
-                PlayerTeleportEvent.TeleportCause.COMMAND).thenAccept(ok -> {
-                    Player p = Bukkit.getPlayer(id); // completes on the main thread
+                PlayerTeleportEvent.TeleportCause.COMMAND).whenComplete((ok, error) -> {
+                    pending.remove(id); // completes on the main thread
+                    Player p = Bukkit.getPlayer(id);
                     if (p != null && Boolean.TRUE.equals(ok)) {
                         lastTeleport.put(id, System.currentTimeMillis());
                         messages.send(p, donePath);

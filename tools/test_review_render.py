@@ -51,5 +51,15 @@ class LoopbackTest(unittest.TestCase):
             self.assertEqual("world", after["level-name"])
 
 
+class RunsTest(unittest.TestCase):
+    def test_loose_blocks_merge_into_x_runs_and_attached_ones_come_last(self):
+        blocks = {(0, 60, 0): "minecraft:stone", (1, 60, 0): "minecraft:stone", (2, 60, 0): "minecraft:stone",
+                  (3, 60, 0): "minecraft:dirt", (0, 60, 1): "minecraft:stone",
+                  (1, 61, 0): "minecraft:torch"}
+        self.assertEqual([(0, 60, 0, 2, "minecraft:stone"), (3, 60, 0, 3, "minecraft:dirt"),
+                          (0, 60, 1, 0, "minecraft:stone"), (1, 61, 0, 1, "minecraft:torch")],
+                         rr.runs(blocks))
+
+
 if __name__ == "__main__":
     unittest.main()

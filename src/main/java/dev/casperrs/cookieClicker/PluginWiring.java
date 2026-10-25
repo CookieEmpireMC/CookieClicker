@@ -9,6 +9,7 @@ import dev.casperrs.cookieClicker.config.PluginSettings;
 import dev.casperrs.cookieClicker.economy.Economy;
 import dev.casperrs.cookieClicker.economy.EconomyConfig;
 import dev.casperrs.cookieClicker.farm.FarmAmbience;
+import dev.casperrs.cookieClicker.farm.FarmWheels;
 import dev.casperrs.cookieClicker.farm.FarmRegistry;
 import dev.casperrs.cookieClicker.farm.FarmTeleports;
 import dev.casperrs.cookieClicker.house.cinematic.HouseCinematics;
@@ -105,6 +106,7 @@ final class PluginWiring {
     private @Nullable FarmRegistry farms;
     private @Nullable FarmSetup farmSetup;
     private @Nullable FarmAmbience farmAmbience;
+    private @Nullable FarmWheels farmWheels;
     private @Nullable BukkitTask tickTask;
     private @Nullable BukkitTask autosaveTask;
 
@@ -213,6 +215,10 @@ final class PluginWiring {
         farmAmbience = new FarmAmbience(plugin, effects, farms, () -> settings.get().house().chimney().smoke());
         farms.addListener(farmAmbience::restart); // reload: loops killed by effects.reload come back on the next check
         farmAmbience.restart();
+        farmWheels = new FarmWheels(plugin, farms, resourcePacks::hasPack, () -> settings.get().farm().wheelRpm(),
+                () -> settings.get().farm().wheelViewRange());
+        farms.addListener(farmWheels::restart);
+        farmWheels.restart();
         FarmTeleports teleports = new FarmTeleports(farms, plotRegistry, messages,
                 () -> settings.get().farm().teleportCooldownSeconds());
         pm.registerEvents(teleports, plugin);
@@ -307,6 +313,7 @@ final class PluginWiring {
         add(parts, "plot setup", setup, PlotSetup::reset);
         add(parts, "farm setup", farmSetup, FarmSetup::reset);
         add(parts, "the farm smoke", farmAmbience, FarmAmbience::stopAll);
+        add(parts, "the waterwheels", farmWheels, FarmWheels::stopAll);
         add(parts, "the station views", views, StationViews::shutdown);
         add(parts, "the effects", effects, Effects::shutdown);
         add(parts, "the stations", stations, StationRegistry::clear); // listeners despawn; plots.yml is untouched

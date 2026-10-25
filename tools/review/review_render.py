@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
 """Place a whole plot on the local review server and render review shots with Chunky.
 
-    mise run review-render <design> [--shots eye,34,door] [--at X Y Z] [--spp 128] [--no-place] [--no-render]
+    mise run review-render <design> [--shots eye,34] [--at X Y Z] [--spp 128] [--no-place] [--no-render]
 
 1. Plans the plot like `/bakery plot setup` (tools/review/plot_plan.py): house at layout.house-at incl. its
-   ground-depth layers, decor, fence. A design without a layout is placed alone.
+   ground-depth layers, decor, fence. A design without a layout is placed alone. Countryside designs
+   (tools/review/farm_plan.py): a place file (mill, cow_barn, ..., market) alone, or `countryside` with every place
+   pasted over it, ground-depth up to 4.
 2. Places it over RCON (127.0.0.1 only): clears the area, resets the flat ground, then `setblock ... strict`
-   (no neighbour updates, so water doesn't flow and nothing pops), supports first; then `save-all flush`.
+   (runs of one block along x as `fill ... strict`; no neighbour updates, so water doesn't flow and nothing pops),
+   supports first; then `save-all flush`.
 3. Writes one Chunky scene per shot (y range -64.., camera from Minecraft yaw/pitch) and renders it headlessly.
-   Output: <shots>/<design>_<shot>.png.
+   Shots: plots eye/34/door; places eye (their viewpoint)/34/detail (the mill's wheel, else the panel);
+   countryside above/34. Default: every shot the design has. Output: <shots>/<design>_<shot>.png.
 
 Starts the review server when RCON doesn't answer (and leaves it running); never stops a running one. Before a
 start it makes server.properties loopback-only (server-ip=127.0.0.1, refused if it names another address) with RCON
@@ -31,17 +35,19 @@ import sys
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import farm_plan  # noqa: E402
 import plot_plan  # noqa: E402
 from rcon import Rcon, reachable  # noqa: E402
 
 REPO = os.path.realpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
-ALL_SHOTS = ("eye", "34", "door")
+ALL_SHOTS = ("eye", "34", "door", "detail", "above")
 # block ids (substrings) that need a block below/behind them: placed after everything else
 ATTACHED = ("stairs", "slab", "fence", "pane", "bars", "wall", "door", "trapdoor", "lantern", "torch", "button",
             "sign", "carpet", "flower", "poppy", "dandelion", "tulip", "rose", "grass", "fern", "chain", "ladder",
             "candle", "pot", "rail", "banner", "leaves", "vine", "pod", "head", "skull", "bush", "sapling",
             "lever", "plate", "bell", "wheat", "crop", "water", "lava", "snow", "moss_carpet", "lily", "petals")
 CLEAR_MARGIN = 2
+FILL_LIMIT = 32768  # vanilla commandModificationBlockLimit
 WORLD_MIN_Y = -64
 
 
@@ -187,24 +193,49 @@ def place(plan, endpoint):
         for y in range(plan.y0 - 1, max(low, WORLD_MIN_Y + 1) - 1, -1):
             fill(r, x1, y, z1, x2, z2, "minecraft:grass_block" if y == plan.y0 - 1 else "minecraft:dirt")
         r.cmd(f"kill @e[type=item,x={x1},y={low},z={z1},dx={x2 - x1},dy={top - low},dz={z2 - z1}]")
-        order = sorted(plan.blocks.items(), key=lambda kv: (attached(kv[1]), kv[0][1]))
         errors = 0
-        for (x, y, z), data in order:
-            out = r.cmd(f"setblock {x} {y} {z} {data} strict")
-            if out and "Changed the block" not in out and "Could not set" not in out:
+        for x, y, z, xe, data in runs(plan.blocks):
+            if xe == x:
+                cmd = f"setblock {x} {y} {z} {data} strict"
+                ok = ("Changed the block", "Could not set")
+            else:
+                cmd = f"fill {x} {y} {z} {xe} {y} {z} {data} strict"
+                ok = ("Successfully filled", "No blocks were filled")
+            out = r.cmd(cmd)
+            if out and not any(k in out for k in ok):
                 errors += 1
                 if errors <= 10:
-                    print(f"  setblock {x} {y} {z} {data} -> {out}", file=sys.stderr)
-        print(f"Placed {len(order)} blocks ({errors} errors)")
+                    print(f"  {cmd} -> {out}", file=sys.stderr)
+        print(f"Placed {len(plan.blocks)} blocks ({errors} errors)")
         print(r.cmd("save-all flush") or "saved")
         r.cmd(f"forceload remove {x1} {z1} {x2} {z2}")
         time.sleep(1)
 
 
+def runs(blocks):
+    """(x, y, z, x_end, data): supports first by height, attached blocks last and one by one; the rest merged into
+    runs of the same block along x."""
+    out = []
+    loose = sorted(((k, d) for k, d in blocks.items() if not attached(d)), key=lambda kv: (kv[0][1], kv[0][2], kv[0][0]))
+    for (x, y, z), data in loose:
+        last = out[-1] if out else None
+        if last and last[1] == y and last[2] == z and last[3] == x - 1 and last[4] == data:
+            out[-1] = (last[0], y, z, x, data)
+        else:
+            out.append((x, y, z, x, data))
+    for (x, y, z), data in sorted(((k, d) for k, d in blocks.items() if attached(d)), key=lambda kv: kv[0][1]):
+        out.append((x, y, z, x, data))
+    return out
+
+
 def fill(r, x1, y, z1, x2, z2, block):
-    out = r.cmd(f"fill {x1} {y} {z1} {x2} {y} {z2} {block}")
-    if out and "Successfully filled" not in out and "No blocks were filled" not in out:
-        print(f"  fill y {y}: {out}", file=sys.stderr)
+    """One layer, in z strips small enough for the fill block limit."""
+    step = max(1, FILL_LIMIT // (x2 - x1 + 1))
+    for za in range(z1, z2 + 1, step):
+        zb = min(z2, za + step - 1)
+        out = r.cmd(f"fill {x1} {y} {za} {x2} {y} {zb} {block}")
+        if out and "Successfully filled" not in out and "No blocks were filled" not in out:
+            print(f"  fill y {y}: {out}", file=sys.stderr)
 
 
 def wait_loaded(r, x1, z1, x2, z2, y):
@@ -268,8 +299,8 @@ def render(name, data, p):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("design", help="house design name in src/main/resources/houses (e.g. factory)")
-    ap.add_argument("--shots", default=",".join(ALL_SHOTS), help="comma list of eye,34,door (default: all)")
+    ap.add_argument("design", help="design name in src/main/resources/houses (e.g. factory, mill, countryside)")
+    ap.add_argument("--shots", default="", help=f"comma list of {','.join(ALL_SHOTS)} (default: all the design has)")
     ap.add_argument("--at", nargs=3, type=int, default=[0, -60, 0], metavar=("X", "Y0", "Z"),
                     help="plot min corner; Y0 = first air layer (flat world: -60)")
     ap.add_argument("--houses", default=os.path.join(REPO, "src", "main", "resources", "houses"))
@@ -283,18 +314,19 @@ def main(argv=None):
     if bad:
         ap.error(f"unknown shot(s) {bad}; use {','.join(ALL_SHOTS)}")
     p = paths()
-    plan = plot_plan.plan(a.houses, a.design, tuple(a.at))
+    farm = farm_plan.is_farm_design(a.design, plot_plan.load_yaml(os.path.join(a.houses, a.design + ".yml")))
+    plan = (farm_plan if farm else plot_plan).plan(a.houses, a.design, tuple(a.at))
     for problem in plan.problems:
         print(f"  {problem}")
     if not a.no_place:
         place(plan, ensure_server(p))
     if a.no_render:
         return
-    cams = plot_plan.shots(plan)
+    cams = (farm_plan if farm else plot_plan).shots(plan)
     os.makedirs(p["shots"], exist_ok=True)
-    for shot in wanted:
+    for shot in wanted or list(cams):
         if shot not in cams:
-            print(f"  {a.design} has no '{shot}' shot (no points.door?); skipped")
+            print(f"  {a.design} has no '{shot}' shot; skipped")
             continue
         name = f"{a.design}_{shot}"
         started = time.time()
