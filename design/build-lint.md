@@ -42,3 +42,21 @@ Decor (`lint_decor`): the same prop and organic-edge rules over the plot, plus p
 Silhouette and proportion, roof area versus facade, colour balance (squint test), whether a window row looks crowded, valleys
 and corner stairs (their shapes are computed, their look is reviewed), the interior seen through the glass beyond the
 lantern, hologram and camera sight lines (the camera framing of `factory` is asserted separately in `factory_layout.py`).
+
+## Farm places (L-F rules, `lib/farm_lint.py`)
+Run by the place generators after `lint_house` (R rules). Source: `docs/research/farm-buildings.md` section 10. Hero = Mill, Cow Barn, Sugar Works.
+| Rule | Checks | Failure message starts with |
+|---|---|---|
+| L-F1 volumes | hero: at least 2 roof volumes, each >= 20 % of the summed footprints, different ridge heights | `L-F1` |
+| L-F2 roof diversity | at least 2 roof forms of gable / half-hip / hip / catslide / cross-gable / cone / pyramid; no connected same-facing roof plane over 7 x 7 without a registered break (dormer, gablet, shed, ridge step) | `L-F2` |
+| L-F3 yard | yard rectangle >= 11 x 7, ground not water/leaves, nothing standing in it except on its rim (<= 2 high), hologram/panel/ripe inside or next to it, viewpoint at it | `L-F3` |
+| L-F4 clearance | no block in the waterwheel's disc (radius 3.6, 3 wide) except the registered fallback cells; every water cell enclosed (no air beside or below it, none on the box edge unless declared in `water_exits`); every cocoa pod beside a jungle log | `L-F4` |
+| L-F5 doors | registered double doors of >= 3 cells have their lintel cells one wider each side | `L-F5` |
+| L-F6 ground | no 5 x 5 patch of one ground block (grass excepted) on the surface; no straight pond shore over 7 | `L-F6` |
+| L-F7 chimney/vent | at most one chimney; a lit campfire has open sky or a registered vent above it | `L-F7` |
+| L-F8 contrast | timber vs plaster luminance differ by >= 40 and roof vs stone by >= 20 (mean texture luminance from the client jar; skipped without it); stairs are >= 15 % of the blocks above ground | `L-F8` |
+| L-F9 roof heights | at least 3 distinct eave/ridge/dormer/skirt heights; optional facade roof share range (barn 55-65 %) | `L-F9` |
+| L-F10 water | the declared frontage rectangle is >= 25 % water in plan | `L-F10` |
+| L-F11 gables | every free gable has a bargeboard (rake stairs differ from the field), coping (slabs) or a corbie step | `L-F11` |
+| size | above-ground blocks (no air, no water): hero 1,500-3,500, small places 600-1,200 | `size:` |
+Also changed for R6: slabs are trim and exempt from the "material belongs to a ramp" rule. Tests: `design/scripts/lib/tests/test_farm_kits.py` (`LintTests`).
