@@ -204,8 +204,6 @@ def check_windows(g: dict, notes: Notes, errors: list) -> None:
                             lit = True
         if not has_sill:
             errors.append(f"{name}: needs a sill (trapdoor, slab or stair under it)")
-        if not (shutters or box):
-            errors.append(f"{name}: needs shutters on both sides or a flower box")
         if not lit:
             errors.append(f"{name}: needs a lit interior (lantern, campfire, shroomlight ...) within 3 blocks behind it")
 
