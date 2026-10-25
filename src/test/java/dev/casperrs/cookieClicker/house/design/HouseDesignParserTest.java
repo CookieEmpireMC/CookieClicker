@@ -161,11 +161,11 @@ class HouseDesignParserTest {
         HouseDesignParser.Result r = HouseDesignParser.parse("default", YamlFiles.toMap(yaml));
         assertNotNull(r.design(), r.problems().toString());
         HouseDesign d = r.design();
-        assertEquals(9, d.sizeX());
-        assertEquals(7, d.sizeY());
-        assertEquals(7, d.sizeZ());
-        assertEquals(170, d.cells().stream().filter(c -> !c.blockData().equals("minecraft:air")).count(),
-                "the generator header says 170 blocks (not counting air/keep)");
+        assertEquals(17, d.sizeX());
+        assertEquals(14, d.sizeY());
+        assertEquals(15, d.sizeZ());
+        assertEquals(590, d.cells().stream().filter(c -> !c.blockData().equals("minecraft:air")).count(),
+                "the generator header says 590 blocks (not counting air/keep)");
         assertNotNull(d.points().get("chimney"));
         assertEquals(1, d.signs().size());
         // every palette entry is used, none is missing (the parser already rejected unknown characters)
