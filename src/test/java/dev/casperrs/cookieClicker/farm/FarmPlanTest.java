@@ -32,6 +32,15 @@ class FarmPlanTest {
     }
 
     @Test
+    void aCountrysideOriginAwayFromItsCornerIsRefused() throws Exception {
+        Map<String, Map<String, Object>> files = FarmFixtures.files();
+        files.get("countryside").put("origin", List.of(2, 0, 0)); // the box would start 2 blocks west of the region
+        FarmPlan.Result r = FarmPlan.plan(FarmFixtures.layout(files), FarmFixtures.REGION_MIN);
+        assertNull(r.plan());
+        assertTrue(String.join(";", r.problems()).contains("west or north"), r.problems().toString());
+    }
+
+    @Test
     void neededSizeIsTheCountrysideBoxFromTheRegionMinimumOrNullWhenItFits() throws Exception {
         FarmPlan plan = plan();
         assertNull(plan.neededSize(FarmFixtures.REGION_MIN, new int[] {111, 66, 207}));
