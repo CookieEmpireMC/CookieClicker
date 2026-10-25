@@ -1,3 +1,4 @@
 - [Paper 26.3 verified API](paper-26-3-verified-api.md) — displays, visibility, click events, resource pack API (2026-10-18); pack formats/libraries live in docs/research
 - [WorldGuard/fake-block facts 26.3](worldguard-26-3.md) — WG 7.0.20/WE 7.4.6 versions, Maven, flags, RegionQuery, sendMultiBlockChange, SoundGroup (2026-10-19)
+- [Build-showcase sources](farm-buildings-sources.md) — PMC/BuiltByBit 403; GrabCraft, Wikipedia, abfielder work (2026-10-25)
 - [Fetched sources index](sources.md) — URL | fact | date | stable/volatile, incl. paper-plugin.yml (2026-10-23), searches, dead ends; check before fetching
