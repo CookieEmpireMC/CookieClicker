@@ -56,12 +56,12 @@ def design_block(data):
 # ---------------------------------------------------------------- house design
 
 class Design:
-    def __init__(self, name, raw):
+    def __init__(self, name, raw, max_ground=MAX_GROUND_DEPTH):
         self.name = name
         self.sx, self.sy, self.sz = (int(v) for v in raw["size"])
         self.ground = int(raw.get("ground-depth") or 0)
-        if not 0 <= self.ground <= MAX_GROUND_DEPTH or self.ground >= self.sy:
-            raise ValueError(f"{name}: ground-depth must be 0..{MAX_GROUND_DEPTH} and less than size y")
+        if not 0 <= self.ground <= max_ground or self.ground >= self.sy:
+            raise ValueError(f"{name}: ground-depth must be 0..{max_ground} and less than size y")
         self.origin = [int(v) for v in raw.get("origin") or (0, 0, 0)]
         self.palette = {str(k): str(v).strip() for k, v in raw["palette"].items()}
         self.layers = raw["layers"]
