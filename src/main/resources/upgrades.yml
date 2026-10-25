@@ -50,3 +50,50 @@ upgrades:
     cost: 500000000000
     effect: { type: click-cps-fraction, value: 0.02 }
     unlock: { baked: 250000000000 }
+  # The Recipe Book: one-time, adds no CPS itself. Once bought, the ingredient buildings (buildings.yml `produces`)
+  # start producing and the recipes below can show. Unlocks with the Cow Barn / Sugar Cane Field tier.
+  recipe_book:
+    cost: 15000
+    effect: { type: recipes-unlock }   # no value
+    unlock: { baked: 10000 }
+# Recipes (GDD §4.5): one-time, bought in the Recipe Book GUI with cookies AND ingredients (all or nothing).
+# Shown once the Recipe Book is owned and baked >= unlock.baked. Values add up and multiply total CPS:
+# CPS = Σ building CPS × (1 + Σ bought recipe values) (docs/balance/model.md). value 0.02 = +2 % CPS.
+# Ingredient amounts are a few minutes of production of the producers owned when the recipe shows; the cookie cost
+# pays back about as fast as the buildings on offer then. Listed in unlock order (the sum order for golden values).
+recipes:
+  butter:
+    cost: 3000
+    ingredients: { milk: 200 }
+    effect: { type: cps-percent, value: 0.02 }
+    unlock: { baked: 10000 }
+  oatmeal:
+    cost: 10000
+    ingredients: { flour: 1500 }
+    effect: { type: cps-percent, value: 0.02 }
+    unlock: { baked: 25000 }
+  brown_sugar:
+    cost: 100000
+    ingredients: { sugar: 2000 }
+    effect: { type: cps-percent, value: 0.03 }
+    unlock: { baked: 100000 }
+  caramel:
+    cost: 1000000
+    ingredients: { sugar: 5000, milk: 5000 }
+    effect: { type: cps-percent, value: 0.03 }
+    unlock: { baked: 1000000 }
+  macadamia:
+    cost: 10000000
+    ingredients: { eggs: 2500, sugar: 20000 }
+    effect: { type: cps-percent, value: 0.04 }
+    unlock: { baked: 25000000 }
+  hazelnut:
+    cost: 20000000
+    ingredients: { flour: 50000, chocolate: 2000 }
+    effect: { type: cps-percent, value: 0.04 }
+    unlock: { baked: 50000000 }
+  chocolate_chips:
+    cost: 30000000
+    ingredients: { chocolate: 4000 }
+    effect: { type: cps-percent, value: 0.05 }
+    unlock: { baked: 100000000 }
