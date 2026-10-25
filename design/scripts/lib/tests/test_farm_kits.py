@@ -171,10 +171,52 @@ class PartTests(unittest.TestCase):
         K.awning(b, w, 2, 6, 3)
 
     def test_stubs_raise_not_implemented(self):
-        for f in (K.catslide_roof, K.round_building, K.cone_roof, K.hay_roll_thatch, K.corbie_gable, K.eyebrow_dormer,
-                  K.barn_door_double):
+        for f in (K.round_building, K.cone_roof, K.hay_roll_thatch, K.eyebrow_dormer):
             with self.assertRaises(NotImplementedError):
                 f()
+
+    def test_catslide_drops_half_a_block_per_row(self):
+        b = Build((16, 12, 8), ground=1)
+        r = K.catslide_roof(b, (2, 1, 9, 5), "W", 6, field="brick", eave="nether_brick")
+        self.assertEqual([r["surface"][(x, 3)] for x in range(2, 10)], [6, 6, 5, 5, 4, 4, 3, 3])
+        self.assertEqual([bid(b.get(x, r["surface"][(x, 3)], 3)) for x in (2, 3)], ["brick_stairs", "brick_slab"])
+        self.assertEqual(bid(b.get(9, 3, 3)), "nether_brick_slab")
+        self.assertEqual(b.notes.roof_info[0]["form"], "catslide")
+        self.assertEqual(K.fill_under(b, r["surface"], [(4, 3)], 1, lambda x, y, z: P("stone_bricks")), 4)
+
+    def test_corbie_gable_steps_and_caps(self):
+        b = Build((16, 14, 8), ground=1)
+        wall = Wall(b, "north", "east", (0, 4))
+        caps = K.corbie_gable(b, wall, 8, 3, 5, {0: 11, 1: 10, 2: 9, 3: 8}, body=lambda x, y, z: P("stone_bricks"))
+        self.assertEqual(len(caps), 7)
+        self.assertEqual([c[1] for c in caps], [9, 10, 11, 12, 11, 10, 9])
+        self.assertEqual(bid(b.get(8, 12, 4)), "stone_brick_slab")
+        self.assertEqual(bid(b.get(5, 8, 4)), "stone_bricks")
+        self.assertEqual(b.notes.gables[0]["finish"], "corbie")
+
+    def test_barn_door_double_braced_with_lintel(self):
+        b = Build((20, 10, 8), ground=1)
+        wall = Wall(b, "north", "east", (0, 4))
+        d = K.barn_door_double(b, wall, 10, 1, leaf=lambda x, y, z: P("spruce_planks"), brace=P("dark_oak_planks"))
+        self.assertEqual(len(d["cells"]), 20)
+        self.assertEqual(len(d["lintel"]), 7)                      # the 5 cells plus a jamb cell each side
+        self.assertTrue(all(bid(b.get(*c)) != "air" for c in d["lintel"]))
+        self.assertEqual(bid(b.get(10, 2, 3)), "stripped_dark_oak_log")        # stile proud of the plane (north-facing)
+        self.assertEqual(bid(b.get(8, 2, 4)), "dark_oak_planks")               # outer brace low
+        self.assertEqual(bid(b.get(9, 3, 4)), "dark_oak_planks")               # inner brace high
+        g = {p: v for p, v in b.g.items()}
+        self.assertEqual(FL.lf5_doors(g, b.notes), [])
+
+    def test_cross_gable_clipped_by_main_roof(self):
+        b = Build((24, 24, 24), ground=1)
+        main = K.hipped_roof(b, (1, 1, 21, 17), 4, {"N": 0, "S": 0, "W": None, "E": None}, riser=P("dark_oak_planks"),
+                             name="m", **ROOF)
+        before = dict(b.g)
+        porch = K.hipped_roof(b, (8, 0, 14, 8), 4, {"W": 0, "E": 0, "N": None, "S": None}, riser=P("dark_oak_planks"),
+                              name="p", clip=main, **{**ROOF, "ridge": P("spruce_planks")})
+        for (x, y, z) in porch["cells"]:
+            self.assertGreater(y, main["surface"].get((x, z), -99) - 1)
+        self.assertTrue(all(b.g.get(p) == v for p, v in before.items() if p[2] >= 5 and p[1] >= main["surface"].get((p[0], p[2]), 0)))
 
 
 def small_grid():

@@ -297,9 +297,9 @@ def lf11_gables(g: dict, notes: Notes) -> list[str]:
     return errs
 
 
-def lf_size(g: dict, hero: bool) -> list[str]:
+def lf_size(g: dict, hero: bool, size_range: tuple | None = None) -> list[str]:
     n = sum(1 for (x, y, z), d in g.items() if y >= 0 and bid(d) not in ("air", "water"))
-    lo, hi = HERO_BLOCKS if hero else SMALL_BLOCKS
+    lo, hi = size_range or (HERO_BLOCKS if hero else SMALL_BLOCKS)
     if not lo <= n <= hi:
         return [f"size: {n} blocks above ground, expected {lo}-{hi}"]
     return []
@@ -307,7 +307,7 @@ def lf_size(g: dict, hero: bool) -> list[str]:
 
 def lint_place(g: dict, notes: Notes, points: dict, palette: dict | None = None, *, hero: bool = True, name: str = "place",
                water_frontage: tuple | None = None, roof_share: tuple | None = None, size: tuple | None = None,
-               ground: int = 4) -> None:
+               ground: int = 4, size_range: tuple | None = None) -> None:
     errs: list[str] = []
     errs += lf1_volumes(notes, hero)
     errs += lf2_roof_forms(g, notes)
@@ -320,6 +320,6 @@ def lint_place(g: dict, notes: Notes, points: dict, palette: dict | None = None,
     errs += lf9_roof_heights(notes, roof_share)
     errs += lf10_water(g, water_frontage)
     errs += lf11_gables(g, notes)
-    errs += lf_size(g, hero)
+    errs += lf_size(g, hero, size_range)
     if errs:
         raise LintError(f"farm lint failed for {name} (design/build-lint.md, L-F rules):\n  - " + "\n  - ".join(sorted(set(errs))))
