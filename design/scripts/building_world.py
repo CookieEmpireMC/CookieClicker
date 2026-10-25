@@ -1,4 +1,4 @@
-"""World models of the 6 bakery buildings x 3 stages (feature building-roster).
+"""World models of the 7 bakery buildings x 3 stages (feature building-roster).
 
 Outputs (under resourcepack/assets/cookieclicker/):
   items/building_world/<id>.json                select on custom_model_data strings[0] = "1"/"2"/"3"
@@ -25,7 +25,7 @@ ROOT = Path(__file__).resolve().parents[2]
 ASSETS = ROOT / "resourcepack/assets" / NS
 PX = 2          # texels per model unit
 YOFF = 8        # model y 8 = display position
-IDS = ["villager_baker", "industrial_oven", "extra_belt", "shipping_centre", "alchemy_lab", "portal_bakery"]
+IDS = ["villager_baker", "industrial_oven", "extra_belt", "shipping_centre", "alchemy_lab", "portal_bakery", "chicken_farm"]
 
 # ---- ramps light -> dark, hue shifted (lights lean yellow, shadows lean red/purple)
 PAL = {
@@ -437,8 +437,87 @@ def portal(s):
     return o
 
 
+def chicken(x, z):
+    """A small white hen at (x, z), beak towards -z."""
+    return [B(x - 1.3, 0, z - 0.6, x - 0.7, 2.2, z + 0.1, "flat:gold"), B(x + 0.7, 0, z - 0.6, x + 1.3, 2.2, z + 0.1, "flat:gold"),
+            B(x - 2, 2, z - 2.5, x + 2, 6, z + 2.5, "flat:white"),
+            B(x - 2.4, 3, z - 1.5, x - 2, 5.5, z + 1.5, "flat:cream"), B(x + 2, 3, z - 1.5, x + 2.4, 5.5, z + 1.5, "flat:cream"),
+            B(x - 0.8, 5, z + 2.5, x + 0.8, 8, z + 3.4, "flat:white"),
+            B(x - 1, 6, z - 3.7, x + 1, 9, z - 1.7, "flat:white"),
+            B(x - 0.4, 9, z - 3.2, x + 0.4, 10.2, z - 2, "flat:red"), B(x - 0.4, 6, z - 3.9, x + 0.4, 7, z - 3.6, "flat:red"),
+            B(x - 0.5, 7.2, z - 4.6, x + 0.5, 8.2, z - 3.7, "flat:amber")]
+
+
+def hay(x0, z0, x1, z1, h):
+    return [B(x0, 0, z0, x1, h, z1, "slats:kraft")]
+
+
+def coop(x0, x1, z0, z1, floor, wall, top, s):
+    """Walls (box with a door and a pop-hole), a gable made of steps and two 45 degree roof panels."""
+    o = [B(x0, floor, z0, x1, wall, z1, "planks:" + ("red" if s == 3 else "wood"))]
+    cx = (x0 + x1) / 2
+    o.append(B(cx - 1.8, floor, z0 - 0.3, cx + 1.8, floor + 5.5, z0 + 0.1, "flat:darkwood"))             # pop-hole door
+    o.append(B(cx - 2.4, floor + 5.5, z0 - 0.4, cx + 2.4, floor + 6.4, z0 + 0.2, "planks:cream" if s == 3 else "planks:lightwood"))
+    ramp = B(cx - 1.5, floor - 0.5, z0 - 6.5, cx + 1.5, floor + 0.3, z0 - 0.2, "slats:wood")
+    ramp.rot = ("x", -22.5, (0, (z0 - 6.5 + z0 - 0.2) / 2))
+    o.append(ramp)
+    half = (x1 - x0) / 2 + 0.6
+    steps = int(half // 2.4)
+    for i in range(steps):                                                                              # gable infill
+        w = half - 0.6 - i * 2.4
+        o.append(B(cx - w, wall + i * 2.4, z0 + 0.3, cx + w, wall + (i + 1) * 2.4, z1 - 0.3, "planks:lightwood"))
+    run = half * 1.4142 + 0.4                                                                           # panel length along its slope
+    rise = half
+    ptop = wall + rise / 2 + 0.3
+    for sign in (-1, 1):
+        px = cx + sign * (half / 2)
+        panel = B(px - run / 2, ptop - 0.5, z0 - 1.2, px + run / 2, ptop + 0.5, z1 + 1.2, "stripes:red" if s == 3 else "planks:darkwood")
+        panel.rot = ("z", -45 * sign, (px, 0))
+        o.append(panel)
+    o.append(B(cx - 0.6, wall + rise - 0.3, z0 - 1.3, cx + 0.6, wall + rise + 0.9, z1 + 1.3, "planks:darkwood"))   # ridge cap
+    return o
+
+
+def chicken_farm(s):
+    if s == 1:
+        zc0, zc1 = -4.5, 4.5
+        o = [B(x, 0, z, x + 1.3, 3, z + 1.3, "planks:darkwood") for x in (-6, 4.7) for z in (zc0, zc1 - 1.3)]
+        o += coop(-6, 6, zc0, zc1, 3, 10.5, 0, s)
+        o += [B(6, 4, -2.5, 9.5, 8, 2.5, "crate:lightwood"), B(6.2, 8, -2.2, 9.3, 8.7, 2.2, "flat:kraft"),
+              B(9.5, 5, -2.5, 10.1, 8, 2.5, "planks:darkwood")]                                           # nest box
+        o += hay(-10, -2, -7, 1.5, 3.5)
+        o += chicken(-8, -8.5) + chicken(6, -9)
+        return o
+    zc0, zc1 = 0, 9
+    o = [B(x, 0, z, x + 1.3, 3, z + 1.3, "planks:darkwood") for x in (-7, 5.7) for z in (zc0 + 0.2, zc1 - 1.5)]
+    o += coop(-7, 7, zc0, zc1, 3, 10.5 + (1 if s == 3 else 0), 0, s)
+    o += [B(7, 4, 2.5, 10.5, 8.5, 7, "crate:lightwood"), B(7.2, 8.5, 2.8, 10.3, 9.2, 6.7, "flat:kraft"),
+          B(10.5, 5, 2.5, 11.1, 8.5, 7, "planks:darkwood")]
+    for x in (-11, 11):                                                                                 # fenced run in front
+        for z in (-11, -6, -1):
+            o.append(B(x - 0.7, 0, z - 0.7, x + 0.7, 5.5, z + 0.7, "planks:darkwood"))
+    for z0_ in (-11, -6):
+        for x in (-11, 11):
+            o.append(B(x - 0.4, 2, z0_, x + 0.4, 3.2, z0_ + 5, "planks:wood"))
+            o.append(B(x - 0.4, 4, z0_, x + 0.4, 5.2, z0_ + 5, "planks:wood"))
+    for x0_ in (-11, -3.5, 3.5):
+        for y in (2, 4):
+            o.append(B(x0_, y, -11.4, x0_ + 7.5, y + 1.2, -10.6, "planks:wood"))
+    o += [B(-6, 0, -5, -1, 2.2, -3.4, "planks:darkwood"), B(-5.6, 2.2, -4.6, -1.4, 2.8, -3.8, "flat:kraft")]     # feeder
+    o += hay(5.5, -4.5, 9.5, -1.5, 3.5)
+    o += chicken(-7, -8) + chicken(2, -9)
+    if s == 3:
+        o += chicken(8, -8.5)
+        o += [B(-0.4, 14, 3.9, 0.4, 14.2, 4.7, "flat:gold")] if False else []
+        cx = 0
+        o += [B(cx - 0.3, 19, 4, cx + 0.3, 23, 4.6, "plate:gold"), B(cx - 2.4, 21, 4.1, cx + 2.4, 21.6, 4.5, "plate:gold"),
+              B(cx - 1.4, 22.2, 4.0, cx + 1.4, 23.6, 4.6, "plate:gold")]                                    # weather vane
+        o += [B(-3.2, 3, -1.2, -1, 4.6, 0.8, "plate:gold"), B(-2.6, 4.6, -0.8, -1.6, 5.8, 0.4, "plate:gold")]   # golden eggs by the feeder
+    return o
+
+
 BUILD = {"villager_baker": apprentice, "industrial_oven": oven, "extra_belt": belt, "shipping_centre": shipping,
-         "alchemy_lab": alchemy, "portal_bakery": portal}
+         "alchemy_lab": alchemy, "portal_bakery": portal, "chicken_farm": chicken_farm}
 STAGES = {b: {s: BUILD[b](s) for s in (1, 2, 3)} for b in IDS}
 
 

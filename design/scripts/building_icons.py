@@ -2,7 +2,7 @@
 
 Outputs per id under resourcepack/assets/cookieclicker/:
   items/building/<id>.json, models/item/building/<id>.json, textures/item/building/<id>.png
-ids: cow_barn sugar_cane_field industrial_oven extra_belt beehive cocoa_plantation shipping_centre alchemy_lab portal_bakery
+ids: cow_barn sugar_cane_field industrial_oven extra_belt chicken_farm cocoa_plantation shipping_centre alchemy_lab portal_bakery
 (wheat_farm and villager_baker keep their own scripts: building_wheat_farm.py / building_villager_baker.py.)
 Deterministic. Spec: design/building-icons.md
 """
@@ -167,21 +167,27 @@ def extra_belt():
     return finish(c)
 
 
-def beehive():
+def chicken_farm():
     c = Canvas(S)
-    bands = [(24, 29, 11.5), (20, 25, 12.5), (15, 21, 11.5), (10, 16, 9.5), (6, 11, 6.5)]
-    for i, (y0, y1, rx) in enumerate(bands):                        # stacked skep bands
-        m = ellipse(S, 16, (y0 + y1) / 2 + 0.5, rx, (y1 - y0) / 2 + 1.0)
-        if i == 4:
-            m &= np.mgrid[0:S, 0:S][0] < y1 + 1
-        lump(c, m, HONEY if i % 2 == 0 else ["#E8A634", "#D28A2A", "#A8602A", "#7C4426"], 2.2, (0.8, 0.45, 0.05))
-    c.paint(rect(S, 15, 3, 17, 5), HONEY[2])                        # top knob
-    c.paint(ellipse(S, 16, 22.5, 3.2, 3.0), "#3A2230")              # entrance
-    c.paint(ellipse(S, 16, 22.0, 2.0, 1.8), "#1E1420")
-    c.paint(ellipse(S, 26.5, 8.5, 2.6, 2.0), "#F4CF55")             # bee
-    c.paint(rect(S, 26, 7, 26, 10), "#3A2230")
-    c.paint(ellipse(S, 25.5, 5.8, 1.6, 1.2), WHITE[0])
-    c.paint(ellipse(S, 28.5, 5.8, 1.6, 1.2), WHITE[1])
+    block(c, 5, 15, 26, 28, WOOD)                                   # coop walls
+    for x in range(9, 26, 4):                                       # board lines
+        c.paint(rect(S, x, 16, x, 27), WOOD[2])
+    c.paint(polygon(S, [(2, 15.5), (15.5, 4), (29, 15.5)]), RED[2])  # gable roof
+    lump(c, polygon(S, [(3, 15), (15.5, 5.5), (28, 15)]), RED, 1.5, (0.9, 0.55, 0.1))
+    c.paint(rect(S, 2, 15, 29, 15), RED[3])
+    c.paint(polygon(S, [(12, 15), (15.5, 11), (19, 15)]), DARKWOOD[2])    # loft hatch
+    block(c, 9, 19, 14, 28, DARKWOOD)                               # pop-hole door
+    c.paint(rect(S, 10, 20, 13, 27), DARKWOOD[3])
+    c.paint(polygon(S, [(9, 28), (14, 28), (12, 30), (9, 30)]), WOOD[2])  # ramp
+    c.paint(rect(S, 17, 21, 24, 24), WHITE[1])                      # nest window with an egg
+    c.paint(rect(S, 17, 21, 24, 21), DARKWOOD[2])
+    c.paint(ellipse(S, 20.5, 23, 1.6, 1.4), "#F2D8A8")
+    c.paint(ellipse(S, 24.5, 27, 3.4, 2.0), GOLD[1])                # hay
+    c.paint(ellipse(S, 24.2, 26.6, 2.2, 1.0), GOLD[0])
+    ch = ellipse(S, 27.5, 26, 3.0, 2.6) | ellipse(S, 29, 22.8, 1.6, 1.8)   # little chicken at the right edge
+    c.paint(ch, WHITE[0])
+    c.paint(rect(S, 28, 20, 29, 20), RED[0])
+    c.paint(rect(S, 30, 23, 30, 23), GOLD[2])
     return finish(c)
 
 
@@ -263,7 +269,7 @@ def portal_bakery():
 
 
 ICONS = {"cow_barn": cow_barn, "sugar_cane_field": sugar_cane_field, "industrial_oven": industrial_oven,
-         "extra_belt": extra_belt, "beehive": beehive, "cocoa_plantation": cocoa_plantation,
+         "extra_belt": extra_belt, "chicken_farm": chicken_farm, "cocoa_plantation": cocoa_plantation,
          "shipping_centre": shipping_centre, "alchemy_lab": alchemy_lab, "portal_bakery": portal_bakery}
 
 
