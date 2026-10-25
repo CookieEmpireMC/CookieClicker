@@ -20,10 +20,23 @@ class FarmBackupTest {
 
     @Test
     void theSlabsCoverTheBoxExactlyOnceEvenAcrossNegativeCoordinates() {
+        assertCoversExactlyOnce(FarmBackup.slabs(BOX));
+    }
+
+    @Test
+    void slabsAreCutToTheBlockBudgetAndStillCoverTheBox() {
+        List<Farm.Box> slabs = FarmBackup.slabs(BOX, 5000);
+        for (Farm.Box s : slabs) {
+            assertTrue(FarmBackup.volume(s) <= 5000, "slab over the budget: " + s);
+        }
+        assertCoversExactlyOnce(slabs);
+    }
+
+    private static void assertCoversExactlyOnce(List<Farm.Box> slabs) {
         Set<String> seen = new HashSet<>();
-        for (Farm.Box s : FarmBackup.slabs(BOX)) {
+        for (Farm.Box s : slabs) {
             assertTrue(s.minX() >= BOX.minX() && s.maxX() <= BOX.maxX() && s.minZ() >= BOX.minZ()
-                    && s.maxZ() <= BOX.maxZ() && s.minY() == BOX.minY() && s.maxY() == BOX.maxY(), "slab inside box");
+                    && s.maxZ() <= BOX.maxZ() && s.minY() >= BOX.minY() && s.maxY() <= BOX.maxY(), "slab inside box");
             assertEquals(s.minX() >> 4, s.maxX() >> 4, "one chunk column in x");
             assertEquals(s.minZ() >> 4, s.maxZ() >> 4, "one chunk column in z");
             for (int x = s.minX(); x <= s.maxX(); x++) {
