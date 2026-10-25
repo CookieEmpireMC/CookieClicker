@@ -1,7 +1,7 @@
 package dev.casperrs.cookieClicker.view.panel;
 
 /** What a panel row shows (buildings: {@link RowState}, click upgrades: {@link UpgradeRowState}). Pure Java. */
-public sealed interface PanelRowState permits RowState, UpgradeRowState {
+public sealed interface PanelRowState permits RowState, UpgradeRowState, RecipeBookRowState {
 
     /** The price shown (rolls smoothly to a new value). */
     double cost();

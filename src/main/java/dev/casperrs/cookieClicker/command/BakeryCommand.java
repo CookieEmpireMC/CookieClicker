@@ -27,17 +27,21 @@ import org.jspecify.annotations.Nullable;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /**
  * {@code /bakery plot setup [design]|setup undo|show}, {@code /bakery house place <design>|undo|rebuild <player>},
- * {@code /bakery db migrate [--force]} ({@link DbCommand}) and {@code /bakery reload}, permission {@code cookieempire.admin}. Plot commands act on the plot whose
+ * {@code /bakery db migrate [--force]} ({@link DbCommand}) and {@code /bakery reload}, permission {@code cookieempire.admin};
+ * {@code /bakery recipes} for players ({@link #RECIPES_PERMISSION}). Plot commands act on the plot whose
  * {@code bakery-plot} region the admin stands in. Built for Paper's Brigadier lifecycle registration
  * ({@link #node()}).
  */
 public final class BakeryCommand {
 
     public static final String PERMISSION = "cookieempire.admin";
+    /** {@code /bakery recipes}, for every player by default. */
+    public static final String RECIPES_PERMISSION = "cookieclicker.recipes";
 
     /** Result of {@code /bakery reload}: problems found (empty = all good). */
     @FunctionalInterface
@@ -54,6 +58,7 @@ public final class BakeryCommand {
     private final Messages messages;
     private final Reloader reloader;
     private final @Nullable DbCommand db;
+    private Predicate<Player> openRecipes = p -> false;
 
     public BakeryCommand(PlotService plots, PlotOutlines outlines, HousePlacer houses, PlotSetup setup,
                          HouseCinematics cinematics,
@@ -76,14 +81,28 @@ public final class BakeryCommand {
         this.reloader = reloader;
     }
 
+    /** What {@code /bakery recipes} runs (opens the Recipe Book, or says to buy it first). */
+    public void setOpenRecipes(Predicate<Player> openRecipes) {
+        this.openRecipes = openRecipes;
+    }
+
+    private static boolean admin(CommandSourceStack src) {
+        return src.getSender().hasPermission(PERMISSION);
+    }
+
+    private static boolean recipes(CommandSourceStack src) {
+        return src.getSender().hasPermission(RECIPES_PERMISSION);
+    }
+
     public LiteralCommandNode<CommandSourceStack> node() {
         LiteralArgumentBuilder<CommandSourceStack> root = Commands.literal("bakery");
         if (db != null) {
-            root.then(db.node());
+            root.then(db.node().requires(BakeryCommand::admin));
         }
         return root
-                .requires(src -> src.getSender().hasPermission(PERMISSION))
-                .then(Commands.literal("plot")
+                .requires(src -> admin(src) || recipes(src))
+                .then(Commands.literal("recipes").requires(BakeryCommand::recipes).executes(this::recipes))
+                .then(Commands.literal("plot").requires(BakeryCommand::admin)
                         .then(Commands.literal("setup")
                                 .executes(ctx -> setup(ctx, PlotSetup.DEFAULT_DESIGN))
                                 .then(Commands.literal("undo").executes(this::setupUndo))
@@ -91,7 +110,7 @@ public final class BakeryCommand {
                                         .executes(ctx -> setup(ctx, StringArgumentType.getString(ctx, "design")
                                                 .toLowerCase(Locale.ROOT)))))
                         .then(Commands.literal("show").executes(this::show)))
-                .then(Commands.literal("house")
+                .then(Commands.literal("house").requires(BakeryCommand::admin)
                         .then(Commands.literal("place")
                                 .then(Commands.argument("design", StringArgumentType.word())
                                         .executes(this::place)))
@@ -103,12 +122,22 @@ public final class BakeryCommand {
                                             return b.buildFuture();
                                         })
                                         .executes(this::rebuild))))
-                .then(Commands.literal("reload").executes(this::reload))
+                .then(Commands.literal("reload").requires(BakeryCommand::admin).executes(this::reload))
                 .executes(ctx -> {
-                    messages.send(ctx.getSource().getSender(), "commands.usage");
+                    messages.send(ctx.getSource().getSender(),
+                            admin(ctx.getSource()) ? "commands.usage" : "commands.usage-player");
                     return Command.SINGLE_SUCCESS;
                 })
                 .build();
+    }
+
+    private int recipes(CommandContext<CommandSourceStack> ctx) {
+        Player p = player(ctx.getSource());
+        if (p == null) {
+            messages.send(ctx.getSource().getSender(), "commands.players-only");
+            return 0;
+        }
+        return openRecipes.test(p) ? Command.SINGLE_SUCCESS : 0;
     }
 
     private static Player player(CommandSourceStack src) {

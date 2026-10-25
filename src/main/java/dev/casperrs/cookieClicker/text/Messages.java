@@ -110,6 +110,17 @@ public final class Messages {
         return yaml.isString(path) ? MM.deserialize(yaml.getString(path)) : Component.text(ingredientId);
     }
 
+    /** Display name of a recipe from {@code recipes.<id>.name}; the id when not configured. */
+    public Component recipeName(String recipeId) {
+        String path = "recipes." + recipeId + ".name";
+        return yaml.isString(path) ? MM.deserialize(yaml.getString(path)) : Component.text(recipeId);
+    }
+
+    /** A recipe's flavour line from {@code recipes.<id>.lore}, as plain text; empty when not configured. */
+    public String recipeLore(String recipeId) {
+        return yaml.getString("recipes." + recipeId + ".lore", "");
+    }
+
     /**
      * An ingredient's small icon: {@code ingredients.<id>.icon} (the pack glyph) or, without the pack or when that is
      * missing, {@code ingredients.<id>.icon-no-pack}; empty when neither is configured.

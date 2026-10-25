@@ -70,6 +70,11 @@ final class PanelText {
                 Integer.toString(u.count()));
     }
 
+    /** The Recipe Book row ({@code panel.recipe-book.row}) before the right padding. */
+    Component recipeBookRow(int spaces) {
+        return TextPadding.lines(messages.raw("panel.recipe-book.row"), spaces);
+    }
+
     private MarkerTemplate template(String key, List<String> names,
                                     Function<String[], Component> parser) {
         if (revision != messages.revision()) {

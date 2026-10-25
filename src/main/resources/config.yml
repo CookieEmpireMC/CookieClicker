@@ -60,5 +60,21 @@ belt:
   enabled: true
   max-cookies: 8
 
+# Recipe Book GUI (/bakery recipes and the Recipe Book row on the Bakery Shop), a 4-row chest
+recipes:
+  gui:
+    # Chest slot (0-35, 0 = top left, 9 per row) of each recipe, in upgrades.yml "recipes" order
+    slots: [10, 11, 12, 13, 14, 15, 16]
+    # Vanilla item per recipe id (and "locked") for players without the resource pack
+    fallback-items:
+      locked: GRAY_DYE
+      butter: HONEYCOMB
+      brown_sugar: SUGAR
+      chocolate_chips: COCOA_BEANS
+      oatmeal: WHEAT
+      hazelnut: COOKIE
+      macadamia: COOKIE
+      caramel: HONEY_BOTTLE
+
 debug:
   log-click-events: false
