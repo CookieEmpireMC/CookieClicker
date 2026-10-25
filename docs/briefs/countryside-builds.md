@@ -1,6 +1,6 @@
 # countryside-builds
 
-**Status:** in progress  <!-- planned | in progress | review | done -->
+**Status:** parked (2026-10-25: the user stopped new builds; not merged to main)  <!-- planned | in progress | review | done -->
 **Created:** 2026-10-25 · **Depends on:** build-quality (merged, PR #17, 1.4.0)
 
 Part 1 of 3 of the ingredient farm (user, 2026-10-25): **countryside-builds** (1.5.0, the shared world) →
