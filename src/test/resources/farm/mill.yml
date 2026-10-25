@@ -1,0 +1,21 @@
+# Test fixture (not shipped): a place with 3 ground layers (only farm places may have more than 2).
+size: [5, 5, 4]
+ground-depth: 3
+origin: [0, 0, 0]
+palette:
+  "W": "minecraft:stone_bricks"
+  "P": "minecraft:oak_planks"
+layers:
+  - ["WWWWW", "WWWWW", "WWWWW", "WWWWW"]
+  - ["WWWWW", "WWWWW", "WWWWW", "WWWWW"]
+  - ["WWWWW", "WWWWW", "WWWWW", "WWWWW"]
+  - ["PPPPP", "PPPPP", "PPPPP", "PPPPP"]
+  - ["PPPPP", "PPPPP", "PPPPP", "PPPPP"]
+points:
+  viewpoint: {at: [2, 0, 3], yaw: 180, pitch: 10}
+  yard: {from: [0, 0], to: [4, 3]}
+  hologram: [2, 1, 0]
+  panel: {at: [0, 0, 1], yaw: 90}
+  ripe: [4, 0, 2]
+  smoke: [[3, 1, 1]]
+  wheel: {at: [2, 0, 0], axis: x}

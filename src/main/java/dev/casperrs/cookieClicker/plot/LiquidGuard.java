@@ -10,9 +10,9 @@ import org.bukkit.event.block.BlockFromToEvent;
 /**
  * Water and lava never flow inside the plots: designs (house ground, ponds in the decor) place liquids with physics
  * off, and this keeps them where they were put when a later block update would make them spread. Only flows whose
- * source lies where a paste writes ({@link PlotRegistry#inPasteArea}: a plot's own plot region, house region and
- * ground, house box) are stopped; natural water between and around plots flows as usual. A flow far from every plot
- * costs one cached box check.
+ * source lies where a paste writes ({@link PlotRegistry#inPasteArea}: a farm region and its ground, a plot's own plot
+ * region, house region and ground, house box) are stopped; natural water between and around plots flows as usual.
+ * A flow far from every plot costs one cached box check.
  */
 public final class LiquidGuard implements Listener {
 

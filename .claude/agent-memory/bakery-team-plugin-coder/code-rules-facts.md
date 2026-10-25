@@ -35,6 +35,16 @@ Checked against the tidy layout (feature/tidy, 2026-10-23). Package map: `docs/a
   never the `mayContainPlot` union box (Gandalf HIGH: froze natural water between plots). HousePlacer calls a plotChanged hook.
 - Decor y -1/-2 uses `DecorKeepOut.groundReason` (ring, house box no margin, belt cells only).
 
+**Countryside farm (countryside-builds setup, 2026-10-25)**
+- `farm` package = pure model/parsers (`FarmDesigns`, `PlacePoints`, `FarmPlan`, `PasteCursor`, `FarmCodec`) + registry,
+  teleports, smoke; the world writer is `house/setup/FarmSetup` (block sets only via `HousePlacer.setBlock`, because
+  `ArchitectureRulesTest` allows setBlockData only in HousePlacer.java/PlotSetup.java). Ticked phases use
+  `WorldOperation.hold()` to keep the gate across ticks.
+- `HouseDesignParser` skips map-valued points (structured place points); `parse(name, yaml, maxGround)` for ground 4.
+- plots.yml `farms:` is a raw section kept by `PlotFile.setFarms`/`farms()`; `RegionInfo` has a 5th `farmFlag` (4-arg ctor kept).
+- Admin permission stays `cookieempire.admin` (BakeryCommandTest pins it); root `/bakery` requires admin OR
+  `cookieclicker.teleport`, each admin literal has its own `.requires`.
+
 **Engine behaviour**
 - `EffectTicker.start(job)` runs the first step synchronously (a pop's step 0 happens inside the click handler).
 - `Effects.play` may keep the Location for multi-tick jobs: pass a fresh Location per call.

@@ -10,7 +10,7 @@ description: Cookie Empire - a per-player cookie bakery.
 dependencies:
   server:
     # WorldGuard 7.0.20+ (with WorldEdit 7.4.6+ or FAWE 2.16+). BEFORE: it is loaded first, so onLoad can register
-    # the bakery-plot / bakery-house flags before WorldGuard enables; join-classpath lets us see com.sk89q.*
+    # the bakery-plot / bakery-house / bakery-farm flags before WorldGuard enables; join-classpath lets us see com.sk89q.*
     WorldGuard:
       load: BEFORE
       required: true
@@ -18,5 +18,8 @@ dependencies:
 
 permissions:
   cookieempire.admin:
-    description: Set up bakery plots and houses, and reload Cookie Empire.
+    description: Set up bakery plots, houses and farms, and reload Cookie Empire.
     default: op
+  cookieclicker.teleport:
+    description: Travel with /bakery farm and /bakery home.
+    default: true

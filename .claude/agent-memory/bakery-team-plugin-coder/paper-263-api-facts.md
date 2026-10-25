@@ -25,6 +25,8 @@ for this version; re-check only when the paper-api version in pom.xml changes.
 - `World#getKey().asString()` = `minecraft:overworld`; `Bukkit.getWorld(NamespacedKey|Key)`.
 - `getHighestBlockYAt(int,int,HeightMap)`, `HeightMap.WORLD_SURFACE`, `Tag.LEAVES`, `Material#isSolid()`,
   `MultipleFacing`, `Wall#setHeight(BlockFace, Wall.Height.LOW)`, `Bukkit.createBlockData(String)`, `Block#getState(false)`.
+- Chunk tickets (javap 2026-10-25): `World#addPluginChunkTicket(int,int,Plugin)` / `removePluginChunkTicket(int,int,Plugin)`
+  (boolean), `removePluginChunkTickets(Plugin)`. `Entity#teleportAsync(Location, TeleportCause)` -> `CompletableFuture<Boolean>`.
 - Structures: `Bukkit.getStructureManager()` createStructure/saveStructure(OutputStream,..)/loadStructure(InputStream);
   `Structure#fill(Location, BlockVector, boolean)`, `place(Location, boolean, StructureRotation, Mirror, int, float, Random)`.
 - `Sign#getSide(Side.FRONT).line(int, Component)` + `update(true,false)`.

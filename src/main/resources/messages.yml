@@ -270,8 +270,39 @@ db:
     running: "<prefix><yellow>A migration is already running.</yellow>"
     failed: "<prefix><red>Migration failed: <problem>. See the console; tables copied before the error stay copied.</red>"
 
+# The countryside: /bakery farm, /bakery home, /bakery farm setup|undo|show <id>. <id> = farm id (the bakery-farm
+# flag value), <name> = design file, <size>/<region> = "x x y x z", <percent> = progress.
+farm:
+  none: "<prefix><yellow>There is no farm yet. Ask an admin to set one up.</yellow>"
+  no-home: "<prefix><yellow>There is no bakery to go back to yet.</yellow>"
+  world-missing: "<prefix><red>That place's world isn't loaded right now.</red>"
+  teleported: "<prefix><green>Welcome to the countryside!</green>"
+  home: "<prefix><green>Back at your bakery.</green>"
+  cooldown: "<prefix><yellow>Wait <seconds>s before travelling again.</yellow>"
+  no-permission: "<prefix><red>You can't travel with /bakery farm or /bakery home.</red>"
+  bad-id: "<prefix><red>Farm id <white><id></white> may only use a-z, 0-9, _ and - (max 64).</red>"
+  no-region: "<prefix><red>No region has <white>bakery-farm <id></white>. Make one with <white>//wand</white> + <white>/rg define</white> (its min y is the ground level), then <white>/rg flag \\<region> bakery-farm <id></white>.</red>"
+  region-ambiguous: "<prefix><red>More than one region has <white>bakery-farm <id></white>; keep the flag on one region only.</red>"
+  already-set-up: "<prefix><yellow>Farm <white><id></white> is already set up (or a setup was interrupted). Run <white>/bakery farm undo <id></white> first.</yellow>"
+  design-not-found: "<prefix><red>The countryside needs <white>houses/<name>.yml</white>, which doesn't exist.</red>"
+  design-invalid: "<prefix><red>Design <white><name></white> can't be used: <gray><problem></gray></red>"
+  too-small: "<prefix><red>The region of farm <white><id></white> is <region> blocks; the countryside needs at least <white><size></white> (x by y up from the region's min y by z).</red>"
+  not-loaded: "<prefix><red>The area of farm <white><id></white> isn't loaded (or doesn't fit in the world height). Stand in the middle of it and try again.</red>"
+  setup-started: "<prefix><gray>Backing up the area of farm <white><id></white>, then placing <count> blocks...</gray>"
+  setup-progress: "<prefix><gray>Farm: <white><percent>%</white> placed...</gray>"
+  setup-done: "<prefix><green>Farm <white><id></white> is set up: <count> blocks, <amount> place(s). <gray>/bakery farm undo <id></gray> puts the old blocks back.</green>"
+  failed: "<prefix><red>The farm command failed: <gray><problem></gray>. If blocks changed, /bakery farm undo restores them.</red>"
+  busy: "<prefix><yellow>Still working on the last farm command, try again in a moment.</yellow>"
+  nothing-to-undo: "<prefix><yellow>There is no farm setup to undo for <white><id></white>.</yellow>"
+  undo-progress: "<prefix><gray>Farm: <white><percent>%</white> restored...</gray>"
+  undone: "<prefix><green>Restored the area of farm <white><id></white> as it was before the setup.</green>"
+  undo-failed: "<prefix><red>Could not undo: <gray><problem></gray></red>"
+  not-set-up: "<prefix><red>Farm <white><id></white> isn't set up in this world.</red>"
+  show-started: "<prefix><gray>Showing farm <white><id></white> (region, yards and viewpoints) for <amount> seconds.</gray>"
+
 commands:
-  usage: "<prefix><gray>/bakery plot setup [design]|setup undo|show</gray> <dark_gray>|</dark_gray> <gray>/bakery house place \\<design>|undo|rebuild \\<player></gray> <dark_gray>|</dark_gray> <gray>/bakery db migrate [--force]</gray> <dark_gray>|</dark_gray> <gray>/bakery reload</gray>"
+  usage: "<prefix><gray>/bakery plot setup [design]|setup undo|show</gray> <dark_gray>|</dark_gray> <gray>/bakery house place \\<design>|undo|rebuild \\<player></gray> <dark_gray>|</dark_gray> <gray>/bakery db migrate [--force]</gray> <dark_gray>|</dark_gray> <gray>/bakery reload</gray> <dark_gray>|</dark_gray> <gray>/bakery farm [setup|undo|show \\<id>]</gray> <dark_gray>|</dark_gray> <gray>/bakery home</gray>"
+  usage-player: "<prefix><gray>/bakery farm</gray> <dark_gray>|</dark_gray> <gray>/bakery home</gray>"
   players-only: "<prefix><red>Only players can do that.</red>"
   reload:
     done: "<prefix><green>Reloaded config, messages, sounds, effects, balance and plots.</green>"

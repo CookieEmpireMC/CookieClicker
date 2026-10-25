@@ -1,0 +1,20 @@
+# Test fixture (not shipped): a place with the optional recipe book and notice board points.
+size: [4, 4, 4]
+ground-depth: 1
+origin: [0, 0, 0]
+palette:
+  "G": "minecraft:cobblestone"
+  "O": "minecraft:oak_planks"
+layers:
+  - ["GGGG", "GGGG", "GGGG", "GGGG"]
+  - ["OOOO", "....", "....", "...."]
+  - ["....", "....", "....", "...."]
+  - ["....", "....", "....", "...."]
+points:
+  viewpoint: {at: [1, 0, 3], yaw: 0, pitch: 0}
+  yard: {from: [0, 0], to: [3, 1]}
+  hologram: [1, 1, 0]
+  panel: {at: [0, 0, 2], yaw: 90}
+  ripe: [3, 0, 3]
+  recipe_book: [1, 0, 1]
+  notice_board: {at: [3, 0, 0], yaw: 90}

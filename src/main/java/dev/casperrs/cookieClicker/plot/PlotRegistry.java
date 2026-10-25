@@ -43,6 +43,8 @@ public final class PlotRegistry {
 
     /** Ground layers a design may own below a house region (HouseDesignParser.MAX_GROUND_DEPTH). */
     private static final int MAX_HOUSE_GROUND = 2;
+    /** Ground layers the countryside may own below a farm region (HouseDesignParser.MAX_FARM_GROUND_DEPTH). */
+    private static final int MAX_FARM_GROUND = 4;
 
     private record CachedBounds(Bounds bounds, long readAt) {
     }
@@ -143,7 +145,8 @@ public final class PlotRegistry {
 
     /**
      * Whether block {@code x y z} lies where a bakery paste writes: inside a known plot's plot region, its house
-     * region or the {@value #MAX_HOUSE_GROUND} layers below it (design ground), or its setup house box incl. ground.
+     * region or the {@value #MAX_HOUSE_GROUND} layers below it (design ground), or its setup house box incl. ground;
+     * and inside every {@code bakery-farm} region or the {@value #MAX_FARM_GROUND} layers below it.
      * Polygons are tested exactly; the areas are cached like {@link #mayContainPlot} and first pre-checked against
      * their joint bounding box, so a block far from every plot costs one box test.
      */
@@ -175,19 +178,20 @@ public final class PlotRegistry {
                         h.maxX(), h.maxY(), h.maxZ()));
             }
         }
-        if (!shapes.isEmpty() || plots.values().stream().anyMatch(p -> world(p).map(world::equals).orElse(false))) {
-            for (PlotRegions.RegionInfo r : regions.regions(world)) {
-                boolean plot = r.plotFlag() != null && plots.containsKey(r.plotFlag());
-                boolean house = r.houseFlag() != null && plots.containsKey(r.houseFlag());
-                RegionShape shape = plot || house ? regions.shape(world, r.id()).orElse(null) : null;
-                if (shape == null) {
-                    continue;
-                }
-                shapes.add(shape);
-                if (house) {
-                    shapes.add(RegionShape.cuboid(shape.id() + ":ground", shape.minX(), shape.minY() - MAX_HOUSE_GROUND,
-                            shape.minZ(), shape.maxX(), shape.minY() - 1, shape.maxZ()));
-                }
+        // every 30 s per world at most, so farm regions (bakery-farm, any value) are scanned even without plots
+        for (PlotRegions.RegionInfo r : regions.regions(world)) {
+            boolean plot = r.plotFlag() != null && plots.containsKey(r.plotFlag());
+            boolean house = r.houseFlag() != null && plots.containsKey(r.houseFlag());
+            boolean farm = r.farmFlag() != null;
+            RegionShape shape = plot || house || farm ? regions.shape(world, r.id()).orElse(null) : null;
+            if (shape == null) {
+                continue;
+            }
+            shapes.add(shape);
+            int ground = farm ? MAX_FARM_GROUND : house ? MAX_HOUSE_GROUND : 0;
+            if (ground > 0) {
+                shapes.add(RegionShape.cuboid(shape.id() + ":ground", shape.minX(), shape.minY() - ground,
+                        shape.minZ(), shape.maxX(), shape.minY() - 1, shape.maxZ()));
             }
         }
         Bounds b = Bounds.EMPTY;

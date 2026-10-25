@@ -4,12 +4,17 @@ import dev.casperrs.cookieClicker.belt.ConveyorBelts;
 import dev.casperrs.cookieClicker.building.VisibleBuildings;
 import dev.casperrs.cookieClicker.command.BakeryCommand;
 import dev.casperrs.cookieClicker.command.DbCommand;
+import dev.casperrs.cookieClicker.command.FarmCommand;
 import dev.casperrs.cookieClicker.config.PluginSettings;
 import dev.casperrs.cookieClicker.economy.Economy;
 import dev.casperrs.cookieClicker.economy.EconomyConfig;
+import dev.casperrs.cookieClicker.farm.FarmAmbience;
+import dev.casperrs.cookieClicker.farm.FarmRegistry;
+import dev.casperrs.cookieClicker.farm.FarmTeleports;
 import dev.casperrs.cookieClicker.house.cinematic.HouseCinematics;
 import dev.casperrs.cookieClicker.house.setup.HousePlacer;
 import dev.casperrs.cookieClicker.house.cinematic.HouseSeen;
+import dev.casperrs.cookieClicker.house.setup.FarmSetup;
 import dev.casperrs.cookieClicker.house.setup.PlotSetup;
 import dev.casperrs.cookieClicker.hud.BakeryTicker;
 import dev.casperrs.cookieClicker.hud.Hud;
@@ -97,6 +102,9 @@ final class PluginWiring {
     private @Nullable PedestalPrivacy pedestalPrivacy;
     private @Nullable HousePlacer houses;
     private @Nullable PlotSetup setup;
+    private @Nullable FarmRegistry farms;
+    private @Nullable FarmSetup farmSetup;
+    private @Nullable FarmAmbience farmAmbience;
     private @Nullable BukkitTask tickTask;
     private @Nullable BukkitTask autosaveTask;
 
@@ -144,6 +152,8 @@ final class PluginWiring {
         plots = new PlotService(plotRegistry, plotFile, new StationFile(plugin, io), stations,
                 plugin.getDataFolder().toPath(), plugin.getLogger(), PlotService::worldByKey);
         plots.load(loader.collector(problems));
+        farms = new FarmRegistry(plotFile, plotRegistry::all);
+        farms.load(loader.collector(problems));
 
         hud = new Hud(messages, economy, resourcePacks::hasPack);
         ticker = new BakeryTicker(sessions, economy, hud, Bukkit::getPlayer);
@@ -198,9 +208,21 @@ final class PluginWiring {
                 }, messages, io, mainThread,
                 () -> settings.get().house().maxBlocks(), () -> settings.get().plot().buildings().footprints());
 
+        farmSetup = new FarmSetup(plugin, regions, farms, messages, io, mainThread,
+                () -> settings.get().farm().pasteBlocksPerTick());
+        farmAmbience = new FarmAmbience(plugin, effects, farms, () -> settings.get().house().chimney().smoke());
+        farms.addListener(farmAmbience::restart); // reload: loops killed by effects.reload come back on the next check
+        farmAmbience.restart();
+        FarmTeleports teleports = new FarmTeleports(farms, plotRegistry, messages,
+                () -> settings.get().farm().teleportCooldownSeconds());
+        pm.registerEvents(teleports, plugin);
+        plotTracker.addListener(teleports);
+        FarmCommand farmCommand = new FarmCommand(farms, farmSetup, teleports, outlines, regions,
+                () -> settings.get().plot().show(), messages);
+
         DbCommand db = new DbCommand(settings, sessions, pool, messages, plugin.getLogger());
         BakeryCommand command = new BakeryCommand(plots, outlines, houses, setup, cinematics, settings, messages,
-                plugin::reload, db);
+                plugin::reload, db, farmCommand);
         plugin.getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
                 event -> event.registrar().register(command.node(), "Cookie Empire admin commands"));
 
@@ -208,7 +230,8 @@ final class PluginWiring {
         Bukkit.getOnlinePlayers().forEach(p -> sessions.join(p.getUniqueId())); // e.g. after /reload confirm
 
         plugin.getLogger().info("Enabled with " + plotRegistry.all().size() + " plot(s), " + stations.all().size()
-                + " pedestal(s), " + economy.config().buildings().size() + " building(s)"
+                + " pedestal(s), " + farms.all().size() + " farm(s), " + economy.config().buildings().size()
+                + " building(s)"
                 + (problems.isEmpty() ? "" : "; " + problems.size() + " config problem(s), see above"));
     }
 
@@ -242,7 +265,9 @@ final class PluginWiring {
         belts.restart();
         houses.reset();
         setup.reset();
+        farmSetup.reset();
         plots.load(loader.collector(problems));
+        farms.load(loader.collector(problems));
         effects.reload();
         views.restart(); // removes every view; the next refresh respawns with the new layout and balance
         plotTracker.resyncAll();
@@ -280,6 +305,8 @@ final class PluginWiring {
         add(parts, "pedestal privacy", pedestalPrivacy, PedestalPrivacy::shutdown); // shows every player it hid
         add(parts, "house placing", houses, HousePlacer::reset);
         add(parts, "plot setup", setup, PlotSetup::reset);
+        add(parts, "farm setup", farmSetup, FarmSetup::reset);
+        add(parts, "the farm smoke", farmAmbience, FarmAmbience::stopAll);
         add(parts, "the station views", views, StationViews::shutdown);
         add(parts, "the effects", effects, Effects::shutdown);
         add(parts, "the stations", stations, StationRegistry::clear); // listeners despawn; plots.yml is untouched

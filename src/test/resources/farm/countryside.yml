@@ -1,0 +1,16 @@
+# Test fixture (not shipped): a small countryside with two places, for the farm package tests.
+size: [12, 5, 8]
+ground-depth: 2
+origin: [0, 0, 0]
+palette:
+  "G": "minecraft:grass_block"
+  "S": "minecraft:stone"
+places:
+  mill: {at: [1, 0, 1]}
+  market: {at: [8, 0, 4]}
+layers:
+  - ["GGGGGGGGGGGG", "GGGGGGGGGGGG", "GGGGGGGGGGGG", "GGGGGGGGGGGG", "GGGGGGGGGGGG", "GGGGGGGGGGGG", "GGGGGGGGGGGG", "GGGGGGGGGGGG"]
+  - ["GGGGGGGGGGGG", "GGGGGGGGGGGG", "GGGGGGGGGGGG", "GGGGGGGGGGGG", "GGGGGGGGGGGG", "GGGGGGGGGGGG", "GGGGGGGGGGGG", "GGGGGGGGGGGG"]
+  - ["SSSS........", "............", "............", "............", "............", "............", "............", "............"]
+  - ["............", "............", "............", "............", "............", "............", "............", "............"]
+  - ["............", "............", "............", "............", "............", "............", "............", "............"]
