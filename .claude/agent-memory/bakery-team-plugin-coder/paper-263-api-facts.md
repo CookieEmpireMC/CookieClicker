@@ -61,6 +61,11 @@ for this version; re-check only when the paper-api version in pom.xml changes.
 - Attributes: `addTransientModifier`, `getModifier(Key)`, `removeModifier(Key)`, `new AttributeModifier(NamespacedKey, double, Operation)`,
   `Operation.MULTIPLY_SCALAR_1`, `Attribute.MOVEMENT_SPEED`, `JUMP_STRENGTH`.
 
+**Inventory GUI (verified javap + compile 2026-10-25)**: `MenuType.GENERIC_9X4` is a plain `InventoryViewBuilder`
+(9X3/9X6 are `LocationInventoryViewBuilder`): `.builder().title(Component).build(player)` then `view.open()`.
+`InventoryCreativeEvent extends InventoryClickEvent` without its own HandlerList (an InventoryClickEvent handler gets it).
+`TooltipDisplay.tooltipDisplay().addHiddenComponents(..).build()`, `ItemLore.lore(List)`, `DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE` (Boolean).
+
 **MiniMessage 5.2**: placeholders are NOT resolved inside click/insert args, but are inside `hover:show_text`;
 gradient/rainbow/lang reshape inserted text (so `text/MarkerTemplate` falls back to a real parse for them).
 `Component#insertion(String)` exists (used for clickable toggle spans).
