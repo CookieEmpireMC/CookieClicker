@@ -115,3 +115,11 @@ roof `spruce_stairs` or `mud_brick_stairs` field with `dark_oak_stairs` eave/rak
 ## Cameras and viewpoints
 - Every fixed camera point gets a perspective preview (`lib/voxel_render.render_perspective`) and a generator assert that the plot's extreme points stay inside 95% of a **4:3** frame at FOV 70.
 - Prefer a raised 3/4 view over a straight-on one: it shows depth and keeps the foreground (gate) from hiding the pedestal.
+
+## Farm places (countryside)
+All five farm places and the market follow the **factory's** craft (R1-R21), not the cottage's: stone plinth ramp (moss at the waterline), dark timber frame in a plaster upper floor, darker eave and rake, a jetty with brackets, lit shuttered windows, one chimney at most. They differ by roof form, wall skin and silhouette (research section 2). Extra rules:
+- **F1** roofs are 50-56 degrees with 2-high risers filled (`hipped_roof` pitch table), roofs at 3 or more heights, one tall element.
+- **F2** the pond is a third of the front view; the building rises straight out of it on a retaining wall; the ground below the waterline is plinth stone.
+- **F3** every place has its 11 x 7 yard on the road side, the points within 5 blocks of the viewpoint, lanterns, a low calm backdrop wall behind the panel; the road meets the place's north edge (3 wide, gravel).
+- **F4** previews are looked at from the viewpoint's eye (player height), the front, both 3/4 sides, the back, above, plus the signature detail (slot, water, yard).
+- **F5** animated parts are item displays with a block fallback underneath; no block inside the display's volume other than the registered fallback.

@@ -3,3 +3,4 @@
 - [House designs](house_designs.md) — houses/*.yml (factory, fence, belt, decor), layout/camera, perspective renderer, verified 26.3 block ids
 - [Build quality pipeline](build_quality.md) — textured jar renderer, kit lib, lint, decor scenes, contract, pitfalls (2026-10-24)
 - [Basket and world buildings](basket.md) — basket.py, building_world.py generators, specs, size rules
+- [Countryside places](countryside.md) — farm kits, L-F lint, place format, Mill + waterwheel generators, gotchas (2026-10-25)
