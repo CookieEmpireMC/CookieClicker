@@ -176,7 +176,8 @@ format section through the designer.
 | Agent | Status | Branch | Verdict | Notes |
 |---|---|---|---|---|
 | resource-pack-researcher | done | merged | — | `docs/research/farm-buildings.md` |
-| plugin-coder (setup) | review | `countryside-builds/plugin-coder-setup` | | 417 tests green; admin perm is `cookieempire.admin` |
+| plugin-coder (setup) | done | merged | READY (1 fix round) | 439 tests; admin perm `cookieempire.admin` |
+| plugin-coder (wheel+review) | in progress | `countryside-builds/plugin-coder-wheel` | | + Structure work back on main, slab-at-a-time undo, teleport in-flight guard |
 | model-designer (run 1) | in progress | `countryside-builds/model-designer` | | kits, lint, Mill, waterwheel |
 
 ## Merge order
