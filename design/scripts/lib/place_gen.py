@@ -130,7 +130,7 @@ def hedge(b: Build, segments: list, kind: str = "oak") -> None:
 
 
 def finish(name: str, b: Build, *, points: dict, signs: list, size: tuple, ground: int, hero: bool, previews,
-           water_frontage=None, size_range: tuple | None = None, trapdoor_budget: int = 12) -> dict:
+           water_frontage=None, size_range: tuple | None = None, trapdoor_budget: int | None = None) -> dict:
     """Resolve the grid, validate the palette and the points, run the lints (previews are written even when a lint fails),
     write houses/<name>.yml. Returns {'blocks', 'above', 'palette', 'g'}."""
     g = dict(b.g)

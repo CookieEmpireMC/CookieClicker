@@ -404,7 +404,7 @@ def lf_size(g: dict, hero: bool, size_range: tuple | None = None) -> list[str]:
 
 def lint_place(g: dict, notes: Notes, points: dict, palette: dict | None = None, *, hero: bool = True, name: str = "place",
                water_frontage: tuple | None = None, roof_share: tuple | None = None, size: tuple | None = None,
-               ground: int = 4, size_range: tuple | None = None, strict_roofs: bool = True, trapdoor_budget: int = 12) -> None:
+               ground: int = 4, size_range: tuple | None = None, strict_roofs: bool = True, trapdoor_budget: int | None = None) -> None:
     errs: list[str] = []
     errs += lf1_volumes(notes, hero)
     errs += lf2_roof_forms(g, notes)
@@ -419,7 +419,9 @@ def lint_place(g: dict, notes: Notes, points: dict, palette: dict | None = None,
     errs += lf11_gables(g, notes)
     if strict_roofs:
         errs += lf12_roof_families(g, notes)
-    errs += ld1_gates(g) + ld2_trapdoors(g, trapdoor_budget) + ld3_fence_family(g) + ld4_race_open(g, notes)
+    errs += ld1_gates(g) + ld4_race_open(g, notes)
+    if trapdoor_budget is not None:                      # the animal places (L-D2, L-D3)
+        errs += ld2_trapdoors(g, trapdoor_budget) + ld3_fence_family(g)
     errs += ld5_flume(g, notes) + ld6_pen(g, notes) + ld7_props(notes)
     errs += lf_size(g, hero, size_range)
     if errs:
