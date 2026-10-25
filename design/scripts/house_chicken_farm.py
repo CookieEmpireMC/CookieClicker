@@ -97,10 +97,10 @@ def build() -> Build:
     WS = Wall(b, "south", "east", (0, CZ1))
     door(WN, 10, 1, mat="spruce", hood=False)
     put(10, 0, CZ0 - 1, st("stone_brick", "south"))
-    window(WN, 14, 2, width=2, height=1, shutters="dark_oak", box="potted_cornflower", sill="spruce")
+    window(WN, 14, 2, width=2, height=1, shutters="dark_oak", box=None, sill="spruce")
     put(12, 2, 12, B.wall_sign("spruce", "north"))
     door(WS, 10, 1, mat="spruce", hood=False)
-    window(WS, 16, 2, width=1, height=1, shutters="dark_oak", box="potted_poppy", sill="spruce")
+    window(WS, 16, 2, width=1, height=1, shutters="dark_oak", box=None, sill="spruce")
     WS.put(13, 1, 0, "@iron_bars")                                                  # pop hole with its ramp
     WS.put(13, 0, 1, WS.stair("spruce", "bottom", "in"))
     WS.put(13, 0, 2, sl("spruce", "bottom"))

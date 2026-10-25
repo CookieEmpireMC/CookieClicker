@@ -169,12 +169,13 @@ def pent_skirt(b: Build, wall: Wall, u0: int, u1: int, y: int, mat: str, *, dept
 
 def dormer(b: Build, roof: dict, wall: Wall, uc: int, front_w: int, y0: int, *, wall_mat, trim: str, roof_mat: str,
            glass: str = "@glass_pane", hatch: bool = False, h: int = 3, depth: int = 12, name: str = "dormer",
-           beam: bool = False, light: bool = True, box: str | None = "potted_poppy") -> None:
+           beam: bool = False, light: bool = True, box: str | None = None,
+           shutters: str | None = "spruce") -> None:
     """A 3-wide gabled dormer standing on the main roof. `wall` frame: u along the facade, w outward; the front plane is
     w = front_w, the first wall row y0. Cheek columns uc-1/uc+1 are wall_mat(x, y, z) for h rows, the middle column is a
     2-high window (or an open hatch: hatch=True) with a trim lintel, the roof is a stair on each cheek at y0 + h and a
     trim ridge log in the middle at y0 + h. It runs back from the front plane until the main roof surface reaches that
-    height. beam=True adds the hoist: a trim beam two cells out of the ridge, a chain and a barrel on it."""
+    height. beam=True adds the hoist: a trim beam two cells out of the ridge with a two-block chain hanging from it (no block-sized props in openings)."""
     yr = y0 + h
     done = set()
     for w in range(front_w, front_w - depth, -1):
@@ -205,15 +206,17 @@ def dormer(b: Build, roof: dict, wall: Wall, uc: int, front_w: int, y0: int, *, 
         if b.block(x, y0 - 1, z) == "air":
             b.put(x, y0 - 1, z, sl("spruce", "top"))
         b.put(x, y0, z, B.lantern(False))
-        if hatch:
-            b.put(*wall.xyz(uc, y0, front_w - 1), B.hay())
     if beam:
         for w in (front_w + 1, front_w + 2):
             wall.put(uc, yr, w, wall.log(trim, "depth", True))
         wall.put(uc, yr - 1, front_w + 2, B.chain("y"))
-        wall.put(uc, yr - 2, front_w + 2, B.barrel())
+        wall.put(uc, yr - 2, front_w + 2, B.chain("y"))
     if box and not hatch:
         wall.put(uc, y0, front_w + 1, P(box))
+    if shutters and not box and not hatch:
+        for du in (-1, 1):
+            for yy in (y0, y0 + 1):
+                wall.put(uc + du, yy, front_w + 1, wall.trapdoor(shutters, "bottom", True))
     if hatch:
         b.notes.seal |= {wall.xyz(uc, y0, front_w), wall.xyz(uc, y0 + 1, front_w)}
     for r in b.notes.roofs:                                   # the dormer replaced some roof cells

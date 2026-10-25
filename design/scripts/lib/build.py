@@ -158,7 +158,7 @@ class Wall:
 
 # --- kits ---------------------------------------------------------------------------------------------------------
 def window(wall: Wall, u: int, y: int, *, width: int = 1, height: int = 1, w: int = 0, sill: str = "spruce",
-           shutters: str | None = "spruce", box: str | None = "potted_poppy", light: bool = True,
+           shutters: str | None = "spruce", box: str | None = None, light: bool = True,
            room: str = "table", mullion: str | None = None, shutter_w: int = 1, glass: str = "@glass_pane") -> None:
     """A window `width` x `height` cells at (u..u+width-1, y..y+height-1) in the wall plane (w), with a projecting sill
     (top-half trapdoor), an optional flower box (a potted plant on the sill), open-trapdoor shutters at both ends and a

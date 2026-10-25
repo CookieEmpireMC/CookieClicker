@@ -210,17 +210,16 @@ def build():
     # door west part
     door(WNG, 17, 1, mat="spruce", hood=False)
     put(17, 0, 14, st("stone_brick", "south"))
-    put(16, 0, 14, P("potted_red_tulip")); put(18, 0, 14, P("potted_orange_tulip"))
     for x in (19, 21, 26, 28, 30):                                             # jetty brackets (inverted stairs)
         put(x, 4, 14, WNG.stair(BEAM, "top", "in"))
     put(19, 3, 14, B.lantern(True))
-    window(WNG, 20, 2, width=2, height=2, shutters="spruce", box="potted_cornflower", sill="spruce", mullion=None)
+    window(WNG, 20, 2, width=2, height=2, shutters="spruce", box=None, sill="spruce", mullion=None)
     # ground frame piers on the north face west part: log posts either side of the window
     for y in (1, 2, 3):
         put(19, y, 15, lg(BEAM, "y")) if y == 2 else None
     # north upper windows and the hoist hatch above window 1
     for i, x in enumerate((18, 22, 26)):
-        window(WNU, x, 6, height=2, shutters="spruce" if x == 22 else None, box=("potted_poppy", "potted_azure_bluet", "potted_oxeye_daisy")[i],
+        window(WNU, x, 6, height=2, shutters="spruce", box=None,
                sill="spruce")
 
     # ================= hall roof (steep, half-hip at the east end) =================
@@ -261,19 +260,17 @@ def rest(b: Build, roof: dict, slot: dict, pond: set) -> dict:
     # ---- hall: south facade (back door, windows), east end, west gable
     door(WSG, 20, 1, mat="spruce", hood=True)
     put(20, 0, 25, st("stone_brick", "north"))
-    put(19, 0, 25, P("potted_dandelion")); put(21, 0, 25, P("potted_poppy"))
     for x in (24, 28):
-        window(WSG, x, 2, height=2, shutters="spruce", box="potted_azure_bluet", sill="spruce") if x == 24 else None
+        window(WSG, x, 2, height=2, shutters="spruce", box=None, sill="spruce") if x == 24 else None
     for i, x in enumerate((17, 21, 25, 29)):
-        window(WSG, x, 6, height=2, shutters="spruce" if x == 25 else None, box=("potted_poppy", "potted_cornflower", "potted_oxeye_daisy",
-                                                                "potted_azure_bluet")[i], sill="spruce")
+        window(WSG, x, 6, height=2, shutters="spruce", box=None, sill="spruce")
     for x in (29,):
-        window(Wall(b, "north", "east", (0, ZU0)), x, 6, height=2, shutters=None, box="potted_poppy", sill="spruce")
-    window(WEG, 21, 2, height=2, shutters="spruce", box="potted_cornflower", sill="spruce")
-    window(WEG, 19, 6, height=2, shutters=None, box="potted_poppy", sill="spruce")
-    window(WEG, 19, 10, height=1, shutters=None, box="potted_azure_bluet", sill="spruce")
+        window(Wall(b, "north", "east", (0, ZU0)), x, 6, height=2, shutters="spruce", box=None, sill="spruce")
+    window(WEG, 21, 2, height=2, shutters="spruce", box=None, sill="spruce")
+    window(WEG, 19, 6, height=2, shutters="spruce", box=None, sill="spruce")
+    window(WEG, 19, 10, height=1, shutters="spruce", box=None, sill="spruce")
     for z in (17, 21):                                                  # west gable windows above the wing roof
-        window(WWG, z, 11, height=2, shutters=None, box="potted_oxeye_daisy", sill="spruce")
+        window(WWG, z, 11, height=2, shutters="spruce", box=None, sill="spruce")
     for y in range(9, 15):                                              # king post
         if b.get(X0, y, 19) is not None and "plaster" not in b.block(X0, y, 19) and b.block(X0, y, 19) != "air":
             put(X0, y, 19, lg(BEAM, "y"))
@@ -311,8 +308,8 @@ def rest(b: Build, roof: dict, slot: dict, pond: set) -> dict:
     WWS = Wall(b, "south", "east", (0, WZ1))
     WWW = Wall(b, "west", "south", (WX0, 0))
     for u in (10, 13):
-        window(WWN, u, 2, height=2, shutters=None, box="potted_poppy", sill="spruce")
-    window(WWS, 11, 2, height=2, shutters="spruce", box="potted_dandelion", sill="spruce")
+        window(WWN, u, 2, height=2, shutters="spruce", box=None, sill="spruce")
+    window(WWS, 11, 2, height=2, shutters="spruce", box=None, sill="spruce")
     door(WWW, 19, 1, mat="spruce", hood=True)
     put(7, 0, 19, st("stone_brick", "east"))
     wing = K.gable_roof_s(b, (WX0 - 1, WZ0 - 1, WX1, WZ1 + 1), ML.Y_EAVE_WING, axis="x", field="dark_oak", eave="deepslate_tile",
@@ -322,7 +319,6 @@ def rest(b: Build, roof: dict, slot: dict, pond: set) -> dict:
     for y in range(5, 10):
         if b.block(WX0, y, 19) != "air":
             put(WX0, y, 19, lg(BEAM, "y"))
-    window(WWW, 16, 5, height=2, shutters=None, box="potted_cornflower", sill="spruce")
     n.volumes.append({"name": "wing", "footprint": (WX0, WZ0 - 1, WX1, WZ1 + 1), "top": wing["ridge_y"] + 1})
 
     # ================= sack shed (lean-to) on the south wall =================
@@ -384,9 +380,9 @@ def rest(b: Build, roof: dict, slot: dict, pond: set) -> dict:
     door(WGE, 7, 3, mat="spruce", hood=False)
     put(8, 2, 7, P("stone_bricks")); put(9, 0, 7, P("stone_bricks")); put(9, 1, 7, st("stone_brick", "west"))
     put(10, 0, 7, st("stone_brick", "west"))
-    window(WGN, 4, 3, height=1, shutters="spruce", box="potted_poppy", sill="spruce")
-    window(WGS, 4, 3, height=1, shutters="spruce", box="potted_cornflower", sill="spruce")
-    window(WGW, 7, 3, height=1, shutters="spruce", box="potted_dandelion", sill="spruce")
+    window(WGN, 4, 3, height=1, shutters="spruce", box=None, sill="spruce")
+    window(WGS, 4, 3, height=1, shutters="spruce", box=None, sill="spruce")
+    window(WGW, 7, 3, height=1, shutters="spruce", box=None, sill="spruce")
     gran = K.pyramid_roof(b, (GX0 - 1, GZ0 - 1, GX1 + 1, GZ1 + 1), 5, field="dark_oak", eave="deepslate_tile",
                           rake="deepslate_tile", ridge=P("dark_oak_planks"), cap=sl("deepslate_tile"), name="granary",
                           ramp_pick=lambda x, y, z: ROOF.pick(x, y, z), riser=P("dark_oak_planks"))
@@ -432,7 +428,7 @@ def scenery(b: Build, pond: set) -> None:
     put(11, 0, 6, B.td("spruce", "west", "bottom", True)); put(11, 0, 8, B.td("spruce", "west", "bottom", True))
     put(9, 1, 7, P("white_wool")); put(10, 1, 7, P("white_wool")); put(9, 2, 7, P("white_carpet"))
     put(9, 1, 6, B.barrel())
-    S.crates(b, [(19, 0, 14), (20, 0, 14), (20, 1, 14)], sacks=[(21, 0, 14)])
+    S.crates(b, [(19, 0, 14), (19, 1, 14)], sacks=[(21, 0, 14)])
     S.apron(b, 18, 13, 22, 14, COBBLE, force=True)
     # --- back garden and woodpile (south), garden steps
     S.veg_plot(b, 9, 28, 7, 5, ["wheat", "carrots", "potatoes"])

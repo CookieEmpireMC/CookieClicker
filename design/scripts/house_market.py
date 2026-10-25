@@ -115,10 +115,10 @@ def cottage(b: Build, x0: int, z0: int, tag: str) -> None:
     WS = Wall(b, "south", "east", (0, z1))
     door(WN, x0 + 3, 1, mat="spruce", hood=False)
     b.put(x0 + 3, 0, z0 - 1, st("stone_brick", "south"))
-    window(WN, x0 + 1, 2, height=2, shutters="spruce", box="potted_poppy", sill="spruce") if False else None
-    window(WN, x0 + 5, 2, height=1, shutters="spruce", box="potted_cornflower", sill="spruce")
-    window(WS, x0 + 2, 2, height=1, shutters="spruce", box="potted_azure_bluet", sill="spruce")
-    window(Wall(b, "west", "south", (x0, 0)), z0 + 3, 2, height=1, shutters=None, box="potted_dandelion", sill="spruce")
+    window(WN, x0 + 1, 2, height=2, shutters="spruce", box=None, sill="spruce") if False else None
+    window(WN, x0 + 5, 2, height=1, shutters="spruce", box=None, sill="spruce")
+    window(WS, x0 + 2, 2, height=1, shutters="spruce", box=None, sill="spruce")
+    window(Wall(b, "west", "south", (x0, 0)), z0 + 3, 2, height=1, shutters="spruce", box=None, sill="spruce")
     n.volumes.append({"name": f"cottage{tag}", "footprint": (x0, z0, x1, z1), "top": roof["ridge_y"] + 1})
     n.cottage_ring = getattr(n, "cottage_ring", []) + ring
 

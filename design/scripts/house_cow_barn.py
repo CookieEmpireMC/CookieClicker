@@ -42,21 +42,19 @@ POINTS = {
 }
 SIGNS = [{"at": [17, 2, PZ - 1], "lines": ["", "Cow Barn", "", ""]}]
 
-MASON = Ramp(P("stone_bricks"), [(P("cracked_stone_bricks"), .2, None), (P("mossy_stone_bricks"), .26, "low")], seed=3)
 PLINTH = Ramp(P("cobblestone"), [(P("mossy_cobblestone"), .27, "low"), (P("andesite"), .15, None)], seed=4)
-BOARD = Ramp(P("spruce_planks"), [(P("oak_planks"), .2, None), (P("dark_oak_planks"), .12, None)], seed=5)
+BOARD = Ramp(P("oak_planks"), [(P("spruce_planks"), .2, None), (P("dark_oak_planks"), .12, None)], seed=5)
 PLASTER = Ramp(P("calcite"), [(P("diorite"), .2, None), (P("polished_diorite"), .12, "low")], seed=6, height=6, y0=1)
 ROOF = Ramp("brick", [("mud_brick", .28, None), ("red_nether_brick", .14, None), ("granite", .06, None)], seed=8, height=8, y0=5)
 FLOOR = Ramp(P("spruce_planks"), [(P("oak_planks"), .22, None), (P("dark_oak_planks"), .15, None)], seed=9)
 COARSE = Ramp(P("coarse_dirt"), [(P("podzol[snowy=false]"), .3, None), (P("gravel"), .12, None), (P("mud"), .12, None)], seed=33)
 PADDOCK = Ramp(P("coarse_dirt"), [(P("mud"), .25, None), (P("podzol[snowy=false]"), .15, None), (P("dirt_path"), .1, None)], seed=37)
 RAMPS = {
-    "masonry": ["stone_bricks", "cracked_stone_bricks", "mossy_stone_bricks"],
     "plinth": ["cobblestone", "mossy_cobblestone", "andesite"],
     "board": ["spruce_planks", "oak_planks", "dark_oak_planks"],
     "timber": ["dark_oak_log", "stripped_dark_oak_log", "dark_oak_planks"],
     "plaster": ["calcite", "diorite", "polished_diorite"],
-    "roof": ["brick_stairs", "deepslate_tile_stairs", "bricks", "deepslate_tiles"],
+    "roof": ["spruce_stairs", "deepslate_tile_stairs", "spruce_planks", "deepslate_tiles"],
     "drystone": ["cobblestone_wall", "mossy_cobblestone_wall", "andesite_wall"],
 }
 GATE = "minecraft:spruce_fence_gate[facing=north,in_wall=false,open=false,powered=false]"
@@ -112,10 +110,10 @@ def build() -> Build:
 
     # ================= main roof (half-hipped ends) and catslide outshut =================
     pick = lambda x, y, z: ROOF.pick(x, y, z)                                      # noqa: E731
-    main = K.hipped_roof(b, (BX0 - 1, FZ - 1, BX1 + 1, 23), Y_EAVE, {"N": 0, "S": 0, "W": 3, "E": 3}, field="brick",
+    main = K.hipped_roof(b, (BX0 - 1, FZ - 1, BX1 + 1, 23), Y_EAVE, {"N": 0, "S": 0, "W": 3, "E": 3}, field="spruce",
                          eave="deepslate_tile", rake="deepslate_tile", ridge=P("deepslate_tiles"), cap=sl("deepslate_tile"),
-                         name="nave", form="half-hip", riser=P("bricks"))
-    cat = K.catslide_roof(b, (BX0 - 1, 23, BX1 + 1, 27), "N", Y_EAVE, field="brick", eave="deepslate_tile", name="outshut")
+                         name="nave", form="half-hip", riser=P("spruce_planks"))
+    cat = K.catslide_roof(b, (BX0 - 1, 23, BX1 + 1, 27), "N", Y_EAVE, field="spruce", eave="deepslate_tile", name="outshut")
     surface = dict(main["surface"])
     surface.update({k: v for k, v in cat["surface"].items()})
     for side_x, outward in ((BX0, "west"), (BX1, "east")):                          # end walls: boards below, brick gable above
@@ -131,7 +129,7 @@ def build() -> Build:
                 elif y == 5 and z <= 22:
                     put(side_x, y, z, beam("z"))
                 else:
-                    put(side_x, y, z, MASON.pick(side_x, y, z))
+                    put(side_x, y, z, BOARD.pick(side_x, y, z))
         for z in posts_z:
             put(side_x, 5, z, beam("z")) if z <= 22 and b.get(side_x, 5, z) is None else None
     WW = Wall(b, "west", "south", (BX0, 0))
@@ -154,7 +152,7 @@ def build() -> Build:
             x = UC + du
             put(x, 0, z, PLINTH.pick(x, 0, z))
             for y in range(1, 5):
-                put(x, y, z, MASON.pick(x, y, z))
+                put(x, y, z, lg(BEAM, "y"))
             put(x, 5, z, beam("z"))
     for du in range(-3, 4):
         WP.put(UC + du, 5, 0, WP.log(BEAM, "along", True))
@@ -170,19 +168,19 @@ def build() -> Build:
                        brace=P("dark_oak_planks"))
     for du in (-2, 2):
         WF.put(UC + du, 4, 1, B.lantern(True))
-    K.corbie_gable(b, WP, UC, 3, 6, {3: 7, 2: 9, 1: 10, 0: 11}, body=lambda x, y, z: MASON.pick(x, y, z))
+    K.corbie_gable(b, WP, UC, 3, 6, {3: 7, 2: 9, 1: 10, 0: 11}, body=lambda x, y, z: BOARD.pick(x, y, z), cap="dark_oak")
     for du in (-3, 3):                                                             # pier tops carry the first step
         for y in (6, 7):
             if WP.get(UC + du, y, 0) is None:
-                WP.put(UC + du, y, 0, MASON.pick(*WP.xyz(UC + du, y, 0)))
+                WP.put(UC + du, y, 0, BOARD.pick(*WP.xyz(UC + du, y, 0)))
     for du in (-1, 1):                                                             # slits in the gable
         for y in (7, 8):
             WP.put(UC + du, y, 0, "@iron_bars")
     WP.put(UC, 7, 0, P("stripped_spruce_log[axis=y]"))
     before = {c for c in main["cells"]}
-    porch = K.hipped_roof(b, (UC - 4, PZ + 1, UC + 4, 17), Y_EAVE, {"W": 0, "E": 0, "N": None, "S": None}, field="brick",
+    porch = K.hipped_roof(b, (UC - 4, PZ + 1, UC + 4, 17), Y_EAVE, {"W": 0, "E": 0, "N": None, "S": None}, field="spruce",
                           eave="deepslate_tile", rake="deepslate_tile", ridge=P("deepslate_tiles"), cap=sl("deepslate_tile"),
-                          name="porch", form="gable", riser=P("bricks"), clip=main)
+                          name="porch", form="gable", riser=P("spruce_planks"), clip=main)
     n.gables[:] = [g for g in n.gables if g["name"] not in ("porch:S", "porch:N")]
     drop(b, [(x, Y_EAVE, FZ - 1) for x in range(UC - 3, UC + 4)] + [(x, Y_EAVE, FZ - 1) for x in range(UC - 3, UC + 4)])
     for du in range(-2, 3):
@@ -195,14 +193,12 @@ def build() -> Build:
     put(17, 2, PZ - 1, B.wall_sign("spruce", "north"))
 
     # ================= dormers on the front slope (one with the hoist and a hay bale) =================
-    roof_mat = "brick"
+    roof_mat = "spruce"
     oak = lambda x, y, z: P("dark_oak_planks")                                    # noqa: E731
     for uc in (12, 27, 31):
         hoist = uc == 27
         K.dormer(b, main, WF, uc, 0, 6, wall_mat=oak, trim=BEAM, roof_mat=roof_mat, name=f"dormer{uc}",
                  beam=hoist, hatch=hoist, h=3)
-        if hoist:
-            WF.put(uc, 6 + 3 - 2, 2, B.hay())                                      # the bale hangs on the chain
 
     # ================= back wall: stall half-doors, muck hatches =================
     WB = Wall(b, "south", "east", (0, BZ))
@@ -216,7 +212,7 @@ def build() -> Build:
 
     # ================= dairy lean-to on the east gable =================
     DX0, DX1, DZ0, DZ1 = 33, 39, 17, 21
-    dcat = K.catslide_roof(b, (DX0, DZ0 - 1, DX1 + 1, DZ1 + 1), "W", 7, field="brick", eave="deepslate_tile", name="dairy")
+    dcat = K.catslide_roof(b, (DX0, DZ0 - 1, DX1 + 1, DZ1 + 1), "W", 7, field="spruce", eave="deepslate_tile", name="dairy")
     ds = dcat["surface"]
     ring_d = [(x, z) for x in range(DX0, DX1 + 1) for z in range(DZ0, DZ1 + 1) if x == DX1 or z in (DZ0, DZ1)]
     for (x, z) in ring_d:
@@ -235,10 +231,10 @@ def build() -> Build:
                 put(x, top - 1, z, beam("x")) if b.block(x, top - 1, z) != "air" else None
     WDN = Wall(b, "north", "east", (0, DZ0))
     WDS = Wall(b, "south", "east", (0, DZ1))
-    window(WDN, 34, 2, shutters="spruce", box="potted_cornflower", sill="spruce")
+    window(WDN, 34, 2, shutters="spruce", box=None, sill="spruce")
     door(WDN, 37, 1, mat="spruce", hood=False)
-    window(WDS, 35, 2, shutters="spruce", box="potted_azure_bluet", sill="spruce")
-    window(Wall(b, "east", "south", (DX1, 0)), 19, 2, shutters=None, box="potted_poppy", sill="spruce")
+    window(WDS, 35, 2, shutters="spruce", box=None, sill="spruce")
+    window(Wall(b, "east", "south", (DX1, 0)), 19, 2, shutters="spruce", box=None, sill="spruce")
     put(36, 0, DZ0 - 1, B.barrel()); put(36, 1, DZ0 - 1, P("iron_bars")) if False else None
     put(38, 0, DZ0 - 1, B.barrel()); put(38, 1, DZ0 - 1, B.barrel())
     put(34, 8, 19, "minecraft:dark_oak_trapdoor[facing=east,half=bottom,open=true,powered=false,waterlogged=false]")
