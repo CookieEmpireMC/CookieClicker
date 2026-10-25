@@ -112,9 +112,6 @@ def build() -> Build:
             if b.get(xin, 7, z) is not None and z in (17, 21):
                 pass
     n.volumes.append({"name": "coop", "footprint": (AX0, AZ0, AX1, AZ1), "top": roof["ridge_y"] + 1})
-    # gable pop-hole + louvre on the west gable
-    WWg = Wall(b, "west", "south", (12, 0))
-    for dz in (-1, 0, 1):
     # door on the north (yard) wall
     WN = Wall(b, "north", "east", (0, 17))
     door(WN, 15, 4, mat="spruce", frame=TRIM, hood=False)
