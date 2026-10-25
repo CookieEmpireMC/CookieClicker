@@ -121,3 +121,13 @@ Review: does the chime read as a clear "level up" without being shrill, and sit 
 | `building_milestone` | `cookieclicker:building.milestone` | `sounds/building/milestone.ogg` | A building type upgrades its look (25/100 owned): wooden thud, quick G-major bell arpeggio G5-B5-D6 landing on a G5/D6/G6/B6 chord with a soft pad and coin shimmer. Between `upgrade_shelved` and `basket_tier_up` in size, no whoosh. Script `design/sound-scripts/building_milestone.py`. Original synthesis. | 950 ms, -16 LUFS (sound-check warns: UI sound > 400 ms, intended) | `minecraft:ui.toast.challenge_complete` | vol 0.8, pitch 1.0 (fixed, tuned chord), `block` | placeholder (needs audition) |
 
 Review: does appear stay pleasant when 3-4 buildings pop in quickly (bulk buy x10)? Does the milestone read as clearly bigger than appear but smaller than the basket tier-up? Both use `source: block` (positional, play at the building). The `challenge_complete` fallback is long for a milestone stand-in.
+
+## ingredients
+
+| Event (sounds.yml) | Pack key | Files | Feel | Measured | Fallback | Config | Status |
+|---|---|---|---|---|---|---|---|
+| `recipes_unlock` | `cookieclicker:recipe.unlock` | `sounds/recipe/unlock.ogg` | Recipe Book bought: short warm fanfare, plucked C5-E5-G5 pickup into a ringing C major chord with a low C4 and three sparkle bells (E6-G6-C7). Smaller than `house_fanfare`. Script `design/sound-scripts/recipe_book.py`. Original synthesis. | 1100 ms, -16 LUFS (UI > 400 ms warning, intended) | `minecraft:ui.toast.challenge_complete` | vol 0.8, pitch 1.0, `ui` | placeholder (needs audition) |
+| `recipe_book_open` | `cookieclicker:recipe.open` | `sounds/recipe/open.ogg` | Soft page turn: gliding band-passed paper swish with two tiny flicks. Script as above. | 260 ms, about -19.5 dBFS RMS | `minecraft:item.book.page_turn` | vol 0.6, pitch 0.95-1.08, `ui` | placeholder (needs audition) |
+| `recipe_buy` | `cookieclicker:recipe.buy` | `sounds/recipe/buy.ogg` | Recipe baked: quick page flip then a bright two-note chime G6-C7. Script as above. | 380 ms, about -18 dBFS RMS | `minecraft:entity.player.levelup` | vol 0.8, pitch 0.98-1.04, `ui` | placeholder (needs audition) |
+
+Review: is the page turn paper-like and not hissy? Does the buy chime stay pleasant on repeated buys? Is the unlock clearly a bigger moment than the buy?

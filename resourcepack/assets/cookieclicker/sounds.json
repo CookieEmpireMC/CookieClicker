@@ -101,5 +101,23 @@
     "sounds": [
       "cookieclicker:building/milestone"
     ]
+  },
+  "recipe.unlock": {
+    "subtitle": "subtitles.cookieclicker.recipe_unlock",
+    "sounds": [
+      "cookieclicker:recipe/unlock"
+    ]
+  },
+  "recipe.open": {
+    "subtitle": "subtitles.cookieclicker.recipe_open",
+    "sounds": [
+      "cookieclicker:recipe/open"
+    ]
+  },
+  "recipe.buy": {
+    "subtitle": "subtitles.cookieclicker.recipe_buy",
+    "sounds": [
+      "cookieclicker:recipe/buy"
+    ]
   }
 }
