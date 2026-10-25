@@ -15,7 +15,7 @@ import java.util.function.Consumer;
  */
 public record PluginSettings(DatabaseSettings database, int autosaveSeconds, int shutdownSaveTimeoutSeconds,
                              Hud hud, ResourcePack resourcePack, StationVisualSettings visuals, PlotSettings plot,
-                             HouseSettings house, BeltSettings belt) {
+                             HouseSettings house, BeltSettings belt, RecipeGuiSettings recipeGui) {
 
     /** messages.yml path of the text shown with the pack request. */
     private static final String PACK_PROMPT_KEY = "resource-pack.prompt";
@@ -26,7 +26,7 @@ public record PluginSettings(DatabaseSettings database, int autosaveSeconds, int
     /** Same settings with another database block (reload keeps the running database until a restart). */
     public PluginSettings withDatabase(DatabaseSettings db) {
         return new PluginSettings(db, autosaveSeconds, shutdownSaveTimeoutSeconds, hud, resourcePack, visuals, plot,
-                house, belt);
+                house, belt, recipeGui);
     }
 
     /** Action bar re-send period; production always ticks once per second. */
@@ -54,7 +54,8 @@ public record PluginSettings(DatabaseSettings database, int autosaveSeconds, int
                 StationVisualSettings.from(c, problems),
                 PlotSettings.from(c, problems),
                 HouseSettings.from(c, problems),
-                BeltSettings.from(c, problems));
+                BeltSettings.from(c, problems),
+                RecipeGuiSettings.from(c.getConfigurationSection("recipes.gui"), problems));
     }
 
     private static DatabaseSettings database(ConfigurationSection c, Path dataFolder, Consumer<String> problems) {

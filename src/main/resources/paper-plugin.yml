@@ -20,3 +20,6 @@ permissions:
   cookieempire.admin:
     description: Set up bakery plots and houses, and reload Cookie Empire.
     default: op
+  cookieclicker.recipes:
+    description: Open the Recipe Book with /bakery recipes.
+    default: true

@@ -23,6 +23,7 @@ import dev.casperrs.cookieClicker.plot.PlotOutlines;
 import dev.casperrs.cookieClicker.plot.PlotRegistry;
 import dev.casperrs.cookieClicker.plot.PlotService;
 import dev.casperrs.cookieClicker.plot.PlotTracker;
+import dev.casperrs.cookieClicker.recipe.RecipeBookMenu;
 import dev.casperrs.cookieClicker.recipe.RecipeService;
 import dev.casperrs.cookieClicker.session.SessionBukkitListener;
 import dev.casperrs.cookieClicker.session.SessionListener;
@@ -89,6 +90,7 @@ final class PluginWiring {
     private @Nullable SoundService sounds;
     private @Nullable Hud hud;
     private @Nullable RecipeService recipes;
+    private @Nullable RecipeBookMenu recipeMenu;
     private @Nullable BakeryTicker ticker;
     private @Nullable StationViews views;
     private @Nullable Effects effects;
@@ -154,7 +156,6 @@ final class PluginWiring {
 
         views = new StationViews(plugin, () -> settings.get().visuals(), stations, sessions, economy, messages,
                 resourcePacks::hasPack);
-        ticker.setAfterProduce(views::refreshPanels); // rows light up the second they become affordable
         views.sweep(true); // crash leftovers of every tagged entity, before the vfx engine starts
 
         effects = new Effects(plugin, Messages.miniMessage());
@@ -171,6 +172,15 @@ final class PluginWiring {
         views.setBasketTierUp(interactions::basketTierUp);
         recipes = new RecipeService(sessions, economy, new RecipeBook(economy), sounds, effects, hud);
         recipes.setCpsChanged(views::refreshPanels);
+        recipeMenu = new RecipeBookMenu(recipes, messages, () -> settings.get().recipeGui(), resourcePacks::hasPack,
+                sounds, plugin.getLogger());
+        RecipeBookMenu menu = recipeMenu;
+        interactions.setOpenRecipeBook(menu::open);
+        ticker.setAfterProduce((p, pouch) -> {
+            views.refreshPanels(p, pouch); // rows light up the second they become affordable
+            menu.refresh(p); // an open book shows the growing stock
+        });
+        pm.registerEvents(menu, plugin);
         pm.registerEvents(new ClickRouter(views, interactions, () -> settings.get().visuals(), plugin.getLogger()),
                 plugin);
         views.start();
@@ -206,6 +216,7 @@ final class PluginWiring {
         DbCommand db = new DbCommand(settings, sessions, pool, messages, plugin.getLogger());
         BakeryCommand command = new BakeryCommand(plots, outlines, houses, setup, cinematics, settings, messages,
                 plugin::reload, db);
+        command.setOpenRecipes(menu::open);
         plugin.getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
                 event -> event.registrar().register(command.node(), "Cookie Empire admin commands"));
 
@@ -239,6 +250,7 @@ final class PluginWiring {
     /** Everything after the new settings are in place; the order matters (see the inline notes). */
     void reload(PluginSettings.ResourcePack packBefore, List<String> problems) {
         resourcePacks.setAcceptAnyPack(!settings.get().resourcePack().enabled());
+        recipeMenu.closeAll(); // icons and slots follow the new messages, balance and config on the next open
         loader.loadMessages(messages, problems);
         loader.loadBalance(economy, messages, problems);
         loader.loadSounds(sounds, problems);
@@ -276,6 +288,7 @@ final class PluginWiring {
     List<PluginPart> shutdownOrder() {
         List<PluginPart> parts = new ArrayList<>();
         add(parts, "the tick task", tickTask, BukkitTask::cancel);
+        add(parts, "the Recipe Book", recipeMenu, RecipeBookMenu::closeAll);
         add(parts, "the autosave task", autosaveTask, BukkitTask::cancel);
         add(parts, "the house cinematics", cinematics, HouseCinematics::shutdown);
         add(parts, "the conveyor belts", belts, ConveyorBelts::shutdown);

@@ -3,9 +3,12 @@ package dev.casperrs.cookieClicker.economy;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * Turns the raw YAML trees of {@code buildings.yml} and {@code upgrades.yml} into an {@link EconomyConfig}.
@@ -133,7 +136,7 @@ public final class EconomyConfigParser {
     private static Map<String, RecipeDef> recipes(Map<String, ?> upgradesYaml, Map<String, BuildingDef> buildings,
                                                   Map<String, UpgradeDef> upgrades) throws EconomyConfigException {
         Map<String, RecipeDef> recipes = new LinkedHashMap<>();
-        java.util.Set<String> produced = new java.util.HashSet<>();
+        Set<String> produced = new HashSet<>();
         buildings.values().forEach(b -> {
             if (b.produces() != null) {
                 produced.add(b.produces().ingredient());
@@ -217,7 +220,7 @@ public final class EconomyConfigParser {
         if (!(raw instanceof List<?> list)) {
             throw new EconomyConfigException(where + " must be a list of owned counts, got " + raw);
         }
-        java.util.TreeSet<Integer> counts = new java.util.TreeSet<>();
+        TreeSet<Integer> counts = new TreeSet<>();
         for (Object o : list) {
             if (!(o instanceof Integer || o instanceof Long) || ((Number) o).longValue() < 1
                     || ((Number) o).longValue() > Integer.MAX_VALUE) {

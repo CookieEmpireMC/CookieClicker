@@ -41,6 +41,12 @@ Checked against the tidy layout (feature/tidy, 2026-10-23). Package map: `docs/a
   any owned upgrade of `EffectType.RECIPES_UNLOCK`. Pure API: `economy/RecipeBook` (statuses/status/buy);
   Bukkit side: `recipe/RecipeService` (wired in PluginWiring, feedback sounds/effects).
 - Renamed building ids: `economy/LegacyIds.BUILDING_RENAMES`, applied in `JdbcPlayerStore.load`.
+- Recipe Book GUI (2026-10-25): `recipe/RecipeBookMenu` (MenuType view per player, refreshed from the ticker's
+  afterProduce), `recipe/RecipeIcons`, glyphs in `recipe/RecipeGlyphs`; Bakery Shop row = `PanelRows.RECIPE_BOOK`
+  appended after the buildings (sealed `PanelRowState` now also permits `RecipeBookRowState`). `/bakery` root requires
+  admin OR `cookieclicker.recipes`; every admin literal has its own `.requires(admin)`.
+- `MessagesTest` literal scan covers only commands/storage/hud/panel/click/resource-pack/plot/house prefixes; messages
+  must parse in STRICT mode (close every tag) except `.name` paths.
 - There is no `purchase_denied` sound event; the deny sound is `cant_afford`.
 - Shipped-content tests tie messages.yml/VisualFallbacks building ids to buildings.yml (designer-owned): a building
   rename is red on the coder branch until the balance branch is merged first.

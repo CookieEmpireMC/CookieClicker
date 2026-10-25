@@ -12,6 +12,9 @@ import java.util.function.Predicate;
 /** Which item goes in which panel row and shelf slot. Pure Java (no Bukkit), so the order is testable. */
 public final class PanelRows {
 
+    /** Id of the Recipe Book row, appended after the last building once the book is owned. */
+    public static final String RECIPE_BOOK = "recipe_book";
+
     private PanelRows() {
     }
 
@@ -22,12 +25,26 @@ public final class PanelRows {
 
     /** Buildings panel window: {@code buildings.yml} order from index {@code top}, at most {@code maxRows}. */
     public static List<String> buildings(EconomyConfig config, int top, int maxRows) {
-        return config.buildings().keySet().stream().skip(Math.max(0, top)).limit(Math.max(0, maxRows)).toList();
+        return buildings(config, top, maxRows, false);
+    }
+
+    /** Buildings panel window, with the {@link #RECIPE_BOOK} row after the last building when {@code recipeBook}. */
+    public static List<String> buildings(EconomyConfig config, int top, int maxRows, boolean recipeBook) {
+        List<String> all = new ArrayList<>(config.buildings().keySet());
+        if (recipeBook) {
+            all.add(RECIPE_BOOK);
+        }
+        return all.stream().skip(Math.max(0, top)).limit(Math.max(0, maxRows)).toList();
     }
 
     /** Highest top index of a buildings window of {@code rows} rows (0 = everything fits, no paging). */
     public static int maxTop(EconomyConfig config, int rows) {
-        return Math.max(0, config.buildings().size() - Math.max(0, rows));
+        return maxTop(config, rows, false);
+    }
+
+    /** {@link #maxTop(EconomyConfig, int)} counting the {@link #RECIPE_BOOK} row when {@code recipeBook}. */
+    public static int maxTop(EconomyConfig config, int rows, boolean recipeBook) {
+        return Math.max(0, config.buildings().size() + (recipeBook ? 1 : 0) - Math.max(0, rows));
     }
 
     /**
@@ -36,7 +53,12 @@ public final class PanelRows {
      * {@code 0..maxTop}.
      */
     public static int defaultTop(EconomyConfig config, Predicate<String> unlocked, int rows) {
-        int max = maxTop(config, rows);
+        return defaultTop(config, unlocked, rows, false);
+    }
+
+    /** {@link #defaultTop(EconomyConfig, Predicate, int)} with the {@link #RECIPE_BOOK} row when {@code recipeBook}. */
+    public static int defaultTop(EconomyConfig config, Predicate<String> unlocked, int rows, boolean recipeBook) {
+        int max = maxTop(config, rows, recipeBook);
         int index = 0;
         for (String id : config.buildings().keySet()) {
             if (!unlocked.test(id)) {

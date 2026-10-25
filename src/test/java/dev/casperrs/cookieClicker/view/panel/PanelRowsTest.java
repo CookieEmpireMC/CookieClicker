@@ -79,4 +79,17 @@ class PanelRowsTest {
         assertEquals(0, PanelRows.maxTop(seven, 10), "everything fits: no ▲ / ▼");
         assertEquals(List.of("b0", "b1", "b2", "b3", "b4", "b5", "b6"), PanelRows.buildings(seven, 0, 10));
     }
+
+    @Test
+    void theRecipeBookRowComesAfterTheLastBuildingAndCountsForPaging() throws Exception {
+        EconomyConfig seven = sevenBuildings();
+        assertEquals(List.of("b5", "b6", PanelRows.RECIPE_BOOK), PanelRows.buildings(seven, 5, 3, true));
+        assertEquals(5, PanelRows.maxTop(seven, 3, true));
+        assertEquals(4, PanelRows.maxTop(seven, 3, false), "without the book nothing changes");
+        assertEquals(5, PanelRows.defaultTop(seven, id -> true, 3, true), "all unlocked: the window ends on the book");
+        assertEquals(1, PanelRows.defaultTop(seven, Set.of("b0", "b1", "b2")::contains, 3, true),
+                "the next locked building still sits in the bottom row, so the book is off screen until scrolled");
+        assertEquals(List.of("b0", "b1", "b2", "b3", "b4", "b5", "b6", PanelRows.RECIPE_BOOK),
+                PanelRows.buildings(seven, 0, 10, true));
+    }
 }

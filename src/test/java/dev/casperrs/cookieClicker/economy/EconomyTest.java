@@ -335,4 +335,23 @@ class EconomyTest {
         assertEquals(PurchaseResult.ALREADY_OWNED, book.buy(enough, "butter").result());
         assertEquals(PurchaseResult.UNKNOWN, book.buy(enough, "nope").result());
     }
+
+    @Test
+    void aStockAHairBelowThePriceStillPaysIt() throws Exception {
+        double flour = Math.nextDown(20.0); // what summing 0.2 per tick leaves: a hair below the whole number
+        double ten = 0;
+        for (int i = 0; i < 10; i++) {
+            ten += 0.2;
+        }
+        assertTrue(RecipeBook.covers(ten, 2), "10 x 0.2 pays for 2");
+        Economy e = new Economy(EconomyConfigParser.parse(recipeBuildings(),
+                recipeUpgrades(map("butter", butterRecipe("flour")))).config(), new java.util.Random(1));
+        assertTrue(flour < 20);
+        assertTrue(RecipeBook.covers(flour, 20));
+        assertFalse(RecipeBook.covers(19.99, 20), "a real shortfall is still refused");
+        assertFalse(RecipeBook.covers(0, 1));
+        CookiePouch p = recipePouch(300, 1000, Map.of("recipe_book", 1), flour);
+        assertEquals(PurchaseResult.BOUGHT, new RecipeBook(e).buy(p, "butter").result());
+        assertEquals(0, p.ingredient("flour"), "no negative leftover");
+    }
 }

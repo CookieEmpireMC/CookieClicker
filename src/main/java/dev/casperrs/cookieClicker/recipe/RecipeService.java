@@ -80,8 +80,11 @@ public final class RecipeService {
         }
         RecipePurchase result = book.buy(pouch, recipeId);
         Location at = player.getLocation();
-        if (!result.bought()) {
+        if (result.result() == PurchaseResult.CANT_AFFORD) {
             sounds.play(player, DENIED, at);
+            return result;
+        }
+        if (!result.bought()) {
             return result;
         }
         effects.play(RECIPE_BUY, at, player);

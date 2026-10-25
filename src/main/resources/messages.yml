@@ -101,18 +101,23 @@ buildings:
 ingredients:
   flour:
     name: "<#f2ead3>Flour"
+    icon: "<white><font:cookieclicker:ingredient>\uE000</font></white> "
     icon-no-pack: "<#f2ead3>Flour</#f2ead3> "
   milk:
     name: "<#ffffff>Milk"
+    icon: "<white><font:cookieclicker:ingredient>\uE001</font></white> "
     icon-no-pack: "<#ffffff>Milk</#ffffff> "
   sugar:
     name: "<#e8f4ff>Sugar"
+    icon: "<white><font:cookieclicker:ingredient>\uE002</font></white> "
     icon-no-pack: "<#e8f4ff>Sugar</#e8f4ff> "
   chocolate:
     name: "<#8b5a2b>Chocolate"
+    icon: "<white><font:cookieclicker:ingredient>\uE003</font></white> "
     icon-no-pack: "<#8b5a2b>Choc</#8b5a2b> "
   eggs:
     name: "<#f6deb0>Eggs"
+    icon: "<white><font:cookieclicker:ingredient>\uE004</font></white> "
     icon-no-pack: "<#f6deb0>Eggs</#f6deb0> "
 
 # Recipes from upgrades.yml "recipes" (bought in the Recipe Book). name: the recipe title; lore: one flavour line.
@@ -249,8 +254,37 @@ panel:
     enabled: "<white><b><label></b></white>"
     disabled: "<dark_gray><label></dark_gray>"
   # Action bar when you click an icon on the upgrade shelf. <name> = upgrades.<id>.name, <effect> = upgrades.<id>.effect
+  # Last row of the Bakery Shop once the Recipe Book is bought (two lines, like a building row); a click opens it
+  recipe-book:
+    row: "<gold><b>Recipe Book</b></gold><newline><gray>Click to open</gray>"
   shelf:
     tooltip: "<name> <dark_gray>·</dark_gray> <gray><effect></gray>"
+
+# The Recipe Book chest (/bakery recipes). Every lore line is upright unless it says <i>.
+gui:
+  recipes:
+    # Chest title. With the resource pack it is drawn on the book background; keep it short (about 20 letters)
+    title: "Recipe Book"
+    # /bakery recipes before the Recipe Book is bought
+    need-book: "<prefix><gray>Buy the <gold>Recipe Book</gold> on the Click Upgrades panel first.</gray>"
+    # A recipe not unlocked yet. <name> = recipes.<id>.name, <needed> = baked cookies to unlock
+    locked-name: "<dark_gray>???</dark_gray>"
+    locked: "<gray>Bake <needed> cookies to unlock</gray>"
+    # <lore> = recipes.<id>.lore
+    flavour: "<dark_gray><i><lore></i></dark_gray>"
+    # <percent> = the CPS bonus in percent
+    effect: "<green>+<percent>% CPS</green>"
+    costs: "<gray>Costs:</gray>"
+    # <cost> = cookie price, <missing> = cookies still needed (rounded up)
+    cookies: "<dark_gray>-</dark_gray> <gold><cost></gold> <gray>cookies</gray>"
+    cookies-missing: "<dark_gray>-</dark_gray> <red><cost></red> <gray>cookies</gray> <red>(<missing> more)</red>"
+    # <icon> = ingredients.<id>.icon (or icon-no-pack), <name> = ingredients.<id>.name, <have> = stock (rounded
+    # down), <need> = the price, <missing> = still needed (rounded up)
+    ingredient: "<dark_gray>-</dark_gray> <icon><white><have>/<need></white>"
+    ingredient-missing: "<dark_gray>-</dark_gray> <icon><red><have>/<need></red> <red>(<missing> more)</red>"
+    click: "<yellow>Click to bake!</yellow>"
+    short: "<red>Not enough yet</red>"
+    baked: "<green><b>Baked!</b></green>"
 
 resource-pack:
   prompt: "<gold>Cookie Empire</gold> <gray>uses a resource pack for the giant cookie, icons and sounds.</gray>"
@@ -328,6 +362,8 @@ db:
 
 commands:
   usage: "<prefix><gray>/bakery plot setup [design]|setup undo|show</gray> <dark_gray>|</dark_gray> <gray>/bakery house place \\<design>|undo|rebuild \\<player></gray> <dark_gray>|</dark_gray> <gray>/bakery db migrate [--force]</gray> <dark_gray>|</dark_gray> <gray>/bakery reload</gray>"
+  # /bakery for players without admin rights
+  usage-player: "<prefix><gray>/bakery recipes</gray> <dark_gray>-</dark_gray> <gray>open the Recipe Book</gray>"
   players-only: "<prefix><red>Only players can do that.</red>"
   reload:
     done: "<prefix><green>Reloaded config, messages, sounds, effects, balance and plots.</green>"

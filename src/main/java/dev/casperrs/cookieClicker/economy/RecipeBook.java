@@ -15,6 +15,12 @@ import java.util.Optional;
  */
 public final class RecipeBook {
 
+    /**
+     * Relative slack when comparing a stock with a price: production sums like 10 × 0.2 land a hair below the whole
+     * number the player sees (1.9999999999999998), which must still pay for 2.
+     */
+    public static final double TOLERANCE = 1e-9;
+
     private final Economy economy;
 
     public RecipeBook(Economy economy) {
@@ -73,14 +79,19 @@ public final class RecipeBook {
         if (!book || pouch.baked() < r.unlockBaked()) {
             return new RecipeStatus(r, RecipeStatus.State.LOCKED, 0, Map.of());
         }
-        double missingCookies = pouch.pouch() >= r.cost() ? 0 : r.cost() - pouch.pouch();
+        double missingCookies = covers(pouch.pouch(), r.cost()) ? 0 : r.cost() - pouch.pouch();
         Map<String, Double> missing = new LinkedHashMap<>();
         r.ingredients().forEach((id, need) -> {
             double have = pouch.ingredient(id);
-            if (have < need) {
+            if (!covers(have, need)) {
                 missing.put(id, need - have);
             }
         });
         return new RecipeStatus(r, RecipeStatus.State.AVAILABLE, missingCookies, missing);
+    }
+
+    /** Whether {@code have} pays for {@code need}, within {@link #TOLERANCE} of {@code need}. */
+    public static boolean covers(double have, double need) {
+        return have >= need - TOLERANCE * Math.abs(need);
     }
 }

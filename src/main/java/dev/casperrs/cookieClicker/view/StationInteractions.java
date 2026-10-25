@@ -2,6 +2,7 @@ package dev.casperrs.cookieClicker.view;
 
 import dev.casperrs.cookieClicker.view.panel.BulkMode;
 import dev.casperrs.cookieClicker.view.panel.PanelKind;
+import dev.casperrs.cookieClicker.view.panel.PanelRows;
 import dev.casperrs.cookieClicker.economy.BulkPurchase;
 import dev.casperrs.cookieClicker.economy.ClickResult;
 import dev.casperrs.cookieClicker.economy.CookiePouch;
@@ -49,6 +50,7 @@ public final class StationInteractions {
     private final Messages messages;
     /** Told after every building purchase that went through (the visible buildings). */
     private Consumer<Player> buildingsBought = player -> { };
+    private Consumer<Player> openRecipeBook = player -> { };
 
     public StationInteractions(StationViews views, SessionManager sessions, Economy economy, Effects effects,
                                SoundService sounds, Hud hud, Messages messages) {
@@ -63,6 +65,11 @@ public final class StationInteractions {
 
     public void setBuildingsBought(Consumer<Player> buildingsBought) {
         this.buildingsBought = buildingsBought;
+    }
+
+    /** What a click on the Bakery Shop's Recipe Book row does. */
+    public void setOpenRecipeBook(Consumer<Player> openRecipeBook) {
+        this.openRecipeBook = openRecipeBook;
     }
 
     /** {@code hit} is the world hit position, or null (left click) for the cookie centre. */
@@ -100,6 +107,10 @@ public final class StationInteractions {
         String id = row.id;
         if (id == null) {
             return; // empty slot
+        }
+        if (kind == PanelKind.BUILDINGS && PanelRows.RECIPE_BOOK.equals(id)) {
+            openRecipeBook.accept(player);
+            return;
         }
         Location loc = new Location(player.getWorld(), row.centre[0], row.centre[1], row.centre[2]);
         BulkMode mode = views.mode(player.getUniqueId(), kind);
