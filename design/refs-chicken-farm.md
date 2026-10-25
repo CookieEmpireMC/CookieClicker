@@ -1,11 +1,22 @@
-# Reference sheet: `chicken_farm` (stone coop, dovecote, run)
+# Reference sheet: `chicken_farm` (raised wooden coop on stilts inside one fenced run)
 
-Sources: `docs/research/farm-buildings.md` sections 1 and 7 (EcoSMP "Medieval Chicken Coop", seen by Rick 2026-10-25: coped gable parapets, stepped buttress, steep roof, dark shutters, stone pillars + fence run, terraced backdrop; Wikipedia Dovecote: rat ledge, nesting holes, louvre). Original design, nothing traced.
+Sources: Rick's survey of community builds on 2026-10-25 (PlanetMinecraft, YouTube, Reddit, WBuilds, JPCORE "Chicken Manor", Graysun, EcoSMP; looked at, nothing copied or traced). The user rejected the earlier stone coop with a separate dovecote, so this sheet replaces it. Original design.
+
+What the well-made coops do, in our words:
+- **Wood, not stone.** Spruce or oak planks with dark log posts at the corners and along the walls. The stone version only works as one tall hall with buttresses, which is not a small box.
+- **Raised on stilts.** The coop stands 2-3 blocks up on dark log posts over a mossy-cobble pad, with a ramp or ladder to a small door, and the space underneath is used: nest boxes (composters), a water cauldron, a trough.
+- **One compact footprint.** The run fence hugs the coop (1-3 blocks out); nothing is scattered across the lawn.
+- **Run ground.** Coarse dirt, rooted dirt, podzol and dirt path with a few grass tufts, hay piles on the ground, a trough.
+- **Roof.** Steep, one family (spruce or dark oak), small overhang, a cupola or weathervane on the ridge.
+- **Silhouette variety.** A second, smaller coop (pyramid roof) next to the big one; JPCORE's manor has a tall A-frame next to a low stall.
+- **Fences.** Wood fence with fence-gate entries and a taller post with a lantern every few blocks.
 
 | What | Fact used | Where it shows |
 |---|---|---|
-| Coop | stone walls, coped parapets, buttress, steep tile roof | `coped_gable`, `buttress`, 56 degree roof |
-| Dovecote | square tower, projecting rat ledge, nesting holes, louvre cupola (not a chimney) | slab band y3, open trapdoors, fence + trapdoor louvre registered as vents |
-| Run | stone pillars every 4 with spruce fence, hurdles, trough | `stone_pillar_fence`, `hurdle_fence`, `G.trough` |
+| Coop A | oak/birch/jungle plank walls inset one block inside dark-oak log posts, floor at y3 on 11 stilts, plank ramp from the run gate, railing, hanging lanterns | `build()` |
+| Under the floor | 4 composters, water cauldron, barrel, trough slabs | `build()` |
+| Roof A | spruce stairs, dark-oak trim, gable with a louvre cupola and weathervane | `K.hipped_roof` |
+| Coop B | smaller hut on 7 stilts, pyramid roof, finial lantern, nest-box trapdoors | `K.pyramid_roof` |
+| Run | spruce fence with dark-oak log posts and lanterns, 3 gates, coarse-dirt run ground, hay, trough, orchard trees, veg plot | `scenery()` |
 
-Ramps: wall stone / andesite / stone bricks; plinth cobblestone / mossy / cobbled deepslate; roof as the barn.
+Ramps (light to dark): plinth cobblestone / mossy / andesite; board oak / birch / jungle planks; roof spruce stairs / dark-oak stairs / spruce planks.
