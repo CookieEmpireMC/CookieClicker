@@ -1,0 +1,13 @@
+{
+  "providers": [
+    {
+      "type": "bitmap",
+      "file": "cookieclicker:font/ingredients.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue000\ue001\ue002\ue003\ue004"
+      ]
+    }
+  ]
+}

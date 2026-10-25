@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "cookieclicker:item/building/beehive"
+    "layer0": "cookieclicker:item/recipe/chocolate_chips"
   }
 }
