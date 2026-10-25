@@ -42,3 +42,11 @@ Related: [[reviews-ledger]], [[testing-recipes]].
 - Undo deserializes every slab uncompressed up front on IO (`FarmSetup.undo`): ~0.8M blocks at the guideline region, transient, unmeasured. Follow-up: deserialize one slab per restore tick.
 - `FarmTeleports`: cooldown now starts on success, so repeated `/bakery farm` calls while one is in flight queue several teleports (LOW).
 - Single-thread IO executor (`PluginExecutors` newSingleThreadExecutor) makes the serialize-then-submit ordering safe; keep it single-threaded if this code relies on it.
+
+**Waterwheel review (2026-10-25, `countryside-builds/plugin-coder-wheel` 8a555db, tests `countryside-builds/plugin-tester` f30e063..33958c1, 442 Java green, tools-test 85 green)**
+- Code: `farm/FarmWheels` (one 20-tick task only while a wheel exists; ItemDisplay per wheel point, `setVisibleByDefault(false)` + `showEntity` for pack players within `farm.wheel.view-range`; `stopAll` on disable/reload; `restart` on farm listener). `FarmSettings` now has `wheelRpm` (double 0..10, default 2) and `wheelViewRange` (int 8..256, default 64); a 2-arg constructor is unused (dead).
+- `FarmSetup`: NBT (de)serialisation moved back to main (closes the thread-safety follow-up); undo decodes one slab per tick on main (closes the all-slabs-up-front follow-up). A failing tick throws inside `WorldOperation.step` (gate ended, `farm.failed`), chunks released by the stale task on the next tick; the farm and wheel stay until undo finishes.
+- Angle wraps at 2π. Paper's Mojang jar has `Transformation.slerp(Transformation,float)` (verified in `~/bakery-review/server/versions/26.3/paper-26.3.jar`), so the client interpolation is slerp (inferred, not measured) and the wrap is safe.
+- Waterwheel model `cookieclicker:waterwheel` exists only on `countryside-builds/model-designer` (b58a335, 53cb565, 8bf05b6), not on the feature branch yet: the wheel shows a missing model until that merges (integration item).
+- Not verifiable offline: display origin (is the model axle at the entity position, scale about the origin?) and `FarmTeleports` completion thread (Paper Javadoc silent). In-game check.
+- Tests added: `config/FarmSettingsTest` (3), `tools/test_farm_plan.py` (3), `RunsTest` in `tools/test_review_render.py` (1).
