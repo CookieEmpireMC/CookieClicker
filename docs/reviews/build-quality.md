@@ -6,6 +6,7 @@ Target: Paper 26.x, Java 25. Reviewed at the merge of `build-quality/model-desig
 `HouseDesignParserTest.theShippedDefaultDesignParsesAndIsWhatThePaletteSays`: size 9x7x7 -> 17x14x15, blocks 170 -> 590. Nothing else pinned (same scope as before). Values checked against `houses/default.yml` (size [17,14,15], ground-depth 1, 590 in header, 64 palette entries, points chimney [1,11,8] and door [6,1,6]). Note: the YAML chimney is y=11, not 12; points are in design y, the test only asserts the point exists. Gravel is still in the palette (`e`, used by the path edge), only the roof patch blocks are gone; not pinned.
 
 ## Tests
+`mise run tools-test`: 81 tests, OK (1 skipped). `tools/test_house_design.py` now follows the redesigned generator: a `generate()` helper mirrors `house_default.main()` up to the file write (resolve, to_palette, to_layers with ground depth), the contract test pins [17,14,15] / ground-depth 1, and point lookups use layer index = design y + ground.
 `mise run check-quiet`: 417 tests, 0 failures, BUILD SUCCESS.
 
 ## Integration review (houses vs plugin)
