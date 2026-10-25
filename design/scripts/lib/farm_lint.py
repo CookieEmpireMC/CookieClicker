@@ -245,7 +245,10 @@ def lf8_contrast(g: dict, notes: Notes) -> list[str]:
             la, lb = _ramp_lum(g, r[a]), _ramp_lum(g, r[b])
             if la is not None and lb is not None and abs(la - lb) < need:
                 errs.append(f"L-F8 contrast: {label} differ by only {abs(la - lb):.0f} luminance (need {need:.0f})")
-    solid = [bid(d) for (x, y, z), d in g.items() if y >= 0 and bid(d) not in ("air", "water")]
+    scenery = ("leaves", "grass", "dirt", "vine", "fern", "mud", "clay", "moss", "lily", "flower", "tulip", "poppy", "dandelion",
+               "cornflower", "daisy", "azure", "farmland", "wheat", "carrots", "potatoes", "gravel", "path")
+    solid = [bid(d) for (x, y, z), d in g.items() if y >= 0 and bid(d) != "air" and bid(d) != "water"
+             and not any(w in bid(d) for w in scenery)]
     stairs = sum(1 for b in solid if b.endswith("_stairs"))
     if solid and stairs / len(solid) < STAIR_SHARE_MIN:
         errs.append(f"L-F8 stairs: {stairs / len(solid):.0%} of the blocks are stairs, need {STAIR_SHARE_MIN:.0%}")

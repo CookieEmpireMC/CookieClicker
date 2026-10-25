@@ -44,8 +44,8 @@ PLINTH = Ramp(P("cobblestone"), [(P("mossy_cobblestone"), .27, "low"), (P("andes
 PLASTER = Ramp(P("calcite"), [(P("diorite"), .18, None), (P("polished_diorite"), .12, "low")], seed=5, height=3, y0=5)
 ROOF = Ramp("dark_oak", [("spruce", .13, None)], seed=8, height=14, y0=8)
 FLOOR = Ramp(P("spruce_planks"), [(P("oak_planks"), .22, None), (P("dark_oak_planks"), .15, None)], seed=9)
-COBBLE = Ramp(P("cobblestone"), [(P("mossy_cobblestone"), .2, None), (P("andesite"), .17, None), (P("gravel"), .08, None)], seed=31)
-GRAVEL = Ramp(P("gravel"), [(P("coarse_dirt"), .18, None)], seed=22)
+COBBLE = Ramp(P("cobblestone"), [(P("mossy_cobblestone"), .16, None), (P("andesite"), .14, None)], seed=31)
+GRAVEL = Ramp(P("gravel"), [(P("andesite"), .12, None)], seed=22)
 PATH = Ramp(P("coarse_dirt"), [(P("gravel"), .3, None), (P("podzol[snowy=false]"), .12, None)], seed=33)
 BANK = Ramp(P("coarse_dirt"), [(P("moss_block"), .3, None), (P("clay"), .15, None), (P("gravel"), .1, None)], seed=34)
 BED = Ramp(P("clay"), [(P("gravel"), .3, None), (P("mud"), .2, None)], seed=35)
@@ -88,25 +88,28 @@ def wobble(n: int, lo: int, hi: int, rng, run=(3, 5)) -> list:
 
 
 def pond_cells(b: Build) -> set:
-    """Pond A: x 25..44, z 4..14 against the hall (x 25..33 down to z 14) and z 4..12 east of it; wobbling N/W/E shores."""
-    rng = b.rng
+    """Pond A: one broad organic pond (an ellipse with noisy shore) from the retaining wall under the wheel out to the east
+    edge, x 23..44, z 4..14 (z <= 12 east of the hall)."""
+    import numpy as np
+    from scipy.ndimage import gaussian_filter
+    noise = gaussian_filter(np.random.default_rng(12).standard_normal((60, 40)), 1.6)
+    noise = (noise - noise.mean()) / noise.std()
     cells = set()
-    north = wobble(21, 0, 2, rng)
-    for i, x in enumerate(range(23, 44)):
-        zs = 15 if x <= 33 else 13
-        for z in range(4 + north[i], zs):
+    for x in range(23, 45):
+        for z in range(3, 15):
+            if x >= 34 and z > 12:
+                continue
+            d = ((x - 34.0) / 12.2) ** 2 + ((z - 10.4) / 7.4) ** 2
+            if x <= 33 and z >= 11:
+                d = min(d, 0.5)                                    # the part against the hall wall: always water
+            if d + 0.28 * noise[x, z] < 1.0:
+                cells.add((x, z))
+    for x in range(25, 34):
+        for z in range(11, 15):
             cells.add((x, z))
-    west = wobble(11, 0, 2, rng)
-    for i, z in enumerate(range(4, 15)):
-        for x in range(23, 23 + west[i] if z < 12 else 25):
-            cells.discard((x, z))
-    east = wobble(9, 0, 2, rng)
-    for i, z in enumerate(range(4, 13)):
-        for x in range(45 - east[i], 46):
-            cells.discard((x, z))
-    cells = {(x, z) for (x, z) in cells if x <= 44 or z in (8, 9)}
     for z in (8, 9):                                              # the tail race leaves through the east edge
-        cells.add((44, z)); cells.add((45, z))
+        for x in range(40, 46):
+            cells.add((x, z))
     return cells
 
 
@@ -123,7 +126,7 @@ def build():
 
     # ================= pond A =================
     pond = pond_cells(b)
-    K.pond(b, pond, y_surface=-2, y_bed=-4, bed=BED, rim=BANK, lily=0.07)
+    K.pond(b, pond, y_surface=-2, y_bed=-4, bed=BED, rim=BANK, lily=0.14)
     for (x, z) in pond:
         put(x, -1, z, AIR)
     for (x, z) in pond:                                          # a muddy shore ring of the bank cells
@@ -217,10 +220,8 @@ def build():
         put(19, y, 15, lg(BEAM, "y")) if y == 2 else None
     # north upper windows and the hoist hatch above window 1
     for i, x in enumerate((18, 22, 26)):
-        window(WNU, x, 6, height=2, shutters="spruce", box=("potted_poppy", "potted_azure_bluet", "potted_oxeye_daisy")[i],
+        window(WNU, x, 6, height=2, shutters="spruce" if x == 22 else None, box=("potted_poppy", "potted_azure_bluet", "potted_oxeye_daisy")[i],
                sill="spruce")
-    for x in (21, 25, 29):                                                     # upper braces
-        put(x, 7, ZU0 + 0, P("dark_oak_planks")) if (x, 7, ZU0) not in b.g or True else None
 
     # ================= hall roof (steep, half-hip at the east end) =================
     roof_field = lambda x, y, z: ROOF.pick(x, y, z)                            # noqa: E731
@@ -233,11 +234,11 @@ def build():
     n.volumes.append({"name": "hall", "footprint": (X0, ZU0, X1, ZU1), "top": roof["ridge_y"] + 1})
 
     # ---- dormers and the hoist gablet on the north slope
-    oak = lambda x, y, z: P("oak_planks")                                    # noqa: E731
-    K.dormer(b, roof, WNU, 18, 0, 9, wall_mat=oak, trim=BEAM, roof_mat="dark_oak",
+    oak = lambda x, y, z: P("dark_oak_planks")                               # noqa: E731
+    K.dormer(b, roof, WNU, 18, 0, 9, wall_mat=oak, trim=BEAM, roof_mat="deepslate_tile",
              name="hoist", beam=True, hatch=True, h=3)
     for uc in (22, 26):
-        K.dormer(b, roof, WNU, uc, 0, 9, wall_mat=oak, trim=BEAM, roof_mat="spruce",
+        K.dormer(b, roof, WNU, uc, 0, 9, wall_mat=oak, trim=BEAM, roof_mat="deepslate_tile",
                  name=f"dormer{uc}", h=3)
 
     return b, roof, slot, pond
@@ -264,15 +265,15 @@ def rest(b: Build, roof: dict, slot: dict, pond: set) -> dict:
     for x in (24, 28):
         window(WSG, x, 2, height=2, shutters="spruce", box="potted_azure_bluet", sill="spruce") if x == 24 else None
     for i, x in enumerate((17, 21, 25, 29)):
-        window(WSG, x, 6, height=2, shutters="spruce", box=("potted_poppy", "potted_cornflower", "potted_oxeye_daisy",
+        window(WSG, x, 6, height=2, shutters="spruce" if x == 25 else None, box=("potted_poppy", "potted_cornflower", "potted_oxeye_daisy",
                                                                 "potted_azure_bluet")[i], sill="spruce")
     for x in (29,):
-        window(Wall(b, "north", "east", (0, ZU0)), x, 6, height=2, shutters="spruce", box="potted_poppy", sill="spruce")
+        window(Wall(b, "north", "east", (0, ZU0)), x, 6, height=2, shutters=None, box="potted_poppy", sill="spruce")
     window(WEG, 21, 2, height=2, shutters="spruce", box="potted_cornflower", sill="spruce")
-    window(WEG, 19, 6, height=2, shutters="spruce", box="potted_poppy", sill="spruce")
-    window(WEG, 19, 10, height=1, shutters="spruce", box="potted_azure_bluet", sill="spruce")
+    window(WEG, 19, 6, height=2, shutters=None, box="potted_poppy", sill="spruce")
+    window(WEG, 19, 10, height=1, shutters=None, box="potted_azure_bluet", sill="spruce")
     for z in (17, 21):                                                  # west gable windows above the wing roof
-        window(WWG, z, 11, height=2, shutters="spruce", box="potted_oxeye_daisy", sill="spruce")
+        window(WWG, z, 11, height=2, shutters=None, box="potted_oxeye_daisy", sill="spruce")
     for y in range(9, 15):                                              # king post
         if b.get(X0, y, 19) is not None and "plaster" not in b.block(X0, y, 19) and b.block(X0, y, 19) != "air":
             put(X0, y, 19, lg(BEAM, "y"))
@@ -281,16 +282,8 @@ def rest(b: Build, roof: dict, slot: dict, pond: set) -> dict:
     # ---- sluice tunnel through the east pier, channel, pond B, gate, bridge
     put(32, 0, 16, td_gate("west")); put(32, 0, 17, td_gate("west"))
     put(32, 1, 16, "@iron_bars"); put(32, 1, 17, "@iron_bars")
-    chan = [(x, z) for x in range(33, 40) for z in (16, 17)]
-    ponds = set()
-    wob = wobble(7, 0, 1, rng)
-    for i, z in enumerate(range(16, 23)):
-        for x in range(40 + (wob[i] if z not in (16, 17) else 0), 45):
-            ponds.add((x, z))
-    water = K.mill_race(b, chan + sorted(ponds), 0, -1, ramp=BASE, coping="stone_brick", coping_y=2)
-    for (x, z) in ponds:
-        if rng.random() < .1 and b.get(x, 1, z) is None:
-            put(x, 1, z, P("lily_pad"))
+    chan = [(x, z) for x in range(33, 45) for z in (16, 17)]
+    water = K.mill_race(b, chan, 0, -1, ramp=BASE, coping="stone_brick", coping_y=2)
     for z in (15, 18):
         put(34, 2, z, lg(BEAM, "y")); put(34, 3, z, lg(BEAM, "y"))
     for z in (15, 16, 17, 18):
@@ -329,7 +322,7 @@ def rest(b: Build, roof: dict, slot: dict, pond: set) -> dict:
     for y in range(5, 10):
         if b.block(WX0, y, 19) != "air":
             put(WX0, y, 19, lg(BEAM, "y"))
-    window(WWW, 16, 5, height=2, shutters="spruce", box="potted_cornflower", sill="spruce")
+    window(WWW, 16, 5, height=2, shutters=None, box="potted_cornflower", sill="spruce")
     n.volumes.append({"name": "wing", "footprint": (WX0, WZ0 - 1, WX1, WZ1 + 1), "top": wing["ridge_y"] + 1})
 
     # ================= sack shed (lean-to) on the south wall =================
@@ -360,7 +353,7 @@ def rest(b: Build, roof: dict, slot: dict, pond: set) -> dict:
     put(28, 3, 26, B.lantern(True))
     n.volumes.append({"name": "shed", "footprint": (25, 25, 31, 27), "top": 6})
     n.breaks.append({"name": "shed", "cell": (28, 4, 26)})
-    K.dormer(b, roof, WSU, 21, 0, 9, wall_mat=lambda x, y, z: P("oak_planks"), trim=BEAM, roof_mat="spruce", name="dormer_s", h=3)
+    K.dormer(b, roof, WSU, 21, 0, 9, wall_mat=lambda x, y, z: P("dark_oak_planks"), trim=BEAM, roof_mat="deepslate_tile", name="dormer_s", h=3)
 
     # ================= staddle granary (NW) with pyramid roof =================
     GX0, GX1 = ML.GRANARY_X
@@ -424,14 +417,7 @@ def scenery(b: Build, pond: set) -> None:
         o = (0, 0, 1, 1, 0)[z - 10]
         for x in range(16 + o, 19 + o):
             pathc.add((x, z))
-    S.ground(b, pathc - yard, PATH)
-    # fringe of coarse dirt where cobble meets the lawn
-    for (x, z) in sorted(yard):
-        for dx, dz in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-            q = (x + dx, z + dz)
-            if q not in yard and q not in road and q not in pathc and b.get(q[0], -1, q[1]) is not None \
-                    and "grass" in b.get(q[0], -1, q[1]) and rng.random() < .35 and 0 <= q[1] < SZ:
-                put(q[0], -1, q[1], P("coarse_dirt"))
+    S.ground(b, pathc - yard, COBBLE)
     # --- flower beds beside the path, under the windows
     S.flower_bed(b, {(x, z) for x in range(10, 15) for z in range(11, 15)} - pathc, density=.7)
     S.flower_bed(b, {(x, z) for x in range(19, 24) for z in range(11, 13)} - pathc, density=.7)
@@ -450,7 +436,7 @@ def scenery(b: Build, pond: set) -> None:
     put(9, 1, 7, P("white_wool")); put(10, 1, 7, P("white_wool")); put(9, 2, 7, P("white_carpet"))
     put(9, 1, 6, B.barrel())
     S.crates(b, [(19, 0, 14), (20, 0, 14), (20, 1, 14)], sacks=[(21, 0, 14)])
-    S.apron(b, 18, 13, 22, 14, PATH, force=True)
+    S.apron(b, 18, 13, 22, 14, COBBLE, force=True)
     # --- back garden and woodpile (south), garden steps
     S.veg_plot(b, 9, 28, 7, 5, ["wheat", "carrots", "potatoes"])
     S.woodpile(b, 18, 28, axis="x", length=5)
@@ -459,12 +445,39 @@ def scenery(b: Build, pond: set) -> None:
     S.tree(b, 4, 15, kind="oak", height=5, spread=2.6, y0=0)
     S.tree(b, 3, 28, kind="birch", height=6, spread=2.4, y0=0)
     S.tree(b, 41, 28, kind="oak", height=5, spread=2.7, y0=2)
-    S.tree(b, 43, 3, kind="oak", height=6, spread=3.0, y0=0)
+    S.tree(b, 29, 2, kind="oak", height=6, spread=3.0, y0=0)
     S.tree(b, 7, 31, kind="oak", height=5, spread=2.5, y0=0)
-    # --- hedges (gaps every 5-6 cells) along the south and west edge
-    for x in list(range(16, 24)) + list(range(30, 40)):
-        if x % 7 not in (3,):
-            put(x, 0, 34, B.leaves("oak")); put(x, 1, 34, B.leaves("oak")) if x % 3 else None
+    # --- meadow tufts and flowers in clusters on the empty lawn (cells with two or more neighbours only)
+    import numpy as np
+    from scipy.ndimage import gaussian_filter
+    field = gaussian_filter(np.random.default_rng(77).standard_normal((SX + 4, SZ + 4)), 1.8)
+    field = (field - field.mean()) / field.std()
+    taken = {(x, z) for (x, y, z) in b.g if y >= 0}
+    ground_ok = lambda x, z: (x, -1, z) in b.g and "grass_block" in b.g[(x, -1, z)] and (x, 0, z) not in b.g  # noqa: E731
+    tufts = {}
+    for x in range(1, SX - 1):
+        for z in range(3, SZ - 1):
+            if ground_ok(x, z) and not (11 <= x <= 22 and z <= 14) and field[x, z] > 0.55 and (x, z) not in taken:
+                tufts[(x, z)] = rng.random()
+    for (x, z), r in sorted(tufts.items()):
+        nb = sum(1 for dx in (-1, 0, 1) for dz in (-1, 0, 1) if (dx, dz) != (0, 0) and (x + dx, z + dz) in tufts)
+        if nb >= 3:
+            put(x, 0, z, P("short_grass" if r < .6 else ("fern" if r < .7 else
+                           ("dandelion", "cornflower", "oxeye_daisy", "poppy", "azure_bluet")[int(r * 50) % 5])))
+    # --- hedges along the box edge: segments of at most 6 with 2-3 cell gaps
+    for (x0, x1, z) in ((1, 6, 34), (9, 14, 34), (17, 22, 34), (25, 30, 34), (33, 38, 34), (41, 44, 34)):
+        for x in range(x0, x1 + 1):
+            put(x, 0, z, B.leaves("oak")); put(x, 1, z, B.leaves("oak")) if (x + x0) % 3 else None
+    for (z0, z1) in ((18, 23), (26, 31)):
+        for z in range(z0, z1 + 1):
+            put(0, 0, z, B.leaves("oak")); put(0, 1, z, B.leaves("oak")) if z % 3 else None
+    # --- orchard on the terrace (quincunx), willow-like vines on the pond tree
+    for (x, z) in K.orchard_grid(37, 25, 44, 31, 7, 0, seed=4):
+        if 36 <= x <= 44 and 22 <= z <= 31 and (x, 2, z) not in b.g:
+            S.tree(b, x, z, kind="oak", height=4, spread=1.8, y0=2)
+    for (x, y, z), d in sorted(b.g.items()):
+        if B.block_id(d) == "oak_leaves" and 24 <= x <= 35 and z <= 8 and y >= 3 and b.get(x, y - 1, z) is None and rng.random() < .5:
+            put(x, y - 1, z, B.vine("up"))
     n.front_yard = {"rect": (11, 3, 21, 9), "corridor": (16, 18), "max_y": 1}
     n.ground_region = (-1, -1, SX, SZ)
 
