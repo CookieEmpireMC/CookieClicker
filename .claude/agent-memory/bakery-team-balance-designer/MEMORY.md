@@ -1,2 +1,2 @@
-- [Balance tooling facts](balance_tooling_facts.md): tester-owned tests, guard-safe commands, sweep script, report overwrite, golden doubles
-- [Balance open items](balance_open_items.md): 1B/Rebirth pace vs GDD; retune late tiers with golden cookies/recipes/stars
+- [Balance tooling facts](balance_tooling_facts.md): tester-owned tests, guard-safe commands, sweep script, report overwrite, golden doubles, Java red on contract change
+- [Balance open items](balance_open_items.md): 1B/Rebirth pace vs GDD; Cocoa saving gap; retune late tiers with golden cookies/stars
