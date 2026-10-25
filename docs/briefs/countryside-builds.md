@@ -177,8 +177,10 @@ format section through the designer.
 |---|---|---|---|---|
 | resource-pack-researcher | done | merged | — | `docs/research/farm-buildings.md` |
 | plugin-coder (setup) | done | merged | READY (1 fix round) | 439 tests; admin perm `cookieempire.admin` |
-| plugin-coder (wheel+review) | in progress | `countryside-builds/plugin-coder-wheel` | | + Structure work back on main, slab-at-a-time undo, teleport in-flight guard |
-| model-designer (run 1) | in progress | `countryside-builds/model-designer` | | kits, lint, Mill, waterwheel |
+| plugin-coder (wheel+review) | done | merged | READY | wheel scale 7/3 in code; in-game checks listed by the tester |
+| model-designer (run 1) | done | merged | user gate passed (Mill kept at its size) | kits, lint, Mill, waterwheel (16 paddles) |
+| model-designer (run 2a) | in progress | `countryside-builds/model-designer` | | Cow Barn, Chicken Farm, market |
+| model-designer (run 2b) | planned | same | | Sugar Works, Cocoa Grove, countryside.yml |
 
 ## Merge order
 0. research (done), 1. model-designer run 1 (Mill), 2. plugin-coder (setup), 3. plugin-coder (wheel+review),
