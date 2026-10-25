@@ -62,6 +62,9 @@ class Notes:
     wheel_fallback: set = field(default_factory=set)       # block cells of the static wheel (inside the display's volume)
     wheel_cells: set = field(default_factory=set)          # slot interior cells
     race_cells: set = field(default_factory=set)           # enclosed water of channels
+    flume: set = field(default_factory=set)                # block cells of a raised flume (L-D5)
+    pen: dict | None = None                                # {"building": [(x, z)], "cells": [(x, z)]} fenced yard or pasture (L-D6)
+    props: list = field(default_factory=list)              # (zone, name, hero) props near the viewpoint (L-D7)
     water_cells: set = field(default_factory=set)
     vents: set = field(default_factory=set)               # louvre / vent cells (not chimneys)
     big_doors: list = field(default_factory=list)          # {cells: [(x,y,z)], lintel: [(x,y,z)]}

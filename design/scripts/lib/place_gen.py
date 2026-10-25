@@ -130,7 +130,7 @@ def hedge(b: Build, segments: list, kind: str = "oak") -> None:
 
 
 def finish(name: str, b: Build, *, points: dict, signs: list, size: tuple, ground: int, hero: bool, previews,
-           water_frontage=None, size_range: tuple | None = None) -> dict:
+           water_frontage=None, size_range: tuple | None = None, trapdoor_budget: int = 12) -> dict:
     """Resolve the grid, validate the palette and the points, run the lints (previews are written even when a lint fails),
     write houses/<name>.yml. Returns {'blocks', 'above', 'palette', 'g'}."""
     g = dict(b.g)
@@ -145,7 +145,7 @@ def finish(name: str, b: Build, *, points: dict, signs: list, size: tuple, groun
         place_lib.check_points(points, g, size, ground)
         build_lint.lint_house(g, b.notes, {}, palette)
         farm_lint.lint_place(g, b.notes, points, palette, hero=hero, name=name, water_frontage=water_frontage, size=size,
-                             ground=ground, size_range=size_range)
+                             ground=ground, size_range=size_range, trapdoor_budget=trapdoor_budget)
     except (build_lint.LintError, AssertionError):
         previews(g, OUT_DIR)
         raise
@@ -166,3 +166,76 @@ def finish(name: str, b: Build, *, points: dict, signs: list, size: tuple, groun
           f"volume {size[0] * size[1] * size[2]}")
     previews(g, OUT_DIR)
     return {"blocks": blocks, "above": above, "palette": palette, "g": g}
+
+
+# --- organic pens (run 2c) ------------------------------------------------------------------------------------------------
+def blob(b: Build, x0: int, z0: int, x1: int, z1: int, cut: int = 3, wob: int = 1) -> set:
+    """Cells of a rounded, irregular rectangle: corners chamfered by `cut`, every side pushed in by up to `wob` in runs."""
+    rng = b.rng
+    cells = set()
+    for x in range(x0, x1 + 1):
+        for z in range(z0, z1 + 1):
+            if min(x - x0, x1 - x) + min(z - z0, z1 - z) >= cut:
+                cells.add((x, z))
+    for side in range(4):
+        n = (x1 - x0 + 1) if side < 2 else (z1 - z0 + 1)
+        for i, off in enumerate(wobble(n, 0, wob, rng)):
+            for k in range(off):
+                c = [(x0 + i, z0 + k), (x0 + i, z1 - k), (x0 + k, z0 + i), (x1 - k, z0 + i)][side]
+                cells.discard(c)
+    return cells
+
+
+def perimeter(cells: set) -> set:
+    return {(x, z) for (x, z) in cells
+            if any((x + dx, z + dz) not in cells for dx in (-1, 0, 1) for dz in (-1, 0, 1) if (dx, dz) != (0, 0))}
+
+
+def drystone_wall(b: Build, cells, high: int = 2, boulder: float = .12, skip=frozenset()) -> None:
+    """Low drystone wall (cobble / mossy / andesite wall pieces) along `cells`: 1-2 high in runs of 4, a missing top here and
+    there, and boulders (full cobblestone / mossy / andesite blocks) built into the course."""
+    rng = b.rng
+    for (x, z) in sorted(cells):
+        if (x, z) in skip:
+            continue
+        r = rng.random()
+        h = 2 if high >= 2 and ((x // 4 + z // 4) % 3) else 1
+        if r < boulder:
+            b.put(x, 0, z, P(("cobblestone", "mossy_cobblestone", "andesite")[int(r * 100) % 3]))
+            if h == 2 and rng.random() < .5:
+                b.put(x, 1, z, sl("cobblestone", "bottom"))
+            continue
+        name = DRYSTONE[0] if r < .62 else (DRYSTONE[1] if r < .88 else DRYSTONE[2])
+        b.put(x, 0, z, f"@{name}")
+        if h == 2 and rng.random() > .18:
+            b.put(x, 1, z, f"@{name}")
+
+
+def hedge_bank(b: Build, cells, skip=frozenset()) -> None:
+    """A hedge on a low stone bank: a mossy/plain cobblestone bank at y0, leaves 2 high on top (third layer on some cells)."""
+    rng = b.rng
+    for (x, z) in sorted(cells):
+        if (x, z) in skip:
+            continue
+        b.put(x, 0, z, P("mossy_cobblestone" if rng.random() < .4 else "cobblestone"))
+        b.put(x, 1, z, B.leaves("oak"))
+        b.put(x, 2, z, B.leaves("oak")) if rng.random() < .75 else None
+
+
+def window_sill(b: Build, wall, u: int, y: int, width: int = 1, height: int = 1, light: bool = True) -> None:
+    """A window with a slab sill (no trapdoors) and a lit room."""
+    from build import window
+    window(wall, u, y, width=width, height=height, shutters=None, sill=None, box=None, light=light)
+    for i in range(width):
+        wall.put(u + i, y - 1, 1, sl("spruce", "top"))
+
+
+def gate_pillar(b: Build, x: int, z: int, high: int = 2, lantern: bool = False) -> None:
+    """A full-block stone pillar with a stone-brick slab cap (or a lantern on top)."""
+    for y in range(high):
+        r = b.rng.random()
+        b.put(x, y, z, P("cobblestone" if r < .6 else ("mossy_cobblestone" if r < .85 else "andesite")))
+    if lantern:
+        b.put(x, high, z, B.lantern(False))
+    else:
+        b.put(x, high, z, sl("stone_brick", "bottom"))

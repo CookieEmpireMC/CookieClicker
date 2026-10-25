@@ -118,16 +118,15 @@ def build() -> Build:
     put(12, 5, 16, B.wall_sign("spruce", "north"))
     # windows
     pass
-    window(Wall(b, "south", "east", (0, 21)), 16, 5, width=1, height=1, shutters=None, sill="spruce")
-    window(Wall(b, "west", "south", (12, 0)), 20, 5, width=1, height=1, shutters="spruce", sill="spruce")
-    window(Wall(b, "east", "south", (18, 0)), 20, 5, width=1, height=1, shutters="spruce", sill="spruce")
+    G.window_sill(b, Wall(b, "west", "south", (12, 0)), 20, 5)
+    G.window_sill(b, Wall(b, "east", "south", (18, 0)), 20, 5)
+    for x in (12, 13, 14, 16, 17):                                    # ONE row of 5 nest hatches under a slab strip (south wall)
+        put(x, 4, 22, B.td("spruce", "south", "bottom", True))
+        put(x, 5, 22, sl("spruce", "bottom"))
+        put(x, 4, 21, B.hay())
     # ramp from the yard gate to the deck, rails
     for i, z in enumerate(range(12, 16)):
         put(15, i, z, st("spruce", "north"))
-    for z in (12, 13, 14, 15):
-        for x in (14, 16):
-            y = z - 12
-            put(x, y + 1, z, "@spruce_fence")
     for x in (12, 13, 14, 16, 17, 18):                                # deck railing in front of the door wall
         put(x, 4, 16, "@spruce_fence")
     for x in (13, 17):
@@ -144,11 +143,11 @@ def build() -> Build:
     ry = roof["ridge_y"]
     cx, cz = 15, 19
     put(cx, ry + 1, cz, P("oak_planks"))
-    for dx, f in ((-1, "west"), (1, "east")):
-        put(cx + dx, ry + 1, cz, B.td("spruce", f, "bottom", True))
+    for dx in (-1, 1):
+        put(cx + dx, ry + 1, cz, sl("spruce", "bottom"))
         n.vents.add((cx + dx, ry + 1, cz))
     put(cx, ry + 2, cz, st("dark_oak", "east"))
-    put(cx, ry + 3, cz, "@dark_oak_fence")
+    put(cx, ry + 3, cz, "@spruce_fence")
     put(cx, ry + 4, cz, B.lantern(False))
     n.roof_cells.add((cx, ry + 2, cz))
     n.roof_heights |= {ry + 3}
@@ -176,7 +175,7 @@ def build() -> Build:
     roofb = K.pyramid_roof(b, (24, 15, 30, 21), 5, field="spruce", eave="dark_oak", rake="dark_oak", ridge=P("spruce_planks"),
                            cap=None, name="coop_b", riser=P("spruce_planks"))
     fy = roofb["ridge_y"] + 1
-    put(27, fy, 18, "@dark_oak_fence")
+    put(27, fy, 18, "@spruce_fence")
     put(27, fy + 1, 18, B.lantern(False))
     n.roof_heights.add(fy)
     n.volumes.append({"name": "coop_b", "footprint": (25, 16, 29, 20), "top": roofb["ridge_y"] + 1})
@@ -184,10 +183,8 @@ def build() -> Build:
     put(27, 3, 16, B.dr("spruce", "north", "lower")); put(27, 4, 16, B.dr("spruce", "north", "upper"))
     for i, z in enumerate(range(13, 16)):                           # ramp up to the little coop
         put(27, i, z, st("spruce", "north"))
-    window(Wall(b, "south", "east", (0, 20)), 26, 3, width=1, height=1, shutters=None, sill="spruce")
-    window(Wall(b, "east", "south", (29, 0)), 18, 3, width=1, height=1, shutters="spruce", sill="spruce")
-    # nest boxes on b's west wall
-    K.nest_box_row(Wall(b, "west", "south", (25, 0)), 17, 3, 2)
+    G.window_sill(b, Wall(b, "south", "east", (0, 20)), 26, 3)
+    G.window_sill(b, Wall(b, "east", "south", (29, 0)), 18, 3)
     put(26, 0, 19, B.cauldron_water(3))
     put(28, 0, 18, B.barrel("north"))
 
@@ -200,59 +197,92 @@ def scenery(b: Build) -> None:
     put, rng = b.put, b.rng
     road = G.road(b, SX)
     yard = S.noisy_rect(b, 11, 3, 21, 9, wobble=1)
-    S.ground(b, yard - road, Ramp(P("coarse_dirt"), [(P("podzol[snowy=false]"), .12, None), (P("dirt_path"), .12, None)], seed=44))
-    S.ground(b, {(x, z) for z in (10, 11) for x in range(14, 18)} | {(x, 11 + (x % 2)) for x in range(8, 24)}, G.GRAVEL)
-    # pad under coop A and a cobble skirt
-    S.ground(b, {(x, z) for x in range(10, 21) for z in range(15, 24)}, KERB)
-    S.ground(b, {(x, z) for x in range(24, 31) for z in range(15, 22)}, KERB)
-    # run fence: one fence around both coops, shared line at x=22
-    def line(cells, lantern_at=()):
-        for i, c in enumerate(cells):
-            put(c[0], 0, c[1], "@spruce_fence")
-    cap = lambda x, z: (put(x, 0, z, "@dark_oak_fence"), put(x, 1, z, B.lantern(False)))      # noqa: E731
-    def edge(cells, post_every):
-        for i, (x, z) in enumerate(cells):
-            put(x, 0, z, "@spruce_fence")
-        for (x, z) in cells[::post_every]:
-            put(x, 0, z, lg(TRIM, "y"))
-    x0, x1, x2, z0, z1 = 7, 22, 32, 10, 26
-    edge([(x, z0) for x in range(x0, x1 + 1)], 5)
-    edge([(x, z1) for x in range(x0, x1 + 1)], 4)
-    edge([(x0, z) for z in range(z0 + 1, z1)], 4)
-    edge([(x1, z) for z in range(z0 + 1, z1)], 3)
-    edge([(x, z0 + 2) for x in range(x1 + 1, x2 + 1)], 4)
-    edge([(x2, z) for z in range(z0 + 3, z1 - 1)], 4)
-    edge([(x, z1 - 2) for x in range(x1 + 1, x2)], 4)
-    for (x, z) in ((7, 10), (22, 10), (7, 26), (22, 26), (32, 12), (32, 24), (22, 12)):
-        put(x, 0, z, lg(TRIM, "y")); put(x, 1, z, "@dark_oak_fence"); put(x, 2, z, B.lantern(False))
-    put(15, 0, z0, GATE_NS)
-    put(22, 0, 18, GATE_EW)
-    put(x0, 0, 17, GATE_EW)
-    # run ground, hay feed piles, trough, a few tufts
-    S.ground(b, {(x, z) for x in range(x0 + 1, x1) for z in range(z0 + 1, z1)} - {(x, z) for x in range(10, 21) for z in range(15, 24)}, RUN)
-    S.ground(b, {(x, z) for x in range(x1 + 1, x2) for z in range(z0 + 3, z1 - 1)} - {(x, z) for x in range(24, 31) for z in range(15, 22)}, RUN)
-    put(9, 0, 14, B.hay()); put(9, 0, 15, B.hay()); put(10, 0, 14, sl("spruce", "bottom"))
-    put(20, 0, 24, B.hay()); put(21, 0, 24, B.hay()); put(21, 0, 23, B.hay())
-    put(30, 0, 24, B.hay())
-    G.trough(b, 12, 25, "x", 4)
-    for (x, z) in ((8, 20), (9, 22), (17, 25), (22 - 2, 12), (23, 25), (31, 14), (26, 23), (30, 22)):
-        if (x, 0, z) not in b.g:
-            put(x, 0, z, P("short_grass"))
-    # orchard overlapping the run edge, hedge, haystack outside
-    S.tree(b, 34, 18, kind="oak", height=5, spread=2.4, y0=0)
-    S.tree(b, 3, 20, kind="oak", height=4, spread=2.2, y0=0)
-    S.veg_plot(b, 25, 28, 6, 4, ["carrots", "potatoes", "wheat"])
-    for (tx, tz) in ((36, 12), (36, 24), (31, 30), (6, 30), (2, 12)):
+    S.ground(b, yard - road, G.COBBLE)
+    # the run: an irregular rounded outline, scratched dirt in the front half fading into grass at the back
+    run = G.blob(b, 5, 10, 31, 31, cut=5, wob=2)
+    edge = G.perimeter(run)
+    scratch = Ramp(P("coarse_dirt"), [(P("podzol[snowy=false]"), .22, None), (P("dirt_path"), .2, None), (P("rooted_dirt"), .14, None)], seed=37)
+    for (x, z) in sorted(run):
+        t = (z - 10) / 21.0 + rng.random() * .25
+        if (x, z) in G_PAD:
+            continue
+        if t < .6:
+            put(x, -1, z, scratch.pick(x, 0, z))
+        elif t < .78:
+            put(x, -1, z, P("coarse_dirt") if rng.random() < .35 else P("grass_block[snowy=false]"))
+    # path from the yard to the gate
+    S.ground(b, {(x, z) for z in (10, 11) for x in range(14, 18)}, G.GRAVEL)
+    S.ground(b, {(x, z) for x in range(10, 21) for z in range(15, 24)} | {(x, z) for x in range(24, 31) for z in range(15, 22)}, KERB)
+    # fence: capped stone pillars every 4 with a spruce rail between; double gate between taller pillars
+    gate_x = (15, 16)
+    skip = {(x, 10) for x in range(14, 18)}
+    for i, (x, z) in enumerate(sorted(edge, key=lambda c: (c[1], c[0]))):
+        if (x, z) in skip:
+            continue
+        put(x, 0, z, "@spruce_fence")
+    ring_sorted = sorted(edge, key=lambda c: (c[1], c[0]))
+    cx0, cz0 = 18.0, 20.0
+    import math
+    kept = []
+    for (x, z) in sorted(edge - skip, key=lambda c: math.atan2(c[1] - cz0, c[0] - cx0)):
+        if all(math.hypot(x - kx, z - kz) >= 4 for kx, kz in kept) and abs(x - 15.5) + abs(z - 10) > 3:
+            kept.append((x, z))
+    for (x, z) in kept:
+        G.gate_pillar(b, x, z, 2, lantern=False)
+    for gx in (14, 17):
+        G.gate_pillar(b, gx, 10, 3, lantern=(gx == 14))
+    put(15, 0, 10, GATE_NS); put(16, 0, 10, GATE_NS)
+    # berry-bush hedge outside the long north-west side
+    for x in range(6, 13):
+        if (x, 9) not in yard and b.get(x, 0, 9) is None:
+            put(x, 0, 9, P("sweet_berry_bush[age=3]"))
+            put(x, -1, 9, P("podzol[snowy=false]"))
+    # run furniture
+    for x in (21, 22, 23):                                           # feeder
+        put(x, 0, 25, st("spruce", "south"))
+    put(22, -1, 25, P("coarse_dirt"))
+    put(8, 0, 17, B.cauldron_water(3)); put(9, 0, 17, B.cauldron_water(3))                 # two waterers
+    put(8, -1, 18, P("cobblestone")); put(9, -1, 18, P("cobblestone"))
+    for x in range(21, 24):                                          # dust bath, ringed with cobble slabs
+        for z in range(13, 16):
+            put(x, -1, z, P("packed_mud") if (x + z) % 3 else P("coarse_dirt"))
+    for x in range(20, 25):
+        for z in (12, 16):
+            put(x, 0, z, sl("cobblestone", "bottom"))
+    for z in (13, 14, 15):
+        put(20, 0, z, sl("cobblestone", "bottom")); put(24, 0, z, sl("cobblestone", "bottom"))
+    # lean-to shelter 5 x 3 on spruce posts
+    for x in range(8, 13):
+        for z in range(25, 28):
+            put(x, 0 if False else -1, z, P("coarse_dirt"))
+    for (x, z) in ((8, 25), (12, 25), (8, 27), (12, 27)):
+        put(x, 0, z, "@spruce_fence"); put(x, 1, z, "@spruce_fence")
+    for x in range(8, 13):
+        put(x, 2, 25, st("spruce", "south")); put(x, 2, 26, sl("spruce", "bottom")); put(x, 2, 27, sl("spruce", "bottom"))
+    put(10, 0, 27, B.hay()); put(11, 0, 27, B.hay()); put(11, 0, 26, B.hay())
+    n.roof_cells |= {(x, 2, z) for x in range(8, 13) for z in (25, 26, 27)}
+    # haystack and scarecrow in the grass half, a shade tree in the back
+    for (x, z) in ((16, 29), (17, 29), (16, 30), (17, 30)):
+        put(x, 0, z, B.hay())
+    put(16, 1, 29, B.hay()); put(17, 1, 29, B.hay()); put(16, 1, 30, B.hay())
+    S.scarecrow(b, 25, 27)
+    S.tree(b, 24, 30, kind="oak", height=5, spread=2.4, y0=0)
+    # outside the run: one orchard row on the east, a veg plot, meadow
+    S.veg_plot(b, 34, 24, 4, 4, ["carrots", "potatoes", "wheat"])
+    for (tx, tz) in ((36, 13), (36, 19)):
         S.tree(b, tx, tz, kind="oak", height=4, spread=2.1, y0=0)
-    S.woodpile(b, 3, 24, axis="z", length=4)
-    G.hedge(b, [(1, 6, 30), (22, 28, 30), ("z", 25, 30, 38)])
-    G.meadow(b, SX, SZ, lambda x, z: 10 <= x <= 22 and z <= 12)
     S.ground(b, road, G.GRAVEL)
     n.front_yard = {"rect": (11, 3, 21, 9), "corridor": (14, 16), "max_y": 1}
     n.ground_region = (-1, -1, SX, SZ)
     n.ramps = {k: list(v) for k, v in RAMPS.items()}
     n.body_box = (11, 16, 19, 22)
     n.wall_rows = (4, 6)
+    n.pen = {"building": [(x, z) for x in range(11, 20) for z in range(16, 23)] + [(x, z) for x in range(25, 30) for z in range(16, 21)],
+             "cells": sorted(run)}
+    n.props = [("yard", "gate", True), ("run", "haystack", True), ("run", "shelter", False), ("run", "dust bath", False)]
+
+
+G_PAD = {(x, z) for x in range(10, 21) for z in range(15, 24)} | {(x, z) for x in range(24, 31) for z in range(15, 22)}
 
 
 def previews(g: dict, out: Path) -> list:
@@ -272,7 +302,7 @@ def main() -> int:
     b = build()
     scenery(b)
     G.finish("chicken_farm", b, points=POINTS, signs=SIGNS, size=SIZE, ground=GROUND, hero=False, previews=previews,
-             size_range=(900, 1400))
+             size_range=(900, 1500), trapdoor_budget=8)
     return 0
 
 
