@@ -276,19 +276,6 @@ def rest(b: Build, roof: dict, slot: dict, pond: set) -> dict:
             put(X0, y, 19, lg(BEAM, "y"))
     put(23, 2, 14, B.wall_sign("spruce", "north"))
 
-    # ---- sluice tunnel through the east pier, channel, pond B, gate, bridge
-    put(32, 0, 16, td_gate("west")); put(32, 0, 17, td_gate("west"))
-    put(32, 1, 16, "@iron_bars"); put(32, 1, 17, "@iron_bars")
-    chan = [(x, z) for x in range(33, 45) for z in (16, 17)]
-    water = K.mill_race(b, chan, 0, -1, ramp=BASE, coping="stone_brick", coping_y=2)
-    for z in (15, 18):
-        put(34, 2, z, lg(BEAM, "y")); put(34, 3, z, lg(BEAM, "y"))
-    for z in (15, 16, 17, 18):
-        put(34, 4, z, beam("z"))
-    put(34, 3, 16, "@iron_bars"); put(34, 3, 17, "@iron_bars")
-    put(35, 3, 15, B.lever("wall", "east"))
-    K.stone_bridge(b, 37, 14, 6, axis="z", y_deck=2, width=3, ramp=Ramp(P("stone_bricks"), [(P("mossy_stone_bricks"), .25, None), (P("cracked_stone_bricks"), .1, None)], seed=40),
-                   open_under=frozenset((x, z) for x in range(37, 40) for z in (16, 17)))
 
     # ================= wing (store), in line with the hall, abutting its west gable =================
     WX0, WX1 = ML.WING_X
