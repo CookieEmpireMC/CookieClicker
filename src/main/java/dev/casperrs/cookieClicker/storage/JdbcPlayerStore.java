@@ -1,5 +1,6 @@
 package dev.casperrs.cookieClicker.storage;
 
+import dev.casperrs.cookieClicker.economy.LegacyIds;
 import dev.casperrs.cookieClicker.economy.PouchSnapshot;
 import dev.casperrs.cookieClicker.economy.SafeMath;
 
@@ -31,19 +32,21 @@ import java.util.function.LongSupplier;
  *       name; index {@code <prefix>players_baked_idx} on {@code baked} (v4) for leaderboards</li>
  *   <li>{@code buildings(uuid, building_id, owned)}</li>
  *   <li>{@code upgrades(uuid, upgrade_id, upgrade_level)} — {@code upgrade_level} (v3) defaults to 1, so a
- *       v2 save (a set of bought IDs) loads every upgrade as level 1</li>
+ *       v2 save (a set of bought IDs) loads every upgrade as level 1; bought recipes are rows here too (level 1,
+ *       recipe id)</li>
+ *   <li>{@code ingredients(uuid, ingredient, amount)} (v5) — ingredient stock, only amounts {@code > 0}</li>
  *   <li>{@code house_seen(uuid, plot_id, seen_at)} (v2) — first completed house cinematic per plot</li>
  * </ul>
  */
 public final class JdbcPlayerStore implements PlayerStore, HouseSeenStore {
 
     /** Bump when adding a migration below. */
-    public static final int SCHEMA_VERSION = 4;
+    public static final int SCHEMA_VERSION = 5;
     static final int MAX_ID_LENGTH = 64;
     /** Minecraft names are at most 16 characters ({@code players.name VARCHAR(16)}). */
     static final int MAX_NAME_LENGTH = 16;
     /** Every player-data table this store creates, without the prefix, in copy order. */
-    public static final List<String> TABLES = List.of("players", "buildings", "upgrades", "house_seen");
+    public static final List<String> TABLES = List.of("players", "buildings", "upgrades", "house_seen", "ingredients");
     /** MariaDB/MySQL only (H2 would reject them): InnoDB and full Unicode. */
     private static final String MYSQL_CHARSET = "CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci";
     private static final String MYSQL_TABLE_OPTIONS = " ENGINE=InnoDB DEFAULT " + MYSQL_CHARSET;
@@ -52,7 +55,7 @@ public final class JdbcPlayerStore implements PlayerStore, HouseSeenStore {
 
     /** What the database holds for a player after this store's last successful save. */
     private record Saved(double pouch, double baked, Map<String, Integer> owned, Map<String, Integer> levels,
-                         long at) {
+                         Map<String, Double> ingredients, long at) {
     }
 
     private final ConnectionFactory connections;
@@ -191,7 +194,14 @@ public final class JdbcPlayerStore implements PlayerStore, HouseSeenStore {
                 // DEFAULT before NOT NULL: the column order both H2 and MariaDB accept. Idempotent (see addColumn).
                 List.of(
                         addColumn("upgrades", "upgrade_level", "INT DEFAULT 1 NOT NULL")),
-                List.copyOf(v4));
+                List.copyOf(v4),
+                // v4 -> v5 (ingredients): ingredient stock per player
+                List.of(
+                        sql("CREATE TABLE IF NOT EXISTS " + p + "ingredients ("
+                                + "uuid VARCHAR(36) NOT NULL, "
+                                + "ingredient VARCHAR(" + MAX_ID_LENGTH + ") NOT NULL, "
+                                + "amount DOUBLE NOT NULL, "
+                                + "PRIMARY KEY (uuid, ingredient))" + options)));
     }
 
     @Override
@@ -291,9 +301,10 @@ public final class JdbcPlayerStore implements PlayerStore, HouseSeenStore {
                 baked = pouch;
             }
 
-            Map<String, Integer> owned = loadBuildings(c, id, problems);
+            Map<String, Integer> owned = LegacyIds.migrateBuildings(loadBuildings(c, id, problems), problems);
             Map<String, Integer> upgrades = loadUpgrades(c, id, problems);
-            return Optional.of(new LoadedPouch(new PouchSnapshot(pouch, baked, owned, upgrades), problems));
+            Map<String, Double> ingredients = loadIngredients(c, id, problems);
+            return Optional.of(new LoadedPouch(new PouchSnapshot(pouch, baked, owned, upgrades, ingredients), problems));
         } catch (SQLException e) {
             throw new StorageException("Could not load " + id, e);
         }
@@ -341,6 +352,29 @@ public final class JdbcPlayerStore implements PlayerStore, HouseSeenStore {
         return upgrades;
     }
 
+    private Map<String, Double> loadIngredients(Connection c, String id, List<String> problems) throws SQLException {
+        Map<String, Double> stock = new HashMap<>();
+        try (PreparedStatement st = c.prepareStatement("SELECT ingredient, amount FROM " + p + "ingredients WHERE uuid = ?")) {
+            st.setString(1, id);
+            try (ResultSet rs = st.executeQuery()) {
+                while (rs.next()) {
+                    String ingredient = rs.getString(1);
+                    double amount = rs.getDouble(2);
+                    boolean wasNull = rs.wasNull();
+                    if (ingredient == null || ingredient.isBlank()) {
+                        problems.add("skipped blank ingredient row");
+                        continue;
+                    }
+                    double clean = repaired(amount, wasNull, "ingredient '" + ingredient + "'", problems);
+                    if (clean > 0) {
+                        stock.put(ingredient, clean);
+                    }
+                }
+            }
+        }
+        return stock;
+    }
+
     private static double repaired(double v, boolean wasNull, String field, List<String> problems) {
         double clean = wasNull ? 0 : SafeMath.sanitize(v);
         if (wasNull || clean != v) {
@@ -380,7 +414,8 @@ public final class JdbcPlayerStore implements PlayerStore, HouseSeenStore {
         Saved last = lastSaved.get(player);
         boolean sameRows = last != null && last.owned().equals(snapshot.owned())
                 && last.levels().equals(snapshot.upgradeLevels());
-        if (!always && sameRows && last.pouch() == pouch && last.baked() == baked
+        boolean sameStock = last != null && last.ingredients().equals(snapshot.ingredients());
+        if (!always && sameRows && sameStock && last.pouch() == pouch && last.baked() == baked
                 && now - last.at() < UNCHANGED_SAVE_MS) {
             return;
         }
@@ -411,8 +446,12 @@ public final class JdbcPlayerStore implements PlayerStore, HouseSeenStore {
                     replaceBuildings(c, id, snapshot.owned());
                     replaceUpgrades(c, id, snapshot.upgradeLevels());
                 }
+                if (!sameStock) {
+                    replaceIngredients(c, id, snapshot.ingredients());
+                }
                 c.commit();
-                lastSaved.put(player, new Saved(pouch, baked, snapshot.owned(), snapshot.upgradeLevels(), now));
+                lastSaved.put(player, new Saved(pouch, baked, snapshot.owned(), snapshot.upgradeLevels(),
+                        snapshot.ingredients(), now));
                 if (name != null) {
                     names.remove(player, name);
                 }
@@ -465,6 +504,27 @@ public final class JdbcPlayerStore implements PlayerStore, HouseSeenStore {
                 ins.setString(1, id);
                 ins.setString(2, e.getKey());
                 ins.setInt(3, e.getValue());
+                ins.addBatch();
+                rows++;
+            }
+            if (rows > 0) {
+                ins.executeBatch();
+            }
+        }
+    }
+
+    private void replaceIngredients(Connection c, String id, Map<String, Double> stock) throws SQLException {
+        deleteRows(c, "ingredients", id);
+        try (PreparedStatement ins = c.prepareStatement("INSERT INTO " + p + "ingredients (uuid, ingredient, amount) VALUES (?, ?, ?)")) {
+            int rows = 0;
+            for (Map.Entry<String, Double> e : stock.entrySet()) {
+                double amount = SafeMath.sanitize(e.getValue());
+                if (amount <= 0 || !validId(e.getKey())) {
+                    continue;
+                }
+                ins.setString(1, id);
+                ins.setString(2, e.getKey());
+                ins.setDouble(3, amount);
                 ins.addBatch();
                 rows++;
             }
