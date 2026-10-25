@@ -143,7 +143,7 @@ None. Decided with the user on 2026-10-25:
 | GUI glyph | font `cookieclicker:gui`: `recipe_book` background (4 rows, 176×186) + negative-space glyphs | model-designer | codepoints and offsets in `design/recipe-book-gui.md`, per the research note; light area behind the "Inventory" label; no `tooltip_style` |
 | sound event | `recipes_unlock`, `recipe_book_open`, `recipe_buy` | sound-designer | keys `cookieclicker:recipe.unlock` / `recipe.open` / `recipe.buy`; fallbacks `minecraft:ui.toast.challenge_complete` / `minecraft:item.book.page_turn` / `minecraft:entity.player.levelup` |
 | effect | `recipes_unlock`, `recipe_buy` | vfx-designer | at the player |
-| message key | `ingredients.<id>.name`, `recipes.<id>.name` / `.lore`, `upgrades.recipe_book.*`, `gui.recipes.*`, `panels.shop.recipe-book` | plugin-coder | |
+| message key | `ingredients.<id>.name`, `recipes.<id>.name` / `.lore`, `upgrades.recipe_book.*`, `gui.recipes.*`, `panel.recipe-book.row` | plugin-coder | |
 | command | `/bakery recipes` | plugin-coder | perm `cookieclicker.recipes` (default true) |
 | config key | `config.yml: recipes.gui.slots`, `recipes.gui.fallback-items` | plugin-coder | 4 rows fixed |
 | storage | table `<prefix>ingredients`, schema v5 | plugin-coder | H2 + MariaDB |
