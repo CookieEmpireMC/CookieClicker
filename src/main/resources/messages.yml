@@ -11,6 +11,12 @@ hud:
   action-bar: "<font:cookieclicker:hud></font> <gold><b><cookies></b></gold> <gray>cookies</gray> <dark_gray>·</dark_gray> <yellow><cps></yellow> <gray>per second</gray>"
   # Same for players without the resource pack (the glyph would show as a box)
   action-bar-no-pack: "<gold><b><cookies></b></gold> <gray>cookies</gray> <dark_gray>·</dark_gray> <yellow><cps></yellow> <gray>per second</gray>"
+  # Added after the action bar once the Recipe Book is bought: the ingredient stock.
+  # <stock> = one "ingredient" per ingredient, joined by "ingredient-separator".
+  ingredients: " <dark_gray>·</dark_gray> <stock>"
+  # <icon> = ingredients.<id>.icon (or icon-no-pack), <name> = ingredients.<id>.name, <amount> = the stock (short number)
+  ingredient: "<icon><white><amount></white>"
+  ingredient-separator: " "
 
 # How big numbers are written: "999", then "1K", "1.5K", "2.3M", "4.1B", ... Values are cut off (never rounded up),
 # so 999,999 shows as "999.9K", never "1M".
@@ -78,8 +84,8 @@ buildings:
     name: "<#e07a4a>Industrial Oven"
   extra_belt:
     name: "<#b0b0b8>Extra Conveyor Belt"
-  beehive:
-    name: "<#f5c542>Beehive"
+  chicken_farm:
+    name: "<#f3e3c0>Chicken Farm"
   cocoa_plantation:
     name: "<#9c6b3e>Cocoa Plantation"
   shipping_centre:
@@ -88,6 +94,50 @@ buildings:
     name: "<#b07fe0>Alchemy Lab"
   portal_bakery:
     name: "<#d36bff>Portal Bakery"
+
+# Ingredients the farm buildings deliver once the Recipe Book is bought (ids from buildings.yml "produces").
+# icon: the small glyph in front of an amount for players with the resource pack (font cookieclicker:ingredient,
+# codepoints in design/recipe-book-gui.md); icon-no-pack: the same without the pack.
+ingredients:
+  flour:
+    name: "<#f2ead3>Flour"
+    icon-no-pack: "<#f2ead3>Flour</#f2ead3> "
+  milk:
+    name: "<#ffffff>Milk"
+    icon-no-pack: "<#ffffff>Milk</#ffffff> "
+  sugar:
+    name: "<#e8f4ff>Sugar"
+    icon-no-pack: "<#e8f4ff>Sugar</#e8f4ff> "
+  chocolate:
+    name: "<#8b5a2b>Chocolate"
+    icon-no-pack: "<#8b5a2b>Choc</#8b5a2b> "
+  eggs:
+    name: "<#f6deb0>Eggs"
+    icon-no-pack: "<#f6deb0>Eggs</#f6deb0> "
+
+# Recipes from upgrades.yml "recipes" (bought in the Recipe Book). name: the recipe title; lore: one flavour line.
+recipes:
+  butter:
+    name: "<#f7e08a>Butter"
+    lore: "Churned fresh from the Cow Barn's finest."
+  brown_sugar:
+    name: "<#b5763a>Brown Sugar"
+    lore: "Sugar with a little extra warmth."
+  chocolate_chips:
+    name: "<#7b4a24>Chocolate Chips"
+    lore: "The reason anyone bakes cookies at all."
+  oatmeal:
+    name: "<#d8c08a>Oatmeal"
+    lore: "Hearty, wholesome, suspiciously crunchy."
+  hazelnut:
+    name: "<#a0703c>Hazelnut"
+    lore: "Toasted until the whole bakery smells of it."
+  macadamia:
+    name: "<#f0e2c0>Macadamia"
+    lore: "Rich, buttery and a little bit fancy."
+  caramel:
+    name: "<#d9902f>Caramel"
+    lore: "Sugar and milk, patiently golden."
 
 # Display text per upgrade ID from upgrades.yml (the click upgrades panel and the upgrade shelf).
 # name: shown as plain text in panel rows (colours are stripped there, like building names).
@@ -134,6 +184,12 @@ upgrades:
     name: "<#e070a0>Handy Fingers III"
     effect: "Each click also gives another <value>% of your CPS"
     short: "+<value>% CPS/click"
+  recipe_book:
+    name: "<#c8553d>Recipe Book"
+    effect: "Your farms deliver ingredients, and recipes add CPS"
+    short: "Unlocks recipes"
+    # Chat line when it is bought
+    unlocked: "<prefix><gold>The Recipe Book is yours!</gold> <gray>Your farms now deliver flour, milk, sugar, chocolate and eggs. Open it with</gray> <yellow>/bakery recipes</yellow><gray>.</gray>"
 
 # The two floating panels next to the cookie: Buildings (shop spot) and Click upgrades (clicks spot). Each row is
 # redrawn only when it changes; while a price rolls to a new value it is redrawn every few ticks.

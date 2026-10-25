@@ -22,7 +22,7 @@ public final class VisualFallbacks {
             Map.entry("sugar_cane_field", "SUGAR_CANE"),
             Map.entry("industrial_oven", "BLAST_FURNACE"),
             Map.entry("extra_belt", "POWERED_RAIL"),
-            Map.entry("beehive", "HONEYCOMB"),
+            Map.entry("chicken_farm", "EGG"),
             Map.entry("cocoa_plantation", "COCOA_BEANS"),
             Map.entry("shipping_centre", "BARREL"),
             Map.entry("alchemy_lab", "BREWING_STAND"),
@@ -39,7 +39,8 @@ public final class VisualFallbacks {
             Map.entry("netherite_hands", "NETHERITE_INGOT"),
             Map.entry("handy_fingers_1", "STICK"),
             Map.entry("handy_fingers_2", "BLAZE_ROD"),
-            Map.entry("handy_fingers_3", "AMETHYST_SHARD"));
+            Map.entry("handy_fingers_3", "AMETHYST_SHARD"),
+            Map.entry("recipe_book", "BOOK"));
 
     /** Building id -> block data of the bought building shown on the plot. */
     public static final Map<String, String> BUILDING_BLOCKS = Map.of(
