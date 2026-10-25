@@ -29,5 +29,9 @@ MariaDB 11.4 container. Stable for these versions.
 `docker run -d --rm --name cc-smoke-mariadb -p 33306:3306 -e MARIADB_ROOT_PASSWORD=smoke -e MARIADB_DATABASE=cookieclicker mariadb:11.4`,
 then a single-file Java smoke with the repo classpath (see [[repo-tooling-facts]]); `docker stop cc-smoke-mariadb` after.
 
+**Schema v5** (2026-10-25, H2 smoke): `ingredients(uuid, ingredient, amount DOUBLE)`; adding a table = SCHEMA_VERSION,
+`TABLES`, a migration entry and `H2Migration` columns (its constructor check fails otherwise). `H2MigrationTest` pins
+the copied-table map exactly.
+
 **Tester pin**: `PluginDescriptorTest.loaderDownloadsExactlyTheDriverVersionsOfThePom` lists the loader's
 coordinates exactly; adding a library to `cookieclicker-libraries.properties` fails it until Gandalf updates it.
