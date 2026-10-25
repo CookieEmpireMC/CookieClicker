@@ -58,9 +58,10 @@ the Bakery Shop panel (or type `/bakery recipes`), and a recipe book GUI opens w
 - [ ] Buying a recipe takes the cookies and ingredients atomically. If either is short, the row shows which part is
       missing, `purchase_denied` plays and nothing is taken.
 ### Recipe Book GUI
-- [ ] A chest inventory (rows from `config.yml: recipes.gui.rows`) with a **textured background**: the title is the font
-      glyph `cookieclicker:gui` `recipe_book`, shifted with negative-space glyphs as the research note specifies for
-      26.3, plus the title text from messages.yml.
+- [ ] A **4-row** chest inventory (fixed; 7 recipes + room) with a **textured background**: the title is a WHITE
+      component in font `cookieclicker:gui`: a `-8` space glyph + the `recipe_book` background glyph (176×186 PNG,
+      ascent 13), plus the readable title text from messages.yml (per `docs/research/textured-gui.md`). Opened with
+      `MenuType.GENERIC_9X4`; the GUI is identified by its view/holder, never by its title.
 - [ ] Slots (from `config.yml: recipes.gui.slots`) hold one icon per recipe, in three looks:
   - **locked:** "bake N to unlock";
   - **available:** name, `+x% CPS`, the cookie cost, the ingredient costs with glyphs, and the missing amounts in red;
@@ -138,13 +139,13 @@ None. Decided with the user on 2026-10-25:
 | recipe | `butter`, `brown_sugar`, `chocolate_chips`, `oatmeal`, `hazelnut`, `macadamia`, `caramel` | balance-designer | `upgrades.yml: recipes.<id>` `{ cost, ingredients, effect: {type: cps-percent, value}, unlock }` |
 | item model | `cookieclicker:upgrade/recipe_book`, `cookieclicker:recipe/<id>` (+ `cookieclicker:recipe/locked`) | model-designer | icons |
 | item model | `cookieclicker:building_world/chicken_farm` (+ icon) | model-designer | replaces `beehive` |
-| glyph | `cookieclicker:ingredient/<id>` font glyphs | model-designer | codepoints in `design/recipe-book-gui.md` |
-| GUI glyph | font `cookieclicker:gui`: `recipe_book` background + negative-space glyphs | model-designer | codepoints and offsets in `design/recipe-book-gui.md`, per the research note |
+| glyph | the 5 ingredient glyphs in their own font `cookieclicker:ingredient` | model-designer | codepoints in `design/recipe-book-gui.md`; no negative spaces in this font |
+| GUI glyph | font `cookieclicker:gui`: `recipe_book` background (4 rows, 176×186) + negative-space glyphs | model-designer | codepoints and offsets in `design/recipe-book-gui.md`, per the research note; light area behind the "Inventory" label; no `tooltip_style` |
 | sound event | `recipes_unlock`, `recipe_book_open`, `recipe_buy` | sound-designer | keys `cookieclicker:recipe.unlock` / `recipe.open` / `recipe.buy`; fallbacks `minecraft:ui.toast.challenge_complete` / `minecraft:item.book.page_turn` / `minecraft:entity.player.levelup` |
 | effect | `recipes_unlock`, `recipe_buy` | vfx-designer | at the player |
 | message key | `ingredients.<id>.name`, `recipes.<id>.name` / `.lore`, `upgrades.recipe_book.*`, `gui.recipes.*`, `panels.shop.recipe-book` | plugin-coder | |
 | command | `/bakery recipes` | plugin-coder | perm `cookieclicker.recipes` (default true) |
-| config key | `config.yml: recipes.gui.rows`, `recipes.gui.slots`, `recipes.gui.fallback-items` | plugin-coder | |
+| config key | `config.yml: recipes.gui.slots`, `recipes.gui.fallback-items` | plugin-coder | 4 rows fixed |
 | storage | table `<prefix>ingredients`, schema v5 | plugin-coder | H2 + MariaDB |
 
 ## Tasks
