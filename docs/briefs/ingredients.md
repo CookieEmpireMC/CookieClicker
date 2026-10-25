@@ -1,6 +1,6 @@
 # ingredients
 
-**Status:** in progress  <!-- planned | in progress | review | done -->
+**Status:** review  <!-- planned | in progress | review | done -->
 **Created:** 2026-10-25 · **Depends on:** build-quality (merged, PR #17, 1.4.0)
 
 Replaces the ingredient-farm plan. On 2026-10-25 the user stopped new builds ("creating builds is pointless, just keep
@@ -23,21 +23,21 @@ the Bakery Shop panel (or type `/bakery recipes`), and a recipe book GUI opens w
 
 ## Acceptance criteria
 ### Ingredients
-- [ ] Five ingredients with fixed IDs `flour`, `milk`, `sugar`, `chocolate`, `eggs`. Each ingredient building gets
+- [x] Five ingredients with fixed IDs `flour`, `milk`, `sugar`, `chocolate`, `eggs`. Each ingredient building gets
       `produces: { ingredient: <id>, per-second: <rate> }` in `buildings.yml`:
       production = rate × owned × that building's milestone multiplier (maths in `docs/balance/model.md`, new golden
       values). Its cookie CPS is unchanged.
-- [ ] Building 7 is renamed from the Beehive to the **Chicken Farm**: id `beehive` → `chicken_farm`, with a save
+- [x] Building 7 is renamed from the Beehive to the **Chicken Farm**: id `beehive` → `chicken_farm`, with a save
       migration (owned count and milestones kept), new name and lore in messages.yml. It produces `eggs`.
-- [ ] Ingredients are produced only after the Recipe Book is bought, on the same tick as cookies, while the player is
+- [x] Ingredients are produced only after the Recipe Book is bought, on the same tick as cookies, while the player is
       online (offline progress is GDD §8, later). Stock has **no cap** and never limits anything else.
-- [ ] Stock is saved per player in a new `ingredients` table (uuid, ingredient, amount DOUBLE). It is created like the
+- [x] Stock is saved per player in a new `ingredients` table (uuid, ingredient, amount DOUBLE). It is created like the
       existing tables on H2 and MariaDB, with async I/O. Old saves start at 0. Schema version +1 with migration.
-- [ ] The **Recipe Book** (`recipe_book`) is a one-time upgrade in `upgrades.yml` with the new effect type
+- [x] The **Recipe Book** (`recipe_book`) is a one-time upgrade in `upgrades.yml` with the new effect type
       `recipes-unlock`, bought on the existing upgrade shelf. Cost and unlock come from `upgrades.yml`
       (balance-designer). Buying it plays `recipes_unlock` (sound + effect) and sends a chat line.
 ### Recipes
-- [ ] `upgrades.yml` gets a `recipes:` section with the 7 GDD recipes (Syrup waits for Rebirth): `butter`,
+- [x] `upgrades.yml` gets a `recipes:` section with the 7 GDD recipes (Syrup waits for Rebirth): `butter`,
       `brown_sugar`, `chocolate_chips`, `oatmeal`, `hazelnut`, `macadamia`, `caramel`.
   - Each has `cost` (cookies), `ingredients: { <id>: <amount>, … }`, `effect: { type: cps-percent, value: <fraction> }`
     and `unlock: { baked: N }`.
@@ -53,32 +53,32 @@ the Bakery Shop panel (or type `/bakery recipes`), and a recipe book GUI opens w
     | Hazelnut | flour + chocolate |
     | Macadamia | eggs + sugar |
     | Caramel | sugar + milk |
-- [ ] CPS follows GDD §4.1: `sum(building CPS × milestones) × (1 + sum of recipe percents)`. The HUD, the panel
+- [x] CPS follows GDD §4.1: `sum(building CPS × milestones) × (1 + sum of recipe percents)`. The HUD, the panel
       `+<cps>/s` and everything else that shows CPS include it.
-- [ ] Buying a recipe takes the cookies and ingredients atomically. If either is short, the row shows which part is
+- [x] Buying a recipe takes the cookies and ingredients atomically. If either is short, the row shows which part is
       missing, `purchase_denied` plays and nothing is taken.
 ### Recipe Book GUI
-- [ ] A **4-row** chest inventory (fixed; 7 recipes + room) with a **textured background**: the title is a WHITE
+- [x] A **4-row** chest inventory (fixed; 7 recipes + room) with a **textured background**: the title is a WHITE
       component in font `cookieclicker:gui`: a `-8` space glyph + the `recipe_book` background glyph (176×186 PNG,
       ascent 13), plus the readable title text from messages.yml (per `docs/research/textured-gui.md`). Opened with
       `MenuType.GENERIC_9X4`; the GUI is identified by its view/holder, never by its title.
-- [ ] Slots (from `config.yml: recipes.gui.slots`) hold one icon per recipe, in three looks:
+- [x] Slots (from `config.yml: recipes.gui.slots`) hold one icon per recipe, in three looks:
   - **locked:** "bake N to unlock";
   - **available:** name, `+x% CPS`, the cookie cost, the ingredient costs with glyphs, and the missing amounts in red;
   - **bought:** glowing, "Baked!".
-- [ ] Clicking an available recipe buys it: `recipe_buy` sound + effect at the player, and the slot updates in place.
-- [ ] Players can't take or move items: every click and drag is cancelled, including shift, hotbar keys and offhand.
-- [ ] Without the pack, the title falls back to plain text and the icons to vanilla items
+- [x] Clicking an available recipe buys it: `recipe_buy` sound + effect at the player, and the slot updates in place.
+- [x] Players can't take or move items: every click and drag is cancelled, including shift, hotbar keys and offhand.
+- [x] Without the pack, the title falls back to plain text and the icons to vanilla items
       (`config.yml: recipes.gui.fallback-items`).
-- [ ] Opening: `/bakery recipes` (permission `cookieclicker.recipes`, default true) anywhere, and a **"Recipe Book" row
+- [x] Opening: `/bakery recipes` (permission `cookieclicker.recipes`, default true) anywhere, and a **"Recipe Book" row
       on the Bakery Shop panel** (same row style; shown once the Recipe Book is owned). Opening plays
       `recipe_book_open`. Before the unlock, the command says to buy the Recipe Book first.
 ### HUD
-- [ ] Once the Recipe Book is owned, the HUD shows the ingredient stock (short numbers with ingredient glyphs) on its
+- [x] Once the Recipe Book is owned, the HUD shows the ingredient stock (short numbers with ingredient glyphs) on its
       own line or as a compact group. It updates only on change, not every tick, if the HUD allows.
 ### Release
-- [ ] Version **1.5.0**. Checks green: `check`, `validate-assets`, `sound-check`, `balance-check`, `tools-test`.
-- [ ] GDD update (CookieMemory PR, the user merges):
+- [x] Version **1.5.0**. Checks green: `check`, `validate-assets`, `sound-check`, `balance-check`, `tools-test`.
+- [x] GDD update (CookieMemory PR, the user merges):
   - §3.3 no farm location for now; the parked countryside is noted;
   - §4.5 the Recipe Book unlock;
   - Differences updated.
@@ -164,7 +164,10 @@ None. Decided with the user on 2026-10-25:
 ## Status
 | Agent | Status | Branch | Verdict | Notes |
 |---|---|---|---|---|
-| | planned | | | |
+| researcher | done | merged | — | textured-gui.md |
+| vfx / sound / model / balance | done | merged | checks | 2 effects, 3 sounds, GUI + icons + glyphs + chicken_farm, 30/30 targets |
+| plugin-coder (economy) | done | merged | READY | schema v5, beehive→chicken_farm |
+| plugin-coder (gui) | done | merged | READY (+ integration READY) | 439 tests |
 
 ## Merge order
 0. research note, 1. model-designer, 2. sound-designer, 3. vfx-designer, 4. balance-designer, 5. plugin-coder (economy),
