@@ -14,7 +14,8 @@ import java.util.Map;
  * <pre>
  * size: [9, 7, 7]            # x (row length), y (number of layers), z (rows per layer)
  * origin: [0, 0, 0]          # optional: the design cell placed on the house region's minimum corner
- * ground-depth: 0            # optional 0..2: the first N layers lie below the house region's min y (design y -N..-1);
+ * ground-depth: 0            # optional 0..2 (0..4 for countryside place files): the first N layers lie below the house
+ *                            # region's min y (design y -N..-1);
  *                            # size y counts them; points/signs/origin y count from the first layer above them
  * palette:                   # one character -> block data
  *   "P": "minecraft:oak_planks"
@@ -27,6 +28,7 @@ import java.util.Map;
  *   steam: [[5, 6, 3]]       # optional: factory_steam vents
  *   belt_out: [4, 1, 8]      # optional: where the conveyor belt leaves the building
  *   door: [4, 1, 6]          # optional; every point must be inside size
+ *   viewpoint: {at: [..], yaw: 0, pitch: 0}   # a section value is a structured place point (farm.PlacePoints)
  * layout: ...                # optional: the fixed plot layout for /bakery plot setup, see HouseLayout
  * signs:                     # optional: plain text set on the sign's front side after pasting
  *   - at: [5, 2, 0]
@@ -46,6 +48,8 @@ public final class HouseDesignParser {
     public static final int MAX_SIZE = 256;
     /** Most ground layers a design may own below the house region. */
     public static final int MAX_GROUND_DEPTH = 2;
+    /** Most ground layers of the countryside and its place files (ponds, stream beds). */
+    public static final int MAX_FARM_GROUND_DEPTH = 4;
 
     /** The design, or null with at least one problem. */
     public record Result(@Nullable HouseDesign design, List<String> problems) {
@@ -59,6 +63,11 @@ public final class HouseDesignParser {
     }
 
     public static Result parse(String name, Map<String, ?> yaml) {
+        return parse(name, yaml, MAX_GROUND_DEPTH);
+    }
+
+    /** As {@link #parse(String, Map)} with another ground-depth limit. */
+    public static Result parse(String name, Map<String, ?> yaml, int maxGroundDepth) {
         List<String> problems = new ArrayList<>();
         int[] size = ints(yaml.get("size"), 3);
         if (size == null || size[0] < 1 || size[1] < 1 || size[2] < 1
@@ -66,7 +75,7 @@ public final class HouseDesignParser {
             problems.add("size must be [x, y, z] with whole numbers from 1 to " + MAX_SIZE);
             return new Result(null, problems);
         }
-        int ground = groundDepth(yaml.get("ground-depth"), size[1], problems);
+        int ground = groundDepth(yaml.get("ground-depth"), size[1], maxGroundDepth, problems);
         int[] origin = yaml.get("origin") == null ? new int[3] : ints(yaml.get("origin"), 3);
         if (origin == null || !inside(origin, size, ground)) {
             problems.add("origin must be [x, y, z] whole numbers inside size");
@@ -91,13 +100,13 @@ public final class HouseDesignParser {
     }
 
     /** {@code ground-depth}: missing = 0; must leave at least one layer above the ground. */
-    private static int groundDepth(@Nullable Object raw, int sizeY, List<String> problems) {
+    private static int groundDepth(@Nullable Object raw, int sizeY, int max, List<String> problems) {
         if (raw == null) {
             return 0;
         }
         if (!(raw instanceof Number n) || n.doubleValue() != Math.rint(n.doubleValue())
-                || n.intValue() < 0 || n.intValue() > MAX_GROUND_DEPTH || n.intValue() >= sizeY) {
-            problems.add("ground-depth must be a whole number from 0 to " + MAX_GROUND_DEPTH
+                || n.intValue() < 0 || n.intValue() > max || n.intValue() >= sizeY) {
+            problems.add("ground-depth must be a whole number from 0 to " + max
                     + " and less than size y");
             return 0;
         }
@@ -172,6 +181,9 @@ public final class HouseDesignParser {
             if (key.equals(SMOKE) || key.equals(STEAM)) {
                 pointList(key, e.getValue(), size, ground, key.equals(SMOKE) ? smoke : steam, problems);
                 continue;
+            }
+            if (e.getValue() instanceof Map<?, ?>) {
+                continue; // a structured place point, checked by farm.PlacePoints
             }
             int[] p = ints(e.getValue(), 3);
             if (p == null) {
@@ -255,12 +267,13 @@ public final class HouseDesignParser {
     }
 
     /** Inside the design box in design y (ground layers are y {@code -ground..-1}). */
-    private static boolean inside(int[] p, int[] size, int ground) {
+    public static boolean inside(int[] p, int[] size, int ground) {
         return p[0] >= 0 && p[1] >= -ground && p[2] >= 0 && p[0] < size[0] && p[1] < size[1] - ground
                 && p[2] < size[2];
     }
 
-    private static int @Nullable [] ints(Object raw, int n) {
+    /** {@code raw} as a list of exactly {@code n} whole numbers, or null. */
+    public static int @Nullable [] ints(@Nullable Object raw, int n) {
         if (!(raw instanceof List<?> list) || list.size() != n) {
             return null;
         }
