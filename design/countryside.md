@@ -57,7 +57,7 @@ L-F1 volumes, L-F2 roof forms and big planes, L-F3 yard, L-F4 clearance (wheel d
 
 ## 5. Mill (`houses/mill.yml`, generator `design/scripts/house_mill.py`, layout `mill_layout.py`)
 - **Purpose:** flour place of the Ingredient Farm. A stone watermill standing on a retaining wall straight out of its pond; the waterwheel turns in a stone slot between two piers under the jettied upper floor.
-- **File:** `size: [46, 24, 36]` = design box 46 x 20 x 36 above the ground + 4 ground layers (volume 39,744 < 40,000). **9,304 blocks written (2,837 above ground without water = building + scene, in the 1,500-3,500 range)**, 400 water blocks, 130 palette entries. Generated: do not edit the YAML by hand.
+- **File:** `size: [46, 24, 36]` = design box 46 x 20 x 36 above the ground + 4 ground layers (volume 39,744 < 40,000). **9,482 blocks written (3,045 above ground without water = building + scene, in the 1,500-3,500 range)**, 132 palette entries. Generated: do not edit the YAML by hand.
 - **Orientation:** final. Road and yard on the north edge, the pond east of the yard and in front of the wheel, the back garden south.
 - **Previews (textured, real 26.3 textures; the wheel is an item display and is **not** in the renders, only its block fallback):** `design/scripts/previews/place_mill_sheet.png`, `_eye` (player at the viewpoint), `_front`, `_ne`, `_nw`, `_back`, `_above`, `_slot` (wheel slot), `_water` (pond view), `_yard`.
 
@@ -71,20 +71,20 @@ L-F1 volumes, L-F2 roof forms and big planes, L-F3 yard, L-F4 clearance (wheel d
 | Porch strip | z 10..14: gravel path to the door at x 16..19, flower beds, crates and sacks at the door, low backdrop wall + lanterns at x 19..23, z 10 |
 | Hall | x 15..33; ground storey z 15..24 (plinth y0, stone y1..3, string course y4); upper floor z 14..24 (**jetty on the north**: bressumer y5, plaster upper y6..7, plate y8); half-hip roof east end, gable west end; ridge y15 + cap y16 |
 | Wheel slot | interior x 25..31 (7 wide), z 15..17, piers x 23..24 and 32..33, back wall z 18, floor y -4, beam lintel y4, pilasters at z 14 (x 15, 24, 32, 33) carry the jetty; pit water y -3..-2 |
-| Pond A | x 23..44, z 4..14 (20+ x 11), water y -3..-2, tail race leaves through the east edge at z 8..9 (water exits `x 45`) |
+| Pond A | one broad organic pond (noisy ellipse + the strip against the hall wall), about x 23..44, z 3..14 (z <= 12 east of x 34), water y -3..-2, mud/clay/moss shore, lily pads; the tail race leaves through the east edge at z 8..9 (water exits `x 45`) |
 | Wing (store) | x 8..14, z 15..23, in line with the hall, abuts its west gable; ridge y10 |
 | Sack shed | lean-to x 25..31, z 25..27 on the south wall, barrels and sacks |
-| Terrace + head race | terrace surface y 1 for x 35..45, z 13..30 behind a stone retaining wall (z 13) to the pond; channel x 33..39 z 16..17 (water y 0) from a stone-lined mill pond (x 40..44, z 16..22) through the east pier into the slot (gate: trapdoors + bars at x 32), sluice gate with lever at x 34; **fenced stone bridge** x 37..39, z 14..19 (deck y 2) |
+| Terrace + head race | terrace surface y 1 for x 35..45, z 13..30 behind a stone retaining wall (z 13) to the pond; a stone-lined channel x 33..44, z 16..17 (water y 0) runs from the east wall through the east pier into the slot (gate: trapdoors + bars at x 32, sluice gate with lever at x 34); **fenced stone bridge** x 37..39, z 14..19 (deck y 2); orchard on the terrace |
 | Granary | staddle stones, 7 x 7 at x 2..8, z 4..10, floor y2, walls y3..4, pyramid roof ridge y9 + cap y10, door + stone steps on the east face (towards the yard), shuttered lit windows |
-| Scenery | oak, birch and oak trees, hedges south, back garden (farmland, water channel) at x 9..15 z 28..32, woodpile, bench, sack cart west of the yard |
+| Scenery | meadow clusters, trees (one with vines over the pond), hedge segments at the south and west edge, back garden (farmland, water channel) at x 9..15 z 28..32, woodpile, bench, sack cart west of the yard |
 
 ### Look (factory craft, scaled)
-Stone ground storey in a stone-brick ramp on a cobble/mossy plinth, jettied plastered upper floor in a dark-oak frame (posts every 4, braces, flower-boxed shuttered lit windows), brackets under the bressumer, **steep (about 56 degrees) dark-oak shingle roof** with spruce patches, **deepslate-tile eave and rake** and a dark-oak ridge with a slab cap, **half-hip** east end, **two oak dormers** and the **hoist gablet** (open hatch, beam, chain and barrel) on the north slope plus one dormer on the south slope, roofs at 8 heights (3, 4, 5, 8, 10, 11, 12, 16). One chimney budget unused (**no chimney**, `smoke` omitted).
+Stone ground storey in a stone-brick ramp on a cobble/mossy plinth, jettied plastered upper floor in a dark-oak frame (posts every 4, braces, flower-boxed shuttered lit windows), brackets under the bressumer, **steep (about 56 degrees) dark-oak shingle roof** with dark deepslate patches only (no light blocks), **deepslate-tile eave and rake** and a dark-oak ridge with a slab cap, **half-hip** east end, **two dark-oak dormers** and the **hoist gablet** (open hatch, beam, chain and barrel) on the north slope plus one dormer on the south slope, roofs at 8 heights (3, 4, 5, 8, 10, 11, 12, 16). One chimney budget unused (**no chimney**, `smoke` omitted).
 
 ### Points (design cells)
 | Point | Value |
 |---|---|
-| `viewpoint` | `at [16, 0, 5]`, yaw -20, pitch 12 (the north edge of the yard, looking south-east at the front, the wheel and the pond) |
+| `viewpoint` | `at [16, 0, 5]`, yaw -20, pitch 3 (the north edge of the yard, looking south-east at the front, the wheel and the pond) |
 | `yard` | `from [11, 3]`, `to [21, 9]` |
 | `hologram` | `[16, 1, 7]` (yard centre) |
 | `panel` | `at [20, 0, 7]`, yaw 180 |

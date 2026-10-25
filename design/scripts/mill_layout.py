@@ -21,7 +21,7 @@ Y_EAVE = 8
 Y_EAVE_WING = 4
 
 POINTS = {
-    "viewpoint": {"at": [16, 0, 5], "yaw": -20, "pitch": 12},
+    "viewpoint": {"at": [16, 0, 5], "yaw": -20, "pitch": 3},
     "yard": {"from": [YARD[0][0], YARD[0][1]], "to": [YARD[1][0], YARD[1][1]]},
     "hologram": [16, 1, 7],
     "panel": {"at": [20, 0, 7], "yaw": 180},

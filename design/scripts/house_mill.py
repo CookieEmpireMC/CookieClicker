@@ -42,7 +42,7 @@ STONE = Ramp(P("stone_bricks"), [(P("cracked_stone_bricks"), .13, None), (P("mos
                                  (P("tuff_bricks"), .09, None)], seed=3)
 PLINTH = Ramp(P("cobblestone"), [(P("mossy_cobblestone"), .27, "low"), (P("andesite"), .15, None)], seed=4)
 PLASTER = Ramp(P("calcite"), [(P("diorite"), .18, None), (P("polished_diorite"), .12, "low")], seed=5, height=3, y0=5)
-ROOF = Ramp("dark_oak", [("spruce", .13, None)], seed=8, height=14, y0=8)
+ROOF = Ramp("dark_oak", [("deepslate_tile", .1, None), ("cobbled_deepslate", .08, None)], seed=8, height=14, y0=8)
 FLOOR = Ramp(P("spruce_planks"), [(P("oak_planks"), .22, None), (P("dark_oak_planks"), .15, None)], seed=9)
 COBBLE = Ramp(P("cobblestone"), [(P("mossy_cobblestone"), .16, None), (P("andesite"), .14, None)], seed=31)
 GRAVEL = Ramp(P("gravel"), [(P("andesite"), .12, None)], seed=22)
@@ -56,7 +56,7 @@ RAMPS = {
     "plinth": ["cobblestone", "mossy_cobblestone", "andesite"],
     "plaster": ["calcite", "diorite", "polished_diorite"],
     "timber": ["dark_oak_log", "stripped_dark_oak_log", "dark_oak_planks"],
-    "roof": ["dark_oak_stairs", "spruce_stairs", "deepslate_tile_stairs"],
+    "roof": ["dark_oak_stairs", "cobbled_deepslate_stairs", "deepslate_tile_stairs"],
     "floor": ["spruce_planks", "oak_planks", "dark_oak_planks"],
 }
 
@@ -331,10 +331,7 @@ def rest(b: Build, roof: dict, slot: dict, pond: set) -> dict:
     for x in range(25, 32):
         put(x, 3, 27, beam("x"))
         for z, y in ((25, 5), (26, 4), (27, 3)):
-            if z == 27:
-                put(x, y + 0, z, st("dark_oak", "north"))
-            else:
-                put(x, y, z, st("spruce", "north"))
+            put(x, y, z, st("deepslate_tile" if z == 27 else "dark_oak", "north"))
     for z in (25, 26, 27):
         for x in (25, 31):
             if z != 27:
