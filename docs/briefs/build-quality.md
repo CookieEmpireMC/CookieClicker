@@ -1,6 +1,6 @@
 # build-quality
 
-**Status:** in progress  <!-- planned | in progress | review | done -->
+**Status:** review  <!-- planned | in progress | review | done -->
 **Created:** 2026-10-24 · **Depends on:** mariadb (merged, PR #16, 1.3.0)
 
 ## Goal
@@ -20,9 +20,9 @@ flour shed, a woodpile. Nothing is just dropped on the grass. The small villager
 
 ## Acceptance criteria
 ### Style rules and lint (model-designer)
-- [ ] `design/style-guide.md` "Block structures" gets the ranked rules R1–R21 and decor rules D1–D7 from the research
+- [x] `design/style-guide.md` "Block structures" gets the ranked rules R1–R21 and decor rules D1–D7 from the research
       note. **Hard rule: at most one chimney per building** (and `points.smoke` length ≤ 1).
-- [ ] `design/build-lint.md` plus lint asserts in the house generator library (`design/scripts/lib/`). A design that
+- [x] `design/build-lint.md` plus lint asserts in the house generator library (`design/scripts/lib/`). A design that
       fails the lint doesn't get written:
   - at least 2 volumes;
   - a depth change at least every 4 blocks;
@@ -34,11 +34,11 @@ flour shed, a woodpile. Nothing is just dropped on the grass. The small villager
   - a clear front yard where the layout needs one;
   - no lone props (D1/D2);
   - nothing organic straight for more than 7 blocks.
-- [ ] `design/refs/<house>.md` per reworked build: style, references, palette ramps.
-- [ ] The generator's own preview renderer uses real block textures from a git-ignored client-jar cache, so
+- [x] `design/refs/<house>.md` per reworked build: style, references, palette ramps.
+- [x] The generator's own preview renderer uses real block textures from a git-ignored client-jar cache, so
       `mise run review` shows what the game shows.
 ### Reworked builds (model-designer)
-- [ ] **factory:** per research section 7.
+- [x] **factory:** per research section 7.
   - One 2×2 oven chimney; the tall boiler stack, the duct and the copper steam pipe are gone, and the ridge vent
     becomes a flush louvre.
   - Stone-brick base ramp, with plastered close-studded dark oak framing above.
@@ -47,21 +47,21 @@ flour shed, a woodpile. Nothing is just dropped on the grass. The small villager
   - The lean-tos get shutters, flower boxes, lit interiors and scene clutter.
   - Kept unchanged: `points.door`, the sign at `[10,4,1]`, the loading hatch, `points.belt_out`, the layout block,
     the design box and the building-slot keep-outs.
-- [ ] **default (starter cottage):** a Tudor cottage with at least 2 volumes, plus:
+- [x] **default (starter cottage):** a Tudor cottage with at least 2 volumes, plus:
   - a timber frame with plaster infill;
   - a 2-material roof with eave;
   - a 1–2 course plinth;
   - windows with sills and shutters, and a lit interior behind them;
   - exactly one chimney.
-- [ ] **decor:** rebuilt as scenes (research section 5).
+- [x] **decor:** rebuilt as scenes (research section 5).
   - Drop the lone flowers, the `path_edge` rows, the hedge rectangles, the raised single grass pads and the 8
     grid lamp posts.
   - Lamp posts only at the door and junctions.
   - Rework `front_east_wheat` into the garden scene.
   - Keep the keep-out asserts.
   - Keep the small villager workers.
-- [ ] **fence:** irregular rhythm (no posts every 4 blocks), in the same palette family.
-- [ ] **Whole plot, not only the house (user, 2026-10-24):** ground and decor cover the **entire plot**, around the
+- [x] **fence:** irregular rhythm (no posts every 4 blocks), in the same palette family.
+- [x] **Whole plot, not only the house (user, 2026-10-24):** ground and decor cover the **entire plot**, around the
       house and between house, belt, pedestal, panels and building slots.
   - **Ground:** shaped and graded (path to the door and the pedestal, gravel and coarse-dirt edges, beds, small
     mounds).
@@ -69,15 +69,15 @@ flour shed, a woodpile. Nothing is just dropped on the grass. The small villager
   - **Keep-outs stay clear:** pedestal, shop/clicks panels, building slots, belt line, viewpoint, entrance, the
     hologram corridor, and the cinematic camera's view of the house.
 ### Ground layer (plugin-coder)
-- [ ] House designs can own ground below their base. The format is decided by the coder with the model-designer
+- [x] House designs can own ground below their base. The format is decided by the coder with the model-designer
       and documented in `design/house-default.md`. The plugin places and backs it up like the rest of the design.
   - Layers at design y -2 and -1 and an optional height field: mounds up to 3, a ditch, terraces.
   - `/bakery house undo` restores it exactly.
   - Leaves placed by designs are `persistent=true`.
   - Water stays enclosed and doesn't flow outside the box.
-- [ ] Old designs without ground load and paste exactly as before.
+- [x] Old designs without ground load and paste exactly as before.
 ### Review pipeline (plugin-coder: tools; orchestrator: runs it)
-- [ ] `tools/review/` holds the pipeline scripts. A mise task such as `mise run review-render <design>` runs it end
+- [x] `tools/review/` holds the pipeline scripts. A mise task such as `mise run review-render <design>` runs it end
       to end.
   - Place a design on a local test server over RCON (`setblock … strict`, supports first).
   - Write a Chunky scene (camera in Minecraft yaw/pitch, y range -64..64).
@@ -85,7 +85,7 @@ flour shed, a woodpile. Nothing is just dropped on the grass. The small villager
   - The server, Chunky and client jar live outside the repo (default `~/bakery-review/`, overridable).
   - Never commit the jar.
   - RCON stays bound to 127.0.0.1.
-- [ ] For every reworked build the orchestrator renders three shots:
+- [x] For every reworked build the orchestrator renders three shots:
   1. a player's eye from the viewpoint;
   2. a 3/4 overview;
   3. a close-up of the door.
@@ -93,7 +93,7 @@ flour shed, a woodpile. Nothing is just dropped on the grass. The small villager
   He reviews them as a first-time player against the style rules, with **at most 3 review rounds** per build.
   The final shots go into the PR, with the before shots from 2026-10-24 next to them.
 ### Release
-- [ ] Version 1.4.0. Checks green: `check`, `validate-assets`, `sound-check`, `balance-check`, `tools-test`.
+- [x] Version 1.4.0. Checks green: `check`, `validate-assets`, `sound-check`, `balance-check`, `tools-test`.
 
 ## Out of scope
 - The farm and its places (market village, Mill, Cow Barn, Sugar Works, Cocoa Grove, Chicken Farm) → `ingredient-farm`
@@ -150,7 +150,8 @@ right away and the builds once the format is merged.
 | Agent | Status | Branch | Verdict | Notes |
 |---|---|---|---|---|
 | plugin-coder | done | `build-quality/plugin-coder` (+ `-camera`), merged | READY | fix round: LiquidGuard scope, RCON loopback |
-| model-designer | in progress | `build-quality/model-designer` (not merged) | | orchestrator review round 3 of 3 running; pinned default-design test needs the tester |
+| model-designer | done | `build-quality/model-designer`, merged | (Rick: 3 review rounds) | round 3 finished 2026-10-25 |
+| plugin-tester | done | on `feature/build-quality` | READY | cottage contract test + tool tests updated (417 Java, 81 tool tests) |
 
 ## Merge order
 1. research note (done), 2. plugin-coder, 3. model-designer, then the review rounds (model-designer fixes on its branch).
