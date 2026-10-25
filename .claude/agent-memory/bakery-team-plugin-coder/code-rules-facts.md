@@ -42,6 +42,8 @@ Checked against the tidy layout (feature/tidy, 2026-10-23). Package map: `docs/a
   `WorldOperation.hold()` to keep the gate across ticks.
 - `HouseDesignParser` skips map-valued points (structured place points); `parse(name, yaml, maxGround)` for ground 4.
 - plots.yml `farms:` is a raw section kept by `PlotFile.setFarms`/`farms()`; `RegionInfo` has a 5th `farmFlag` (4-arg ctor kept).
+- Structure NBT (de)serialisation stays on main (thread-safety unverified, Gandalf 2026-10-25); only file bytes on IO.
+- `farm/FarmWheels`: waterwheel display, pack players only (`ResourcePackTracker::hasPack`), restarts on farm change.
 - Admin permission stays `cookieempire.admin` (BakeryCommandTest pins it); root `/bakery` requires admin OR
   `cookieclicker.teleport`, each admin literal has its own `.requires`.
 
