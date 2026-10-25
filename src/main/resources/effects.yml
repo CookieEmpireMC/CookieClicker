@@ -321,6 +321,38 @@ building_milestone:
     - { type: particle, particle: end_rod, shape: burst, points: 6, radius: 0.3, speed: 0.06, delay-ticks: 6,
         origin: [0, 0.8, 0] }
 
+# The Recipe Book was bought: play at the player's feet, viewer = buyer. About 1.3 s, bigger than a purchase: two
+# cream-to-gold rings climb the player (0.2, 1.0 high), a one-strand helix winds up 1.8 blocks, then at tick 8 an
+# end_rod + firework burst at chest height (the peak) and sparkles drift up. About 95 particles, 0 entities.
+recipes_unlock:
+  layers:
+    - { type: particle, particle: dust_color_transition, color: "#fff2a8", to-color: "#f5c542", size: 1.0,
+        shape: ring, points: 12, radius-start: 0.4, radius: 0.9, duration-ticks: 3, origin: [0, 0.2, 0] }
+    - { type: particle, particle: dust_color_transition, color: "#fff2a8", to-color: "#f5a623", size: 1.0,
+        shape: ring, points: 12, radius-start: 0.4, radius: 0.9, duration-ticks: 3, origin: [0, 1.0, 0], delay-ticks: 5 }
+    - { type: particle, particle: dust, color: "#f5c542", size: 0.8, shape: helix, points: 14, radius: 0.7,
+        height: 1.8, turns: 1.5, strands: 1, duration-ticks: 20 }
+    - { type: particle, particle: end_rod, shape: burst, points: 12, radius: 0.3, speed: 0.1, delay-ticks: 8,
+        origin: [0, 1.1, 0] }
+    - { type: particle, particle: firework, shape: burst, points: 8, radius: 0.3, speed: 0.07, delay-ticks: 8,
+        origin: [0, 1.1, 0] }
+    - { type: particle, particle: dust_color_transition, color: "#fff2a8", to-color: "#f5c542", size: 0.6,
+        shape: sparkles, points: 6, radius: 0.6, height: 1.2, duration-ticks: 10, stagger-ticks: 10,
+        emit-every: 2, delay-ticks: 6, origin: [0, 0.4, 0] }
+
+# A recipe was bought in the Recipe Book GUI: play at the player, viewer = buyer. A quick page-flip: a small
+# parchment-cream ring snaps open at chest height, then a few gold sparkles and end_rod flecks rise. About 0.5 s,
+# ~30 particles, 0 entities.
+recipe_buy:
+  layers:
+    - { type: particle, particle: dust, color: "#f3e5c0", size: 0.8, shape: ring, plane: facing, points: 8,
+        radius-start: 0.15, radius: 0.5, duration-ticks: 3, origin: [0, 1.2, 0] }
+    - { type: particle, particle: dust_color_transition, color: "#fff2a8", to-color: "#f5c542", size: 0.6,
+        shape: sparkles, points: 4, radius: 0.4, height: 0.8, duration-ticks: 8, stagger-ticks: 3,
+        emit-every: 2, delay-ticks: 1, origin: [0, 1.0, 0] }
+    - { type: particle, particle: end_rod, shape: burst, points: 4, radius: 0.1, speed: 0.05, delay-ticks: 2,
+        origin: [0, 1.4, 0] }
+
 # /bakery plot show: code plays one of these per outline point (up to ~120 points per region, redrawn every
 # 20 ticks), viewer = the admin. One fat dust mote per play, sent in the extended range so the whole outline shows
 # from across the plot. Sky blue = plot region, cookie gold = house region. 1 particle per play.
