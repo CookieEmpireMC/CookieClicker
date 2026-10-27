@@ -123,8 +123,13 @@ public record StationVisualSettings(double viewDistance, int refreshTicks, doubl
             new Offset(-0.3, 0, 0), new Offset(-0.5, 0.13, -0.02), 0.3f, COLORS, 15, 5, 0.5f,
             VisualFallbacks.BUILDING_ICONS, VisualFallbacks.DEFAULT_ICON, 15, true, false, false, true, 1, true,
             0.22, 0.28, 0.17, 0.03);
-    private static final PanelSpot BUILDINGS = new PanelSpot(new Offset(2.15, 2.55, 2.5), 8);
-    private static final PanelSpot CLICKS = new PanelSpot(new Offset(-2.15, 3.2, 2.5), 4);
+    /*
+     * Both headers share one height so they line up. 3.9 keeps the lowest of the 8 building rows (its icon bottom is
+     * 3.84 below the header anchor) above the floor; the shelf under the click panel stays above it too.
+     */
+    private static final double PANEL_UP = 3.9;
+    private static final PanelSpot BUILDINGS = new PanelSpot(new Offset(2.15, PANEL_UP, 2.5), 8);
+    private static final PanelSpot CLICKS = new PanelSpot(new Offset(-2.15, PANEL_UP, 2.5), 4);
     private static final Bulk BULK = new Bulk(0.5f);
     private static final Tween TWEEN = new Tween(8, 2, 1.08f);
     private static final Shelf SHELF = new Shelf(new Offset(-0.55, -2.45, 0), 6, 0.22, 0.18f, 24, 0.2f, 14, 3);
