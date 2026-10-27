@@ -68,3 +68,9 @@ Checked against the tidy layout (feature/tidy, 2026-10-23). Package map: `docs/a
   every main-thread continuation; reload/disable invalidates in-flight IO callbacks.
 - Storage migrations: DB type "mysql" uses the MariaDB driver against possibly real MySQL, so no `ADD COLUMN IF NOT EXISTS`;
   `addColumn` checks DatabaseMetaData. In H2, DEFAULT must come before NOT NULL.
+
+## Panel heights (verified 2026-10-27, PanelLayout + StationVisualSettings @ fix-panel-align)
+- Panel geometry below the header anchor: header 0.18 tall; toggle bottom -0.345; row i bottom -0.875 - 0.42*i; icon bottom = row bottom - 0.02. Buildings panel always shows 8 rows (11 buildings, paged) -> lowest -3.835; clicks 4 rows -> -2.155.
+- Shelf slot centre = clicks anchor -2.45 - 0.22*row; 10 upgrades = 2 rows, 24 max = 4 rows. Layout anchor y = floor (SetupPlanner y0 = groundY+1).
+- Both panels now share PANEL_UP = 3.9 (2.55 put building rows 1.3 blocks into the floor). Panel.offset is unused by code.
+- src/test is plugin-tester's: PanelCookieOverlapTest hardcodes panel anchor heights; ask the tester to update it.
